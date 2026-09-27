@@ -27,6 +27,8 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Test temporary files
+# Test temporary files & local agent skills
 memory-service/test_memories.json
 memory-service/test_memory.py
+.agents/
+

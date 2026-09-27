@@ -1,7 +1,13 @@
 import { api } from './api.js';
-import { initCharactersModule } from './characters.js';
+import { initCharactersModule, bindSpotlightHover } from './characters.js';
 import { initChatModule } from './chat.js';
 import { PersonaManager } from './personas.js';
+
+const SKILL_THEMES = [
+  { id: 'vanguard', label: 'Vanguard' },
+  { id: 'editorial', label: 'Editorial' },
+  { id: 'telemetry', label: 'Telemetry' }
+];
 
 /**
  * CAIUniverseApp Class (Frontend Root OOP Application Controller & Router)
@@ -27,7 +33,8 @@ export class CAIUniverseApp {
     if (!container) return;
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.textContent = message;
+    toast.innerHTML = `<i class="ph-light ph-info"></i> <span></span>`;
+    toast.querySelector('span').textContent = message;
     container.appendChild(toast);
     setTimeout(() => toast.remove(), 3200);
   }
@@ -57,23 +64,37 @@ export class CAIUniverseApp {
   }
 
   initTheme() {
-    const savedTheme = localStorage.getItem('cai_theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', savedTheme);
+    const savedTheme = localStorage.getItem('cai_skill_theme') || 'vanguard';
+    const validTheme = SKILL_THEMES.find(t => t.id === savedTheme) ? savedTheme : 'vanguard';
+    document.documentElement.setAttribute('data-theme', validTheme);
+
     const themeBtn = document.getElementById('themeToggleBtn');
+    const themeLabel = document.getElementById('themeModeLabel');
+
+    const updateThemeLabel = (themeId) => {
+      const entry = SKILL_THEMES.find(t => t.id === themeId) || SKILL_THEMES[0];
+      if (themeLabel) themeLabel.textContent = entry.label;
+    };
+
+    updateThemeLabel(validTheme);
+
     if (themeBtn) {
-      themeBtn.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
       themeBtn.addEventListener('click', () => {
-        const current = document.documentElement.getAttribute('data-theme') || 'dark';
-        const next = current === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('cai_theme', next);
-        themeBtn.textContent = next === 'dark' ? '☀️' : '🌙';
+        const current = document.documentElement.getAttribute('data-theme') || 'vanguard';
+        const currentIndex = SKILL_THEMES.findIndex(t => t.id === current);
+        const nextEntry = SKILL_THEMES[(currentIndex + 1) % SKILL_THEMES.length];
+
+        document.documentElement.setAttribute('data-theme', nextEntry.id);
+        localStorage.setItem('cai_skill_theme', nextEntry.id);
+        updateThemeLabel(nextEntry.id);
+        this.showToast(`Design System: ${nextEntry.label}`);
       });
     }
   }
 
   async init() {
     this.initTheme();
+    bindSpotlightHover(document.body);
 
     const toastFn = (msg) => this.showToast(msg);
     const navFn = (view, push) => this.navigateTo(view, push);
@@ -95,6 +116,7 @@ export class CAIUniverseApp {
     );
 
     this.#bindNavigationEvents();
+    this.#bindKeyboardShortcuts();
 
     await Promise.all([
       this.personasManager.loadPersonas(),
@@ -110,6 +132,10 @@ export class CAIUniverseApp {
   #bindNavigationEvents() {
     document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
       btn.addEventListener('click', () => this.navigateTo(btn.dataset.view));
+    });
+
+    document.querySelectorAll('[data-nav-trigger]').forEach(el => {
+      el.addEventListener('click', () => this.navigateTo(el.dataset.navTrigger));
     });
 
     const brandLogo = document.getElementById('brand-home-link');
@@ -136,13 +162,39 @@ export class CAIUniverseApp {
     }
   }
 
+  #bindKeyboardShortcuts() {
+    window.addEventListener('keydown', (e) => {
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      if (e.key === '/') {
+        const searchEl = document.getElementById('discoverSearch');
+        if (searchEl) {
+          e.preventDefault();
+          this.navigateTo('discover');
+          searchEl.focus();
+        }
+      } else if (e.key === '1') {
+        this.navigateTo('discover');
+      } else if (e.key === '2') {
+        this.navigateTo('characters');
+      } else if (e.key === '3') {
+        this.navigateTo('chats');
+      } else if (e.key === '4') {
+        this.navigateTo('personas');
+      }
+    });
+  }
+
   async #checkServerHealth() {
     try {
       const health = await api.getHealth();
       const statusEl = document.getElementById('ai-status-badge');
       if (statusEl) {
-        statusEl.textContent = health.gemini_available ? '● Gemini Ready' : '● Local Mode';
-        statusEl.style.color = health.gemini_available ? 'var(--success)' : 'var(--warning)';
+        const label = statusEl.querySelector('.status-label');
+        const dot = statusEl.querySelector('.status-dot');
+        if (label) label.textContent = health.gemini_available ? 'Gemini 2.5' : 'Local SQL';
+        if (dot) dot.style.background = health.gemini_available ? 'var(--success)' : 'var(--warning)';
       }
     } catch {
       // ignore

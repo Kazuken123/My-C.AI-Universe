@@ -14,9 +14,50 @@ export function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+/**
+ * Compute Asymmetric Bento Grid span classes that guarantee zero empty cells
+ * (design-taste-frontend Section 4.7: BENTO CELL COUNT RULE)
+ */
+function getBentoSpanClass(index, total) {
+  if (total === 1) return 'bento-cell bento-wide';
+  if (total === 2) return 'bento-cell bento-half';
+  if (total === 4) return 'bento-cell bento-half';
+  if (total === 5) {
+    // 2 + 3 asymmetric split (6+6 on row 1, 4+4+4 on row 2)
+    return index < 2 ? 'bento-cell bento-half' : 'bento-cell';
+  }
+  // For 3, 6, 7+: First card is wide (8 cols) paired with 4-col card, rest flow in 4s or 6s
+  if (index === 0 && total >= 3) {
+    const remainderAfterFirstRow = (total - 2) % 3;
+    if (remainderAfterFirstRow === 0) return 'bento-cell bento-wide';
+    if (remainderAfterFirstRow === 2) return 'bento-cell bento-wide';
+  }
+  if (total > 5 && index >= total - 2 && (total - 2) % 3 === 2) {
+    return 'bento-cell bento-half';
+  }
+  return 'bento-cell';
+}
+
+/**
+ * Attach GPU-safe cursor spotlight tracking to Double-Bezel shells
+ */
+export function bindSpotlightHover(container) {
+  if (!container) return;
+  container.querySelectorAll('.double-bezel-shell').forEach(shell => {
+    shell.addEventListener('pointermove', (e) => {
+      const rect = shell.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      shell.style.setProperty('--mouse-x', `${x}px`);
+      shell.style.setProperty('--mouse-y', `${y}px`);
+    });
+  });
+}
+
 export function initCharactersModule(appState, navigateTo, openChatWithCharacter, showToast) {
   const discoverGrid = document.getElementById('discover-grid');
   const myCharsGrid = document.getElementById('my-characters-grid');
+  const heroSpotlightCard = document.getElementById('hero-spotlight-card');
   const searchInput = document.getElementById('discoverSearch');
   const sortSelect = document.getElementById('discoverSort');
   const categoryBar = document.getElementById('category-pills');
@@ -80,39 +121,104 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
     if (heroStartBtn) {
       heroStartBtn.onclick = () => openChatWithCharacter(featured.id);
     }
+
+    if (heroSpotlightCard) {
+      const avatarUrl = featured.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(featured.name)}`;
+      const cleanGreeting = (featured.greeting || '')
+        .replace(/\*/g, '')
+        .replace(/\n+/g, ' ')
+        .trim()
+        .slice(0, 160);
+
+      heroSpotlightCard.innerHTML = `
+        <article class="hero-spotlight-dossier" data-spotlight-char="${escapeHtml(featured.id)}" title="Click to enter scene with ${escapeHtml(featured.name)}">
+          <div class="spotlight-top">
+            <img class="spotlight-avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(featured.name)}" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
+            <div class="spotlight-meta">
+              <div class="spotlight-kicker">FEATURED DOSSIER // 01</div>
+              <div class="spotlight-name">${escapeHtml(featured.name)}</div>
+              <div class="spotlight-tagline">${escapeHtml(featured.tagline || 'Canonical Roleplay Character')}</div>
+            </div>
+          </div>
+          <div class="spotlight-excerpt">
+            "${escapeHtml(cleanGreeting || 'Step into the scene and begin your dialogue.')}"
+          </div>
+          <div class="spotlight-footer">
+            <span><i class="ph-light ph-chats"></i> ${formatCount(featured.interactions || 0)} turns</span>
+            <span><i class="ph-light ph-heart"></i> ${formatCount(featured.likes || 0)} likes</span>
+            <span>Launch Scene <i class="ph-light ph-arrow-up-right"></i></span>
+          </div>
+        </article>
+      `;
+
+      const dossierEl = heroSpotlightCard.querySelector('[data-spotlight-char]');
+      if (dossierEl) {
+        dossierEl.addEventListener('click', () => openChatWithCharacter(featured.id));
+      }
+    }
   }
 
-  function buildCharacterCardHtml(char, showManageActions = false) {
+  function buildCharacterCardHtml(char, index, total, showManageActions = false) {
     const avatarUrl = char.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(char.name)}`;
     const tags = Array.isArray(char.categories) ? char.categories : ['Roleplay'];
-    const summary = char.tagline || (char.personality ? char.personality.slice(0, 90) : 'AI Roleplay Character');
+    const summary = char.tagline || (char.personality ? char.personality.slice(0, 95) : 'Interactive Character');
+    const spanClass = getBentoSpanClass(index, total);
+    const isWide = spanClass.includes('bento-wide') || spanClass.includes('bento-half');
+    const cleanOpening = (char.greeting || '').replace(/\*/g, '').replace(/\n+/g, ' ').trim().slice(0, 125);
 
     return `
-      <div class="cai-card" data-char-card="${escapeHtml(char.id)}">
-        <div class="cai-card-top">
-          <img class="cai-avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(char.name)}" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
-          <div class="cai-card-info">
-            <div class="cai-card-name">${escapeHtml(char.name)}</div>
-            <div class="cai-card-creator">By ${escapeHtml(char.creator || '@you')}</div>
-            <div class="cai-card-tagline">${escapeHtml(summary)}</div>
-          </div>
-        </div>
-        <div class="cai-card-tags">
-          ${tags.slice(0, 3).map(t => `<span class="tag-badge">${escapeHtml(t)}</span>`).join('')}
-          ${char.wiki ? `<span class="tag-badge" title="Wiki Linked">🌐 Wiki</span>` : ''}
-        </div>
-        <div class="cai-card-footer">
-          <div class="card-stats">
-            <span title="Total Interactions">💬 ${formatCount(char.interactions || 0)}</span>
-            <button class="like-btn ${char.isLiked ? 'liked' : ''}" data-like-char="${escapeHtml(char.id)}" title="Like Character">
-              ${char.isLiked ? '❤️' : '🤍'} <span>${formatCount(char.likes || 0)}</span>
-            </button>
-          </div>
-          <div class="card-actions">
-            <button class="btn btn-secondary btn-sm" data-edit-char="${escapeHtml(char.id)}" title="Edit Character">✏️</button>
-            ${showManageActions ? `<button class="btn btn-danger btn-sm" data-delete-char="${escapeHtml(char.id)}" title="Delete Character">🗑️</button>` : ''}
-            <button class="btn btn-primary btn-sm" data-chat-char="${escapeHtml(char.id)}">Chat</button>
-          </div>
+      <div class="${spanClass}">
+        <div class="double-bezel-shell card-shell" data-char-card="${escapeHtml(char.id)}">
+          <article class="double-bezel-core cai-card">
+            <div class="cai-card-top">
+              <img class="cai-avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(char.name)}" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
+              <div class="cai-card-info">
+                <div class="cai-card-header-line">
+                  <h3 class="cai-card-name">${escapeHtml(char.name)}</h3>
+                  <span class="cai-card-creator">${escapeHtml(char.creator || '@system')}</span>
+                </div>
+                <p class="cai-card-tagline">${escapeHtml(summary)}</p>
+              </div>
+            </div>
+
+            ${isWide && cleanOpening ? `
+              <div class="cai-card-dialogue-preview">
+                "${escapeHtml(cleanOpening)}..."
+              </div>
+            ` : ''}
+
+            <div class="cai-card-tags">
+              ${tags.slice(0, 3).map(t => `<span class="tag-badge">${escapeHtml(t)}</span>`).join('')}
+              ${char.wiki ? `<span class="tag-badge" title="Fandom/Wikipedia Linked"><i class="ph-light ph-globe-hemisphere-west"></i> Canon Wiki</span>` : ''}
+            </div>
+
+            <div class="cai-card-footer">
+              <div class="card-stats">
+                <span class="stat-item" title="Total Interactions">
+                  <i class="ph-light ph-chat-circle-text"></i>
+                  <span>${formatCount(char.interactions || 0)}</span>
+                </span>
+                <button class="like-btn ${char.isLiked ? 'liked' : ''}" data-like-char="${escapeHtml(char.id)}" type="button" title="Endorse Character">
+                  <i class="${char.isLiked ? 'ph-fill ph-heart' : 'ph-light ph-heart'}"></i>
+                  <span>${formatCount(char.likes || 0)}</span>
+                </button>
+              </div>
+              <div class="card-actions">
+                <button class="btn-secondary btn-sm" data-edit-char="${escapeHtml(char.id)}" type="button" title="Edit Dossier">
+                  <i class="ph-light ph-Sliders"></i>
+                </button>
+                ${showManageActions ? `
+                  <button class="btn-danger btn-sm" data-delete-char="${escapeHtml(char.id)}" type="button" title="Delete Character">
+                    <i class="ph-light ph-trash"></i>
+                  </button>
+                ` : ''}
+                <button class="btn-primary btn-sm" data-chat-char="${escapeHtml(char.id)}" type="button">
+                  <span>Enter Scene</span>
+                  <i class="ph-light ph-arrow-up-right"></i>
+                </button>
+              </div>
+            </div>
+          </article>
         </div>
       </div>
     `;
@@ -120,6 +226,8 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
 
   function bindCardEvents(container) {
     if (!container) return;
+
+    bindSpotlightHover(container);
 
     container.querySelectorAll('[data-char-card]').forEach(card => {
       card.addEventListener('click', (e) => {
@@ -151,10 +259,10 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const id = btn.dataset.deleteChar;
-        if (!confirm('Delete this character and its chat history?')) return;
+        if (!confirm('Delete this character and all associated SQL chat sessions?')) return;
         try {
           await api.deleteCharacter(id);
-          showToast('Character deleted.');
+          showToast('Character removed from SQL database.');
           await loadCharacters();
         } catch (err) {
           showToast(err.message);
@@ -179,10 +287,17 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
     if (!discoverGrid) return;
     if (!chars || chars.length === 0) {
       discoverGrid.innerHTML = `
-        <div class="studio-card" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
-          <h3>No matching characters found</h3>
-          <p class="hint" style="margin-top: 6px;">Try clearing your search filter or create a new character in the Studio.</p>
-          <button class="btn btn-primary" id="empty-create-btn">✨ Create Character</button>
+        <div class="bento-cell" style="grid-column: 1 / -1;">
+          <div class="double-bezel-shell">
+            <div class="double-bezel-core studio-card" style="text-align: center; padding: 48px 24px;">
+              <h3 class="card-heading">No matching characters in directory</h3>
+              <p class="hint" style="margin: 8px auto 20px; max-width: 44ch;">Clear your active search query or author a new character profile in the Studio.</p>
+              <button class="btn-island" id="empty-create-btn" type="button">
+                <span>Create Character</span>
+                <span class="btn-island-icon"><i class="ph-light ph-plus"></i></span>
+              </button>
+            </div>
+          </div>
         </div>
       `;
       const btn = document.getElementById('empty-create-btn');
@@ -190,17 +305,21 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
       return;
     }
 
-    discoverGrid.innerHTML = chars.map(c => buildCharacterCardHtml(c, false)).join('');
+    discoverGrid.innerHTML = chars
+      .map((c, idx) => buildCharacterCardHtml(c, idx, chars.length, false))
+      .join('');
     bindCardEvents(discoverGrid);
   }
 
   function renderMyCharactersGrid(chars) {
     if (!myCharsGrid) return;
     if (!chars || chars.length === 0) {
-      myCharsGrid.innerHTML = `<p style="color: var(--text-muted);">No characters created yet.</p>`;
+      myCharsGrid.innerHTML = `<p style="color: var(--text-muted); grid-column: 1 / -1;">No characters registered yet.</p>`;
       return;
     }
-    myCharsGrid.innerHTML = chars.map(c => buildCharacterCardHtml(c, true)).join('');
+    myCharsGrid.innerHTML = chars
+      .map((c, idx) => buildCharacterCardHtml(c, idx, chars.length, true))
+      .join('');
     bindCardEvents(myCharsGrid);
   }
 
@@ -220,7 +339,7 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
     let debounceTimer;
     searchInput.addEventListener('input', () => {
       clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(loadCharacters, 220);
+      debounceTimer = setTimeout(loadCharacters, 200);
     });
   }
 
@@ -239,7 +358,7 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
       .map(s => s.trim())
       .filter(Boolean);
     const greeting = (greetingInput?.value || '').trim() ||
-      `*${name} turns toward you.*\n\n${name}: "Hello there!"`;
+      `*${name} turns toward you.*\n\n${name}: "Ready to begin our scene?"`;
 
     if (previewAvatar) previewAvatar.src = avatar;
     if (previewName) previewName.textContent = name;
@@ -275,11 +394,11 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
     btnExtractWiki.addEventListener('click', async () => {
       const url = wikiUrlInput?.value.trim();
       if (!url) {
-        showToast('Please paste a Fandom or Wikipedia URL first.');
+        showToast('Paste a Fandom or Wikipedia URL first.');
         return;
       }
       btnExtractWiki.disabled = true;
-      btnExtractWiki.textContent = '⏳ Extracting...';
+      btnExtractWiki.innerHTML = '<i class="ph-light ph-spinner"></i> <span>Extracting...</span>';
       try {
         const data = await api.parseWikiPreview(url);
         if (data.name && !nameInput.value.trim()) nameInput.value = data.name;
@@ -296,12 +415,12 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
           categoriesInput.value = data.categories.join(', ');
         }
         updateStudioPreview();
-        showToast('✨ Extracted character profile from Wiki!');
+        showToast('Extracted canonical character profile from Wiki.');
       } catch (error) {
         showToast('Wiki extraction error: ' + error.message);
       } finally {
         btnExtractWiki.disabled = false;
-        btnExtractWiki.textContent = '🌐 Extract Wiki';
+        btnExtractWiki.innerHTML = '<i class="ph-light ph-globe-hemisphere-west"></i> <span>Extract Lore</span>';
       }
     });
   }
@@ -311,11 +430,11 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
     btnGenerateAI.addEventListener('click', async () => {
       const concept = aiConceptInput?.value.trim();
       if (!concept) {
-        showToast('Enter a short character concept first!');
+        showToast('Enter a character concept prompt first.');
         return;
       }
       btnGenerateAI.disabled = true;
-      btnGenerateAI.textContent = '⏳ Generating...';
+      btnGenerateAI.innerHTML = '<i class="ph-light ph-spinner"></i> <span>Synthesizing...</span>';
       try {
         const data = await api.generateCharacterAI(concept);
         if (data.name) nameInput.value = data.name;
@@ -333,12 +452,12 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
           categoriesInput.value = data.categories.join(', ');
         }
         updateStudioPreview();
-        showToast('✨ AI generated full character profile!');
+        showToast('Synthesized complete character profile.');
       } catch (error) {
         showToast('AI Generator error: ' + error.message);
       } finally {
         btnGenerateAI.disabled = false;
-        btnGenerateAI.textContent = '✨ Magic Fill';
+        btnGenerateAI.innerHTML = '<i class="ph-light ph-wand"></i> <span>Synthesize</span>';
       }
     });
   }
@@ -346,7 +465,7 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
   function openStudioForCreate() {
     if (studioForm) studioForm.reset();
     if (editCharIdInput) editCharIdInput.value = '';
-    if (studioTitle) studioTitle.textContent = '✨ Create a Character';
+    if (studioTitle) studioTitle.textContent = 'Character Architecture Studio';
     if (categoriesInput) categoriesInput.value = 'Anime, Roleplay';
     updateStudioPreview();
     navigateTo('create');
@@ -355,7 +474,7 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
   function openStudioForEdit(char) {
     if (!char) return;
     if (editCharIdInput) editCharIdInput.value = char.id;
-    if (studioTitle) studioTitle.textContent = `✏️ Edit Character: ${char.name}`;
+    if (studioTitle) studioTitle.textContent = `Edit Dossier: ${char.name}`;
     if (nameInput) nameInput.value = char.name || '';
     if (taglineInput) taglineInput.value = char.tagline || '';
     if (avatarInput) avatarInput.value = char.avatar || '';
@@ -403,23 +522,22 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
       };
 
       if (!payload.name && !payload.wiki) {
-        showToast('Please enter a Character Name or Wiki URL.');
+        showToast('Enter a Character Name or Wiki URL.');
         return;
       }
 
       if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Saving...';
       }
 
       try {
         let saved;
         if (existingId) {
           saved = await api.updateCharacter(existingId, payload);
-          showToast(`Updated ${saved.name}!`);
+          showToast(`Updated dossier for ${saved.name}.`);
         } else {
           saved = await api.createCharacter(payload);
-          showToast(`Created ${saved.name}!`);
+          showToast(`Committed ${saved.name} to SQL.`);
         }
         await loadCharacters();
         openChatWithCharacter(saved.id);
@@ -428,7 +546,6 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.textContent = '💾 Save & Start Chat';
         }
       }
     });
@@ -442,7 +559,7 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
 }
 
 /**
- * CharacterManager Class (Frontend OOP Controller for Discover, My Characters, and Studio)
+ * CharacterManager Class (Frontend OOP Controller for Discover, Archive, and Studio)
  */
 export class CharacterManager {
   constructor(appState, navigateTo, openChatWithCharacter, showToast) {
@@ -452,4 +569,3 @@ export class CharacterManager {
     this.openStudioForEdit = controller.openStudioForEdit;
   }
 }
-

@@ -1,4 +1,18 @@
 import { api } from './api.js';
+import { bindSpotlightHover } from './characters.js';
+
+function toMonogram(name, avatarField) {
+  const cleanAvatar = String(avatarField || '').trim();
+  // If user entered ASCII monogram (1-3 letters/numbers), use it; otherwise derive from name
+  if (/^[A-Za-z0-9]{1,3}$/.test(cleanAvatar)) {
+    return cleanAvatar.toUpperCase();
+  }
+  const cleanName = String(name || '').trim();
+  if (!cleanName) return 'TR';
+  const parts = cleanName.split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return cleanName.slice(0, 2).toUpperCase();
+}
 
 /**
  * PersonaManager Class (Frontend OOP UI Controller for User Personas)
@@ -35,55 +49,72 @@ export class PersonaManager {
     const active = this.appState.activePersona;
     if (!active) return;
     if (this.sidebarPersonaName) this.sidebarPersonaName.textContent = active.name;
-    if (this.sidebarPersonaEmoji) this.sidebarPersonaEmoji.textContent = active.avatar || '🌟';
+    if (this.sidebarPersonaEmoji) {
+      this.sidebarPersonaEmoji.textContent = toMonogram(active.name, active.avatar);
+    }
   }
 
   renderChatPersonaSelector() {
     if (!this.chatPersonaSelect) return;
     this.chatPersonaSelect.innerHTML = this.appState.personas
-      .map(p => `<option value="${p.id}" ${p.isDefault ? 'selected' : ''}>${p.avatar || '👤'} ${this.#escapeHtml(p.name)}</option>`)
+      .map(p => `<option value="${p.id}" ${p.isDefault ? 'selected' : ''}>${this.#escapeHtml(p.name)}</option>`)
       .join('');
   }
 
   renderPersonasList() {
     if (!this.listEl) return;
     if (!this.appState.personas || this.appState.personas.length === 0) {
-      this.listEl.innerHTML = `<p style="color: var(--text-muted);">No personas found.</p>`;
+      this.listEl.innerHTML = `<p style="color: var(--text-muted);">No roleplay identities registered.</p>`;
       return;
     }
 
-    this.listEl.innerHTML = this.appState.personas.map(p => `
-      <div class="cai-card" style="cursor: default;">
-        <div class="cai-card-top">
-          <div class="msg-avatar" style="width: 52px; height: 52px; font-size: 1.5rem; border: 1px solid var(--border-light);">
-            ${this.#escapeHtml(p.avatar || '🌟')}
-          </div>
-          <div class="cai-card-info">
-            <div class="cai-card-name">
-              ${this.#escapeHtml(p.name)}
-              ${p.isDefault ? '<span class="tag-badge" style="background: var(--accent); color: #fff; margin-left: 6px;">Active Default</span>' : ''}
+    this.listEl.innerHTML = this.appState.personas.map(p => {
+      const mono = toMonogram(p.name, p.avatar);
+      return `
+        <div class="double-bezel-shell card-shell">
+          <div class="double-bezel-core cai-card" style="cursor: default;">
+            <div class="cai-card-top">
+              <div class="msg-avatar" style="width: 48px; height: 48px; font-size: 0.9rem;">
+                ${this.#escapeHtml(mono)}
+              </div>
+              <div class="cai-card-info">
+                <div class="cai-card-header-line">
+                  <div class="cai-card-name">${this.#escapeHtml(p.name)}</div>
+                  ${p.isDefault ? '<span class="eyebrow-pill">ACTIVE IDENTITY</span>' : ''}
+                </div>
+                <div class="cai-card-tagline" style="margin-top: 4px;">
+                  ${this.#escapeHtml(p.description || 'No persona backstory configured.')}
+                </div>
+              </div>
             </div>
-            <div class="cai-card-tagline" style="margin-top: 4px;">
-              ${this.#escapeHtml(p.description || 'No persona bio set.')}
+            <div class="cai-card-footer">
+              <span class="card-stats">Injected into character system prompt</span>
+              <div class="card-actions">
+                ${!p.isDefault ? `
+                  <button class="btn-secondary btn-sm" data-set-default="${p.id}" type="button">
+                    <i class="ph-light ph-check"></i> <span>Set Active</span>
+                  </button>
+                ` : ''}
+                ${this.appState.personas.length > 1 ? `
+                  <button class="btn-danger btn-sm" data-del-persona="${p.id}" type="button" title="Delete Identity">
+                    <i class="ph-light ph-trash"></i>
+                  </button>
+                ` : ''}
+              </div>
             </div>
           </div>
         </div>
-        <div class="cai-card-footer">
-          <span style="font-size: 0.75rem; color: var(--text-muted);">Used across roleplay chats</span>
-          <div class="card-actions">
-            ${!p.isDefault ? `<button class="btn btn-secondary btn-sm" data-set-default="${p.id}">Set Active</button>` : ''}
-            ${this.appState.personas.length > 1 ? `<button class="btn btn-danger btn-sm" data-del-persona="${p.id}">Delete</button>` : ''}
-          </div>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
+
+    bindSpotlightHover(this.listEl);
 
     this.listEl.querySelectorAll('[data-set-default]').forEach(btn => {
       btn.addEventListener('click', async () => {
         try {
           await this.api.updatePersona(btn.dataset.setDefault, { isDefault: true });
           await this.loadPersonas();
-          this.showToast('Active roleplay persona updated!');
+          this.showToast('Active roleplay identity updated.');
         } catch (err) {
           this.showToast(err.message);
         }
@@ -95,7 +126,7 @@ export class PersonaManager {
         try {
           await this.api.deletePersona(btn.dataset.delPersona);
           await this.loadPersonas();
-          this.showToast('Persona deleted.');
+          this.showToast('Identity removed.');
         } catch (err) {
           this.showToast(err.message);
         }
@@ -108,12 +139,12 @@ export class PersonaManager {
     this.formEl.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = document.getElementById('personaNameInput').value.trim();
-      const avatar = document.getElementById('personaAvatarInput').value.trim() || '🌟';
+      const avatar = document.getElementById('personaAvatarInput').value.trim() || toMonogram(name, '');
       const description = document.getElementById('personaDescInput').value.trim();
       const isDefault = document.getElementById('personaDefaultCheck').checked;
 
       if (!name) {
-        this.showToast('Please enter a persona name.');
+        this.showToast('Enter an identity name.');
         return;
       }
 
@@ -121,7 +152,7 @@ export class PersonaManager {
         await this.api.createPersona({ name, avatar, description, isDefault });
         this.formEl.reset();
         await this.loadPersonas();
-        this.showToast(`Created persona "${name}"!`);
+        this.showToast(`Registered identity "${name}".`);
       } catch (err) {
         this.showToast(err.message);
       }
