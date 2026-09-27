@@ -440,3 +440,16 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
     openStudioForEdit
   };
 }
+
+/**
+ * CharacterManager Class (Frontend OOP Controller for Discover, My Characters, and Studio)
+ */
+export class CharacterManager {
+  constructor(appState, navigateTo, openChatWithCharacter, showToast) {
+    const controller = initCharactersModule(appState, navigateTo, openChatWithCharacter, showToast);
+    this.loadCharacters = controller.loadCharacters;
+    this.openStudioForCreate = controller.openStudioForCreate;
+    this.openStudioForEdit = controller.openStudioForEdit;
+  }
+}
+

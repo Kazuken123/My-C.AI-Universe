@@ -8,71 +8,112 @@ const SQLITE_PATH = path.join(DB_DIR, 'universe.sqlite');
 const SCHEMA_SQL_PATH = path.join(DB_DIR, 'schema.sql');
 const SEED_SQL_PATH = path.join(DB_DIR, 'seed.sql');
 
-let dbInstance = null;
-
 /**
- * Initialize and return the singleton SQLite relational database connection
- * @returns {DatabaseSync}
+ * DatabaseConnection Singleton Class (OOP Database Manager)
+ * Encapsulates SQLite connection lifecycle, DDL migration, seed execution, and ACID transactions.
  */
-export function getDatabase() {
-  if (dbInstance) return dbInstance;
+export class DatabaseConnection {
+  static #instance = null;
 
-  if (!fs.existsSync(DB_DIR)) {
-    fs.mkdirSync(DB_DIR, { recursive: true });
+  constructor() {
+    if (DatabaseConnection.#instance) {
+      return DatabaseConnection.#instance;
+    }
+    this.db = null;
+    this.dbPath = SQLITE_PATH;
+    DatabaseConnection.#instance = this;
   }
 
-  dbInstance = new DatabaseSync(SQLITE_PATH);
-  dbInstance.exec('PRAGMA foreign_keys = ON;');
-  dbInstance.exec('PRAGMA journal_mode = WAL;');
+  /**
+   * Get the singleton DatabaseConnection instance
+   * @returns {DatabaseConnection}
+   */
+  static getInstance() {
+    if (!DatabaseConnection.#instance) {
+      DatabaseConnection.#instance = new DatabaseConnection();
+    }
+    return DatabaseConnection.#instance;
+  }
 
-  // Execute DDL schema
-  const schemaSql = fs.readFileSync(SCHEMA_SQL_PATH, 'utf8');
-  dbInstance.exec(schemaSql);
+  /**
+   * Open and initialize the SQLite database connection
+   * @returns {DatabaseSync}
+   */
+  connect() {
+    if (this.db) return this.db;
 
-  // Check if characters table is empty; if so, run seed.sql and compile full systemPrompts
-  const countRow = dbInstance.prepare('SELECT COUNT(*) AS count FROM characters').get();
-  if (!countRow || countRow.count === 0) {
-    if (fs.existsSync(SEED_SQL_PATH)) {
-      const seedSql = fs.readFileSync(SEED_SQL_PATH, 'utf8');
-      dbInstance.exec(seedSql);
+    if (!fs.existsSync(DB_DIR)) {
+      fs.mkdirSync(DB_DIR, { recursive: true });
+    }
 
-      // Recompile rich system_prompt for all seeded characters
-      const rows = dbInstance.prepare('SELECT * FROM characters').all();
-      const updateStmt = dbInstance.prepare('UPDATE characters SET system_prompt = ? WHERE id = ?');
-      for (const r of rows) {
-        const compiled = compileCharacterSystemPrompt(r);
-        updateStmt.run(compiled, r.id);
+    this.db = new DatabaseSync(this.dbPath);
+    this.db.exec('PRAGMA foreign_keys = ON;');
+    this.db.exec('PRAGMA journal_mode = WAL;');
+
+    this.#runMigrationsAndSeed();
+    return this.db;
+  }
+
+  /**
+   * Execute schema.sql and seed.sql if database is empty
+   */
+  #runMigrationsAndSeed() {
+    const schemaSql = fs.readFileSync(SCHEMA_SQL_PATH, 'utf8');
+    this.db.exec(schemaSql);
+
+    const countRow = this.db.prepare('SELECT COUNT(*) AS count FROM characters').get();
+    if (!countRow || countRow.count === 0) {
+      if (fs.existsSync(SEED_SQL_PATH)) {
+        const seedSql = fs.readFileSync(SEED_SQL_PATH, 'utf8');
+        this.db.exec(seedSql);
+
+        const rows = this.db.prepare('SELECT * FROM characters').all();
+        const updateStmt = this.db.prepare('UPDATE characters SET system_prompt = ? WHERE id = ?');
+        for (const r of rows) {
+          const compiled = compileCharacterSystemPrompt(r);
+          updateStmt.run(compiled, r.id);
+        }
+        console.log(`[SQL DB] Initialized schema and seeded ${rows.length} characters into universe.sqlite`);
       }
-      console.log(`[SQL DB] Initialized schema and seeded ${rows.length} characters into universe.sqlite`);
     }
   }
 
-  return dbInstance;
+  /**
+   * Execute a function inside an atomic SQL transaction
+   * @param {Function} callback
+   */
+  runTransaction(callback) {
+    const conn = this.connect();
+    conn.exec('BEGIN IMMEDIATE TRANSACTION;');
+    try {
+      const result = callback(conn);
+      conn.exec('COMMIT;');
+      return result;
+    } catch (error) {
+      conn.exec('ROLLBACK;');
+      throw error;
+    }
+  }
+
+  /**
+   * Close the active SQLite connection
+   */
+  close() {
+    if (this.db) {
+      this.db.close();
+      this.db = null;
+    }
+  }
 }
 
-/**
- * Execute a callback inside an atomic SQL transaction
- */
+export function getDatabase() {
+  return DatabaseConnection.getInstance().connect();
+}
+
 export function runTransaction(fn) {
-  const db = getDatabase();
-  db.exec('BEGIN IMMEDIATE TRANSACTION;');
-  try {
-    const result = fn(db);
-    db.exec('COMMIT;');
-    return result;
-  } catch (error) {
-    db.exec('ROLLBACK;');
-    throw error;
-  }
+  return DatabaseConnection.getInstance().runTransaction(fn);
 }
 
-/**
- * Close the SQLite database connection cleanly
- */
 export function closeDatabase() {
-  if (dbInstance) {
-    dbInstance.close();
-    dbInstance = null;
-  }
+  return DatabaseConnection.getInstance().close();
 }
-

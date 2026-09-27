@@ -1,12 +1,13 @@
 {
   "name": "my-c.ai-universe",
-  "version": "2.0.0",
-  "description": "Full-featured Character.AI web application with Wiki ingestion, swipeable response variants, user personas, and hybrid long-term semantic memory.",
+  "version": "2.1.0",
+  "description": "Full-featured OOP + Relational SQL Character.AI web application with Wiki ingestion, swipeable response variants, user personas, and hybrid long-term semantic memory.",
   "main": "server.js",
   "type": "module",
   "scripts": {
     "start": "node server.js",
     "test": "node tests/api.test.js",
+    "db:init": "node scripts/init-database.js",
     "setup-memory": "node scripts/setup-memory.js"
   },
   "dependencies": {
@@ -20,10 +21,12 @@
   },
   "keywords": [
     "character-ai",
+    "oop",
+    "sql",
+    "sqlite",
     "roleplay",
     "gemini",
-    "ollama",
-    "semantic-memory"
+    "ollama"
   ],
   "license": "ISC"
 }

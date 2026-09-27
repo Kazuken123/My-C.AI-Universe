@@ -1,0 +1,174 @@
+import { BaseEntity } from './BaseEntity.js';
+import { ValidationError } from '../ai/errors.js';
+import { compileCharacterSystemPrompt, generateDefaultGreeting } from '../ai/prompt/characterPrompt.js';
+
+/**
+ * Character Domain Entity Class
+ * Inherits from BaseEntity and encapsulates Character attributes, lore compilation, and interaction state.
+ */
+export class Character extends BaseEntity {
+  static ALLOWED_UPDATE_FIELDS = [
+    'name', 'tagline', 'greeting', 'personality', 'appearance',
+    'abilities', 'background', 'summary', 'speaking_style', 'initial_memory'
+  ];
+
+  constructor(props = {}) {
+    super({
+      id: props.id || Date.now().toString(),
+      createdAt: props.createdAt || props.created_at,
+      updatedAt: props.updatedAt || props.updated_at
+    });
+
+    this.name = (props.name || '').trim() || 'Unnamed Character';
+    this.tagline = (props.tagline || '').trim() || 'AI Roleplay Character';
+    this.avatar = (props.avatar || '').trim() || Character.buildDefaultAvatar(this.name);
+    this.greeting = (props.greeting || '').trim();
+    this.personality = (props.personality || '').trim();
+    this.appearance = (props.appearance || '').trim();
+    this.abilities = (props.abilities || '').trim();
+    this.background = (props.background || '').trim();
+    this.speaking_style = (props.speaking_style || props.speakingStyle || '').trim();
+    this.example_dialogues = (props.example_dialogues || props.exampleDialogues || '').trim();
+    this.initial_memory = (props.initial_memory || props.initialMemory || '').trim();
+    this.wiki = (props.wiki || '').trim();
+    this.wikiUrl = (props.wikiUrl || props.wiki_url || this.wiki || '').trim();
+    this.categories = Array.isArray(props.categories) && props.categories.length > 0
+      ? props.categories
+      : ['Roleplay', 'Original'];
+    this.creator = props.creator || '@you';
+    this.interactions = Number(props.interactions) || 0;
+    this.likes = props.likes !== undefined ? Number(props.likes) : 1;
+    this.isLiked = Boolean(props.isLiked ?? props.is_liked ?? false);
+
+    // Ensure greeting and systemPrompt are always compiled
+    this.greeting = generateDefaultGreeting(this);
+    this.systemPrompt = props.systemPrompt || props.system_prompt || compileCharacterSystemPrompt(this);
+  }
+
+  static buildDefaultAvatar(name) {
+    const seed = encodeURIComponent((name || 'Character').replace(/\s+/g, ''));
+    return `https://api.dicebear.com/9.x/adventurer/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+  }
+
+  /**
+   * Validate character domain invariants
+   */
+  validate() {
+    if (!this.name || this.name.trim().length === 0) {
+      throw new ValidationError('Character name is required', 'name');
+    }
+    if (this.name.length > 100) {
+      throw new ValidationError('Character name too long (max 100 characters)', 'name');
+    }
+    if (this.personality && this.personality.length > 5000) {
+      throw new ValidationError('Personality description too long (max 5000 characters)', 'personality');
+    }
+    return true;
+  }
+
+  /**
+   * Recompile the system prompt and default greeting after attribute changes
+   */
+  recompilePrompt() {
+    this.greeting = generateDefaultGreeting(this);
+    this.systemPrompt = compileCharacterSystemPrompt(this);
+    this.touch();
+  }
+
+  /**
+   * Toggle like status and adjust like counter
+   */
+  toggleLike() {
+    this.isLiked = !this.isLiked;
+    this.likes = Math.max(0, this.likes + (this.isLiked ? 1 : -1));
+    this.touch();
+    return { id: this.id, likes: this.likes, isLiked: this.isLiked };
+  }
+
+  /**
+   * Increment total interaction count
+   */
+  incrementInteractions() {
+    this.interactions += 1;
+    this.touch();
+  }
+
+  /**
+   * Apply an in-chat `/update field: value` command
+   */
+  applyFieldUpdate(field, value) {
+    const normalizedField = (field || '').trim().toLowerCase();
+    if (!Character.ALLOWED_UPDATE_FIELDS.includes(normalizedField)) {
+      throw new ValidationError(
+        `Cannot update field '${normalizedField}'. Allowed fields: ${Character.ALLOWED_UPDATE_FIELDS.join(', ')}`
+      );
+    }
+    this[normalizedField] = value;
+    this.recompilePrompt();
+    return `✅ Updated **${normalizedField}** to: *${value}*`;
+  }
+
+  /**
+   * Factory method: Hydrate Character instance from SQL database row
+   */
+  static fromDatabaseRow(row) {
+    if (!row) return null;
+    let categories = ['Roleplay'];
+    try {
+      categories = JSON.parse(row.categories_json || '["Roleplay"]');
+    } catch {
+      categories = ['Roleplay'];
+    }
+    return new Character({
+      id: row.id,
+      name: row.name,
+      tagline: row.tagline,
+      avatar: row.avatar,
+      greeting: row.greeting,
+      personality: row.personality,
+      appearance: row.appearance,
+      abilities: row.abilities,
+      background: row.background,
+      speaking_style: row.speaking_style,
+      example_dialogues: row.example_dialogues,
+      initial_memory: row.initial_memory,
+      systemPrompt: row.system_prompt,
+      wiki: row.wiki,
+      wikiUrl: row.wiki_url,
+      categories,
+      creator: row.creator,
+      interactions: row.interactions,
+      likes: row.likes,
+      isLiked: Boolean(row.is_liked),
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    });
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      name: this.name,
+      tagline: this.tagline,
+      avatar: this.avatar,
+      greeting: this.greeting,
+      personality: this.personality,
+      appearance: this.appearance,
+      abilities: this.abilities,
+      background: this.background,
+      speaking_style: this.speaking_style,
+      example_dialogues: this.example_dialogues,
+      initial_memory: this.initial_memory,
+      systemPrompt: this.systemPrompt,
+      wiki: this.wiki,
+      wikiUrl: this.wikiUrl,
+      categories: this.categories,
+      creator: this.creator,
+      interactions: this.interactions,
+      likes: this.likes,
+      isLiked: this.isLiked,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt
+    };
+  }
+}

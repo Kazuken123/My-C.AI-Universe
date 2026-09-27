@@ -839,3 +839,15 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     loadAllSessions
   };
 }
+
+/**
+ * ChatRoomController Class (Frontend OOP Controller for Chat Room, Variants, Rewind, TTS & Drawer)
+ */
+export class ChatRoomController {
+  constructor(appState, navigateTo, openStudioForEdit, showToast) {
+    const controller = initChatModule(appState, navigateTo, openStudioForEdit, showToast);
+    this.openChatWithCharacter = controller.openChatWithCharacter;
+    this.loadAllSessions = controller.loadAllSessions;
+  }
+}
+

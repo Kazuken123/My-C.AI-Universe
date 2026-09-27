@@ -1,110 +1,201 @@
-# My C.AI Universe — System Architecture, ERD & DFD Specification
+# My C.AI Universe — System Architecture, OOP Class Diagram, ERD & DFD Specification
 
-This document defines the base **System Architecture**, **Entity-Relationship Diagram (ERD)**, and **Data Flow Diagrams (DFD Level 0, Level 1, and Level 2)** for **My C.AI Universe** before implementation of the backend and frontend modules.
+This document defines the **Object-Oriented Programming (OOP) Architecture**, **UML Class Diagram**, **Entity-Relationship Diagram (ERD)**, and **Data Flow Diagrams (DFD Level 0, Level 1, and Level 2)** for **My C.AI Universe**.
 
 ---
 
-## 1. System Architecture (Base Architecture)
+## 1. Object-Oriented System Architecture
 
-**My C.AI Universe** follows a layered, modular client-server architecture modeled after Character.AI:
+**My C.AI Universe** is built on a layered **Object-Oriented Programming (OOP)** architecture applying **Inheritance**, **Encapsulation**, **Polymorphism (Strategy Pattern)**, **Repository Pattern**, **Singleton Pattern**, and **Facade Pattern**:
 
-1. **Presentation Layer (`frontend/`)**:
-   - Single-Page Application (SPA) shell with multi-route support (`/`, `/chat.html`, `/create.html`, `/characters.html`, `/chats.html`).
-   - Built with modular Vanilla ES6 JavaScript (`api.js`, `app.js`, `chat.js`, `characters.js`, `personas.js`) and a Character.AI-inspired CSS design system (`styles.css`).
-   - Features Discover feed, Character Studio (manual + Fandom/Wikipedia scraper + AI generator), Chat Room (message variants/swiping, scene continuation, message editing, rewind, pinned memories, Web Speech TTS), and User Persona management.
+1. **Domain Model Layer (`backend/models/`)**:
+   - `BaseEntity` (Abstract Root Class) inherited by `Character`, `UserPersona`, `ChatSession`, `ChatMessage`, `MessageVariant`, and `CharacterMemory`.
+   - Encapsulates domain validation, prompt compilation, variant swiping, message pinning, and JSON/SQL serialization.
 
-2. **API & Controller Layer (`backend/routes/`, `backend/controllers/`)**:
-   - RESTful Express.js API handling HTTP requests, input validation, and standardized error formatting.
-   - Divided into four domain controllers: `character.controller.js`, `chat.controller.js`, `persona.controller.js`, and `memory.controller.js`.
+2. **Data Access / Repository Layer (`backend/repositories/` & `backend/db/`)**:
+   - `DatabaseConnection` (Singleton Class) manages the native `node:sqlite` relational database (`backend/db/universe.sqlite`), DDL schema (`backend/db/schema.sql`), and seed script (`backend/db/seed.sql`).
+   - `BaseRepository` (Abstract Base Class) inherited by `CharacterRepository`, `ChatSessionRepository`, `PersonaRepository`, and `MemoryRepository`.
 
-3. **Service & AI Intelligence Layer (`backend/services/`, `backend/ai/`)**:
-   - **AI Orchestrator (`backend/ai/index.js`)**: Queued request dispatcher supporting Google Gemini (`@google/genai`) as primary model and local Ollama (`qwen2.5` / configurable model) as optional provider/fallback.
-   - **Prompt Engine (`backend/ai/prompt/characterPrompt.js`)**: Assembles character persona, speaking style, active user persona, pinned messages, retrieved long-term semantic memories, and recent conversation history into a light-novel roleplay prompt.
-   - **Wiki Scraper Service (`backend/services/wiki.service.js`)**: Fetches allowed Fandom/Wikipedia pages via Cheerio, extracts character infobox avatars and article text, and uses Gemini structured JSON extraction to populate character attributes and opening greetings.
-   - **Hybrid Memory Engine (`backend/services/memory.service.js` & `memory-service/memory_service.py`)**: Combines a built-in Node.js TF-IDF/cosine similarity engine with an optional Python `sentence-transformers` microservice (`all-MiniLM-L6-v2`) for semantic memory storage and retrieval.
+3. **AI Provider Strategy & Service Layer (`backend/ai/` & `backend/services/`)**:
+   - `BaseAIProvider` (Abstract Strategy Class) inherited by `GeminiProvider` and `OllamaProvider`, orchestrated by `AIOrchestrator`.
+   - `WikiScraperService`, `SemanticMemoryService`, and `StorageService` (Facade).
 
-4. **Relational SQL Persistence Layer (`backend/db/` & `backend/services/storage.service.js`)**:
-   - Powered by a normalized 6-table **SQLite Relational Database** (`backend/db/universe.sqlite`) via `node:sqlite` (`backend/db/database.js`).
-   - Defined in [`backend/db/schema.sql`](../backend/db/schema.sql) and seeded via [`backend/db/seed.sql`](../backend/db/seed.sql) with Foreign Keys (`ON DELETE CASCADE`), WAL journaling, ACID transactions, and secondary indexes across `user_personas`, `characters`, `chat_sessions`, `chat_messages`, `message_variants`, and `character_memories`.
+4. **Controller & HTTP Server Layer (`backend/controllers/` & `server.js`)**:
+   - `BaseController` (Abstract Base Class) inherited by `CharacterController`, `ChatController`, `PersonaController`, and `MemoryController`.
+   - `ApplicationServer` encapsulates Express lifecycle and middleware.
 
-### High-Level System Architecture Diagram
+5. **Frontend OOP SPA Layer (`frontend/js/`)**:
+   - `CAIUniverseApp`, `ApiClient`, `CharacterManager`, `ChatRoomController`, and `PersonaManager`.
+
+---
+
+## 2. UML Class Diagram (OOP Structure)
 
 ```mermaid
-flowchart TB
-    subgraph Client["Frontend Client (Browser)"]
-        UI_Discover["Discover & Search View"]
-        UI_Studio["Character Studio & Wiki Importer"]
-        UI_Chat["C.AI Chat Room (Variants, Rewind, Pins, TTS)"]
-        UI_Persona["User Persona & Memory Drawer"]
-        API_Client["Frontend API Client (frontend/js/api.js)"]
-    end
+classDiagram
+    class BaseEntity {
+        <<abstract>>
+        +string id
+        +string createdAt
+        +string updatedAt
+        +generateId() string
+        +touch() void
+        +validate() boolean
+        +toJSON() Object
+    }
 
-    subgraph Server["Node.js / Express Backend (backend/)"]
-        Router["API Router (/api/*)"]
-        CharCtrl["Character Controller"]
-        ChatCtrl["Chat & Session Controller"]
-        PersonaCtrl["Persona Controller"]
-        MemCtrl["Memory Controller"]
+    class Character {
+        +string name
+        +string tagline
+        +string avatar
+        +string greeting
+        +string personality
+        +string appearance
+        +string abilities
+        +string background
+        +string speaking_style
+        +string systemPrompt
+        +string[] categories
+        +int interactions
+        +int likes
+        +boolean isLiked
+        +recompilePrompt() void
+        +toggleLike() Object
+        +incrementInteractions() void
+        +applyFieldUpdate(field, value) string
+        +fromDatabaseRow(row)$ Character
+    }
 
-        WikiSvc["Wiki Scraper Service (Cheerio + Gemini)"]
-        PromptEng["Character Prompt Engine"]
-        AIOrch["AI Orchestrator & Rate Queue"]
-        MemSvc["Hybrid Memory Service (Node TF-IDF + Python Bridge)"]
-        StorageSvc["Storage Service (Atomic JSON Repository)"]
-    end
+    class UserPersona {
+        +string name
+        +string avatar
+        +string description
+        +boolean isDefault
+        +activate() void
+        +deactivate() void
+        +fromDatabaseRow(row)$ UserPersona
+    }
 
-    subgraph External["External & AI Services"]
-        Gemini["Google Gemini API (@google/genai)"]
-        Ollama["Local Ollama API (localhost:11434)"]
-        Wiki["Fandom / Wikipedia Pages"]
-        PyMem["Python Embedding Service (Flask :5001)"]
-    end
+    class ChatSession {
+        +string characterId
+        +string personaId
+        +string title
+        +string provider
+        +ChatMessage[] messages
+        +addMessage(msg) ChatMessage
+        +getPinnedMessages() ChatMessage[]
+        +rewindToMessage(id) boolean
+        +fromDatabaseRow(row, msgs)$ ChatSession
+    }
 
-    subgraph Database["JSON Persistence (backend/db/)"]
-        DB_Chars[("characters.json")]
-        DB_Chats[("chats.json")]
-        DB_Personas[("personas.json")]
-        DB_Memories[("memories.json")]
-    end
+    class ChatMessage {
+        +string sessionId
+        +string role
+        +string content
+        +int selectedVariantIndex
+        +boolean isPinned
+        +int rating
+        +MessageVariant[] variants
+        +addVariant(text) MessageVariant
+        +selectVariant(index) void
+        +updateContent(text) void
+    }
 
-    UI_Discover & UI_Studio & UI_Chat & UI_Persona --> API_Client
-    API_Client <-->|"REST JSON over HTTP"| Router
+    class MessageVariant {
+        +string messageId
+        +int variantIndex
+        +string text
+    }
 
-    Router --> CharCtrl & ChatCtrl & PersonaCtrl & MemCtrl
+    class CharacterMemory {
+        +string characterId
+        +string sessionId
+        +string content
+        +string source
+    }
 
-    CharCtrl --> WikiSvc
-    CharCtrl --> StorageSvc
-    WikiSvc -->|"HTTP GET HTML"| Wiki
-    WikiSvc -->|"Structured JSON Extraction"| Gemini
+    BaseEntity <|-- Character
+    BaseEntity <|-- UserPersona
+    BaseEntity <|-- ChatSession
+    BaseEntity <|-- ChatMessage
+    BaseEntity <|-- MessageVariant
+    BaseEntity <|-- CharacterMemory
+    ChatSession "1" *-- "many" ChatMessage : aggregates
+    ChatMessage "1" *-- "1..*" MessageVariant : composes
 
-    ChatCtrl --> PromptEng
-    ChatCtrl --> AIOrch
-    ChatCtrl --> MemSvc
-    ChatCtrl --> StorageSvc
+    class BaseRepository {
+        <<abstract>>
+        +string tableName
+        +count() int
+        +deleteById(id) boolean
+        +runInTransaction(fn) any
+    }
 
-    PersonaCtrl --> StorageSvc
-    MemCtrl --> MemSvc
+    class CharacterRepository {
+        +findAll() Character[]
+        +findAllFiltered(params) Character[]
+        +findById(id) Character
+        +save(character) Character
+    }
 
-    AIOrch --> Gemini
-    AIOrch --> Ollama
+    class ChatSessionRepository {
+        +findAll(characterId) ChatSession[]
+        +findById(sessionId) ChatSession
+        +save(session) ChatSession
+    }
 
-    MemSvc <-->|"Optional HTTP :5001"| PyMem
-    MemSvc --> StorageSvc
+    class PersonaRepository {
+        +findAll() UserPersona[]
+        +findDefault() UserPersona
+        +save(persona) UserPersona
+    }
 
-    StorageSvc <--> DB_Chars & DB_Chats & DB_Personas & DB_Memories
+    class MemoryRepository {
+        +findAll(characterId) CharacterMemory[]
+        +save(memory) CharacterMemory
+    }
+
+    BaseRepository <|-- CharacterRepository
+    BaseRepository <|-- ChatSessionRepository
+    BaseRepository <|-- PersonaRepository
+    BaseRepository <|-- MemoryRepository
+
+    class BaseAIProvider {
+        <<abstract>>
+        +string providerName
+        +buildSystemPrompt(char, opts) string
+        +generateReply(char, msg, mem, opts)* Promise~string~
+    }
+
+    class GeminiProvider {
+        +generateReply(char, msg, mem, opts) Promise~string~
+        +generateCharacterProfile(concept) Promise~Object~
+    }
+
+    class OllamaProvider {
+        +generateReply(char, msg, mem, opts) Promise~string~
+    }
+
+    BaseAIProvider <|-- GeminiProvider
+    BaseAIProvider <|-- OllamaProvider
+
+    class BaseController {
+        <<abstract>>
+        +sendJson(res, payload, code) Response
+        +handleError(res, error, msg) Response
+    }
+
+    BaseController <|-- CharacterController
+    BaseController <|-- ChatController
+    BaseController <|-- PersonaController
+    BaseController <|-- MemoryController
 ```
 
 ---
 
-## 2. Entity-Relationship Diagram (ERD)
+## 3. Entity-Relationship Diagram (ERD — Relational SQL Database)
 
-The data model consists of 6 core entities:
-- **`USER_PERSONA`**: Represents the user's roleplay identity (name, avatar, bio, active default flag).
-- **`CHARACTER`**: Represents an AI character with rich profile attributes, greeting, wiki metadata, categories, and interaction metrics.
-- **`CHAT_SESSION`**: Represents a conversation thread between a `USER_PERSONA` and a `CHARACTER`. A user can have multiple chat sessions per character (e.g., different roleplay storylines).
-- **`CHAT_MESSAGE`**: Represents an individual turn (`user` or `model`) within a `CHAT_SESSION`, supporting pinning and star ratings.
-- **`MESSAGE_VARIANT`**: Represents alternative generated responses (swipes) for a single `CHAT_MESSAGE`, tracking which variant index is currently selected.
-- **`CHARACTER_MEMORY`**: Represents long-term episodic/factual memories associated with a `CHARACTER` (and optionally a `CHAT_SESSION`), including semantic vector/tokens and importance metadata.
+The relational SQL schema ([`backend/db/schema.sql`](../backend/db/schema.sql) and [`backend/db/create_database.sql`](../backend/db/create_database.sql)) consists of 6 normalized tables stored in `backend/db/universe.sqlite`:
 
 ```mermaid
 erDiagram
@@ -116,90 +207,89 @@ erDiagram
     CHAT_SESSION ||--o{ CHARACTER_MEMORY : "generates"
 
     USER_PERSONA {
-        string id PK "Unique Persona ID"
+        string id PK "Primary Key"
         string name "Display name in roleplay"
-        string avatar "Avatar URL or emoji/initials"
-        string description "Persona background, appearance & traits"
-        boolean isDefault "Whether active by default in chats"
-        datetime createdAt "Creation timestamp"
-        datetime updatedAt "Last update timestamp"
+        string avatar "Avatar emoji or URL"
+        string description "Persona background & traits"
+        int is_default "1 if active default, 0 otherwise"
+        string created_at "ISO timestamp"
+        string updated_at "ISO timestamp"
     }
 
     CHARACTER {
-        string id PK "Unique Character ID"
+        string id PK "Primary Key"
         string name "Character full name"
         string tagline "Short C.AI card subtitle"
         string avatar "Character portrait URL"
-        string greeting "Opening message when starting a chat"
+        string greeting "Opening message in new chats"
         string personality "Psychological profile & traits"
         string appearance "Physical description & attire"
         string abilities "Powers, skills & capabilities"
         string background "Backstory & lore"
-        string speaking_style "Tone, catchphrases & speech patterns"
-        string example_dialogues "Sample exchanges for style anchoring"
+        string speaking_style "Tone & speech patterns"
+        string example_dialogues "Sample exchanges"
         string initial_memory "Core canonical memories"
-        string systemPrompt "Compiled base system instruction"
+        string system_prompt "Compiled base system instruction"
         string wiki "Source Fandom/Wikipedia URL"
-        string[] categories "Tags e.g. Anime, Roleplay, Helper"
+        string categories_json "JSON array of category tags"
         string creator "Creator handle"
         int interactions "Total message interactions count"
         int likes "Total user likes"
-        boolean isLiked "Current user like status"
-        datetime createdAt "Creation timestamp"
-        datetime updatedAt "Last update timestamp"
+        int is_liked "1 if liked by user"
+        string created_at "ISO timestamp"
+        string updated_at "ISO timestamp"
     }
 
     CHAT_SESSION {
-        string id PK "Unique Session ID"
-        string characterId FK "References CHARACTER.id"
-        string personaId FK "References USER_PERSONA.id"
-        string title "Session title or storyline label"
-        string provider "Preferred AI provider (gemini / ollama)"
-        datetime createdAt "Session start time"
-        datetime updatedAt "Last message timestamp"
+        string id PK "Primary Key"
+        string character_id FK "REFERENCES characters(id) ON DELETE CASCADE"
+        string persona_id FK "REFERENCES user_personas(id) ON DELETE SET NULL"
+        string title "Session title"
+        string provider "gemini | ollama"
+        string created_at "ISO timestamp"
+        string updated_at "ISO timestamp"
     }
 
     CHAT_MESSAGE {
-        string id PK "Unique Message ID"
-        string sessionId FK "References CHAT_SESSION.id"
-        string role "Sender role: user | model | system"
+        string id PK "Primary Key"
+        string session_id FK "REFERENCES chat_sessions(id) ON DELETE CASCADE"
+        string role "user | model | system"
         string content "Active canonical text content"
-        int selectedVariantIndex "Index of active MESSAGE_VARIANT"
-        boolean isPinned "Pinned to context memory"
+        int selected_variant_index "Active variant index"
+        int is_pinned "1 if pinned to memory"
         int rating "User rating (0-4 stars)"
-        datetime createdAt "Message creation timestamp"
+        int position "Turn order inside session"
+        string created_at "ISO timestamp"
     }
 
     MESSAGE_VARIANT {
-        string id PK "Variant ID"
-        string messageId FK "References CHAT_MESSAGE.id"
+        string id PK "Primary Key"
+        string message_id FK "REFERENCES chat_messages(id) ON DELETE CASCADE"
+        int variant_index "0-based swipe index"
         string text "Generated response text"
-        datetime createdAt "Generation timestamp"
+        string created_at "ISO timestamp"
     }
 
     CHARACTER_MEMORY {
-        string id PK "Unique Memory ID"
-        string characterId FK "References CHARACTER.id"
-        string sessionId FK "Optional source CHAT_SESSION.id"
+        string id PK "Primary Key"
+        string character_id FK "REFERENCES characters(id) ON DELETE CASCADE"
+        string session_id FK "REFERENCES chat_sessions(id) ON DELETE SET NULL"
         string content "Declarative fact or episodic memory"
         string source "conversation | manual | wiki"
-        float[] embedding "Optional dense vector or token weights"
-        datetime createdAt "Memory creation timestamp"
+        string created_at "ISO timestamp"
     }
 ```
 
 ---
 
-## 3. Data Flow Diagrams (DFD)
+## 4. Data Flow Diagrams (DFD)
 
-### 3.1 DFD Level 0 — Context Diagram
-
-The Context Diagram shows **My C.AI Universe** as a single system interacting with external entities: the **User**, **Fandom / Wikipedia**, and **AI Providers (Google Gemini / Ollama)**.
+### 4.1 DFD Level 0 — Context Diagram
 
 ```mermaid
 flowchart LR
     User(["👤 User (Roleplayer / Creator)"])
-    System(("🌟 0.0\nMy C.AI Universe\nSystem"))
+    System(("🌟 0.0\nMy C.AI Universe\nOOP + SQL System"))
     Wiki(["🌐 Fandom / Wikipedia\nExternal Wiki"])
     LLM(["🤖 AI Providers\n(Google Gemini / Ollama)"])
 
@@ -213,17 +303,7 @@ flowchart LR
     LLM -->|"Extracted JSON Profile /\nIn-Character Roleplay Response"| System
 ```
 
----
-
-### 3.2 DFD Level 1 — Core System Processes
-
-DFD Level 1 decomposes the system into **5 major processes** and **4 data stores**:
-
-- **Process 1.0**: Character Management & Wiki Ingestion
-- **Process 2.0**: Chat Session & Conversation Management
-- **Process 3.0**: AI Roleplay Generation, Regeneration & Continuation
-- **Process 4.0**: Long-Term Semantic Memory Management
-- **Process 5.0**: User Persona Management
+### 4.2 DFD Level 1 — Core System Processes
 
 ```mermaid
 flowchart TB
@@ -231,38 +311,34 @@ flowchart TB
     Wiki(["🌐 Fandom / Wikipedia"])
     LLM(["🤖 Gemini / Ollama"])
 
-    P1(("1.0\nCharacter\nManagement &\nWiki Ingestion"))
-    P2(("2.0\nChat Session &\nConversation\nManagement"))
-    P3(("3.0\nAI Roleplay\nGeneration &\nVariants"))
-    P4(("4.0\nLong-Term\nSemantic Memory\nEngine"))
-    P5(("5.0\nUser Persona\nManagement"))
+    P1(("1.0\nCharacterController\n& WikiScraperService"))
+    P2(("2.0\nChatController &\nSession Management"))
+    P3(("3.0\nAIOrchestrator &\nProvider Strategies"))
+    P4(("4.0\nSemanticMemoryService\n& MemoryController"))
+    P5(("5.0\nPersonaController\n& PersonaManager"))
 
-    D1[("D1: characters.json")]
-    D2[("D2: chats.json")]
-    D3[("D3: memories.json")]
-    D4[("D4: personas.json")]
+    D1[("SQL Table:\ncharacters")]
+    D2[("SQL Tables:\nchat_sessions,\nchat_messages,\nmessage_variants")]
+    D3[("SQL Table:\ncharacter_memories")]
+    D4[("SQL Table:\nuser_personas")]
 
-    %% Process 1.0 flows
     User -->|"Create / Edit / Search / Like\nCharacter or Wiki URL"| P1
     P1 -->|"Fetch HTML"| Wiki
     Wiki -->|"Article DOM + Avatar"| P1
     P1 <-->|"Extract Structured Lore JSON"| LLM
-    P1 <-->|"Read / Write Character"| D1
+    P1 <-->|"SQL SELECT / INSERT / UPDATE"| D1
     P1 -->|"Seed Initial Memories"| P4
     P1 -->|"Character List & Profile"| User
 
-    %% Process 5.0 flows
     User -->|"Create / Update / Select Persona"| P5
-    P5 <-->|"Read / Write Personas"| D4
+    P5 <-->|"SQL SELECT / UPSERT"| D4
     P5 -->|"Active Persona Profile"| User
 
-    %% Process 2.0 flows
     User -->|"Start Chat, Edit/Pin/Rewind Msg,\n/update Command"| P2
-    P2 <-->|"Load / Save Sessions & Messages"| D2
+    P2 <-->|"SQL Transactions"| D2
     P2 <-->|"Load Character / Apply /update"| D1
     P2 -->|"Updated Chat State"| User
 
-    %% Process 3.0 flows
     User -->|"Send Message / Swipe Variant /\nEmpty-Enter Continue"| P3
     D1 -->|"Character System Prompt & Lore"| P3
     D2 -->|"Recent History & Pinned Msgs"| P3
@@ -270,112 +346,10 @@ flowchart TB
     P3 -->|"Query Relevant Memories"| P4
     P4 -->|"Top-K Relevant Memories"| P3
     P3 <-->|"Roleplay Prompt / Response"| LLM
-    P3 -->|"Save New Message or Variant"| D2
+    P3 -->|"INSERT New Message or Variant"| D2
     P3 -->|"Analyze Turn for New Facts"| P4
     P3 -->|"Formatted Reply & Variants"| User
 
-    %% Process 4.0 flows
     User -->|"Add / View / Delete Memories"| P4
-    P4 <-->|"Read / Write Memories"| D3
+    P4 <-->|"SQL SELECT / INSERT / DELETE"| D3
 ```
-
----
-
-### 3.3 DFD Level 2 — Detailed Decomposition of Core Processes
-
-#### 3.3.1 DFD Level 2: Process 1.0 (Character Creation & Wiki Extraction)
-
-```mermaid
-flowchart LR
-    User(["👤 User"])
-    Wiki(["🌐 Fandom / Wikipedia"])
-    Gemini(["🤖 Gemini API"])
-    D1[("D1: characters.json")]
-    D3[("D3: memories.json")]
-
-    P1_1(("1.1\nValidate Input &\nDomain Whitelist"))
-    P1_2(("1.2\nScrape HTML &\nExtract Infobox Avatar"))
-    P1_3(("1.3\nExtract Structured\nCharacter JSON"))
-    P1_4(("1.4\nCompile System Prompt\n& Opening Greeting"))
-    P1_5(("1.5\nPersist Character &\nInitial Memories"))
-
-    User -->|"Name, Personality, Wiki URL"| P1_1
-    P1_1 -->|"Validated Wiki URL"| P1_2
-    P1_2 -->|"GET Request"| Wiki
-    Wiki -->|"HTML Document"| P1_2
-    P1_2 -->|"Cleaned Article Text +\nAvatar URL"| P1_3
-    P1_3 <-->|"Prompt -> JSON Schema"| Gemini
-    P1_3 -->|"Appearance, Personality,\nAbilities, Background, Style"| P1_4
-    P1_1 -->|"Manual Fields"| P1_4
-    P1_4 -->|"Complete Character Record"| P1_5
-    P1_5 -->|"Save Character"| D1
-    P1_5 -->|"Save Initial Memories"| D3
-    P1_5 -->|"Created Character JSON"| User
-```
-
-#### 3.3.2 DFD Level 2: Process 3.0 & 4.0 (Chat Turn, Memory Retrieval, Variants & Continuation)
-
-```mermaid
-flowchart TB
-    User(["👤 User"])
-    LLM(["🤖 Gemini / Ollama"])
-    D1[("D1: characters.json")]
-    D2[("D2: chats.json")]
-    D3[("D3: memories.json")]
-    D4[("D4: personas.json")]
-
-    P3_1(("3.1\nClassify Request\n(Chat / Swipe /\nContinue / Command)"))
-    P3_2(("3.2\nRetrieve Semantic\n& Pinned Memories"))
-    P3_3(("3.3\nAssemble Full\nRoleplay Prompt"))
-    P3_4(("3.4\nDispatch to AI\nProvider Queue"))
-    P3_5(("3.5\nPersist Turn /\nVariant & Metrics"))
-    P4_1(("4.1\nExtract & Store\nNew Memories"))
-
-    User -->|"Message / Regenerate / Continue"| P3_1
-    P3_1 -->|"/update field: val"| D1
-    P3_1 -->|"User Query + charId"| P3_2
-    D3 -->|"Character Memories"| P3_2
-    D2 -->|"Pinned Messages"| P3_2
-    P3_2 -->|"Top-K Memories + Pins"| P3_3
-    D1 -->|"Character Profile"| P3_3
-    D2 -->|"Last 20 Messages"| P3_3
-    D4 -->|"Active User Persona"| P3_3
-    P3_3 -->|"Structured Prompt Payload"| P3_4
-    P3_4 <-->|"Generate Content"| LLM
-    P3_4 -->|"AI Reply Text"| P3_5
-    P3_5 -->|"Update Session & Variants"| D2
-    P3_5 -->|"Increment Interactions"| D1
-    P3_5 -->|"User Msg + AI Reply"| P4_1
-    P4_1 -->|"Store Fact + Vector/Tokens"| D3
-    P3_5 -->|"JSON Response (reply, session, variants)"| User
-```
-
----
-
-## 4. REST API Contract Summary
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/health` | Server health, active AI provider, and database counts |
-| `GET` | `/api/characters` | List characters (supports `?search=`, `?category=`, `?sort=`) |
-| `GET` | `/api/character/:id` | Get character details by ID |
-| `POST` | `/api/character` | Create character (manual or with `wiki` auto-scraping) |
-| `PUT` | `/api/character/:id` | Update character profile fields and recompile system prompt |
-| `DELETE` | `/api/character/:id` | Delete a character and its associated sessions/memories |
-| `POST` | `/api/character/:id/like` | Toggle like on a character |
-| `POST` | `/api/character/parse-wiki` | Preview extracted character data & avatar from a Wiki URL |
-| `POST` | `/api/character/generate` | AI-generate character profile fields from a short concept |
-| `GET` | `/api/chats` | List all chat sessions (optionally filtered by `?characterId=`) |
-| `POST` | `/api/chats` | Create a new chat session with character greeting |
-| `GET` | `/api/chats/:sessionId` | Get full chat session including messages and variants |
-| `DELETE` | `/api/chats/:sessionId` | Delete a chat session |
-| `POST` | `/api/chat` | Send message, regenerate variant (`regenerate: true`), or continue (`continue: true`) |
-| `PUT` | `/api/chats/:sessionId/messages/:messageId` | Edit a message, select a variant index, pin/unpin, or rate |
-| `POST` | `/api/chats/:sessionId/rewind` | Rewind conversation to a specific message ID (deletes subsequent turns) |
-| `GET` | `/api/memories` | Get long-term memories (`?characterId=`) |
-| `POST` | `/api/memories` | Manually add a long-term memory for a character |
-| `DELETE` | `/api/memories/:id` | Delete a specific memory |
-| `GET` | `/api/personas` | List user personas |
-| `POST` | `/api/personas` | Create a user persona |
-| `PUT` | `/api/personas/:id` | Update or set default user persona |
-| `DELETE` | `/api/personas/:id` | Delete a user persona |
