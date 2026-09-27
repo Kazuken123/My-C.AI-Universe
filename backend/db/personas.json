@@ -1,0 +1,20 @@
+[
+  {
+    "id": "persona_default",
+    "name": "Traveler",
+    "avatar": "🌟",
+    "description": "A curious traveler and companion exploring different worlds and stories.",
+    "isDefault": true,
+    "createdAt": "2026-01-01T00:00:00.000Z",
+    "updatedAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "persona_student",
+    "name": "Jujutsu Student",
+    "avatar": "⚡",
+    "description": "A first-year student at Tokyo Jujutsu High learning to control cursed energy.",
+    "isDefault": false,
+    "createdAt": "2026-01-01T00:00:00.000Z",
+    "updatedAt": "2026-01-01T00:00:00.000Z"
+  }
+]

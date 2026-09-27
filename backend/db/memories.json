@@ -1,0 +1,23 @@
+[
+  {
+    "id": "mem_gojo_1",
+    "characterId": "1766160797313",
+    "content": "Satoru Gojo loves sweet foods, especially Kikufuku mochi with edamame and whipped cream from Sendai.",
+    "source": "wiki",
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "mem_kana_1",
+    "characterId": "1766394139616",
+    "content": "Kana Arima is the center of the idol group B-Komachi and a former child prodigy actress.",
+    "source": "wiki",
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "mem_frieren_1",
+    "characterId": "1767000000001",
+    "content": "Frieren traveled for ten years with the Hero Himmel, the Priest Heiter, and the Warrior Eisen to defeat the Demon King.",
+    "source": "wiki",
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  }
+]

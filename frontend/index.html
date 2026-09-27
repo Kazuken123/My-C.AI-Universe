@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My C.AI Universe — AI Character Roleplay & Studio</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Left Sidebar (Character.AI Navigation) -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="/" class="brand-logo" id="brand-home-link">
+          <span class="brand-badge">c.ai</span>
+          <span>My Universe</span>
+        </a>
+        <span id="ai-status-badge" style="font-size: 0.7rem; color: var(--success);">● Ready</span>
+      </div>
+
+      <button class="create-cta-btn" id="sidebar-create-btn">
+        <span>＋</span>
+        <span>Create Character</span>
+      </button>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-view="discover">
+          <span>🧭</span>
+          <span>Discover</span>
+        </button>
+        <button class="nav-item" data-view="characters">
+          <span>👥</span>
+          <span>My Characters</span>
+        </button>
+        <button class="nav-item" data-view="chats">
+          <span>💬</span>
+          <span>Saved Chats</span>
+        </button>
+        <button class="nav-item" data-view="personas">
+          <span>🎭</span>
+          <span>Personas</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-section-label">Recent Chats</div>
+      <div class="recent-chats-list" id="sidebar-recent-chats">
+        <!-- Populated dynamically -->
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="persona-pill" id="sidebar-persona-pill" title="Manage Active Persona">
+          <span class="persona-emoji" id="sidebar-persona-emoji">🌟</span>
+          <div class="persona-info">
+            <div class="persona-name" id="sidebar-persona-name">Traveler</div>
+            <div class="persona-sub">Active Persona</div>
+          </div>
+        </div>
+        <button class="icon-btn" id="themeToggleBtn" title="Toggle Dark/Light Theme">☀️</button>
+      </div>
+    </aside>
+
+    <!-- Main Workspace Area -->
+    <main class="main-workspace">
+
+      <!-- VIEW 1: DISCOVER -->
+      <section class="view-panel active" id="view-discover">
+        <div class="content-container">
+          <div class="discover-topbar">
+            <div class="welcome-heading">
+              <h1>Welcome back to My C.AI Universe</h1>
+              <p>Immerse yourself in light-novel roleplay with AI characters powered by long-term semantic memory</p>
+            </div>
+            <div class="search-controls">
+              <div class="search-box">
+                <span>🔍</span>
+                <input type="text" id="discoverSearch" placeholder="Search characters, traits, or categories..." />
+              </div>
+              <select class="select-control" id="discoverSort">
+                <option value="popular">🔥 Most Popular</option>
+                <option value="likes">❤️ Most Liked</option>
+                <option value="newest">✨ Newest</option>
+                <option value="name">🔤 Name (A-Z)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Hero Spotlight -->
+          <div class="hero-banner">
+            <div class="hero-content">
+              <span class="hero-badge">Featured Universe</span>
+              <h2>Step Into Any Storyline</h2>
+              <p>Chat with iconic characters featuring swipeable response variants, empty-Enter scene continuation, pinned memories, and 1-click Fandom/Wikipedia character extraction.</p>
+              <div class="hero-actions">
+                <button class="btn btn-primary" id="hero-start-chat-btn">💬 Chat with Featured</button>
+                <button class="btn btn-secondary" id="hero-create-btn">✨ Create from Wiki or AI</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Continue Chatting Section -->
+          <div id="continue-chatting-section" style="display: none; margin-bottom: 28px;">
+            <div class="section-header">
+              <h3>⏱️ Continue Chatting</h3>
+            </div>
+            <div class="character-grid" id="continue-chatting-row"></div>
+          </div>
+
+          <!-- Category Filter Pills -->
+          <div class="category-pills" id="category-pills">
+            <button class="category-pill active" data-category="All">All</button>
+            <button class="category-pill" data-category="Anime">Anime</button>
+            <button class="category-pill" data-category="Roleplay">Roleplay</button>
+            <button class="category-pill" data-category="Fantasy">Fantasy</button>
+            <button class="category-pill" data-category="Action">Action</button>
+            <button class="category-pill" data-category="Slice of Life">Slice of Life</button>
+            <button class="category-pill" data-category="Mystery">Mystery</button>
+            <button class="category-pill" data-category="Helper">Helper</button>
+            <button class="category-pill" data-category="Original">Original</button>
+          </div>
+
+          <!-- Character Cards Grid -->
+          <div class="section-header">
+            <h3>🌟 Characters For You</h3>
+          </div>
+          <div class="character-grid" id="discover-grid"></div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: CHARACTER STUDIO (CREATE / EDIT) -->
+      <section class="view-panel" id="view-create">
+        <div class="content-container">
+          <div class="section-header" style="margin-bottom: 20px;">
+            <h2 id="studio-heading">✨ Create a Character</h2>
+            <button class="btn btn-secondary btn-sm" id="btnResetStudio">Reset Form</button>
+          </div>
+
+          <div class="studio-grid">
+            <div>
+              <!-- Magic Auto-Fill Tools -->
+              <div class="studio-card">
+                <h3>⚡ Instant Auto-Fill Tools</h3>
+                <p class="hint">Import lore & portrait directly from a Fandom/Wikipedia URL, or let Gemini design a complete character from a 1-sentence concept.</p>
+
+                <div class="form-group">
+                  <label for="charWikiInput">🌐 Import from Fandom / Wikipedia URL</label>
+                  <div class="inline-input-group">
+                    <input type="url" class="form-input" id="charWikiInput" placeholder="https://jujutsu-kaisen.fandom.com/wiki/Satoru_Gojo" />
+                    <button type="button" class="btn btn-secondary" id="btnExtractWiki">🌐 Extract Wiki</button>
+                  </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="aiConceptInput">✨ Or Generate with AI Concept</label>
+                  <div class="inline-input-group">
+                    <input type="text" class="form-input" id="aiConceptInput" placeholder="e.g. A sharp-tongued cyberpunk alchemist running a midnight tea shop..." />
+                    <button type="button" class="btn btn-primary" id="btnGenerateAI">✨ Magic Fill</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Main Character Form -->
+              <form class="studio-card" id="studio-form">
+                <input type="hidden" id="studioCharId" value="" />
+
+                <div class="form-group">
+                  <label for="charNameInput">Character Name *</label>
+                  <input type="text" class="form-input" id="charNameInput" placeholder="e.g. Satoru Gojo" required />
+                </div>
+
+                <div class="form-group">
+                  <label for="charTaglineInput">Tagline (Short Subtitle)</label>
+                  <input type="text" class="form-input" id="charTaglineInput" placeholder="e.g. The Strongest Jujutsu Sorcerer • Special Grade Teacher" />
+                </div>
+
+                <div class="form-group">
+                  <label for="charAvatarInput">Avatar Image URL</label>
+                  <div class="inline-input-group">
+                    <input type="text" class="form-input" id="charAvatarInput" placeholder="https://... (Leave blank for auto-generated avatar)" />
+                    <button type="button" class="btn btn-secondary" id="btnRandomAvatar">🎲 Randomize</button>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="charCategoriesInput">Categories (comma-separated)</label>
+                  <input type="text" class="form-input" id="charCategoriesInput" value="Anime, Roleplay" placeholder="Anime, Roleplay, Fantasy" />
+                </div>
+
+                <div class="form-group">
+                  <label for="charGreetingInput">Opening Greeting (First message in new chats)</label>
+                  <textarea class="form-textarea" id="charGreetingInput" placeholder="*He waves with a playful grin.*&#10;&#10;Character: &quot;Hey there! Ready to begin?&quot;"></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label for="charPersonalityInput">Personality & Traits</label>
+                  <textarea class="form-textarea" id="charPersonalityInput" placeholder="Describe temperament, quirks, motivations, and attitude..."></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label for="charAppearanceInput">Physical Appearance & Attire</label>
+                  <textarea class="form-textarea" id="charAppearanceInput" placeholder="Hair, eyes, clothing, and signature visual details..."></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label for="charAbilitiesInput">Abilities, Skills & Powers</label>
+                  <textarea class="form-textarea" id="charAbilitiesInput" placeholder="Special techniques, powers, or professional expertise..."></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label for="charBackgroundInput">Backstory & Lore</label>
+                  <textarea class="form-textarea" id="charBackgroundInput" placeholder="Origin story, past events, and key relationships..."></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label for="charSpeakingStyleInput">Speaking Style</label>
+                  <input type="text" class="form-input" id="charSpeakingStyleInput" placeholder="e.g. Casual, teasing, uses dry humor and short sentences" />
+                </div>
+
+                <div class="form-group">
+                  <label for="charExampleDialoguesInput">Example Dialogues (Optional)</label>
+                  <textarea class="form-textarea" id="charExampleDialoguesInput" placeholder="*Action line*&#10;Character: &quot;Sample line of dialogue&quot;"></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label for="charInitialMemoryInput">Core Initial Memories</label>
+                  <textarea class="form-textarea" id="charInitialMemoryInput" placeholder="Important canonical facts this character should always remember..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="btnSaveCharacter" style="width: 100%; justify-content: center; padding: 12px;">
+                  💾 Save & Start Chat
+                </button>
+              </form>
+            </div>
+
+            <!-- Right Column: Live Card & Greeting Preview -->
+            <div>
+              <div class="studio-card" style="position: sticky; top: 20px;">
+                <h3>👁️ Live C.AI Card Preview</h3>
+                <p class="hint">How your character appears in Discover and Chat.</p>
+
+                <div class="cai-card" style="cursor: default; margin-bottom: 16px;">
+                  <div class="cai-card-top">
+                    <img class="cai-avatar" id="preview-avatar" src="https://api.dicebear.com/9.x/adventurer/svg?seed=Preview" alt="Preview" />
+                    <div class="cai-card-info">
+                      <div class="cai-card-name" id="preview-name">New Character</div>
+                      <div class="cai-card-creator">By @you</div>
+                      <div class="cai-card-tagline" id="preview-tagline">AI Roleplay Character</div>
+                    </div>
+                  </div>
+                  <div class="cai-card-tags" id="preview-tags">
+                    <span class="tag-badge">Anime</span>
+                    <span class="tag-badge">Roleplay</span>
+                  </div>
+                </div>
+
+                <div class="lore-block">
+                  <h4>Opening Scene Preview</h4>
+                  <p id="preview-greeting" style="margin-top: 6px;"></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: MY CHARACTERS -->
+      <section class="view-panel" id="view-characters">
+        <div class="content-container">
+          <div class="section-header" style="margin-bottom: 20px;">
+            <div>
+              <h2>👥 My Characters</h2>
+              <p style="color: var(--text-secondary); font-size: 0.9rem;">Manage, edit, or start a conversation with any character in your universe</p>
+            </div>
+          </div>
+          <div class="character-grid" id="my-characters-grid"></div>
+        </div>
+      </section>
+
+      <!-- VIEW 4: SAVED CHATS -->
+      <section class="view-panel" id="view-chats">
+        <div class="content-container">
+          <div class="section-header" style="margin-bottom: 20px;">
+            <div>
+              <h2>💬 Saved Chat Sessions</h2>
+              <p style="color: var(--text-secondary); font-size: 0.9rem;">Resume any roleplay thread right where you left off</p>
+            </div>
+          </div>
+          <div class="character-grid" id="saved-chats-grid"></div>
+        </div>
+      </section>
+
+      <!-- VIEW 5: USER PERSONAS -->
+      <section class="view-panel" id="view-personas">
+        <div class="content-container">
+          <div class="section-header" style="margin-bottom: 20px;">
+            <div>
+              <h2>🎭 Your Roleplay Personas</h2>
+              <p style="color: var(--text-secondary); font-size: 0.9rem;">Define who you are in the story so characters recognize your name, background, and traits</p>
+            </div>
+          </div>
+
+          <div class="studio-grid">
+            <div>
+              <div class="character-grid" id="personas-list"></div>
+            </div>
+            <div class="studio-card">
+              <h3>＋ New Persona</h3>
+              <p class="hint">Create an identity for roleplay sessions.</p>
+              <form id="persona-form">
+                <div class="form-group">
+                  <label for="personaNameInput">Persona Name *</label>
+                  <input type="text" class="form-input" id="personaNameInput" placeholder="e.g. Akira / First-Year Sorcerer" required />
+                </div>
+                <div class="form-group">
+                  <label for="personaAvatarInput">Avatar Emoji</label>
+                  <input type="text" class="form-input" id="personaAvatarInput" value="🌟" maxlength="4" />
+                </div>
+                <div class="form-group">
+                  <label for="personaDescInput">Background & Traits</label>
+                  <textarea class="form-textarea" id="personaDescInput" placeholder="Describe your appearance, role, or relationship to the world..."></textarea>
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+                  <input type="checkbox" id="personaDefaultCheck" checked />
+                  <label for="personaDefaultCheck" style="margin: 0; font-weight: 500;">Set as active default persona</label>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Create Persona</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 6: C.AI CHAT ROOM -->
+      <section class="view-panel" id="view-chat">
+        <div class="chat-room-layout">
+          <!-- Center Chat Column -->
+          <div class="chat-main-column">
+            <header class="chat-topbar">
+              <div class="chat-char-header">
+                <img class="chat-header-avatar" id="chat-header-avatar" src="https://api.dicebear.com/9.x/adventurer/svg?seed=Default" alt="" />
+                <div style="min-width: 0;">
+                  <div class="chat-header-title" id="chat-header-name">Character</div>
+                  <div class="chat-header-sub" id="chat-header-sub">AI Roleplay</div>
+                </div>
+              </div>
+
+              <div class="chat-toolbar">
+                <select class="select-control" id="chatPersonaSelect" title="Active User Persona"></select>
+                <select class="select-control" id="aiProvider" title="Select AI Provider">
+                  <option value="gemini" selected>✨ Gemini 2.5</option>
+                  <option value="ollama">🦙 Ollama (Local)</option>
+                </select>
+                <button class="btn btn-secondary btn-sm" id="btnToggleTTS" title="Toggle Voice Read-Aloud">🔈 Voice</button>
+                <button class="btn btn-secondary btn-sm" id="btnNewChatSession" title="Start a fresh conversation">＋ New Chat</button>
+                <button class="btn btn-secondary btn-sm" id="btnToggleDrawer" title="Toggle Character Lore & Memory Drawer">ℹ️ Info</button>
+              </div>
+            </header>
+
+            <!-- Scrollable Message Stream -->
+            <div class="chat-messages-scroll" id="chat-messages-scroll">
+              <div class="chat-stream-inner" id="chat-stream-inner"></div>
+            </div>
+
+            <!-- Message Composer -->
+            <div class="chat-composer-wrap">
+              <div class="chat-composer-inner">
+                <div class="composer-box">
+                  <textarea id="chatInput" rows="1" placeholder="Message character..."></textarea>
+                  <button type="button" class="btn btn-secondary btn-sm" id="continueBtn" title="Let the character continue the scene without user input">▶▶</button>
+                  <button type="button" class="composer-send-btn" id="sendBtn" title="Send message">➤</button>
+                </div>
+                <div class="composer-hint-bar">
+                  <span>💡 Tip: Press <strong>Enter</strong> on an empty input (or click ▶▶) for the character to continue the scene. Swipe ◀ ▶ to browse variants.</span>
+                  <button type="button" class="msg-tool-btn" id="updateCmdBtn" title="Insert live /update command">⚡ /update command</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Character Info, Lore & Memory Drawer -->
+          <aside class="chat-right-drawer" id="chat-right-drawer">
+            <div class="drawer-tabs">
+              <button class="drawer-tab active" data-pane="pane-lore">📋 Profile</button>
+              <button class="drawer-tab" data-pane="pane-memories">🧠 Memory</button>
+              <button class="drawer-tab" data-pane="pane-sessions">💬 Chats</button>
+            </div>
+
+            <div class="drawer-body">
+              <!-- Pane 1: Character Profile & Lore -->
+              <div class="drawer-pane active" id="pane-lore">
+                <div id="drawer-lore-content"></div>
+              </div>
+
+              <!-- Pane 2: Pinned Messages & Long-Term Semantic Memory -->
+              <div class="drawer-pane" id="pane-memories">
+                <h4 style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">📌 Pinned Messages</h4>
+                <div id="drawer-pins-list"></div>
+
+                <h4 style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); margin: 16px 0 8px;">🧠 Long-Term Semantic Memories</h4>
+                <form id="add-memory-form" style="display: flex; gap: 6px; margin-bottom: 12px;">
+                  <input type="text" class="form-input" id="newMemoryInput" placeholder="Add a fact to remember..." style="padding: 7px 10px; font-size: 0.82rem;" />
+                  <button type="submit" class="btn btn-primary btn-sm">＋</button>
+                </form>
+                <div id="drawer-memories-list"></div>
+              </div>
+
+              <!-- Pane 3: Saved Sessions for this Character -->
+              <div class="drawer-pane" id="pane-sessions">
+                <h4 style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;">Saved Storylines</h4>
+                <div id="drawer-sessions-list"></div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
