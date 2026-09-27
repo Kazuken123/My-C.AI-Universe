@@ -23,8 +23,9 @@ This document defines the base **System Architecture**, **Entity-Relationship Di
    - **Wiki Scraper Service (`backend/services/wiki.service.js`)**: Fetches allowed Fandom/Wikipedia pages via Cheerio, extracts character infobox avatars and article text, and uses Gemini structured JSON extraction to populate character attributes and opening greetings.
    - **Hybrid Memory Engine (`backend/services/memory.service.js` & `memory-service/memory_service.py`)**: Combines a built-in Node.js TF-IDF/cosine similarity engine with an optional Python `sentence-transformers` microservice (`all-MiniLM-L6-v2`) for semantic memory storage and retrieval.
 
-4. **Persistence Layer (`backend/db/` & `backend/services/storage.service.js`)**:
-   - Atomic JSON file storage managing four core collections: `characters.json`, `chats.json`, `personas.json`, and `memories.json`.
+4. **Relational SQL Persistence Layer (`backend/db/` & `backend/services/storage.service.js`)**:
+   - Powered by a normalized 6-table **SQLite Relational Database** (`backend/db/universe.sqlite`) via `node:sqlite` (`backend/db/database.js`).
+   - Defined in [`backend/db/schema.sql`](../backend/db/schema.sql) and seeded via [`backend/db/seed.sql`](../backend/db/seed.sql) with Foreign Keys (`ON DELETE CASCADE`), WAL journaling, ACID transactions, and secondary indexes across `user_personas`, `characters`, `chat_sessions`, `chat_messages`, `message_variants`, and `character_memories`.
 
 ### High-Level System Architecture Diagram
 

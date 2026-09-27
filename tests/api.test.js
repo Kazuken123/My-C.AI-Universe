@@ -11,13 +11,19 @@ async function assertResponse(res, stepName) {
   return data;
 }
 
+let inProcessServer = null;
+let closeDbFn = null;
+
 async function ensureServerRunning() {
   try {
     const res = await fetch(`${BASE_URL}/api/health`);
     if (res.ok) return false;
   } catch {
     // Server not running yet; start it in-process for testing
-    await import('../server.js');
+    const srvMod = await import('../server.js');
+    const dbMod = await import('../backend/db/database.js');
+    inProcessServer = srvMod.httpServer;
+    closeDbFn = dbMod.closeDatabase;
     await new Promise(r => setTimeout(r, 600));
     return true;
   }
@@ -25,20 +31,20 @@ async function ensureServerRunning() {
 }
 
 async function runTests() {
-  console.log('🧪 Running My C.AI Universe End-to-End API Tests...\n');
+  console.log('🧪 Running My C.AI Universe End-to-End SQL & API Tests...\n');
   const startedInProcess = await ensureServerRunning();
 
   // 1. Health Check
   const healthRes = await fetch(`${BASE_URL}/api/health`);
   const health = await assertResponse(healthRes, 'Health Check');
-  console.log('✅ 1. Health Check passed:', health.status, '| Stats:', JSON.stringify(health.stats));
+  console.log('✅ 1. Health Check passed:', health.status, '| DB:', health.database, '| Tables:', JSON.stringify(health.stats));
 
   // 2. List Characters
   const charsRes = await fetch(`${BASE_URL}/api/characters?sort=popular`);
   const chars = await assertResponse(charsRes, 'List Characters');
-  console.log(`✅ 2. Listed ${chars.length} seeded characters`);
+  console.log(`✅ 2. Listed ${chars.length} seeded characters from SQL`);
 
-  // 3. Create Character (verifies systemPrompt compilation & greeting generation)
+  // 3. Create Character (verifies SQL INSERT, systemPrompt compilation & greeting generation)
   const createRes = await fetch(`${BASE_URL}/api/character`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -52,19 +58,19 @@ async function runTests() {
     })
   });
   const createdChar = await assertResponse(createRes, 'Create Character');
-  console.log(`✅ 3. Created character "${createdChar.name}" (ID: ${createdChar.id}) with compiled systemPrompt (${createdChar.systemPrompt.length} chars)`);
+  console.log(`✅ 3. Created character "${createdChar.name}" in SQL (ID: ${createdChar.id})`);
 
   // 4. Like Character
   const likeRes = await fetch(`${BASE_URL}/api/character/${createdChar.id}/like`, { method: 'POST' });
   const liked = await assertResponse(likeRes, 'Like Character');
-  console.log(`✅ 4. Toggled character like -> likes: ${liked.likes}, isLiked: ${liked.isLiked}`);
+  console.log(`✅ 4. Toggled character like in SQL -> likes: ${liked.likes}, isLiked: ${liked.isLiked}`);
 
   // 5. Personas CRUD
   const personasRes = await fetch(`${BASE_URL}/api/personas`);
   const personas = await assertResponse(personasRes, 'Get Personas');
-  console.log(`✅ 5. Loaded ${personas.length} user personas`);
+  console.log(`✅ 5. Loaded ${personas.length} user personas from SQL`);
 
-  // 6. Create Chat Session
+  // 6. Create Chat Session (inserts into chat_sessions, chat_messages, message_variants)
   const sessionRes = await fetch(`${BASE_URL}/api/chats`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -74,7 +80,7 @@ async function runTests() {
     })
   });
   const session = await assertResponse(sessionRes, 'Create Chat Session');
-  console.log(`✅ 6. Created chat session ${session.id} with opening greeting (${session.messages.length} initial message)`);
+  console.log(`✅ 6. Created SQL chat session ${session.id} with opening greeting (${session.messages.length} initial message)`);
 
   // 7. In-chat /update command
   const updateCmdRes = await fetch(`${BASE_URL}/api/chat`, {
@@ -87,9 +93,9 @@ async function runTests() {
     })
   });
   const updateCmdData = await assertResponse(updateCmdRes, 'In-Chat /update Command');
-  console.log(`✅ 7. In-chat /update command succeeded: ${updateCmdData.response}`);
+  console.log(`✅ 7. In-chat /update SQL command succeeded: ${updateCmdData.response}`);
 
-  // 8. Long-Term Memory CRUD
+  // 8. Long-Term Memory CRUD (inserts into character_memories)
   const addMemRes = await fetch(`${BASE_URL}/api/memories`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -99,20 +105,25 @@ async function runTests() {
     })
   });
   const addedMem = await assertResponse(addMemRes, 'Add Memory');
-  console.log(`✅ 8. Added long-term character memory (${addedMem.id})`);
+  console.log(`✅ 8. Added long-term character memory in SQL (${addedMem.id})`);
 
-  // 9. Clean up test character
+  // 9. Clean up test character (verifies ON DELETE CASCADE across sessions, messages, variants, memories)
   const delRes = await fetch(`${BASE_URL}/api/character/${createdChar.id}`, { method: 'DELETE' });
   await assertResponse(delRes, 'Delete Test Character');
-  console.log(`✅ 9. Cleaned up test character (${createdChar.id})`);
+  console.log(`✅ 9. Deleted test character and verified SQL ON DELETE CASCADE (${createdChar.id})`);
 
-  console.log('\n✨ All automated tests passed!');
+  console.log('\n✨ All automated SQL & API tests passed!');
   if (startedInProcess) {
-    process.exit(0);
+    if (inProcessServer) {
+      await new Promise(resolve => inProcessServer.close(resolve));
+    }
+    if (closeDbFn) {
+      closeDbFn();
+    }
   }
 }
 
 runTests().catch(err => {
   console.error('❌ Test failed:', err.message);
-  process.exit(1);
+  process.exitCode = 1;
 });

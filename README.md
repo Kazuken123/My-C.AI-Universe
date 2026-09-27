@@ -50,10 +50,10 @@ My C.AI Universe/
 │   │   ├── memory.controller.js     # Long-term character memory endpoints
 │   │   └── persona.controller.js    # User persona CRUD & active default selection
 │   ├── db/
-│   │   ├── characters.json          # Characters collection
-│   │   ├── chats.json               # Persistent chat sessions & message variants
-│   │   ├── memories.json            # Long-term character semantic memories
-│   │   └── personas.json            # User roleplay personas
+│   │   ├── database.js              # Native SQLite connection & transaction manager
+│   │   ├── schema.sql               # 6-table relational DDL (PKs, FKs, CASCADE, Indexes)
+│   │   ├── seed.sql                 # Initial SQL INSERT seed statements
+│   │   └── universe.sqlite          # Live relational SQLite database
 │   ├── routes/
 │   │   ├── character.route.js
 │   │   ├── chat.route.js

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { config, validateEnvironment } from './backend/config/index.js';
 import apiRoutes from './backend/routes/index.js';
 import { storage } from './backend/services/storage.service.js';
+import { getDatabase } from './backend/db/database.js';
 
 process.on('uncaughtException', (err) => {
   console.error('UNCAUGHT EXCEPTION:', err.stack || err);
@@ -20,6 +21,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 validateEnvironment();
+
+// Initialize SQLite relational database & schema on startup
+getDatabase();
 
 const app = express();
 
@@ -36,27 +40,20 @@ app.use(express.urlencoded({ extended: true }));
 
 // Health and diagnostic endpoints
 app.get('/api/test', (req, res) => {
-  res.json({ message: 'My C.AI Universe API is working!' });
+  res.json({ message: 'My C.AI Universe SQL API is working!' });
 });
 
 app.get('/api/health', (req, res) => {
-  const characters = storage.getCharacters();
-  const chats = storage.getChats();
-  const personas = storage.getPersonas();
-  const memories = storage.getMemories();
+  const sqlStats = storage.getSqlStats();
 
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
+    database: sqlStats.engine,
     ai_provider: config.AI_PROVIDER,
     gemini_model: config.GEMINI_MODEL,
     gemini_available: !!process.env.GEMINI_API_KEY,
-    stats: {
-      characters: characters.length,
-      chats: chats.length,
-      personas: personas.length,
-      memories: memories.length
-    }
+    stats: sqlStats.tables
   });
 });
 
@@ -114,8 +111,9 @@ app.use((error, req, res, next) => {
   });
 });
 
-app.listen(config.PORT, '0.0.0.0', () => {
+export const httpServer = app.listen(config.PORT, '0.0.0.0', () => {
   console.log(`🚀 My C.AI Universe running at http://localhost:${config.PORT}`);
+  console.log(`🗄️  Relational Database: SQLite (backend/db/universe.sqlite | schema.sql)`);
   console.log(`🤖 Primary AI Provider: ${config.AI_PROVIDER} (${config.GEMINI_MODEL})`);
 });
 

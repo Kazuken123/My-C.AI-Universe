@@ -9,7 +9,7 @@ My C.AI Universe is a full-stack Character.AI (`c.ai`) roleplay web application 
 - **`backend/routes/`**: Express routers (`character.route.js`, `chat.route.js`, `persona.route.js`, `memory.route.js`, `index.js`)
 - **`backend/services/`**: Domain services (`storage.service.js`, `wiki.service.js`, `memory.service.js`)
 - **`backend/ai/`**: AI provider orchestration (`index.js`, `errors.js`, `prompt/characterPrompt.js`, `providers/gemini.js`, `providers/ollama.js`, `memory/memoryClient.js`)
-- **`backend/db/`**: JSON persistence (`characters.json`, `chats.json`, `personas.json`, `memories.json`)
+- **`backend/db/`**: Relational SQL database (`schema.sql`, `seed.sql`, `database.js`, `universe.sqlite`)
 - **`frontend/`**: Unified SPA (`index.html`, `css/styles.css`, `js/app.js`, `js/api.js`, `js/characters.js`, `js/chat.js`, `js/personas.js`)
 - **`docs/`**: System Architecture, ERD, and DFD documentation (`ARCHITECTURE_ERD_DFD.md`, `MEMORY_SERVICE.md`)
 - **`memory-service/`**: Optional Python `sentence-transformers` microservice (`memory_service.py`)
