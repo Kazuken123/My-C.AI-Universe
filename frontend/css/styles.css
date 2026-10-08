@@ -738,8 +738,29 @@ html, body {
   padding: 12px;
   border-top: 1px solid var(--border-hairline);
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sidebar-footer-row {
+  display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
+}
+
+.theme-toggle-btn {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
 }
 
 .persona-pill {
@@ -2366,27 +2387,49 @@ kbd {
   }
 }
 
+/* Utility Classes */
+.hidden {
+  display: none !important;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
 /* ============================================================================
    USER AUTHENTICATION & MULTI-TENANT ACCOUNT BAR
    ============================================================================ */
 .sidebar-account-box {
-  margin-bottom: 12px;
+  width: 100%;
+  margin-bottom: 0;
 }
 
 .auth-launch-btn {
   width: 100%;
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  background: var(--bg-core);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
   color: var(--text-primary);
   font-size: 0.82rem;
-  font-weight: 500;
+  font-weight: 600;
+  cursor: pointer;
   transition: all 0.2s ease;
+  box-sizing: border-box;
 }
 .auth-launch-btn:hover {
-  border-color: var(--accent);
+  border-color: var(--border-strong);
   background: var(--bg-hover);
 }
 
@@ -2395,10 +2438,11 @@ kbd {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 10px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  background: var(--bg-core);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
 }
 .auth-user-meta-wrap {
   display: flex;
