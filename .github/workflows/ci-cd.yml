@@ -1,0 +1,52 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ─── 1. Continuous Integration: Run Automated Test Suite ───
+  test:
+    name: Run Automated Tests (CI)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Full Test Suite
+        run: npm test
+        env:
+          PORT: 3000
+          NODE_ENV: test
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'ci-test-key' }}
+
+  # ─── 2. Continuous Deployment: Trigger Render ONLY if tests pass ───
+  deploy:
+    name: Trigger Render Deployment (CD)
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Render Deploy Hook
+        run: |
+          if [ -z "${{ secrets.RENDER_DEPLOY_HOOK }}" ]; then
+            echo "::error::RENDER_DEPLOY_HOOK secret is missing in GitHub Repository Settings!"
+            echo "Go to GitHub Repo -> Settings -> Secrets and variables -> Actions -> Add RENDER_DEPLOY_HOOK"
+            exit 1
+          fi
+          echo "🚀 Triggering Render Deploy Hook..."
+          curl -f -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+          echo "✅ Deploy hook triggered successfully!"
