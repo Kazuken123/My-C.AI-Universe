@@ -148,20 +148,11 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
   function renderSidebarRecentChats(sessions) {
     if (!sidebarRecentList) return;
     if (!sessions || sessions.length === 0) {
-      const chars = (appState.characters || []).slice(0, 5);
-      sidebarRecentList.innerHTML = chars.map(c => `
-        <div class="recent-chat-item" data-quick-char="${escapeHtml(c.id)}">
-          <img class="recent-chat-avatar" src="${escapeHtml(c.avatar || '')}" alt="${escapeHtml(c.name)}" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
-          <div class="recent-chat-meta">
-            <div class="recent-chat-name">${escapeHtml(c.name)}</div>
-            <div class="recent-chat-preview">${escapeHtml(c.tagline || 'Begin scene')}</div>
-          </div>
+      sidebarRecentList.innerHTML = `
+        <div class="sidebar-empty-threads" style="padding: 16px 14px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm); margin: 6px 0;">
+          No active storylines yet.<br>Select any character to begin your fresh story!
         </div>
-      `).join('');
-
-      sidebarRecentList.querySelectorAll('[data-quick-char]').forEach(el => {
-        el.addEventListener('click', () => openChatWithCharacter(el.dataset.quickChar));
-      });
+      `;
       return;
     }
 

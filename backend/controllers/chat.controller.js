@@ -66,6 +66,9 @@ export class ChatController extends BaseController {
     try {
       const { characterId } = req.query;
       const userId = req.user ? req.user.id : null;
+      if (!userId) {
+        return this.sendJson(res, []);
+      }
       const characters = this.charsRepo.findAll();
       const charMap = new Map(characters.map(c => [c.id, c]));
       const sessions = this.sessionsRepo.findAll(characterId || null, userId);

@@ -61,6 +61,13 @@ export class DatabaseConnection {
     this.#ensureColumnExists('user_personas', 'user_id', 'TEXT');
     this.#ensureColumnExists('chat_sessions', 'user_id', 'TEXT');
 
+    // Purge any legacy unassigned chat sessions from before user auth was introduced
+    try {
+      this.db.exec('DELETE FROM chat_sessions WHERE user_id IS NULL;');
+    } catch {
+      // ignore
+    }
+
     const schemaSql = fs.readFileSync(SCHEMA_SQL_PATH, 'utf8');
     this.db.exec(schemaSql);
 
