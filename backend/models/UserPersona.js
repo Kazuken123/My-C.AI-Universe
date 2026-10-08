@@ -20,8 +20,17 @@ export class UserPersona extends BaseEntity {
   }
 
   validate() {
-    if (!this.name || this.name.length === 0) {
+    if (!this.name || this.name.trim().length === 0) {
       throw new ValidationError('Persona name is required', 'name');
+    }
+    if (this.name.length > 100) {
+      throw new ValidationError('Persona name too long (max 100 characters)', 'name');
+    }
+    if (this.description && this.description.length > 2000) {
+      throw new ValidationError('Persona description too long (max 2000 characters)', 'description');
+    }
+    if (this.avatar && this.avatar.length > 500) {
+      throw new ValidationError('Avatar identifier too long (max 500 characters)', 'avatar');
     }
     return true;
   }

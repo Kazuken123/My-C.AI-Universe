@@ -133,9 +133,20 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
       heroSpotlightCard.innerHTML = `
         <article class="hero-spotlight-dossier" data-spotlight-char="${escapeHtml(featured.id)}" title="Click to enter scene with ${escapeHtml(featured.name)}">
           <div class="spotlight-top">
-            <img class="spotlight-avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(featured.name)}" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
+            <div class="cai-avatar-wrap">
+              <img class="spotlight-avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(featured.name)}" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
+              <div class="voice-wave-visualizer active" aria-hidden="true" title="Voice & Motion Engine Ready">
+                <span class="voice-wave-bar"></span>
+                <span class="voice-wave-bar"></span>
+                <span class="voice-wave-bar"></span>
+                <span class="voice-wave-bar"></span>
+              </div>
+            </div>
             <div class="spotlight-meta">
-              <div class="spotlight-kicker">FEATURED DOSSIER // 01</div>
+              <div class="spotlight-kicker" style="display: flex; align-items: center; gap: 8px;">
+                <span>FEATURED DOSSIER // 01</span>
+                <span class="soul-id-badge"><span class="soul-dot"></span>SOUL-ID</span>
+              </div>
               <div class="spotlight-name">${escapeHtml(featured.name)}</div>
               <div class="spotlight-tagline">${escapeHtml(featured.tagline || 'Canonical Roleplay Character')}</div>
             </div>
@@ -146,6 +157,7 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
           <div class="spotlight-footer">
             <span><i class="ph-light ph-chats"></i> ${formatCount(featured.interactions || 0)} turns</span>
             <span><i class="ph-light ph-heart"></i> ${formatCount(featured.likes || 0)} likes</span>
+            <span class="cinema-meta-tag"><i class="ph-light ph-film-strip"></i> 35mm f/1.4</span>
             <span>Launch Scene <i class="ph-light ph-arrow-up-right"></i></span>
           </div>
         </article>
@@ -171,10 +183,19 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
         <div class="double-bezel-shell card-shell" data-char-card="${escapeHtml(char.id)}">
           <article class="double-bezel-core cai-card">
             <div class="cai-card-top">
-              <img class="cai-avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(char.name)}" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
+              <div class="cai-avatar-wrap">
+                <img class="cai-avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(char.name)}" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
+                <div class="voice-wave-visualizer" aria-hidden="true" title="Voice Audio Ready">
+                  <span class="voice-wave-bar"></span>
+                  <span class="voice-wave-bar"></span>
+                  <span class="voice-wave-bar"></span>
+                  <span class="voice-wave-bar"></span>
+                </div>
+              </div>
               <div class="cai-card-info">
                 <div class="cai-card-header-line">
                   <h3 class="cai-card-name">${escapeHtml(char.name)}</h3>
+                  <span class="soul-id-badge"><span class="soul-dot"></span>SOUL-ID</span>
                   <span class="cai-card-creator">${escapeHtml(char.creator || '@system')}</span>
                 </div>
                 <p class="cai-card-tagline">${escapeHtml(summary)}</p>
@@ -190,6 +211,7 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
             <div class="cai-card-tags">
               ${tags.slice(0, 3).map(t => `<span class="tag-badge">${escapeHtml(t)}</span>`).join('')}
               ${char.wiki ? `<span class="tag-badge" title="Fandom/Wikipedia Linked"><i class="ph-light ph-globe-hemisphere-west"></i> Canon Wiki</span>` : ''}
+              <span class="cinema-meta-tag"><i class="ph-light ph-film-strip"></i> 4K</span>
             </div>
 
             <div class="cai-card-footer">

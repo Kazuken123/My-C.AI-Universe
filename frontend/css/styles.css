@@ -159,6 +159,60 @@
 }
 
 /* ============================================================================
+   MODE 4: HIGGSFIELD CINEMA STUDIO & QUANTA DESIGN
+   Void Obsidian #06070A + Electric Iris #8B5CF6 + Cyan Glaze #06B6D4 + Film Viewfinder
+   ============================================================================ */
+[data-theme="higgsfield"] {
+  --font-display: 'Cabinet Grotesk', 'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: 'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --bg-canvas: #06070a;
+  --bg-rail: #090b10;
+  --bg-shell: rgba(139, 92, 246, 0.035);
+  --bg-core: #0d1017;
+  --bg-core-elevated: #131722;
+  --bg-hover: rgba(139, 92, 246, 0.08);
+  --bg-input: #0a0c12;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-on-accent: #ffffff;
+
+  --accent: #8b5cf6;
+  --accent-hover: #a78bfa;
+  --accent-soft: rgba(139, 92, 246, 0.16);
+  --accent-border: rgba(139, 92, 246, 0.45);
+
+  --border-hairline: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(139, 92, 246, 0.4);
+  --inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 0 20px rgba(139, 92, 246, 0.04);
+
+  --user-bubble: #161224;
+  --user-bubble-border: rgba(139, 92, 246, 0.35);
+  --ai-bubble: #0d1017;
+  --ai-bubble-border: rgba(255, 255, 255, 0.09);
+
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+
+  --radius-shell: 22px;
+  --radius-core: 16px;
+  --radius-md: 10px;
+  --radius-sm: 6px;
+  --radius-pill: 9999px;
+  --shell-padding: 5px;
+
+  --shadow-ambient: 0 24px 60px -15px rgba(0, 0, 0, 0.9), 0 0 35px -10px rgba(139, 92, 246, 0.22);
+  --shadow-card-hover: 0 26px 54px -10px rgba(0, 0, 0, 0.95), 0 0 30px rgba(139, 92, 246, 0.28);
+
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ============================================================================
    RESET, BROWSER SURFACES & GLOBAL ACCESSIBILITY (impeccable craft-floor.md)
    ============================================================================ */
 *, *::before, *::after {
@@ -2140,6 +2194,169 @@ kbd {
   .form-row-2col {
     grid-template-columns: 1fr;
   }
+}
+
+/* ============================================================================
+   HIGGSFIELD CINEMA STUDIO & QUANTA COMPONENTS
+   ============================================================================ */
+
+/* Soul-ID Consistency Badge */
+.soul-id-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  background: rgba(139, 92, 246, 0.14);
+  border: 1px solid rgba(139, 92, 246, 0.38);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: #c4b5fd;
+  text-transform: uppercase;
+}
+.soul-id-badge .soul-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #a78bfa;
+  box-shadow: 0 0 6px #a78bfa;
+  animation: soulPulse 2s ease-in-out infinite;
+}
+@keyframes soulPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.75); }
+}
+
+/* Audio Wave Equalizer Visualizer */
+.voice-wave-visualizer {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2.5px;
+  height: 14px;
+  padding: 0 4px;
+}
+.voice-wave-bar {
+  width: 2.5px;
+  height: 35%;
+  background: var(--accent);
+  border-radius: 1px;
+  transition: height 0.2s ease;
+}
+.voice-wave-visualizer.active .voice-wave-bar:nth-child(1) {
+  animation: waveBar 0.75s ease-in-out infinite alternate;
+}
+.voice-wave-visualizer.active .voice-wave-bar:nth-child(2) {
+  animation: waveBar 0.9s ease-in-out 0.15s infinite alternate;
+}
+.voice-wave-visualizer.active .voice-wave-bar:nth-child(3) {
+  animation: waveBar 0.65s ease-in-out 0.3s infinite alternate;
+}
+.voice-wave-visualizer.active .voice-wave-bar:nth-child(4) {
+  animation: waveBar 1.05s ease-in-out 0.1s infinite alternate;
+}
+@keyframes waveBar {
+  0% { height: 25%; }
+  100% { height: 100%; }
+}
+
+/* Cinematic Viewfinder Corner Marks */
+[data-theme="higgsfield"] .card-shell,
+[data-theme="higgsfield"] .hero-shell {
+  position: relative;
+}
+[data-theme="higgsfield"] .card-shell::before,
+[data-theme="higgsfield"] .card-shell::after,
+[data-theme="higgsfield"] .hero-shell::before,
+[data-theme="higgsfield"] .hero-shell::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity 0.25s var(--ease-spring), border-color 0.25s ease;
+}
+[data-theme="higgsfield"] .card-shell::before,
+[data-theme="higgsfield"] .hero-shell::before {
+  top: 6px;
+  left: 6px;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.22);
+  border-left: 1.5px solid rgba(255, 255, 255, 0.22);
+}
+[data-theme="higgsfield"] .card-shell::after,
+[data-theme="higgsfield"] .hero-shell::after {
+  bottom: 6px;
+  right: 6px;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.22);
+  border-right: 1.5px solid rgba(255, 255, 255, 0.22);
+}
+[data-theme="higgsfield"] .card-shell:hover::before,
+[data-theme="higgsfield"] .card-shell:hover::after {
+  border-color: var(--accent);
+}
+
+/* Cinema Telemetry Metadata Tags */
+.cinema-meta-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+.cinema-meta-tag i {
+  color: var(--accent);
+}
+
+/* Director Take Clapperboard Badge in Chat */
+.take-switcher-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+.take-switcher-badge i {
+  color: var(--accent);
+}
+
+/* Avatar Motion Aura on Hover / Active Speech */
+.cai-avatar-wrap {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.cai-avatar-wrap.speaking .cai-avatar,
+.chat-header-avatar.speaking {
+  box-shadow: 0 0 0 2px var(--accent), 0 0 20px rgba(139, 92, 246, 0.45);
+  animation: avatarPulse 1.4s ease-in-out infinite alternate;
+}
+@keyframes avatarPulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.04); }
+}
+
+[data-theme="higgsfield"] .ambient-grain {
+  opacity: 0.032;
+  mix-blend-mode: overlay;
+}
+[data-theme="higgsfield"] .hero-split-grid {
+  background: radial-gradient(circle at 85% 15%, rgba(139, 92, 246, 0.15) 0%, transparent 60%),
+              linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(0, 0, 0, 0.35) 100%);
+}
+[data-theme="higgsfield"] .chat-topbar {
+  background: rgba(13, 16, 23, 0.88);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.18);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -7,6 +7,11 @@ import { config, validateEnvironment } from './backend/config/index.js';
 import apiRoutes from './backend/routes/index.js';
 import { storage } from './backend/services/storage.service.js';
 import { DatabaseConnection } from './backend/db/database.js';
+import {
+  securityHeadersMiddleware,
+  globalRateLimiter,
+  sensitiveEndpointLimiter
+} from './backend/middlewares/security.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -43,14 +48,21 @@ export class ApplicationServer {
   }
 
   #configureMiddleware() {
+    this.app.disable('x-powered-by');
+    this.app.use(securityHeadersMiddleware());
+
     this.app.use(cors({
       origin: config.CORS_ORIGINS,
       methods: ['GET', 'POST', 'PUT', 'DELETE'],
       allowedHeaders: ['Content-Type']
     }));
 
-    this.app.use(express.json({ limit: '10mb' }));
-    this.app.use(express.urlencoded({ extended: true }));
+    this.app.use(express.json({ limit: '2mb' }));
+    this.app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+
+    // Apply global rate limiting to all /api routes
+    this.app.use('/api', globalRateLimiter.middleware());
+    this.app.use(['/api/chat', '/api/character/generate', '/api/character/parse-wiki'], sensitiveEndpointLimiter.middleware());
   }
 
   #configureRoutes() {

@@ -112,7 +112,60 @@ async function runTests() {
   await assertResponse(delRes, 'Delete Test Character');
   console.log(`✅ 9. Deleted test character and verified SQL ON DELETE CASCADE (${createdChar.id})`);
 
-  console.log('\n✨ All automated SQL & API tests passed!');
+  // 10. Security Headers & Rate Limiting Check
+  const secRes = await fetch(`${BASE_URL}/api/health`);
+  if (secRes.headers.get('x-frame-options') !== 'DENY') {
+    throw new Error('Security check failed: X-Frame-Options is not DENY');
+  }
+  if (secRes.headers.get('x-content-type-options') !== 'nosniff') {
+    throw new Error('Security check failed: X-Content-Type-Options is not nosniff');
+  }
+  if (!secRes.headers.get('x-ratelimit-limit')) {
+    throw new Error('Security check failed: X-RateLimit-Limit header is missing');
+  }
+  console.log('✅ 10. Security headers & Rate Limiting active (nosniff, DENY, X-RateLimit-Limit present)');
+
+  // 11. SSRF Defense Check (block internal network and subdomain spoofing)
+  const ssrfRes1 = await fetch(`${BASE_URL}/api/character/parse-wiki`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url: 'http://127.0.0.1:8080/admin' })
+  });
+  if (ssrfRes1.status !== 400) {
+    throw new Error(`SSRF check failed: 127.0.0.1 request was not blocked with HTTP 400 (got ${ssrfRes1.status})`);
+  }
+
+  const ssrfRes2 = await fetch(`${BASE_URL}/api/character/parse-wiki`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url: 'http://fandom.com.attacker.com/page' })
+  });
+  if (ssrfRes2.status !== 400) {
+    throw new Error(`SSRF check failed: Subdomain spoof request was not blocked with HTTP 400 (got ${ssrfRes2.status})`);
+  }
+  console.log('✅ 11. SSRF defenses verified (blocked local IP and domain-substring spoofing with HTTP 400)');
+
+  // 12. Input Boundary & Oversized Payload Defense Check
+  const oversizePersonaRes = await fetch(`${BASE_URL}/api/personas`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'A'.repeat(150), description: 'Oversized test persona' })
+  });
+  if (oversizePersonaRes.status !== 400) {
+    throw new Error(`Boundary check failed: Persona name > 100 chars was not rejected with HTTP 400 (got ${oversizePersonaRes.status})`);
+  }
+
+  const oversizeCharRes = await fetch(`${BASE_URL}/api/character`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'Valid Name', tagline: 'B'.repeat(350) })
+  });
+  if (oversizeCharRes.status !== 400) {
+    throw new Error(`Boundary check failed: Character tagline > 300 chars was not rejected with HTTP 400 (got ${oversizeCharRes.status})`);
+  }
+  console.log('✅ 12. Input boundary and length validation verified (oversized payloads rejected with HTTP 400)');
+
+  console.log('\n✨ All automated SQL, Security & API tests passed!');
   if (startedInProcess) {
     if (inProcessServer) {
       await new Promise(resolve => inProcessServer.close(resolve));

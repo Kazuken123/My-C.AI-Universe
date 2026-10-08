@@ -4,6 +4,7 @@ import { initChatModule } from './chat.js';
 import { PersonaManager } from './personas.js';
 
 const SKILL_THEMES = [
+  { id: 'higgsfield', label: 'Higgsfield Cinema' },
   { id: 'vanguard', label: 'Vanguard' },
   { id: 'editorial', label: 'Editorial' },
   { id: 'telemetry', label: 'Telemetry' }
@@ -64,8 +65,8 @@ export class CAIUniverseApp {
   }
 
   initTheme() {
-    const savedTheme = localStorage.getItem('cai_skill_theme') || 'vanguard';
-    const validTheme = SKILL_THEMES.find(t => t.id === savedTheme) ? savedTheme : 'vanguard';
+    const savedTheme = localStorage.getItem('cai_skill_theme') || 'higgsfield';
+    const validTheme = SKILL_THEMES.find(t => t.id === savedTheme) ? savedTheme : 'higgsfield';
     document.documentElement.setAttribute('data-theme', validTheme);
 
     const themeBtn = document.getElementById('themeToggleBtn');

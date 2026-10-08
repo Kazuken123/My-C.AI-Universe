@@ -60,8 +60,32 @@ export class Character extends BaseEntity {
     if (this.name.length > 100) {
       throw new ValidationError('Character name too long (max 100 characters)', 'name');
     }
+    if (this.tagline && this.tagline.length > 300) {
+      throw new ValidationError('Tagline too long (max 300 characters)', 'tagline');
+    }
     if (this.personality && this.personality.length > 5000) {
       throw new ValidationError('Personality description too long (max 5000 characters)', 'personality');
+    }
+    if (this.background && this.background.length > 5000) {
+      throw new ValidationError('Background description too long (max 5000 characters)', 'background');
+    }
+    if (this.appearance && this.appearance.length > 3000) {
+      throw new ValidationError('Appearance description too long (max 3000 characters)', 'appearance');
+    }
+    if (this.abilities && this.abilities.length > 3000) {
+      throw new ValidationError('Abilities description too long (max 3000 characters)', 'abilities');
+    }
+    if (this.speaking_style && this.speaking_style.length > 2000) {
+      throw new ValidationError('Speaking style too long (max 2000 characters)', 'speaking_style');
+    }
+    if (this.greeting && this.greeting.length > 3000) {
+      throw new ValidationError('Greeting message too long (max 3000 characters)', 'greeting');
+    }
+    if (this.initial_memory && this.initial_memory.length > 3000) {
+      throw new ValidationError('Initial memory too long (max 3000 characters)', 'initial_memory');
+    }
+    if (this.example_dialogues && this.example_dialogues.length > 5000) {
+      throw new ValidationError('Example dialogues too long (max 5000 characters)', 'example_dialogues');
     }
     return true;
   }

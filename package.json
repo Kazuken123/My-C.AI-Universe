@@ -10,6 +10,9 @@
     "db:init": "node scripts/init-database.js",
     "setup-memory": "node scripts/setup-memory.js"
   },
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "dependencies": {
     "@google/genai": "^1.34.0",
     "body-parser": "^2.2.1",

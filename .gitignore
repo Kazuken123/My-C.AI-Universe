@@ -31,4 +31,5 @@ Thumbs.db
 memory-service/test_memories.json
 memory-service/test_memory.py
 .agents/
+graphify-out/
 

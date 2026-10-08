@@ -81,6 +81,19 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     if (!clean) return;
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.rate = 1.02;
+
+    const chatVisualizer = document.getElementById('chat-voice-visualizer');
+    if (headerAvatar) headerAvatar.classList.add('speaking');
+    if (chatVisualizer) chatVisualizer.classList.add('active');
+
+    const resetSpeakingState = () => {
+      if (headerAvatar) headerAvatar.classList.remove('speaking');
+      if (chatVisualizer) chatVisualizer.classList.remove('active');
+    };
+
+    utterance.onend = resetSpeakingState;
+    utterance.onerror = resetSpeakingState;
+
     window.speechSynthesis.speak(utterance);
   }
 
@@ -363,22 +376,22 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
           <div class="msg-body">
             <div class="msg-sender-line">
               <span class="msg-sender-name">${escapeHtml(senderName)}</span>
-              ${!isUser ? `<span class="char-badge">CHARACTER</span>` : ''}
+              ${!isUser ? `<span class="soul-id-badge" style="font-size: 0.6rem; padding: 1px 6px;"><span class="soul-dot"></span>SOUL-ID</span>` : ''}
               ${msg.isPinned ? `<span class="pin-indicator"><i class="ph-fill ph-push-pin"></i> Pinned</span>` : ''}
             </div>
             <div class="msg-bubble" data-bubble-id="${escapeHtml(msg.id)}">${formatRoleplayText(displayContent)}</div>
             <div class="msg-controls">
               ${!isUser ? `
                 <div class="variant-swiper">
-                  <button class="swipe-btn" data-swipe-dir="-1" data-msg-id="${escapeHtml(msg.id)}" ${selectedIdx <= 0 ? 'disabled' : ''} type="button" title="Previous Variant">
+                  <button class="swipe-btn" data-swipe-dir="-1" data-msg-id="${escapeHtml(msg.id)}" ${selectedIdx <= 0 ? 'disabled' : ''} type="button" title="Previous Take">
                     <i class="ph-light ph-caret-left"></i>
                   </button>
-                  <span>${selectedIdx + 1} / ${variants.length}</span>
-                  <button class="swipe-btn" data-swipe-dir="1" data-msg-id="${escapeHtml(msg.id)}" ${selectedIdx >= variants.length - 1 ? 'disabled' : ''} type="button" title="Next Variant">
+                  <span class="take-switcher-badge"><i class="ph-light ph-film-slate"></i> Take ${selectedIdx + 1}/${variants.length}</span>
+                  <button class="swipe-btn" data-swipe-dir="1" data-msg-id="${escapeHtml(msg.id)}" ${selectedIdx >= variants.length - 1 ? 'disabled' : ''} type="button" title="Next Take">
                     <i class="ph-light ph-caret-right"></i>
                   </button>
                   ${isLastModel ? `
-                    <button class="swipe-btn" data-regen-msg="${escapeHtml(msg.id)}" type="button" title="Synthesize new variant">
+                    <button class="swipe-btn" data-regen-msg="${escapeHtml(msg.id)}" type="button" title="Reshoot Take (Synthesize new variant)">
                       <i class="ph-light ph-arrows-clockwise"></i>
                     </button>
                   ` : ''}

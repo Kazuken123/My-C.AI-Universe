@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="vanguard">
+<html lang="en" data-theme="higgsfield">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -94,9 +94,9 @@
         </button>
 
         <div class="theme-switcher-group" role="group" aria-label="Design System Mode">
-          <button class="icon-btn" id="themeToggleBtn" type="button" title="Cycle Design System: Vanguard Dark / Editorial Minimal / Tactical Brutalist">
+          <button class="icon-btn" id="themeToggleBtn" type="button" title="Cycle Design System: Higgsfield Cinema / Vanguard / Editorial / Telemetry">
             <i class="ph-light ph-sliders-horizontal" id="themeToggleIcon"></i>
-            <span class="theme-mode-label" id="themeModeLabel">Vanguard</span>
+            <span class="theme-mode-label" id="themeModeLabel">Higgsfield</span>
           </button>
         </div>
       </div>
@@ -467,10 +467,21 @@
                 <button class="icon-btn back-to-discover-btn" id="btnBackToDiscover" type="button" title="Back to Roster">
                   <i class="ph-light ph-arrow-left"></i>
                 </button>
-                <img class="chat-header-avatar" id="chat-header-avatar" src="https://api.dicebear.com/9.x/adventurer/svg?seed=Default" alt="" />
+                <div class="cai-avatar-wrap">
+                  <img class="chat-header-avatar" id="chat-header-avatar" src="https://api.dicebear.com/9.x/adventurer/svg?seed=Default" alt="" />
+                </div>
                 <div class="chat-header-meta">
-                  <div class="chat-header-title" id="chat-header-name">Character</div>
-                  <div class="chat-header-sub" id="chat-header-sub">Narrative Session</div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="chat-header-title" id="chat-header-name">Character</span>
+                    <span class="soul-id-badge"><span class="soul-dot"></span>SOUL-ID</span>
+                    <div class="voice-wave-visualizer" id="chat-voice-visualizer" aria-hidden="true" title="Live Voice Audio Wave">
+                      <span class="voice-wave-bar"></span>
+                      <span class="voice-wave-bar"></span>
+                      <span class="voice-wave-bar"></span>
+                      <span class="voice-wave-bar"></span>
+                    </div>
+                  </div>
+                  <div class="chat-header-sub" id="chat-header-sub">Cinema Studio &middot; 35mm Lens</div>
                 </div>
               </div>
 

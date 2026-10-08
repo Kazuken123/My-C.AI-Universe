@@ -166,6 +166,9 @@ export class ChatController extends BaseController {
         msg.selectVariant(selectedVariantIndex);
       }
       if (typeof content === 'string' && content.trim()) {
+        if (content.length > config.MAX_MESSAGE_LENGTH) {
+          throw new ValidationError(`Message content too long (max ${config.MAX_MESSAGE_LENGTH} characters)`, 'content');
+        }
         msg.updateContent(content);
       }
       if (typeof isPinned === 'boolean') {

@@ -28,13 +28,43 @@ export class WikiScraperService {
       throw new ValidationError('Malformed wiki URL', 'wiki');
     }
 
-    const isAllowed = this.allowedDomains.some(domain =>
-      urlObj.hostname.includes(domain)
-    );
+    // SSRF Defense 1: Enforce HTTP/HTTPS protocols only
+    if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
+      throw new ValidationError(`Unsupported protocol: ${urlObj.protocol}. Only http: and https: are allowed.`, 'wiki');
+    }
+
+    const hostname = urlObj.hostname.toLowerCase();
+
+    // SSRF Defense 2: Block loopback, cloud metadata, and local internal addresses
+    const blockedHosts = [
+      'localhost',
+      '127.0.0.1',
+      '0.0.0.0',
+      '::1',
+      '169.254.169.254',
+      'metadata.google.internal',
+      'instance-data'
+    ];
+    if (
+      blockedHosts.includes(hostname) ||
+      hostname.endsWith('.local') ||
+      hostname.endsWith('.internal') ||
+      hostname.startsWith('10.') ||
+      hostname.startsWith('192.168.') ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname)
+    ) {
+      throw new ValidationError(`Access to private or local network address is forbidden: ${hostname}`, 'wiki');
+    }
+
+    // SSRF Defense 3: Strict domain matching (exact match or proper subdomain only)
+    const isAllowed = this.allowedDomains.some(domain => {
+      const d = domain.toLowerCase();
+      return hostname === d || hostname.endsWith('.' + d);
+    });
 
     if (!isAllowed) {
       throw new ValidationError(
-        `Domain not allowed: ${urlObj.hostname}. Allowed: ${this.allowedDomains.join(', ')}`,
+        `Domain not allowed: ${urlObj.hostname}. Allowed domains: ${this.allowedDomains.join(', ')}`,
         'wiki'
       );
     }

@@ -22,8 +22,11 @@ export class CharacterMemory extends BaseEntity {
     if (!this.characterId) {
       throw new ValidationError('characterId is required for CharacterMemory', 'characterId');
     }
-    if (!this.content) {
+    if (!this.content || !this.content.trim()) {
       throw new ValidationError('Memory content is required', 'content');
+    }
+    if (this.content.length > 5000) {
+      throw new ValidationError('Memory content too long (max 5000 characters)', 'content');
     }
     return true;
   }
