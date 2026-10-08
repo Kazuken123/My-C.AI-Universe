@@ -280,7 +280,11 @@ async function runTests() {
   }
 }
 
-runTests().catch(err => {
-  console.error('❌ Test failed:', err.message);
-  process.exitCode = 1;
-});
+runTests()
+  .then(() => {
+    process.exit(0);
+  })
+  .catch(err => {
+    console.error('❌ Test failed:', err.message);
+    process.exit(1);
+  });

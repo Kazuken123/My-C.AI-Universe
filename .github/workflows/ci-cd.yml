@@ -40,13 +40,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Trigger Render Deploy Hook
+      - name: Trigger Render Deploy Hook (Optional)
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
-          if [ -z "${{ secrets.RENDER_DEPLOY_HOOK }}" ]; then
-            echo "::error::RENDER_DEPLOY_HOOK secret is missing in GitHub Repository Settings!"
-            echo "Go to GitHub Repo -> Settings -> Secrets and variables -> Actions -> Add RENDER_DEPLOY_HOOK"
-            exit 1
+          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+            echo "ℹ️ RENDER_DEPLOY_HOOK secret is not configured in GitHub."
+            echo "ℹ️ Render will auto-deploy via 'After CI Checks Pass' setting because tests succeeded! 🎉"
+            exit 0
           fi
           echo "🚀 Triggering Render Deploy Hook..."
-          curl -f -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+          curl -f -X POST "$RENDER_DEPLOY_HOOK"
           echo "✅ Deploy hook triggered successfully!"
