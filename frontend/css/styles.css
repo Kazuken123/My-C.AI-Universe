@@ -451,11 +451,12 @@ html, body {
   border: 1px solid var(--border-hairline);
   background: var(--bg-core-elevated);
   color: var(--text-primary);
-  transition: transform 0.25s var(--ease-spring), border-color 0.2s ease, background-color 0.2s ease;
+  transition: transform 0.2s var(--ease-spring), border-color 0.2s ease, background-color 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
 }
 
 .btn-ghost {
   background: transparent;
+  border-color: transparent;
 }
 
 .btn-primary {
@@ -471,21 +472,47 @@ html, body {
 }
 
 .btn-secondary:hover,
-.btn-ghost:hover,
 .btn:hover {
-  border-color: var(--border-strong);
-  background: var(--bg-hover);
+  border-color: rgba(255, 255, 255, 0.26);
+  background: #1d1d24;
+  color: #ffffff;
+  filter: brightness(1.1);
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.05);
+  transform: translateY(-1px);
+}
+
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: transparent;
+  color: #ffffff;
+  filter: brightness(1.15);
+  transform: translateY(-1px);
 }
 
 .btn-primary:hover {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
+  filter: brightness(1.12);
+  box-shadow: 0 0 20px var(--accent-soft), 0 4px 12px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-danger:hover {
+  background: rgba(217, 70, 70, 0.2);
+  border-color: rgba(217, 70, 70, 0.45);
+  color: #fca5a5;
+  filter: brightness(1.15);
+  box-shadow: 0 0 16px rgba(217, 70, 70, 0.15);
+  transform: translateY(-1px);
 }
 
 .btn-secondary:active,
 .btn-ghost:active,
-.btn:active {
-  transform: scale(0.98);
+.btn:active,
+.btn-primary:active,
+.btn-danger:active {
+  transform: scale(0.96);
+  filter: brightness(0.96);
 }
 
 .btn-sm {
@@ -508,13 +535,21 @@ html, body {
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: 0.72rem;
-  transition: all 0.2s var(--ease-out-expo);
+  transition: transform 0.2s var(--ease-spring), color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease, filter 0.15s ease, box-shadow 0.2s ease;
 }
 
 .icon-btn:hover {
-  color: var(--text-primary);
-  border-color: var(--border-strong);
-  background: var(--bg-hover);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.28);
+  background: #202028;
+  filter: brightness(1.15);
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.06);
+  transform: translateY(-1px);
+}
+
+.icon-btn:active {
+  transform: scale(0.95);
+  filter: brightness(0.95);
 }
 
 /* ============================================================================
@@ -633,11 +668,12 @@ html, body {
   background: transparent;
   width: 100%;
   text-align: left;
-  transition: all 0.2s var(--ease-out-expo);
+  transition: transform 0.15s var(--ease-spring), background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .nav-item i {
   font-size: 1.12rem;
+  transition: color 0.15s ease;
 }
 
 .nav-kbd {
@@ -652,8 +688,13 @@ html, body {
 }
 
 .nav-item:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.065);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.nav-item:active {
+  transform: scale(0.98);
 }
 
 .nav-item.active {
@@ -707,13 +748,21 @@ html, body {
   border-radius: var(--radius-md);
   border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.2s var(--ease-out-expo);
+  transition: transform 0.15s var(--ease-spring), background-color 0.15s ease, border-color 0.15s ease;
 }
 
-.recent-chat-item:hover,
+.recent-chat-item:hover {
+  background: #15151a;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
 .recent-chat-item.active {
   background: var(--bg-core);
   border-color: var(--border-hairline);
+}
+
+.recent-chat-item:active {
+  transform: scale(0.98);
 }
 
 .recent-chat-avatar {
@@ -790,11 +839,18 @@ html, body {
   flex: 1;
   min-width: 0;
   text-align: left;
-  transition: border-color 0.2s ease;
+  transition: transform 0.15s var(--ease-spring), border-color 0.15s ease, background-color 0.15s ease, filter 0.15s ease;
 }
 
 .persona-pill:hover {
-  border-color: var(--border-strong);
+  border-color: rgba(255, 255, 255, 0.25);
+  background: #18181f;
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.persona-pill:active {
+  transform: scale(0.97);
 }
 
 .persona-monogram {
@@ -1194,12 +1250,20 @@ html, body {
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
-  transition: all 0.2s var(--ease-out-expo);
+  transition: transform 0.15s var(--ease-spring), color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease, filter 0.15s ease;
 }
 
 .category-pill:hover {
-  color: var(--text-primary);
-  border-color: var(--border-strong);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+  background: #1c1c24;
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.category-pill:active {
+  transform: scale(0.96);
+  filter: brightness(0.96);
 }
 
 .category-pill.active {
@@ -1416,13 +1480,17 @@ html, body {
   transition: color 0.15s ease, transform 0.2s var(--ease-spring);
 }
 
-.like-btn:hover,
+.like-btn:hover {
+  color: var(--accent);
+  transform: scale(1.08);
+}
+
 .like-btn.liked {
   color: var(--accent);
 }
 
 .like-btn:active {
-  transform: scale(0.92);
+  transform: scale(0.96);
 }
 
 .card-actions {
@@ -1877,10 +1945,16 @@ html, body {
   display: inline-flex;
   align-items: center;
   font-size: 0.8rem;
+  transition: color 0.15s ease, transform 0.15s var(--ease-spring);
 }
 
 .swipe-btn:hover:not(:disabled) {
-  color: var(--text-primary);
+  color: #ffffff;
+  transform: scale(1.15);
+}
+
+.swipe-btn:active:not(:disabled) {
+  transform: scale(0.95);
 }
 
 .swipe-btn:disabled {
@@ -1912,13 +1986,18 @@ html, body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  transition: all 0.15s ease;
+  transition: transform 0.15s var(--ease-spring), background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .msg-tool-btn:hover {
-  background: var(--bg-core-elevated);
-  border-color: var(--border-hairline);
-  color: var(--text-primary);
+  background: #1c1c24;
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.msg-tool-btn:active {
+  transform: scale(0.95);
 }
 
 .msg-tool-btn.pinned {
@@ -1987,15 +2066,19 @@ html, body {
   justify-content: center;
   font-size: 1rem;
   flex-shrink: 0;
-  transition: transform 0.2s var(--ease-spring), background-color 0.2s ease;
+  transition: transform 0.2s var(--ease-spring), background-color 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
 }
 
 .composer-send-btn:hover {
   background: var(--accent-hover);
+  filter: brightness(1.12);
+  box-shadow: 0 0 16px var(--accent-soft), 0 4px 12px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
 }
 
 .composer-send-btn:active {
   transform: scale(0.95);
+  filter: brightness(0.95);
 }
 
 .composer-hint-bar {
@@ -2519,12 +2602,18 @@ kbd {
   color: var(--text-muted);
   border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: transform 0.15s var(--ease-spring), color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, filter 0.15s ease;
 }
 .auth-signout-btn:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.25);
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.35);
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+.auth-signout-btn:active {
+  transform: scale(0.95);
+  filter: brightness(0.95);
 }
 
 /* Modal Dialog */
