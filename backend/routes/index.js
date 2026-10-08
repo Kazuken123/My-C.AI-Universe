@@ -7,6 +7,15 @@ import authRoutes from './auth.route.js';
 
 const router = express.Router();
 
+router.get('/system/ping', (_req, res) => {
+  res.json({
+    status: 'ok',
+    version: '2.2.0',
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString()
+  });
+});
+
 router.use(authRoutes);
 router.use(characterRoutes);
 router.use(chatRoutes);

@@ -269,6 +269,43 @@ async function runTests() {
 
   console.log(`✅ 15. Multi-tenant user isolation verified (isolated chat history & custom personas per user)`);
 
+  // 16. System Telemetry Ping API
+  const pingRes = await fetch(`${BASE_URL}/api/system/ping`);
+  const pingData = await assertResponse(pingRes, 'System Ping');
+  if (pingData.status !== 'ok' || pingData.version !== '2.2.0') {
+    throw new Error(`System ping unexpected response: ${JSON.stringify(pingData)}`);
+  }
+  console.log(`✅ 16. System Ping & Telemetry verified (status: ${pingData.status}, v${pingData.version}, uptime: ${pingData.uptime}s)`);
+
+  // 17. User Profile Update (PUT /api/auth/profile)
+  // 17a. Unauthenticated update should return HTTP 401
+  const unauthRes = await fetch(`${BASE_URL}/api/auth/profile`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ displayName: 'Hacker' })
+  });
+  if (unauthRes.status !== 401) {
+    throw new Error(`Profile update without token expected 401, got ${unauthRes.status}`);
+  }
+
+  // 17b. Authenticated update for User A
+  const updateRes = await fetch(`${BASE_URL}/api/auth/profile`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authA.token}`
+    },
+    body: JSON.stringify({
+      displayName: 'Captain Alpha Prime',
+      avatar: '🚀'
+    })
+  });
+  const updateData = await assertResponse(updateRes, 'Update User Profile');
+  if (updateData.user.displayName !== 'Captain Alpha Prime' || updateData.user.avatar !== '🚀') {
+    throw new Error(`Profile update did not save: ${JSON.stringify(updateData)}`);
+  }
+  console.log(`✅ 17. User Profile Update verified (displayName updated to "${updateData.user.displayName}", avatar: "${updateData.user.avatar}")`);
+
   console.log('\n✨ All automated SQL, Security & API tests passed!');
   if (startedInProcess) {
     if (inProcessServer) {

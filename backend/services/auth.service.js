@@ -172,6 +172,33 @@ export class AuthService {
   }
 
   /**
+   * Update user profile (display name and avatar)
+   * @param {Object} param0
+   * @returns {Object}
+   */
+  updateProfile({ userId, displayName, avatar }) {
+    if (!userId) {
+      throw new AuthenticationError('Authentication required');
+    }
+    const user = this.userRepo.findById(userId);
+    if (!user) {
+      throw new AuthenticationError('User not found');
+    }
+    if (displayName !== undefined) {
+      const cleanName = String(displayName).trim();
+      if (!cleanName || cleanName.length > 50) {
+        throw new ValidationError('Display name must be between 1 and 50 characters');
+      }
+      user.displayName = cleanName;
+    }
+    if (avatar !== undefined) {
+      user.avatar = String(avatar).trim().slice(0, 500);
+    }
+    this.userRepo.update(user);
+    return user.toJSON();
+  }
+
+  /**
    * Retrieve active user entity from a Bearer token
    * @param {string} token
    * @returns {User|null}

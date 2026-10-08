@@ -13,7 +13,22 @@ export class AuthController extends BaseController {
     this.register = this.register.bind(this);
     this.login = this.login.bind(this);
     this.me = this.me.bind(this);
+    this.updateProfile = this.updateProfile.bind(this);
     this.logout = this.logout.bind(this);
+  }
+
+  updateProfile(req, res) {
+    try {
+      const { displayName, avatar } = req.body || {};
+      const result = this.service.updateProfile({
+        userId: req.user.id,
+        displayName,
+        avatar
+      });
+      return this.sendJson(res, { user: result, message: 'Profile updated successfully' }, 200);
+    } catch (error) {
+      return this.handleError(res, error, 'Failed to update profile');
+    }
   }
 
   register(req, res) {
