@@ -2,6 +2,7 @@ import { api } from './api.js';
 import { initCharactersModule, bindSpotlightHover } from './characters.js';
 import { initChatModule } from './chat.js';
 import { PersonaManager } from './personas.js';
+import { AuthManager } from './auth.js';
 
 const SKILL_THEMES = [
   { id: 'higgsfield', label: 'Higgsfield Cinema' },
@@ -16,6 +17,7 @@ const SKILL_THEMES = [
 export class CAIUniverseApp {
   constructor() {
     this.state = {
+      currentUser: null,
       characters: [],
       sessions: [],
       personas: [],
@@ -24,6 +26,7 @@ export class CAIUniverseApp {
       activeSession: null
     };
 
+    this.authManager = null;
     this.personasManager = null;
     this.chatController = null;
     this.characterManager = null;
@@ -115,6 +118,22 @@ export class CAIUniverseApp {
       (charId, sessionId) => this.chatController.openChatWithCharacter(charId, sessionId),
       toastFn
     );
+
+    const handleAuthChange = async (user) => {
+      await Promise.all([
+        this.personasManager.loadPersonas(),
+        this.characterManager.loadCharacters()
+      ]);
+      await this.chatController.loadAllSessions();
+
+      if (!user) {
+        this.state.activeSession = null;
+        this.navigateTo('discover');
+      }
+    };
+
+    this.authManager = new AuthManager(this.state, toastFn, handleAuthChange);
+    await this.authManager.checkInitialSession();
 
     this.#bindNavigationEvents();
     this.#bindKeyboardShortcuts();

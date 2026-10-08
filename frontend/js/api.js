@@ -7,12 +7,28 @@ export class ApiClient {
     this.baseUrl = baseUrl;
   }
 
+  getToken() {
+    return localStorage.getItem('cai_auth_token') || null;
+  }
+
+  setToken(token) {
+    if (token) {
+      localStorage.setItem('cai_auth_token', token);
+    } else {
+      localStorage.removeItem('cai_auth_token');
+    }
+  }
+
   async request(url, options = {}) {
+    const token = this.getToken();
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      ...(options.headers || {})
+    };
+
     const response = await fetch(`${this.baseUrl}${url}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(options.headers || {})
-      },
+      headers,
       ...options
     });
 
@@ -22,6 +38,30 @@ export class ApiClient {
       throw new Error(message);
     }
     return data;
+  }
+
+  // Authentication
+  register(payload) {
+    return this.request('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  login(payload) {
+    return this.request('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  getMe() {
+    return this.request('/api/auth/me');
+  }
+
+  logout() {
+    this.setToken(null);
+    return this.request('/api/auth/logout', { method: 'POST' }).catch(() => ({}));
   }
 
   // Health

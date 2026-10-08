@@ -13,6 +13,7 @@ export class UserPersona extends BaseEntity {
       updatedAt: props.updatedAt || props.updated_at
     });
 
+    this.userId = props.userId || props.user_id || null;
     this.name = (props.name || '').trim();
     this.avatar = (props.avatar || '').trim() || '🌟';
     this.description = (props.description || '').trim();
@@ -49,6 +50,7 @@ export class UserPersona extends BaseEntity {
     if (!row) return null;
     return new UserPersona({
       id: row.id,
+      userId: row.user_id || null,
       name: row.name,
       avatar: row.avatar,
       description: row.description,
@@ -61,6 +63,7 @@ export class UserPersona extends BaseEntity {
   toJSON() {
     return {
       id: this.id,
+      userId: this.userId,
       name: this.name,
       avatar: this.avatar,
       description: this.description,

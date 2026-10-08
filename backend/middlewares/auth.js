@@ -1,0 +1,49 @@
+import { authService } from '../services/auth.service.js';
+
+/**
+ * Extract token from Authorization header or custom header
+ */
+function extractToken(req) {
+  const authHeader = req.headers.authorization || req.headers.Authorization;
+  if (authHeader && typeof authHeader === 'string') {
+    const parts = authHeader.split(' ');
+    if (parts.length === 2 && /^Bearer$/i.test(parts[0])) {
+      return parts[1];
+    }
+  }
+  return req.headers['x-auth-token'] || null;
+}
+
+/**
+ * Optional Authentication Middleware
+ * Attaches req.user if a valid token is provided, without blocking unauthenticated requests
+ */
+export function optionalAuth(req, _res, next) {
+  const token = extractToken(req);
+  if (!token) {
+    req.user = null;
+    return next();
+  }
+
+  const user = authService.getUserFromToken(token);
+  req.user = user ? user : null;
+  return next();
+}
+
+/**
+ * Required Authentication Middleware
+ * Enforces authenticated identity, returning 401 Unauthorized if not authenticated
+ */
+export function requireAuth(req, res, next) {
+  optionalAuth(req, res, () => {
+    if (!req.user) {
+      return res.status(401).json({
+        error: {
+          message: 'Authentication required. Please sign in or create an account.',
+          code: 401
+        }
+      });
+    }
+    return next();
+  });
+}

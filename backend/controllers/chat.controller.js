@@ -42,9 +42,10 @@ export class ChatController extends BaseController {
   /**
    * Build a new ChatSession entity seeded with the character's opening greeting
    */
-  #createNewSessionEntity(character, personaId = null, provider = 'gemini', title = '') {
+  #createNewSessionEntity(character, personaId = null, provider = 'gemini', title = '', userId = null) {
     const greetingText = generateDefaultGreeting(character);
     const session = new ChatSession({
+      userId: userId || null,
       characterId: character.id,
       personaId: personaId || 'persona_default',
       title: title || `Chat with ${character.name}`,
@@ -64,15 +65,17 @@ export class ChatController extends BaseController {
   getChatSessions(req, res) {
     try {
       const { characterId } = req.query;
+      const userId = req.user ? req.user.id : null;
       const characters = this.charsRepo.findAll();
       const charMap = new Map(characters.map(c => [c.id, c]));
-      const sessions = this.sessionsRepo.findAll(characterId || null);
+      const sessions = this.sessionsRepo.findAll(characterId || null, userId);
 
       const enriched = sessions.map(chat => {
         const char = charMap.get(chat.characterId);
         const lastMsg = chat.messages.length > 0 ? chat.messages[chat.messages.length - 1] : null;
         return {
           id: chat.id,
+          userId: chat.userId,
           characterId: chat.characterId,
           characterName: char ? char.name : 'Unknown Character',
           characterAvatar: char ? char.avatar : '',
@@ -96,6 +99,7 @@ export class ChatController extends BaseController {
   createChatSession(req, res) {
     try {
       const { characterId, personaId, provider, title } = req.body;
+      const userId = req.user ? req.user.id : null;
       if (!characterId) {
         throw new ValidationError('characterId is required', 'characterId');
       }
@@ -106,14 +110,15 @@ export class ChatController extends BaseController {
       }
 
       const activePersona =
-        (personaId && this.personasRepo.findById(personaId)) ||
-        this.personasRepo.findDefault();
+        (personaId && this.personasRepo.findById(personaId, userId)) ||
+        this.personasRepo.findDefault(userId);
 
       const session = this.#createNewSessionEntity(
         character,
         activePersona ? activePersona.id : 'persona_default',
         provider,
-        title
+        title,
+        userId
       );
 
       this.sessionsRepo.save(session);
@@ -125,7 +130,8 @@ export class ChatController extends BaseController {
 
   getChatSession(req, res) {
     try {
-      const session = this.sessionsRepo.findById(req.params.sessionId);
+      const userId = req.user ? req.user.id : null;
+      const session = this.sessionsRepo.findById(req.params.sessionId, userId);
       if (!session) {
         throw new NotFoundError('Chat session not found');
       }

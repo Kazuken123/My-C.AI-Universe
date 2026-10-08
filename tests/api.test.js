@@ -165,6 +165,110 @@ async function runTests() {
   }
   console.log('✅ 12. Input boundary and length validation verified (oversized payloads rejected with HTTP 400)');
 
+  // 13. User Registration & Password Hashing
+  const testUserA = `spec_user_a_${Date.now()}`;
+  const regResA = await fetch(`${BASE_URL}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: testUserA,
+      password: 'password123',
+      displayName: 'Commander Alpha'
+    })
+  });
+  const authA = await assertResponse(regResA, 'Register User A');
+  if (!authA.token || !authA.user) {
+    throw new Error('Registration failed to return user and token');
+  }
+  console.log(`✅ 13. User Registration succeeded (@${authA.user.username}, ID: ${authA.user.id})`);
+
+  // 14. Authentication Verification & Invalid Password Rejection
+  const badLoginRes = await fetch(`${BASE_URL}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: testUserA, password: 'wrongpassword' })
+  });
+  if (badLoginRes.status !== 401) {
+    throw new Error(`Authentication check failed: Expected HTTP 401 for bad password, got ${badLoginRes.status}`);
+  }
+
+  const meRes = await fetch(`${BASE_URL}/api/auth/me`, {
+    headers: { 'Authorization': `Bearer ${authA.token}` }
+  });
+  const meData = await assertResponse(meRes, 'Get Current User Profile');
+  if (!meData.authenticated || meData.user.username !== testUserA) {
+    throw new Error('Failed to verify authenticated user profile via JWT');
+  }
+  console.log(`✅ 14. Authentication verified (timing-safe scrypt validation & JWT session token)`);
+
+  // 15. Multi-Tenant User Isolation (Fresh Experience per User)
+  // Check User A's personas (has automatically created starter persona)
+  const personasResA = await fetch(`${BASE_URL}/api/personas`, {
+    headers: { 'Authorization': `Bearer ${authA.token}` }
+  });
+  const personasA = await assertResponse(personasResA, 'User A Personas');
+  if (personasA.length === 0 || personasA[0].name !== 'Commander Alpha') {
+    throw new Error('User A did not receive personal starter persona');
+  }
+
+  // Create a chat session for User A
+  const charsList = await fetch(`${BASE_URL}/api/characters`).then(r => r.json());
+  const sampleChar = charsList[0];
+  const chatSessionResA = await fetch(`${BASE_URL}/api/chats`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authA.token}`
+    },
+    body: JSON.stringify({ characterId: sampleChar.id, title: "Alpha's Private Story" })
+  });
+  const chatA = await assertResponse(chatSessionResA, 'Create User A Chat');
+  if (chatA.userId !== authA.user.id) {
+    throw new Error(`Chat session was not associated with User A (got ${chatA.userId})`);
+  }
+
+  // Register User B (Fresh User)
+  const testUserB = `spec_user_b_${Date.now()}`;
+  const regResB = await fetch(`${BASE_URL}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: testUserB,
+      password: 'password456',
+      displayName: 'Navigator Beta'
+    })
+  });
+  const authB = await assertResponse(regResB, 'Register User B');
+
+  // Verify User B has ZERO chats (fresh slate!)
+  const chatsResB = await fetch(`${BASE_URL}/api/chats`, {
+    headers: { 'Authorization': `Bearer ${authB.token}` }
+  });
+  const chatsB = await assertResponse(chatsResB, 'User B Chats');
+  if (chatsB.length !== 0) {
+    throw new Error(`Isolation check failed: User B saw ${chatsB.length} chats instead of 0 fresh chats`);
+  }
+
+  // Verify User B only sees their own persona (cannot see User A's persona)
+  const personasResB = await fetch(`${BASE_URL}/api/personas`, {
+    headers: { 'Authorization': `Bearer ${authB.token}` }
+  });
+  const personasB = await assertResponse(personasResB, 'User B Personas');
+  if (personasB.length !== 1 || personasB[0].name !== 'Navigator Beta') {
+    throw new Error('Isolation check failed: User B did not have isolated personal persona');
+  }
+
+  // Verify User A still has their 1 chat
+  const chatsResA = await fetch(`${BASE_URL}/api/chats`, {
+    headers: { 'Authorization': `Bearer ${authA.token}` }
+  });
+  const chatsA = await assertResponse(chatsResA, 'User A Chats');
+  if (chatsA.length !== 1 || chatsA[0].id !== chatA.id) {
+    throw new Error(`Isolation check failed: User A chats missing or corrupted`);
+  }
+
+  console.log(`✅ 15. Multi-tenant user isolation verified (isolated chat history & custom personas per user)`);
+
   console.log('\n✨ All automated SQL, Security & API tests passed!');
   if (startedInProcess) {
     if (inProcessServer) {

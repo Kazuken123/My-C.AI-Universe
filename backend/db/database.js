@@ -55,9 +55,12 @@ export class DatabaseConnection {
   }
 
   /**
-   * Execute schema.sql and seed.sql if database is empty
+   * Execute schema.sql and seed.sql if database is empty, and verify migrations
    */
   #runMigrationsAndSeed() {
+    this.#ensureColumnExists('user_personas', 'user_id', 'TEXT');
+    this.#ensureColumnExists('chat_sessions', 'user_id', 'TEXT');
+
     const schemaSql = fs.readFileSync(SCHEMA_SQL_PATH, 'utf8');
     this.db.exec(schemaSql);
 
@@ -75,6 +78,18 @@ export class DatabaseConnection {
         }
         console.log(`[SQL DB] Initialized schema and seeded ${rows.length} characters into universe.sqlite`);
       }
+    }
+  }
+
+  #ensureColumnExists(table, column, colType) {
+    try {
+      const cols = this.db.prepare(`PRAGMA table_info(${table})`).all();
+      const hasCol = cols.some(c => c.name === column);
+      if (!hasCol) {
+        this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${colType};`);
+      }
+    } catch {
+      // ignore
     }
   }
 

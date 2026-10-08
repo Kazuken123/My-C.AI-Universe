@@ -35,3 +35,28 @@ export class NotFoundError extends Error {
     this.status = 404;
   }
 }
+
+/**
+ * Custom error class for authentication failures
+ */
+export class AuthenticationError extends Error {
+  constructor(message = 'Invalid credentials') {
+    super(message);
+    this.name = 'AuthenticationError';
+    this.code = 401;
+    this.status = 401;
+  }
+}
+
+/**
+ * Custom error class for resource conflicts (e.g. username taken)
+ */
+export class ConflictError extends Error {
+  constructor(message = 'Resource conflict') {
+    super(message);
+    this.name = 'ConflictError';
+    this.code = 409;
+    this.status = 409;
+  }
+}
+

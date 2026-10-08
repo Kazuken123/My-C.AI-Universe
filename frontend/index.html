@@ -82,8 +82,29 @@
         <!-- Populated dynamically -->
       </div>
 
-      <!-- Footer: Active Persona + Skill Aesthetic Switcher -->
+      <!-- Footer: Account Status + Active Persona + Theme Switcher -->
       <div class="sidebar-footer">
+        <div class="sidebar-account-box" id="sidebar-account-section">
+          <div class="auth-guest-view" id="authGuestView">
+            <button class="btn-island btn-island-full auth-launch-btn" id="openAuthModalBtn" type="button">
+              <span>Sign In / Register</span>
+              <span class="btn-island-icon" aria-hidden="true"><i class="ph-light ph-user-circle"></i></span>
+            </button>
+          </div>
+          <div class="auth-user-view hidden" id="authUserView">
+            <div class="auth-user-meta-wrap">
+              <span class="auth-user-avatar-tag" id="authUserAvatar">👤</span>
+              <div class="auth-user-text">
+                <div class="auth-user-name" id="authUserName">User</div>
+                <div class="auth-user-handle" id="authUserHandle">@username</div>
+              </div>
+            </div>
+            <button class="icon-btn auth-signout-btn" id="authSignOutBtn" type="button" title="Sign Out">
+              <i class="ph-light ph-sign-out"></i>
+            </button>
+          </div>
+        </div>
+
         <button class="persona-pill" id="sidebar-persona-pill" type="button" title="Switch Active Roleplay Identity">
           <span class="persona-monogram" id="sidebar-persona-emoji">TR</span>
           <div class="persona-info">
@@ -604,6 +625,56 @@
 
     </main>
   </div>
+
+  <!-- =========================================================
+       MODAL: AUTHENTICATION (Sign In & Register)
+       ========================================================= -->
+  <dialog class="auth-dialog-modal" id="authModal">
+    <div class="auth-modal-card">
+      <header class="auth-modal-header">
+        <div class="auth-modal-title-group">
+          <span class="eyebrow-pill">USER ACCOUNTS &amp; ISOLATION</span>
+          <h2 class="auth-modal-title" id="authModalTitle">Welcome to Universe</h2>
+        </div>
+        <button class="icon-btn auth-close-btn" id="closeAuthModalBtn" type="button" aria-label="Close Authentication Modal">
+          <i class="ph-light ph-x"></i>
+        </button>
+      </header>
+
+      <!-- Mode Switcher -->
+      <div class="auth-tabs" role="tablist">
+        <button class="auth-tab active" id="authTabSignIn" type="button" role="tab" aria-selected="true">Sign In</button>
+        <button class="auth-tab" id="authTabSignUp" type="button" role="tab" aria-selected="false">Create Account</button>
+      </div>
+
+      <form id="authForm" class="auth-form" autocomplete="on">
+        <div class="auth-alert hidden" id="authAlert" role="alert"></div>
+
+        <div class="form-group" id="authDisplayNameGroup" style="display: none;">
+          <label class="form-label" for="authDisplayName">Display Name</label>
+          <input class="form-input" type="text" id="authDisplayName" placeholder="e.g. Commander Shepard" autocomplete="name" />
+          <span class="form-hint">The identity roleplay characters will address you by.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="authUsername">Username</label>
+          <input class="form-input" type="text" id="authUsername" placeholder="e.g. nova_pilot (letters, numbers, underscores)" required autocomplete="username" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="authPassword">Password</label>
+          <input class="form-input" type="password" id="authPassword" placeholder="Minimum 6 characters" required autocomplete="current-password" />
+        </div>
+
+        <div class="auth-modal-footer">
+          <button class="btn-island btn-island-full" id="authSubmitBtn" type="submit">
+            <span id="authSubmitText">Sign In</span>
+            <span class="btn-island-icon"><i class="ph-light ph-arrow-right"></i></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </dialog>
 
   <!-- Toast Notifications -->
   <div class="toast-container" id="toast-container" aria-live="polite"></div>

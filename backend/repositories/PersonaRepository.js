@@ -10,39 +10,48 @@ export class PersonaRepository extends BaseRepository {
     super('user_personas');
   }
 
-  findAll() {
-    const rows = this.db
-      .prepare('SELECT * FROM user_personas ORDER BY is_default DESC, created_at ASC')
-      .all();
+  findAll(userId = null) {
+    const rows = userId
+      ? this.db.prepare('SELECT * FROM user_personas WHERE user_id = ? ORDER BY is_default DESC, created_at ASC').all(userId)
+      : this.db.prepare('SELECT * FROM user_personas WHERE user_id IS NULL ORDER BY is_default DESC, created_at ASC').all();
     return rows.map(r => UserPersona.fromDatabaseRow(r));
   }
 
-  findById(id) {
-    const row = this.db.prepare('SELECT * FROM user_personas WHERE id = ?').get(id);
+  findById(id, userId = null) {
+    if (!id) return null;
+    const row = userId
+      ? this.db.prepare('SELECT * FROM user_personas WHERE id = ? AND (user_id = ? OR user_id IS NULL)').get(id, userId)
+      : this.db.prepare('SELECT * FROM user_personas WHERE id = ?').get(id);
     return UserPersona.fromDatabaseRow(row);
   }
 
-  findDefault() {
-    const row = this.db
-      .prepare('SELECT * FROM user_personas WHERE is_default = 1 LIMIT 1')
-      .get();
+  findDefault(userId = null) {
+    const row = userId
+      ? this.db.prepare('SELECT * FROM user_personas WHERE user_id = ? AND is_default = 1 LIMIT 1').get(userId)
+      : this.db.prepare('SELECT * FROM user_personas WHERE user_id IS NULL AND is_default = 1 LIMIT 1').get();
     if (row) return UserPersona.fromDatabaseRow(row);
-    const all = this.findAll();
+    const all = this.findAll(userId);
     return all[0] || null;
   }
 
-  save(personaObj) {
+  save(personaObj, userId = null) {
     const persona = personaObj instanceof UserPersona ? personaObj : new UserPersona(personaObj);
+    if (userId) persona.userId = userId;
     persona.validate();
 
     this.runInTransaction((db) => {
       if (persona.isDefault) {
-        db.prepare('UPDATE user_personas SET is_default = 0').run();
+        if (persona.userId) {
+          db.prepare('UPDATE user_personas SET is_default = 0 WHERE user_id = ?').run(persona.userId);
+        } else {
+          db.prepare('UPDATE user_personas SET is_default = 0 WHERE user_id IS NULL').run();
+        }
       }
       db.prepare(`
-        INSERT INTO user_personas (id, name, avatar, description, is_default, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO user_personas (id, user_id, name, avatar, description, is_default, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
+          user_id = excluded.user_id,
           name = excluded.name,
           avatar = excluded.avatar,
           description = excluded.description,
@@ -50,6 +59,7 @@ export class PersonaRepository extends BaseRepository {
           updated_at = excluded.updated_at
       `).run(
         persona.id,
+        persona.userId || null,
         persona.name,
         persona.avatar,
         persona.description,

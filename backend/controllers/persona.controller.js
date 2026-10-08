@@ -20,7 +20,12 @@ export class PersonaController extends BaseController {
 
   getPersonas(req, res) {
     try {
-      const personas = this.repository.findAll();
+      const userId = req.user ? req.user.id : null;
+      let personas = this.repository.findAll(userId);
+      // If user is guest and has no personas, fall back to global seeded personas
+      if (personas.length === 0 && !userId) {
+        personas = this.repository.findAll(null);
+      }
       return this.sendJson(res, personas.map(p => p.toJSON()));
     } catch (error) {
       return this.handleError(res, error, 'Failed to load personas');
@@ -29,14 +34,17 @@ export class PersonaController extends BaseController {
 
   createPersona(req, res) {
     try {
+      const userId = req.user ? req.user.id : null;
       const { name, avatar, description, isDefault } = req.body;
+      const currentPersonas = this.repository.findAll(userId);
       const persona = new UserPersona({
+        userId,
         name,
         avatar,
         description,
-        isDefault: Boolean(isDefault) || this.repository.count() === 0
+        isDefault: Boolean(isDefault) || currentPersonas.length === 0
       });
-      this.repository.save(persona);
+      this.repository.save(persona, userId);
       return this.sendJson(res, persona.toJSON(), 201);
     } catch (error) {
       return this.handleError(res, error, 'Failed to create persona');
@@ -45,7 +53,8 @@ export class PersonaController extends BaseController {
 
   updatePersona(req, res) {
     try {
-      const persona = this.repository.findById(req.params.id);
+      const userId = req.user ? req.user.id : null;
+      const persona = this.repository.findById(req.params.id, userId);
       if (!persona) {
         throw new NotFoundError('Persona not found');
       }
@@ -57,7 +66,7 @@ export class PersonaController extends BaseController {
       if (isDefault) persona.activate();
       else persona.touch();
 
-      this.repository.save(persona);
+      this.repository.save(persona, userId);
       return this.sendJson(res, persona.toJSON());
     } catch (error) {
       return this.handleError(res, error, 'Failed to update persona');
@@ -66,7 +75,9 @@ export class PersonaController extends BaseController {
 
   deletePersona(req, res) {
     try {
-      if (this.repository.count() <= 1) {
+      const userId = req.user ? req.user.id : null;
+      const personas = this.repository.findAll(userId);
+      if (personas.length <= 1) {
         throw new ValidationError('Cannot delete the last remaining persona');
       }
       const target = this.repository.findById(req.params.id);

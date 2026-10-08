@@ -5,12 +5,13 @@ import {
   updatePersona,
   deletePersona
 } from '../controllers/persona.controller.js';
+import { optionalAuth } from '../middlewares/auth.js';
 
 const router = express.Router();
 
-router.get('/personas', getPersonas);
-router.post('/personas', createPersona);
-router.put('/personas/:id', updatePersona);
-router.delete('/personas/:id', deletePersona);
+router.get('/personas', optionalAuth, getPersonas);
+router.post('/personas', optionalAuth, createPersona);
+router.put('/personas/:id', optionalAuth, updatePersona);
+router.delete('/personas/:id', optionalAuth, deletePersona);
 
 export default router;

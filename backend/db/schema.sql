@@ -11,15 +11,28 @@
 
 PRAGMA foreign_keys = ON;
 
+-- 0. USER Table
+CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    username TEXT UNIQUE NOT NULL COLLATE NOCASE,
+    password_hash TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    avatar TEXT NOT NULL DEFAULT '👤',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
 -- 1. USER_PERSONA Table
 CREATE TABLE IF NOT EXISTS user_personas (
     id TEXT PRIMARY KEY,
+    user_id TEXT,
     name TEXT NOT NULL,
     avatar TEXT NOT NULL DEFAULT '🌟',
     description TEXT NOT NULL DEFAULT '',
     is_default INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- 2. CHARACTER Table
@@ -51,12 +64,14 @@ CREATE TABLE IF NOT EXISTS characters (
 -- 3. CHAT_SESSION Table
 CREATE TABLE IF NOT EXISTS chat_sessions (
     id TEXT PRIMARY KEY,
+    user_id TEXT,
     character_id TEXT NOT NULL,
     persona_id TEXT,
     title TEXT NOT NULL,
     provider TEXT NOT NULL DEFAULT 'gemini',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     FOREIGN KEY (persona_id) REFERENCES user_personas(id) ON DELETE SET NULL
 );
@@ -98,6 +113,8 @@ CREATE TABLE IF NOT EXISTS character_memories (
 );
 
 -- Relational Indexes for Performance
+CREATE INDEX IF NOT EXISTS idx_personas_user_id ON user_personas(user_id);
+CREATE INDEX IF NOT EXISTS idx_chat_sessions_user_id ON chat_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_characters_interactions ON characters(interactions DESC);
 CREATE INDEX IF NOT EXISTS idx_characters_likes ON characters(likes DESC);
 CREATE INDEX IF NOT EXISTS idx_chat_sessions_character ON chat_sessions(character_id, updated_at DESC);

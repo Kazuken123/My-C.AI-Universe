@@ -47,7 +47,11 @@ export class PersonaManager {
 
   renderSidebarPersona() {
     const active = this.appState.activePersona;
-    if (!active) return;
+    if (!active) {
+      if (this.sidebarPersonaName) this.sidebarPersonaName.textContent = 'Guest';
+      if (this.sidebarPersonaEmoji) this.sidebarPersonaEmoji.textContent = '👤';
+      return;
+    }
     if (this.sidebarPersonaName) this.sidebarPersonaName.textContent = active.name;
     if (this.sidebarPersonaEmoji) {
       this.sidebarPersonaEmoji.textContent = toMonogram(active.name, active.avatar);

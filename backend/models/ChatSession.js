@@ -147,6 +147,7 @@ export class ChatSession extends BaseEntity {
       createdAt: props.createdAt || props.created_at,
       updatedAt: props.updatedAt || props.updated_at
     });
+    this.userId = props.userId || props.user_id || null;
     this.characterId = props.characterId || props.character_id;
     this.personaId = props.personaId || props.persona_id || 'persona_default';
     this.title = props.title || 'Chat';
@@ -190,6 +191,7 @@ export class ChatSession extends BaseEntity {
     if (!row) return null;
     return new ChatSession({
       id: row.id,
+      userId: row.user_id || null,
       characterId: row.character_id,
       personaId: row.persona_id || 'persona_default',
       title: row.title,
@@ -203,6 +205,7 @@ export class ChatSession extends BaseEntity {
   toJSON() {
     return {
       id: this.id,
+      userId: this.userId,
       characterId: this.characterId,
       personaId: this.personaId,
       title: this.title,

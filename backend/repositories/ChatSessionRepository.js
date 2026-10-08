@@ -29,14 +29,29 @@ export class ChatSessionRepository extends BaseRepository {
   }
 
   /**
-   * Find all chat sessions (optionally filtered by characterId)
+   * Find all chat sessions (optionally filtered by characterId and userId)
    * @param {string|null} characterId
+   * @param {string|null} userId
    * @returns {ChatSession[]}
    */
-  findAll(characterId = null) {
-    const rows = characterId
-      ? this.db.prepare('SELECT * FROM chat_sessions WHERE character_id = ? ORDER BY updated_at DESC').all(characterId)
-      : this.db.prepare('SELECT * FROM chat_sessions ORDER BY updated_at DESC').all();
+  findAll(characterId = null, userId = null) {
+    let query = 'SELECT * FROM chat_sessions WHERE 1=1';
+    const params = [];
+
+    if (userId) {
+      query += ' AND user_id = ?';
+      params.push(userId);
+    } else {
+      query += ' AND user_id IS NULL';
+    }
+
+    if (characterId) {
+      query += ' AND character_id = ?';
+      params.push(characterId);
+    }
+
+    query += ' ORDER BY updated_at DESC';
+    const rows = this.db.prepare(query).all(...params);
 
     return rows.map(row => this._hydrateSession(row));
   }
@@ -44,10 +59,17 @@ export class ChatSessionRepository extends BaseRepository {
   /**
    * Find a single chat session by ID
    * @param {string} sessionId
+   * @param {string|null} userId
    * @returns {ChatSession|null}
    */
-  findById(sessionId) {
-    const row = this.db.prepare('SELECT * FROM chat_sessions WHERE id = ?').get(sessionId);
+  findById(sessionId, userId = null) {
+    if (!sessionId) return null;
+    const query = userId
+      ? 'SELECT * FROM chat_sessions WHERE id = ? AND (user_id = ? OR user_id IS NULL)'
+      : 'SELECT * FROM chat_sessions WHERE id = ?';
+    const row = userId
+      ? this.db.prepare(query).get(sessionId, userId)
+      : this.db.prepare(query).get(sessionId);
     return this._hydrateSession(row);
   }
 
@@ -61,15 +83,17 @@ export class ChatSessionRepository extends BaseRepository {
 
     this.runInTransaction((db) => {
       db.prepare(`
-        INSERT INTO chat_sessions (id, character_id, persona_id, title, provider, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO chat_sessions (id, user_id, character_id, persona_id, title, provider, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
+          user_id = COALESCE(excluded.user_id, chat_sessions.user_id),
           persona_id = excluded.persona_id,
           title = excluded.title,
           provider = excluded.provider,
           updated_at = excluded.updated_at
       `).run(
         session.id,
+        session.userId || null,
         session.characterId,
         session.personaId || null,
         session.title,
