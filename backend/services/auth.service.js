@@ -295,15 +295,38 @@ export class AuthService {
     // 2. Look up user by email if not found
     if (!user && profileEmail) {
       user = this.userRepo.findByEmail(profileEmail);
-      if (user) {
-        user.authProvider = cleanProvider;
-        user.providerId = profileId || user.providerId;
-        if (profileAvatar && user.avatar === '👤') user.avatar = profileAvatar;
-        this.userRepo.update(user);
-      }
+    }
+
+    // 3. Look up user by username if not found
+    if (!user && profileEmail) {
+      const derivedUsername = profileEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
+      user = this.userRepo.findByUsername(derivedUsername);
     }
 
     if (user) {
+      user.authProvider = cleanProvider;
+      user.providerId = profileId || user.providerId;
+      if (!user.email && profileEmail) user.email = profileEmail;
+      if (profileAvatar && user.avatar === '👤') user.avatar = profileAvatar;
+      this.userRepo.update(user);
+
+      // Ensure user has an active persona configured
+      const personas = this.personaRepo.findByUserId(user.id);
+      if (!personas || personas.length === 0) {
+        try {
+          const defaultPersona = new UserPersona({
+            userId: user.id,
+            name: user.displayName || user.username,
+            avatar: '🌟',
+            description: `Default roleplay identity for @${user.username}. Customize or create more in Personas!`,
+            isDefault: true
+          });
+          this.personaRepo.create(defaultPersona);
+        } catch {
+          // ignore
+        }
+      }
+
       const sessionToken = this.generateToken(user);
       return {
         user: user.toJSON(),

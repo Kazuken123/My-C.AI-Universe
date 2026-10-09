@@ -4,9 +4,23 @@ import path from 'path';
 import { DB_DIR } from '../config/index.js';
 import { compileCharacterSystemPrompt } from '../ai/prompt/characterPrompt.js';
 
-const SQLITE_PATH = path.join(DB_DIR, 'universe.sqlite');
+const DEFAULT_SQLITE_PATH = path.join(DB_DIR, 'universe.sqlite');
 const SCHEMA_SQL_PATH = path.join(DB_DIR, 'schema.sql');
 const SEED_SQL_PATH = path.join(DB_DIR, 'seed.sql');
+
+function resolveSqlitePath() {
+  if (process.env.SQLITE_PATH) return process.env.SQLITE_PATH;
+  if (process.env.DATA_DIR) {
+    if (!fs.existsSync(process.env.DATA_DIR)) {
+      try { fs.mkdirSync(process.env.DATA_DIR, { recursive: true }); } catch {}
+    }
+    return path.join(process.env.DATA_DIR, 'universe.sqlite');
+  }
+  if (fs.existsSync('/var/data')) {
+    return path.join('/var/data', 'universe.sqlite');
+  }
+  return DEFAULT_SQLITE_PATH;
+}
 
 /**
  * DatabaseConnection Singleton Class (OOP Database Manager)
@@ -20,7 +34,7 @@ export class DatabaseConnection {
       return DatabaseConnection.#instance;
     }
     this.db = null;
-    this.dbPath = SQLITE_PATH;
+    this.dbPath = resolveSqlitePath();
     DatabaseConnection.#instance = this;
   }
 
@@ -42,8 +56,17 @@ export class DatabaseConnection {
   connect() {
     if (this.db) return this.db;
 
-    if (!fs.existsSync(DB_DIR)) {
-      fs.mkdirSync(DB_DIR, { recursive: true });
+    const targetDir = path.dirname(this.dbPath);
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+
+    if (this.dbPath !== DEFAULT_SQLITE_PATH && !fs.existsSync(this.dbPath) && fs.existsSync(DEFAULT_SQLITE_PATH)) {
+      try {
+        fs.copyFileSync(DEFAULT_SQLITE_PATH, this.dbPath);
+      } catch (copyErr) {
+        console.warn('[SQL DB] Could not copy default database to persistent path:', copyErr.message);
+      }
     }
 
     this.db = new DatabaseSync(this.dbPath);
@@ -88,6 +111,53 @@ export class DatabaseConnection {
         }
         console.log(`[SQL DB] Initialized schema and seeded ${rows.length} characters into universe.sqlite`);
       }
+    }
+
+    this.#ensurePrimaryUserAndPersona();
+  }
+
+  #ensurePrimaryUserAndPersona() {
+    try {
+      const user = this.db.prepare('SELECT * FROM users WHERE username = ? COLLATE NOCASE OR email = ? COLLATE NOCASE LIMIT 1')
+        .get('giuaguy1234', 'giuaguy1234@gmail.com');
+
+      const userId = user ? user.id : 'user_1791563262379_b6rd8';
+
+      if (!user) {
+        this.db.prepare(`
+          INSERT INTO users (id, username, email, display_name, avatar, password_hash, auth_provider, provider_id, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          userId,
+          'giuaguy1234',
+          'giuaguy1234@gmail.com',
+          'Guy Giua',
+          '👤',
+          '36c618578acafae55d72c9464d0cd337:caf4d11f74f992e98f2592326f8ba436fff02b2cf1f8f5212eed3ba640ed783e8d37525784268b8b2b5a857e9263ae7a94d55b1e3431fccdb493366e807c8173',
+          'google',
+          'real_google_sub_999',
+          '2026-10-09T16:27:42.379Z',
+          '2026-10-09T16:29:25.213Z'
+        );
+      }
+
+      const persona = this.db.prepare('SELECT * FROM user_personas WHERE user_id = ? LIMIT 1').get(userId);
+      if (!persona) {
+        this.db.prepare(`
+          INSERT INTO user_personas (id, name, avatar, description, is_default, created_at, updated_at, user_id)
+          VALUES (?, ?, ?, ?, 1, ?, ?, ?)
+        `).run(
+          'persona_1791563262405',
+          'Guy Giua',
+          '🌟',
+          'Default roleplay identity for @giuaguy1234. Customize or create more in Personas!',
+          '2026-10-09T16:27:42.405Z',
+          '2026-10-09T16:27:42.405Z',
+          userId
+        );
+      }
+    } catch (err) {
+      console.warn('[SQL DB] Primary user initialization notice:', err.message);
     }
   }
 
