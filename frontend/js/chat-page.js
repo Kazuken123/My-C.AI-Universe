@@ -1,5 +1,5 @@
 import { api } from './api.js';
-import { initSidebar, showToast } from './common.js';
+import { initSidebar, showToast, initCustomSelects } from './common.js';
 import { initChatModule } from './chat.js';
 
 class ChatPageApp {
@@ -28,6 +28,7 @@ class ChatPageApp {
         personaSelect.innerHTML = this.state.personas.map(p => `
           <option value="${p.id}" ${p.isDefault ? 'selected' : ''}>${p.name}</option>
         `).join('');
+        initCustomSelects(personaSelect.closest('.select-wrap') || document);
       }
     } catch (err) {
       console.warn('Could not load personas for chat:', err);

@@ -551,6 +551,221 @@ html, body {
   transform: scale(1);
 }
 
+/* ============================================================================
+   UNIVERSAL SELECT CONTROLS & LUXURY CUSTOM DROPDOWNS
+   Strictly eliminates OS native white dropdown buttons and blue popup artifacts
+   ============================================================================ */
+.select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.select-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted);
+  pointer-events: none;
+  font-size: 0.95rem;
+  z-index: 2;
+  transition: color 0.22s ease;
+}
+
+/* Base native select styling - strictly eliminate OS white button */
+.select-control {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: var(--bg-core);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 256 256' fill='%23a1a1aa'%3E%3Cpath d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 13px 13px;
+  border: 1px solid var(--border-hairline);
+  color: var(--text-primary);
+  padding: 8px 34px 8px 34px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 0.83rem;
+  font-weight: 500;
+  cursor: pointer;
+  color-scheme: dark;
+  outline: none;
+  transition: border-color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease, color 0.25s ease;
+}
+
+.select-control:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  background-color: #161524;
+}
+
+.select-control:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+  background-color: #181628;
+}
+
+.select-control option {
+  background: #111018;
+  color: #f4f4f7;
+  padding: 8px 12px;
+}
+
+/* Hidden state for native select when custom dropdown is mounted */
+.custom-select-native {
+  position: absolute !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+/* Custom Dropdown Trigger */
+.custom-select-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--bg-core);
+  border: 1px solid var(--border-hairline);
+  color: var(--text-primary);
+  padding: 8px 14px 8px 34px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 0.83rem;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  white-space: nowrap;
+  user-select: none;
+  transition: border-color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease, color 0.25s ease;
+}
+
+.select-compact .custom-select-trigger,
+.select-compact .select-control {
+  padding: 6px 12px 6px 30px;
+  font-size: 0.77rem;
+  border-radius: var(--radius-sm);
+}
+
+.select-wrap:hover .select-icon {
+  color: var(--text-primary);
+}
+
+.custom-select-trigger:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: #171625;
+}
+
+.custom-select-trigger:focus,
+.custom-select-trigger.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+  background: #191729;
+}
+
+.custom-select-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-select-arrow {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  transition: transform 0.2s var(--ease-spring), color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.custom-select-trigger:hover .custom-select-arrow {
+  color: var(--text-secondary);
+}
+
+.custom-select-trigger.active .custom-select-arrow {
+  transform: rotate(180deg);
+  color: var(--accent);
+}
+
+/* Custom Dropdown Floating Menu */
+.custom-select-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: 290px;
+  background: rgba(14, 13, 22, 0.96);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: selectDropdownEnter 0.18s var(--ease-spring);
+  transform-origin: top right;
+}
+
+@keyframes selectDropdownEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.custom-select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  border: 1px solid transparent;
+  transition: color 0.22s ease, background-color 0.22s ease, border-color 0.22s ease;
+}
+
+.custom-select-option:hover,
+.custom-select-option.focused {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border-hairline);
+}
+
+.custom-select-option.selected {
+  color: #ffffff;
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.35);
+  font-weight: 600;
+}
+
+.custom-select-option .option-check {
+  font-size: 0.85rem;
+  color: var(--accent);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+}
+
+.custom-select-option.selected .option-check {
+  opacity: 1;
+}
+
 /* ============================================================
    UNIVERSAL SHARED CARD & AVATAR PRIMITIVES
    ============================================================ */

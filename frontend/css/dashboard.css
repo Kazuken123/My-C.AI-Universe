@@ -116,31 +116,6 @@
   color: var(--text-muted);
 }
 
-.select-wrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-.select-icon {
-  position: absolute;
-  left: 11px;
-  color: var(--text-muted);
-  pointer-events: none;
-  font-size: 0.95rem;
-}
-
-.select-control {
-  background: var(--bg-core);
-  border: 1px solid var(--border-hairline);
-  color: var(--text-primary);
-  padding: 8px 14px 8px 32px;
-  border-radius: var(--radius-md);
-  font-family: var(--font-sans);
-  font-size: 0.83rem;
-  font-weight: 500;
-  cursor: pointer;
-}
 
 /* ============================================================================
    EDITORIAL SPLIT HERO (soft-skill Section 3.B.3 & design-taste-frontend 4.7)

@@ -81,11 +81,6 @@
   gap: 8px;
 }
 
-.select-compact .select-control {
-  padding: 6px 10px 6px 28px;
-  font-size: 0.77rem;
-  border-radius: var(--radius-sm);
-}
 
 /* Message Stream */
 .chat-messages-scroll {

@@ -157,6 +157,9 @@ export async function initSidebar(activePage = 'discover') {
 
   // Active Persona in Sidebar
   await initPersonaPill();
+
+  // Upgrade any select controls on page to luxury custom dropdowns
+  initCustomSelects();
 }
 
 /**
@@ -219,3 +222,225 @@ export async function initPersonaPill() {
     // fallback
   }
 }
+
+/**
+ * Universal Custom Select Dropdown Enhancer
+ * Replaces native OS select popups with luxury dark glassmorphism dropdowns
+ * featuring gradual hover transitions, double-bezel concentric curves, and full keyboard navigation.
+ */
+export function initCustomSelects(container = document) {
+  if (!container) return;
+  const wraps = container.querySelectorAll('.select-wrap');
+  wraps.forEach(wrap => {
+    const select = wrap.querySelector('select.select-control');
+    if (!select) return;
+
+    if (select.__customSelect) {
+      select.__customSelect.sync();
+      return;
+    }
+
+    // Hide native select visually while keeping it fully operational for form/change listeners
+    select.setAttribute('tabindex', '-1');
+    select.setAttribute('aria-hidden', 'true');
+    select.classList.add('custom-select-native');
+
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'custom-select-trigger';
+    trigger.setAttribute('aria-haspopup', 'listbox');
+    trigger.setAttribute('aria-expanded', 'false');
+
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'custom-select-label';
+
+    const arrowIcon = document.createElement('i');
+    arrowIcon.className = 'ph-light ph-caret-down custom-select-arrow';
+    arrowIcon.setAttribute('aria-hidden', 'true');
+
+    trigger.appendChild(labelSpan);
+    trigger.appendChild(arrowIcon);
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'custom-select-dropdown';
+    dropdown.setAttribute('role', 'listbox');
+    dropdown.setAttribute('tabindex', '-1');
+    dropdown.style.display = 'none';
+
+    wrap.appendChild(trigger);
+    wrap.appendChild(dropdown);
+
+    let focusedIndex = -1;
+
+    function renderOptions() {
+      dropdown.innerHTML = '';
+      const options = Array.from(select.options);
+      const selectedIndex = select.selectedIndex;
+      const currentOpt = select.options[selectedIndex] || options[0];
+      labelSpan.textContent = currentOpt ? currentOpt.textContent : '';
+
+      options.forEach((opt, idx) => {
+        const item = document.createElement('div');
+        item.className = 'custom-select-option' + (idx === selectedIndex ? ' selected' : '');
+        item.setAttribute('role', 'option');
+        item.setAttribute('data-value', opt.value);
+        item.setAttribute('aria-selected', idx === selectedIndex ? 'true' : 'false');
+
+        const text = document.createElement('span');
+        text.textContent = opt.textContent;
+
+        const check = document.createElement('i');
+        check.className = 'ph-light ph-check option-check';
+        check.setAttribute('aria-hidden', 'true');
+
+        item.appendChild(text);
+        item.appendChild(check);
+
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectOption(idx);
+        });
+
+        dropdown.appendChild(item);
+      });
+    }
+
+    function openDropdown() {
+      document.querySelectorAll('.custom-select-dropdown').forEach(d => {
+        if (d !== dropdown) {
+          d.style.display = 'none';
+          const p = d.closest('.select-wrap')?.querySelector('.custom-select-trigger');
+          if (p) {
+            p.classList.remove('active');
+            p.setAttribute('aria-expanded', 'false');
+          }
+        }
+      });
+
+      dropdown.style.display = 'flex';
+      trigger.classList.add('active');
+      trigger.setAttribute('aria-expanded', 'true');
+      focusedIndex = select.selectedIndex >= 0 ? select.selectedIndex : 0;
+      highlightOption(focusedIndex);
+    }
+
+    function closeDropdown() {
+      dropdown.style.display = 'none';
+      trigger.classList.remove('active');
+      trigger.setAttribute('aria-expanded', 'false');
+      focusedIndex = -1;
+      clearHighlights();
+    }
+
+    function toggleDropdown() {
+      if (dropdown.style.display === 'flex') {
+        closeDropdown();
+      } else {
+        openDropdown();
+      }
+    }
+
+    function selectOption(index) {
+      const options = Array.from(select.options);
+      if (index < 0 || index >= options.length) return;
+      select.selectedIndex = index;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      renderOptions();
+      closeDropdown();
+      trigger.focus();
+    }
+
+    function highlightOption(index) {
+      const items = dropdown.querySelectorAll('.custom-select-option');
+      items.forEach((item, i) => {
+        if (i === index) {
+          item.classList.add('focused');
+          item.scrollIntoView({ block: 'nearest' });
+        } else {
+          item.classList.remove('focused');
+        }
+      });
+    }
+
+    function clearHighlights() {
+      dropdown.querySelectorAll('.custom-select-option').forEach(i => i.classList.remove('focused'));
+    }
+
+    // Trigger events
+    trigger.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleDropdown();
+    });
+
+    trigger.addEventListener('keydown', (e) => {
+      const items = dropdown.querySelectorAll('.custom-select-option');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (dropdown.style.display !== 'flex') {
+          openDropdown();
+        } else {
+          focusedIndex = Math.min(focusedIndex + 1, items.length - 1);
+          highlightOption(focusedIndex);
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (dropdown.style.display === 'flex') {
+          focusedIndex = Math.max(focusedIndex - 1, 0);
+          highlightOption(focusedIndex);
+        }
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (dropdown.style.display === 'flex') {
+          selectOption(focusedIndex);
+        } else {
+          openDropdown();
+        }
+      } else if (e.key === 'Escape' || e.key === 'Tab') {
+        if (dropdown.style.display === 'flex') {
+          closeDropdown();
+        }
+      }
+    });
+
+    // Native change listener (if value changed programmatically)
+    select.addEventListener('change', () => {
+      renderOptions();
+    });
+
+    // MutationObserver to automatically rebuild options if <select> is altered dynamically
+    const observer = new MutationObserver(() => {
+      renderOptions();
+    });
+    observer.observe(select, { childList: true, subtree: true });
+
+    select.__customSelect = {
+      sync: () => renderOptions(),
+      destroy: () => {
+        observer.disconnect();
+        trigger.remove();
+        dropdown.remove();
+        select.classList.remove('custom-select-native');
+        select.removeAttribute('tabindex');
+        select.removeAttribute('aria-hidden');
+        delete select.__customSelect;
+      }
+    };
+
+    renderOptions();
+  });
+}
+
+// Global click outside listener to close custom dropdowns
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.select-wrap')) {
+    document.querySelectorAll('.custom-select-dropdown').forEach(d => {
+      d.style.display = 'none';
+      const p = d.closest('.select-wrap')?.querySelector('.custom-select-trigger');
+      if (p) {
+        p.classList.remove('active');
+        p.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+});
