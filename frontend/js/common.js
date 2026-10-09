@@ -147,7 +147,9 @@ export async function initSidebar(activePage = 'discover') {
         } else {
           recentList.innerHTML = sessions.slice(0, 8).map(s => `
             <a href="/chat.html?id=${encodeURIComponent(s.characterId)}&session=${encodeURIComponent(s.id)}" class="recent-chat-item">
-              <img class="recent-chat-avatar" src="${escapeHtml(s.characterAvatar || '')}" alt="${escapeHtml(s.characterName)}" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
+              <span class="recent-chat-avatar-wrap">
+                <img class="recent-chat-avatar" src="${escapeHtml(s.characterAvatar || '')}" alt="${escapeHtml(s.characterName)}" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
+              </span>
               <div class="recent-chat-meta">
                 <div class="recent-chat-name">${escapeHtml(s.characterName)}</div>
                 <div class="recent-chat-preview">${escapeHtml((s.lastMessage || '').replace(/\*/g, '').slice(0, 42))}</div>

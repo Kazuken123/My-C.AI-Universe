@@ -199,7 +199,9 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
     sidebarRecentList.innerHTML = sessions.slice(0, 10).map(s => `
       <div class="recent-chat-item ${appState.activeSession?.id === s.id ? 'active' : ''}" data-open-session="${escapeHtml(s.id)}" data-session-char="${escapeHtml(s.characterId)}">
-        <img class="recent-chat-avatar" src="${escapeHtml(s.characterAvatar || '')}" alt="${escapeHtml(s.characterName)}" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
+        <span class="recent-chat-avatar-wrap">
+          <img class="recent-chat-avatar" src="${escapeHtml(s.characterAvatar || '')}" alt="${escapeHtml(s.characterName)}" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
+        </span>
         <div class="recent-chat-meta">
           <div class="recent-chat-name">${escapeHtml(s.characterName)}</div>
           <div class="recent-chat-preview">${escapeHtml((s.lastMessage || '').replace(/\*/g, '').slice(0, 48))}</div>
