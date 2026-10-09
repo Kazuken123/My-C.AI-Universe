@@ -17,6 +17,15 @@ class ChatPageApp {
   }
 
   async init() {
+    // Restrict chat access strictly to authenticated users with an account
+    const currentUser = await api.getCurrentUser();
+    if (!currentUser) {
+      const returnUrl = window.location.pathname + window.location.search;
+      window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(returnUrl)}`;
+      return;
+    }
+    this.state.currentUser = currentUser;
+
     await initSidebar('chats');
 
     // Load initial personas for persona dropdown

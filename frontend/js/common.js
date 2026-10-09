@@ -126,29 +126,38 @@ export async function initSidebar(activePage = 'discover') {
   const recentList = document.getElementById('sidebar-recent-chats');
   const sessionCount = document.getElementById('sidebar-session-count');
   if (recentList) {
-    try {
-      const sessions = await api.getChatSessions();
-      if (sessionCount) sessionCount.textContent = String(sessions.length);
+    if (!api.getToken()) {
+      if (sessionCount) sessionCount.textContent = '0';
+      recentList.innerHTML = `
+        <div class="sidebar-empty-threads" style="padding: 14px 12px; font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm); margin: 6px 0;">
+          Sign in to access your chat history.
+        </div>
+      `;
+    } else {
+      try {
+        const sessions = await api.getChatSessions();
+        if (sessionCount) sessionCount.textContent = String(sessions.length);
 
-      if (sessions.length === 0) {
-        recentList.innerHTML = `
-          <div class="sidebar-empty-threads" style="padding: 14px 12px; font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm); margin: 6px 0;">
-            No active storylines yet.<br>Select any character to begin!
-          </div>
-        `;
-      } else {
-        recentList.innerHTML = sessions.slice(0, 8).map(s => `
-          <a href="/chat.html?id=${encodeURIComponent(s.characterId)}&session=${encodeURIComponent(s.id)}" class="recent-chat-item">
-            <img class="recent-chat-avatar" src="${escapeHtml(s.characterAvatar || '')}" alt="${escapeHtml(s.characterName)}" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
-            <div class="recent-chat-meta">
-              <div class="recent-chat-name">${escapeHtml(s.characterName)}</div>
-              <div class="recent-chat-preview">${escapeHtml((s.lastMessage || '').replace(/\*/g, '').slice(0, 42))}</div>
+        if (sessions.length === 0) {
+          recentList.innerHTML = `
+            <div class="sidebar-empty-threads" style="padding: 14px 12px; font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm); margin: 6px 0;">
+              No active storylines yet.<br>Select any character to begin!
             </div>
-          </a>
-        `).join('');
+          `;
+        } else {
+          recentList.innerHTML = sessions.slice(0, 8).map(s => `
+            <a href="/chat.html?id=${encodeURIComponent(s.characterId)}&session=${encodeURIComponent(s.id)}" class="recent-chat-item">
+              <img class="recent-chat-avatar" src="${escapeHtml(s.characterAvatar || '')}" alt="${escapeHtml(s.characterName)}" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
+              <div class="recent-chat-meta">
+                <div class="recent-chat-name">${escapeHtml(s.characterName)}</div>
+                <div class="recent-chat-preview">${escapeHtml((s.lastMessage || '').replace(/\*/g, '').slice(0, 42))}</div>
+              </div>
+            </a>
+          `).join('');
+        }
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
     }
   }
 

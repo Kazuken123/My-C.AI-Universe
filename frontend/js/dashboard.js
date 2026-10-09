@@ -188,6 +188,10 @@ class DashboardApp {
 
   async loadActiveStorylines() {
     if (!this.continueSection || !this.continueRow) return;
+    if (!api.getToken()) {
+      this.continueSection.style.display = 'none';
+      return;
+    }
     try {
       const sessions = await api.getChatSessions();
       if (!sessions || sessions.length === 0) {

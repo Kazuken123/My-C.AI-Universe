@@ -161,8 +161,10 @@ class ProfileSetupController {
           }
 
           showToast('Profile and persona saved successfully!');
+          const params = new URLSearchParams(window.location.search);
+          const returnUrl = params.get('return') || '/';
           setTimeout(() => {
-            window.location.href = '/';
+            window.location.href = returnUrl;
           }, 350);
         } catch (err) {
           this.showAlert(err.message || 'Failed to save profile and persona.');

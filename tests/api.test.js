@@ -80,22 +80,65 @@ async function runTests() {
   }
   console.log(`✅ 5. Loaded & verified default user persona update in SQL (${personas.length} available)`);
 
-  // 6. Create Chat Session (inserts into chat_sessions, chat_messages, message_variants)
-  const sessionRes = await fetch(`${BASE_URL}/api/chats`, {
+  // 6. Chat Route Protection & Authenticated Chat Session Creation
+  const unauthSessionRes = await fetch(`${BASE_URL}/api/chats`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      characterId: createdChar.id,
+      title: 'Unauthenticated Storyline Attempt'
+    })
+  });
+  if (unauthSessionRes.status !== 401) {
+    throw new Error(`Expected HTTP 401 for unauthenticated chat session creation, got ${unauthSessionRes.status}`);
+  }
+
+  const pilotUser = `spec_pilot_${Date.now()}`;
+  const pilotRegRes = await fetch(`${BASE_URL}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: pilotUser,
+      password: 'pilotPassword123',
+      displayName: 'Spec Pilot'
+    })
+  });
+  const pilotAuth = await assertResponse(pilotRegRes, 'Register Pilot User');
+
+  const sessionRes = await fetch(`${BASE_URL}/api/chats`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${pilotAuth.token}`
+    },
     body: JSON.stringify({
       characterId: createdChar.id,
       title: 'Verification Storyline'
     })
   });
   const session = await assertResponse(sessionRes, 'Create Chat Session');
-  console.log(`✅ 6. Created SQL chat session ${session.id} with opening greeting (${session.messages.length} initial message)`);
+  console.log(`✅ 6. Verified unauthenticated chat blocked with 401; created authenticated SQL chat session ${session.id} with opening greeting`);
 
-  // 7. In-chat /update command
-  const updateCmdRes = await fetch(`${BASE_URL}/api/chat`, {
+  // 7. In-chat /update command (enforcing authentication)
+  const unauthChatRes = await fetch(`${BASE_URL}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      charId: createdChar.id,
+      sessionId: session.id,
+      message: 'Unauthenticated prompt attempt'
+    })
+  });
+  if (unauthChatRes.status !== 401) {
+    throw new Error(`Expected HTTP 401 for unauthenticated /api/chat, got ${unauthChatRes.status}`);
+  }
+
+  const updateCmdRes = await fetch(`${BASE_URL}/api/chat`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${pilotAuth.token}`
+    },
     body: JSON.stringify({
       charId: createdChar.id,
       sessionId: session.id,
@@ -103,7 +146,7 @@ async function runTests() {
     })
   });
   const updateCmdData = await assertResponse(updateCmdRes, 'In-Chat /update Command');
-  console.log(`✅ 7. In-chat /update SQL command succeeded: ${updateCmdData.response}`);
+  console.log(`✅ 7. Verified unauthenticated /api/chat blocked with 401; in-chat /update SQL command succeeded: ${updateCmdData.response}`);
 
   // 8. Long-Term Memory CRUD (inserts into character_memories)
   const addMemRes = await fetch(`${BASE_URL}/api/memories`, {

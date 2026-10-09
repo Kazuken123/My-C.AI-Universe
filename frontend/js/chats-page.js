@@ -97,6 +97,11 @@ class ChatsPageApp {
   }
 
   async init() {
+    const currentUser = await api.getCurrentUser();
+    if (!currentUser) {
+      window.location.href = '/auth.html?mode=signin&return=/chats.html';
+      return;
+    }
     await initSidebar('chats');
     await this.loadSessions();
   }

@@ -146,6 +146,11 @@ export class ChatController extends BaseController {
 
   deleteChatSession(req, res) {
     try {
+      const userId = req.user ? req.user.id : null;
+      const session = this.sessionsRepo.findById(req.params.sessionId, userId);
+      if (!session) {
+        throw new NotFoundError('Chat session not found');
+      }
       const deleted = this.sessionsRepo.deleteById(req.params.sessionId);
       if (!deleted) {
         throw new NotFoundError('Chat session not found');
@@ -159,9 +164,10 @@ export class ChatController extends BaseController {
   updateChatMessage(req, res) {
     try {
       const { sessionId, messageId } = req.params;
+      const userId = req.user ? req.user.id : null;
       const { content, selectedVariantIndex, isPinned, rating } = req.body;
 
-      const session = this.sessionsRepo.findById(sessionId);
+      const session = this.sessionsRepo.findById(sessionId, userId);
       if (!session) {
         throw new NotFoundError('Chat session not found');
       }
@@ -202,9 +208,10 @@ export class ChatController extends BaseController {
   rewindChatSession(req, res) {
     try {
       const { sessionId } = req.params;
+      const userId = req.user ? req.user.id : null;
       const { messageId } = req.body;
 
-      const session = this.sessionsRepo.findById(sessionId);
+      const session = this.sessionsRepo.findById(sessionId, userId);
       if (!session) {
         throw new NotFoundError('Chat session not found');
       }
@@ -222,6 +229,7 @@ export class ChatController extends BaseController {
 
   async sendChatMessage(req, res) {
     try {
+      const userId = req.user ? req.user.id : null;
       const {
         charId,
         sessionId,
@@ -282,22 +290,24 @@ export class ChatController extends BaseController {
       }
 
       // Load or create ChatSession entity
-      let session = sessionId ? this.sessionsRepo.findById(sessionId) : null;
+      let session = sessionId ? this.sessionsRepo.findById(sessionId, userId) : null;
       if (!session) {
-        const existingForChar = this.sessionsRepo.findAll(charId);
+        const existingForChar = this.sessionsRepo.findAll(charId, userId);
         session = existingForChar[0] || null;
       }
 
       const activePersona =
-        (personaId && this.personasRepo.findById(personaId)) ||
-        (session?.personaId && this.personasRepo.findById(session.personaId)) ||
-        this.personasRepo.findDefault();
+        (personaId && this.personasRepo.findById(personaId, userId)) ||
+        (session?.personaId && this.personasRepo.findById(session.personaId, userId)) ||
+        this.personasRepo.findDefault(userId);
 
       if (!session) {
         session = this.#createNewSessionEntity(
           character,
           activePersona ? activePersona.id : 'persona_default',
-          provider || config.AI_PROVIDER
+          provider || config.AI_PROVIDER,
+          '',
+          userId
         );
       }
 
