@@ -453,7 +453,25 @@ async function runTests() {
   }
   console.log(`✅ 20. Password Reset verified (old password rejected, new password authenticated for @${resetUser})`);
 
-  console.log('\n✨ All automated SQL, Security & API tests passed!');
+  // 21. Clean up automated test users and cascaded sessions
+  try {
+    const dbMod = await import('../backend/db/database.js');
+    const db = dbMod.getDatabase();
+    const testUsernames = [pilotUser, testUserA, testUserB, socialData.user.username, resetUser];
+    for (const un of testUsernames) {
+      if (un) {
+        db.prepare('DELETE FROM users WHERE username = ? COLLATE NOCASE').run(un);
+      }
+    }
+    // Clean up test personas, sessions, and password resets
+    db.prepare('DELETE FROM user_personas WHERE user_id NOT IN (SELECT id FROM users) AND user_id IS NOT NULL').run();
+    db.prepare('DELETE FROM chat_sessions WHERE user_id NOT IN (SELECT id FROM users) AND user_id IS NOT NULL').run();
+    db.prepare('DELETE FROM password_resets WHERE email LIKE ?').run('%universe.ai');
+  } catch (cleanErr) {
+    console.warn('Note: Test cleanup encountered notice:', cleanErr.message);
+  }
+
+  console.log('\n✨ All automated SQL, Security & API tests passed and test data cleaned up!');
   if (startedInProcess) {
     if (inProcessServer) {
       await new Promise(resolve => inProcessServer.close(resolve));

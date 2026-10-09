@@ -54,7 +54,7 @@ export class ApplicationServer {
     this.app.use(cors({
       origin: config.CORS_ORIGINS,
       methods: ['GET', 'POST', 'PUT', 'DELETE'],
-      allowedHeaders: ['Content-Type']
+      allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
     }));
 
     this.app.use(express.json({ limit: '2mb' }));

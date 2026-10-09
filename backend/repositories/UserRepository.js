@@ -103,14 +103,27 @@ export class UserRepository extends BaseRepository {
     user.touch();
     const stmt = this.db.prepare(`
       UPDATE users SET
+        username = ?,
         email = ?,
         display_name = ?,
         avatar = ?,
         password_hash = ?,
+        auth_provider = ?,
+        provider_id = ?,
         updated_at = ?
       WHERE id = ?
     `);
-    stmt.run(user.email || null, user.displayName, user.avatar, user.passwordHash, user.updatedAt, user.id);
+    stmt.run(
+      user.username,
+      user.email || null,
+      user.displayName,
+      user.avatar,
+      user.passwordHash,
+      user.authProvider || 'local',
+      user.providerId || null,
+      user.updatedAt,
+      user.id
+    );
     return user;
   }
 
