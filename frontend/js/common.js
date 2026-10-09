@@ -339,8 +339,8 @@ export function initMobileNavigation(activePage = 'discover') {
 export function renderUserAvatar(el, avatar, fallback = '👤') {
   if (!el) return;
   const val = (avatar || '').trim();
-  if (val.startsWith('http://') || val.startsWith('https://') || val.startsWith('data:')) {
-    el.innerHTML = `<img src="${val}" alt="" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: block;" />`;
+  if (val.startsWith('http://') || val.startsWith('https://') || val.startsWith('data:') || val.startsWith('/')) {
+    el.innerHTML = `<img src="${val}" alt="" style="width: 100%; height: 100%; object-fit: cover; object-position: center top; border-radius: inherit; display: block;" />`;
   } else {
     el.textContent = val || fallback;
   }

@@ -453,7 +453,39 @@ async function runTests() {
   }
   console.log(`✅ 20. Password Reset verified (old password rejected, new password authenticated for @${resetUser})`);
 
-  // 21. Clean up automated test users and cascaded sessions
+  // 21. Avatar Upload & Cropper Storage verified
+  const samplePngBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  const uploadRes = await fetch(`${BASE_URL}/api/auth/upload-avatar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image: samplePngBase64 })
+  });
+  const uploadData = await assertResponse(uploadRes, 'Upload Avatar');
+  if (!uploadData.url || !uploadData.url.startsWith('/assets/avatars/')) {
+    throw new Error(`Upload returned unexpected url: ${uploadData.url}`);
+  }
+
+  // Verify static serving of uploaded image
+  const staticFileRes = await fetch(`${BASE_URL}${uploadData.url}`);
+  if (staticFileRes.status !== 200) {
+    throw new Error(`Static asset fetching for ${uploadData.url} returned status ${staticFileRes.status}`);
+  }
+
+  // Clean up uploaded test file
+  try {
+    const fsMod = await import('node:fs');
+    const pathMod = await import('node:path');
+    const uploadedFilePath = pathMod.join(process.cwd(), 'frontend', uploadData.url.replace(/^\//, ''));
+    if (fsMod.existsSync(uploadedFilePath)) {
+      fsMod.unlinkSync(uploadedFilePath);
+    }
+  } catch (cleanFileErr) {
+    console.warn('Note: Cleanup of test avatar encountered:', cleanFileErr.message);
+  }
+
+  console.log(`✅ 21. Avatar Upload & Static Storage verified (${uploadData.url})`);
+
+  // 22. Clean up automated test users and cascaded sessions
   try {
     const dbMod = await import('../backend/db/database.js');
     const db = dbMod.getDatabase();

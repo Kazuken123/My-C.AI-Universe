@@ -1,5 +1,6 @@
 import { api } from './api.js';
 import { initSidebar, showToast, escapeHtml } from './common.js';
+import { openImageCropper } from './cropper.js';
 
 class StudioPageApp {
   constructor() {
@@ -25,10 +26,12 @@ class StudioPageApp {
     this.aiConceptInput = document.getElementById('aiConceptInput');
     this.btnGenerateAI = document.getElementById('btnGenerateAI');
     this.btnRandomAvatar = document.getElementById('btnRandomAvatar');
+    this.btnUploadAvatar = document.getElementById('btnUploadStudioAvatar');
     this.btnReset = document.getElementById('btnResetStudio');
 
     // Live preview elements
     this.previewAvatar = document.getElementById('preview-avatar');
+    this.previewAvatarFrame = document.getElementById('previewAvatarFrame');
     this.previewName = document.getElementById('preview-name');
     this.previewTagline = document.getElementById('preview-tagline');
     this.previewTags = document.getElementById('preview-tags');
@@ -62,6 +65,22 @@ class StudioPageApp {
     const inputs = [this.nameInput, this.taglineInput, this.avatarInput, this.greetingInput, this.categoriesInput];
     inputs.forEach(el => {
       if (el) el.addEventListener('input', () => this.updatePreview());
+    });
+  }
+
+  launchPortraitCropper() {
+    const currentVal = this.avatarInput?.value.trim() || '';
+    const initial = (currentVal.startsWith('http') || currentVal.startsWith('data:') || currentVal.startsWith('/')) ? currentVal : null;
+    openImageCropper({
+      initialImage: initial,
+      title: 'Character Portrait Framing',
+      shape: 'rect',
+      onCrop: ({ url }) => {
+        if (this.avatarInput) {
+          this.avatarInput.value = url;
+          this.updatePreview();
+        }
+      }
     });
   }
 
@@ -111,6 +130,20 @@ class StudioPageApp {
       this.btnReset.addEventListener('click', () => {
         this.resetDraft();
         showToast('Studio form reset.');
+      });
+    }
+
+    if (this.btnUploadAvatar) {
+      this.btnUploadAvatar.addEventListener('click', () => this.launchPortraitCropper());
+    }
+
+    if (this.previewAvatarFrame) {
+      this.previewAvatarFrame.addEventListener('click', () => this.launchPortraitCropper());
+      this.previewAvatarFrame.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          this.launchPortraitCropper();
+        }
       });
     }
 

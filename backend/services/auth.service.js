@@ -1,4 +1,6 @@
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import { User } from '../models/User.js';
 import { UserPersona } from '../models/UserPersona.js';
 import { userRepository, personaRepository } from '../repositories/index.js';
@@ -214,7 +216,7 @@ export class AuthService {
       user.username = cleanUsername;
     }
     if (avatar !== undefined) {
-      user.avatar = String(avatar).trim().slice(0, 500);
+      user.avatar = String(avatar).trim().slice(0, 100000);
     }
     this.userRepo.update(user);
     return user.toJSON();
@@ -477,6 +479,39 @@ export class AuthService {
     return {
       success: true,
       message: 'Password changed successfully. You can now sign in.'
+    };
+  }
+
+  /**
+   * Save uploaded base64 data URL avatar image to static storage
+   * @param {string} dataUrl
+   * @returns {{ url: string, filename: string, size: number }}
+   */
+  saveUploadedAvatar(dataUrl) {
+    if (!dataUrl || typeof dataUrl !== 'string') {
+      throw new ValidationError('Image payload is required', 'image');
+    }
+    const match = dataUrl.match(/^data:image\/(png|jpeg|jpg|webp|gif);base64,(.+)$/i);
+    if (!match) {
+      throw new ValidationError('Invalid image format. Supported formats: PNG, JPEG, WEBP, GIF', 'image');
+    }
+    const ext = match[1].toLowerCase() === 'jpeg' ? 'jpg' : match[1].toLowerCase();
+    const base64Data = match[2];
+    const buffer = Buffer.from(base64Data, 'base64');
+    if (buffer.length > 10 * 1024 * 1024) {
+      throw new ValidationError('Image size exceeds maximum limit of 10MB', 'image');
+    }
+    const avatarsDir = path.join(process.cwd(), 'frontend', 'assets', 'avatars');
+    if (!fs.existsSync(avatarsDir)) {
+      fs.mkdirSync(avatarsDir, { recursive: true });
+    }
+    const filename = `avatar_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.${ext}`;
+    const filePath = path.join(avatarsDir, filename);
+    fs.writeFileSync(filePath, buffer);
+    return {
+      url: `/assets/avatars/${filename}`,
+      filename,
+      size: buffer.length
     };
   }
 

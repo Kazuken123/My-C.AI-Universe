@@ -1,5 +1,6 @@
 import { api } from './api.js';
 import { initTheme, bindSpotlightHover, showToast, renderUserAvatar } from './common.js';
+import { openImageCropper } from './cropper.js';
 
 class ProfileSetupController {
   constructor() {
@@ -8,6 +9,7 @@ class ProfileSetupController {
 
     this.avatarInput = document.getElementById('setupAvatarInput');
     this.avatarPreview = document.getElementById('setupAvatarPreview');
+    this.uploadBtn = document.getElementById('btnUploadProfileAvatar');
     this.displayNameInput = document.getElementById('setupDisplayName');
     this.usernameInput = document.getElementById('setupUsername');
 
@@ -37,6 +39,22 @@ class ProfileSetupController {
   updateAvatarPreview() {
     const val = this.avatarInput?.value.trim() || '👤';
     renderUserAvatar(this.avatarPreview, val);
+  }
+
+  launchAvatarCropper() {
+    const currentVal = this.avatarInput?.value.trim() || '';
+    const initial = (currentVal.startsWith('http') || currentVal.startsWith('data:') || currentVal.startsWith('/')) ? currentVal : null;
+    openImageCropper({
+      initialImage: initial,
+      title: 'Profile Avatar Framing',
+      shape: 'circle',
+      onCrop: ({ url }) => {
+        if (this.avatarInput) {
+          this.avatarInput.value = url;
+          this.updateAvatarPreview();
+        }
+      }
+    });
   }
 
   async loadInitialData() {
@@ -91,6 +109,20 @@ class ProfileSetupController {
 
     if (this.avatarInput) {
       this.avatarInput.addEventListener('input', () => this.updateAvatarPreview());
+    }
+
+    if (this.uploadBtn) {
+      this.uploadBtn.addEventListener('click', () => this.launchAvatarCropper());
+    }
+
+    if (this.avatarPreview) {
+      this.avatarPreview.addEventListener('click', () => this.launchAvatarCropper());
+      this.avatarPreview.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          this.launchAvatarCropper();
+        }
+      });
     }
 
     const presetBtns = document.querySelectorAll('.setup-preset-btn');

@@ -18,6 +18,7 @@ export class AuthController extends BaseController {
     this.forgotPassword = this.forgotPassword.bind(this);
     this.verifyResetCode = this.verifyResetCode.bind(this);
     this.resetPassword = this.resetPassword.bind(this);
+    this.uploadAvatar = this.uploadAvatar.bind(this);
     this.logout = this.logout.bind(this);
   }
 
@@ -112,6 +113,16 @@ export class AuthController extends BaseController {
       return this.sendJson(res, { user: req.user.toJSON(), authenticated: true });
     } catch (error) {
       return this.handleError(res, error, 'Failed to fetch current user profile');
+    }
+  }
+
+  uploadAvatar(req, res) {
+    try {
+      const { image } = req.body || {};
+      const result = this.service.saveUploadedAvatar(image);
+      return this.sendJson(res, result, 200);
+    } catch (error) {
+      return this.handleError(res, error, 'Failed to upload avatar image');
     }
   }
 

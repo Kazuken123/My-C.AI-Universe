@@ -100,6 +100,13 @@ export class ApiClient {
     });
   }
 
+  uploadAvatar(imageData) {
+    return this.request('/api/auth/upload-avatar', {
+      method: 'POST',
+      body: JSON.stringify({ image: imageData })
+    });
+  }
+
   async getCurrentUser() {
     const token = this.getToken();
     if (!token) return null;

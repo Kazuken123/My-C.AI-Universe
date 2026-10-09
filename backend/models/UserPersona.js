@@ -30,8 +30,8 @@ export class UserPersona extends BaseEntity {
     if (this.description && this.description.length > 2000) {
       throw new ValidationError('Persona description too long (max 2000 characters)', 'description');
     }
-    if (this.avatar && this.avatar.length > 500) {
-      throw new ValidationError('Avatar identifier too long (max 500 characters)', 'avatar');
+    if (this.avatar && this.avatar.length > 100000) {
+      throw new ValidationError('Avatar identifier too long (max 100000 characters)', 'avatar');
     }
     return true;
   }

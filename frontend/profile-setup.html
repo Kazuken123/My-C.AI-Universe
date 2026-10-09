@@ -23,6 +23,7 @@
   <!-- Modular CSS for Auth & Setup -->
   <link rel="stylesheet" href="/css/base.css" />
   <link rel="stylesheet" href="/css/auth.css" />
+  <link rel="stylesheet" href="/css/cropper.css" />
   <style>
     .setup-avatar-preview-row {
       display: flex;
@@ -42,11 +43,20 @@
       font-size: 1.8rem;
       overflow: hidden;
       flex-shrink: 0;
+      cursor: pointer;
+      position: relative;
+      transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .setup-avatar-preview:hover {
+      border-color: var(--accent);
+      transform: scale(1.05);
+      box-shadow: 0 0 14px var(--accent-soft);
     }
     .setup-avatar-preview img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      object-position: center top;
       display: block;
     }
     .setup-preset-pills {
@@ -133,9 +143,13 @@
             <div class="form-group">
               <label class="form-label" for="setupAvatarInput">Account Avatar</label>
               <div class="setup-avatar-preview-row">
-                <div class="setup-avatar-preview" id="setupAvatarPreview">👤</div>
-                <div style="flex: 1;">
+                <div class="setup-avatar-preview" id="setupAvatarPreview" role="button" tabindex="0" title="Click to upload and crop photo">👤</div>
+                <div style="flex: 1; display: flex; gap: 8px;">
                   <input class="form-input" type="text" id="setupAvatarInput" placeholder="Image URL or emoji symbol" />
+                  <button type="button" class="btn-secondary" id="btnUploadProfileAvatar" style="white-space: nowrap; flex-shrink: 0; padding: 0 14px; gap: 6px; display: inline-flex; align-items: center; border-radius: var(--radius-sm); font-size: 0.8rem;">
+                    <i class="ph-light ph-crop"></i>
+                    <span>Upload &amp; Crop</span>
+                  </button>
                 </div>
               </div>
               <div class="setup-preset-pills" id="avatarPresetPills">

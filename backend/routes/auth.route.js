@@ -12,6 +12,8 @@ router.post('/auth/verify-code', authController.verifyResetCode);
 router.post('/auth/reset-password', authController.resetPassword);
 router.get('/auth/me', optionalAuth, authController.me);
 router.put('/auth/profile', requireAuth, authController.updateProfile);
+router.post('/auth/upload-avatar', authController.uploadAvatar);
+router.post('/upload/avatar', authController.uploadAvatar);
 router.post('/auth/logout', authController.logout);
 
 export default router;

@@ -57,8 +57,8 @@ export class ApplicationServer {
       allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
     }));
 
-    this.app.use(express.json({ limit: '2mb' }));
-    this.app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+    this.app.use(express.json({ limit: '10mb' }));
+    this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
     // Apply global rate limiting to all /api routes
     this.app.use('/api', globalRateLimiter.middleware());
@@ -99,6 +99,10 @@ export class ApplicationServer {
 
     this.app.get(['/auth', '/auth.html', '/login', '/login.html'], (_req, res) => {
       res.sendFile(path.join(frontendDir, 'auth.html'));
+    });
+
+    this.app.get(['/profile-setup', '/profile-setup.html', '/setup'], (_req, res) => {
+      res.sendFile(path.join(frontendDir, 'profile-setup.html'));
     });
 
     this.app.get(['/reset-password', '/reset-password.html', '/forgot-password'], (_req, res) => {
