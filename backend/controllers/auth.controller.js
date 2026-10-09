@@ -34,7 +34,7 @@ export class AuthController extends BaseController {
       });
       return this.sendJson(res, result, result.isNewUser ? 201 : 200);
     } catch (error) {
-      return this.handleError(res, error, 'Đăng nhập mạng xã hội thất bại');
+      return this.handleError(res, error, 'Social authentication failed');
     }
   }
 
@@ -45,7 +45,7 @@ export class AuthController extends BaseController {
       const result = await this.service.requestPasswordReset({ email, baseUrl });
       return this.sendJson(res, result, 200);
     } catch (error) {
-      return this.handleError(res, error, 'Yêu cầu đặt lại mật khẩu thất bại');
+      return this.handleError(res, error, 'Password reset request failed');
     }
   }
 
@@ -55,7 +55,7 @@ export class AuthController extends BaseController {
       const result = this.service.verifyResetCode({ email, code });
       return this.sendJson(res, result, 200);
     } catch (error) {
-      return this.handleError(res, error, 'Xác nhận mã bảo mật thất bại');
+      return this.handleError(res, error, 'Verification code validation failed');
     }
   }
 
@@ -65,7 +65,7 @@ export class AuthController extends BaseController {
       const result = this.service.resetPassword({ email, code, newPassword });
       return this.sendJson(res, result, 200);
     } catch (error) {
-      return this.handleError(res, error, 'Đặt lại mật khẩu mới thất bại');
+      return this.handleError(res, error, 'Password reset failed');
     }
   }
 

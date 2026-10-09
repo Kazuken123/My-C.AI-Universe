@@ -224,7 +224,7 @@ export class AuthService {
   async socialAuth({ provider, providerId, email, name, avatar, token }) {
     const cleanProvider = String(provider || '').trim().toLowerCase();
     if (!['google', 'facebook'].includes(cleanProvider)) {
-      throw new ValidationError('Nhà cung cấp đăng nhập phải là google hoặc facebook', 'provider');
+      throw new ValidationError('Authentication provider must be either google or facebook', 'provider');
     }
 
     let profileEmail = email ? String(email).trim().toLowerCase() : '';
@@ -262,7 +262,7 @@ export class AuthService {
     }
 
     if (!profileId && !profileEmail) {
-      throw new ValidationError('Đăng nhập mạng xã hội yêu cầu mã định danh hoặc email');
+      throw new ValidationError('Social authentication requires a provider ID or email');
     }
 
     // 1. Look up user by provider and providerId
@@ -345,7 +345,7 @@ export class AuthService {
    */
   async requestPasswordReset({ email, baseUrl }) {
     if (!email || typeof email !== 'string') {
-      throw new ValidationError('Email là bắt buộc', 'email');
+      throw new ValidationError('Email is required', 'email');
     }
 
     const cleanEmail = String(email).trim().toLowerCase();
@@ -356,12 +356,12 @@ export class AuthService {
     }
 
     if (!user) {
-      throw new NotFoundError('Không tìm thấy tài khoản với email hoặc tên đăng nhập này');
+      throw new NotFoundError('No account found with this email or username');
     }
 
     const targetEmail = user.email || cleanEmail;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(targetEmail)) {
-      throw new ValidationError('Tài khoản này chưa thiết lập địa chỉ email hợp lệ để nhận mã xác nhận');
+      throw new ValidationError('This account does not have a valid email configured to receive verification codes');
     }
 
     // Generate 6-digit OTP
@@ -383,7 +383,7 @@ export class AuthService {
 
     return {
       success: true,
-      message: 'Mã xác nhận 6 chữ số đã được gửi tới email của bạn.',
+      message: 'A 6-digit verification code has been sent to your email address.',
       email: targetEmail,
       previewCode: emailResult.previewCode
     };
@@ -398,7 +398,7 @@ export class AuthService {
    */
   verifyResetCode({ email, code }) {
     if (!email || !code) {
-      throw new ValidationError('Email và mã xác nhận là bắt buộc');
+      throw new ValidationError('Email and verification code are required');
     }
 
     const cleanEmail = String(email).trim().toLowerCase();
@@ -412,11 +412,11 @@ export class AuthService {
     `).get(cleanEmail, cleanCode);
 
     if (!row) {
-      throw new ValidationError('Mã xác nhận không đúng hoặc đã qua sử dụng');
+      throw new ValidationError('Invalid or previously used verification code');
     }
 
     if (Date.now() > new Date(row.expires_at).getTime()) {
-      throw new ValidationError('Mã xác nhận đã hết hạn (quá 15 phút)');
+      throw new ValidationError('Verification code has expired');
     }
 
     return { valid: true };
@@ -434,13 +434,13 @@ export class AuthService {
     this.verifyResetCode({ email, code });
 
     if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 6) {
-      throw new ValidationError('Mật khẩu mới phải có tối thiểu 6 ký tự', 'newPassword');
+      throw new ValidationError('New password must contain at least 6 characters', 'newPassword');
     }
 
     const cleanEmail = String(email).trim().toLowerCase();
     const user = this.userRepo.findByEmail(cleanEmail) || this.userRepo.findByUsername(cleanEmail);
     if (!user) {
-      throw new NotFoundError('Tài khoản người dùng không tồn tại');
+      throw new NotFoundError('User account not found');
     }
 
     const newHash = User.hashPassword(newPassword);
@@ -454,7 +454,7 @@ export class AuthService {
 
     return {
       success: true,
-      message: 'Mật khẩu đã được thay đổi thành công. Bạn có thể đăng nhập ngay.'
+      message: 'Password changed successfully. You can now sign in.'
     };
   }
 

@@ -37,20 +37,20 @@ class ResetPasswordPageController {
       if (this.reqForm) this.reqForm.classList.remove('hidden');
       if (this.resetForm) this.resetForm.classList.add('hidden');
       if (this.successSection) this.successSection.classList.add('hidden');
-      if (this.titleEl) this.titleEl.textContent = 'Đặt Lại Mật Khẩu';
-      if (this.subEl) this.subEl.textContent = 'Nhập email để nhận mã xác nhận bảo mật gồm 6 chữ số.';
+      if (this.titleEl) this.titleEl.textContent = 'Reset Password';
+      if (this.subEl) this.subEl.textContent = 'Enter your email to receive a 6-digit verification code.';
     } else if (step === 'reset') {
       if (this.reqForm) this.reqForm.classList.add('hidden');
       if (this.resetForm) this.resetForm.classList.remove('hidden');
       if (this.successSection) this.successSection.classList.add('hidden');
-      if (this.titleEl) this.titleEl.textContent = 'Nhập Mật Khẩu Mới';
-      if (this.subEl) this.subEl.textContent = 'Nhập mã xác nhận vừa nhận được và thiết lập mật khẩu mới.';
+      if (this.titleEl) this.titleEl.textContent = 'Enter New Password';
+      if (this.subEl) this.subEl.textContent = 'Enter the verification code and choose a new password.';
     } else if (step === 'success') {
       if (this.reqForm) this.reqForm.classList.add('hidden');
       if (this.resetForm) this.resetForm.classList.add('hidden');
       if (this.successSection) this.successSection.classList.remove('hidden');
-      if (this.titleEl) this.titleEl.textContent = 'Khôi Phục Thành Công';
-      if (this.subEl) this.subEl.textContent = 'Mật khẩu tài khoản của bạn đã được cập nhật thành công.';
+      if (this.titleEl) this.titleEl.textContent = 'Password Reset Successful';
+      if (this.subEl) this.subEl.textContent = 'Your account password has been updated successfully.';
     }
   }
 
@@ -105,7 +105,7 @@ class ResetPasswordPageController {
 
         const email = this.reqEmailInput?.value.trim();
         if (!email) {
-          this.showAlert('Vui lòng nhập địa chỉ email hợp lệ.');
+          this.showAlert('Please enter a valid email address.');
           return;
         }
 
@@ -117,12 +117,12 @@ class ResetPasswordPageController {
 
         try {
           const res = await api.forgotPassword(email);
-          showToast('Mã xác nhận đã được gửi đi!');
+          showToast('Verification code sent successfully!');
           if (this.resetEmailInput) this.resetEmailInput.value = email;
 
-          let msg = res.message || 'Mã xác nhận đã được gửi đến email của bạn.';
+          let msg = res.message || 'A verification code has been sent to your email address.';
           if (res.previewCode) {
-            msg += ` (Mã thử nghiệm: ${res.previewCode})`;
+            msg += ` - Test Code: ${res.previewCode}`;
             if (this.resetCodeInput) this.resetCodeInput.value = res.previewCode;
           }
 
@@ -134,7 +134,7 @@ class ResetPasswordPageController {
             setTimeout(() => this.newPassInput.focus(), 150);
           }
         } catch (err) {
-          this.showAlert(err.message || 'Không thể gửi mã xác nhận. Vui lòng kiểm tra lại email.');
+          this.showAlert(err.message || 'Failed to send verification code. Please check your email.');
         } finally {
           if (btn) {
             btn.disabled = false;
@@ -156,17 +156,17 @@ class ResetPasswordPageController {
         const confirmPassword = this.confirmPassInput?.value;
 
         if (!email || !code) {
-          this.showAlert('Vui lòng điền đầy đủ email và mã xác nhận 6 số.');
+          this.showAlert('Please enter both your email address and the 6-digit code.');
           return;
         }
 
         if (!newPassword || newPassword.length < 6) {
-          this.showAlert('Mật khẩu mới phải có tối thiểu 6 ký tự.');
+          this.showAlert('New password must contain at least 6 characters.');
           return;
         }
 
         if (newPassword !== confirmPassword) {
-          this.showAlert('Nhập lại mật khẩu không khớp. Vui lòng thử lại.');
+          this.showAlert('Passwords do not match. Please try again.');
           return;
         }
 
@@ -178,10 +178,10 @@ class ResetPasswordPageController {
 
         try {
           await api.resetPassword({ email, code, newPassword });
-          showToast('Mật khẩu đã được cập nhật thành công!');
+          showToast('Password updated successfully!');
           this.showStep('success');
         } catch (err) {
-          this.showAlert(err.message || 'Đặt lại mật khẩu thất bại. Mã có thể đã hết hạn hoặc không đúng.');
+          this.showAlert(err.message || 'Password reset failed. The code may be expired or incorrect.');
         } finally {
           if (btn) {
             btn.disabled = false;

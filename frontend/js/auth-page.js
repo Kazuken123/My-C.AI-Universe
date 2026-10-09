@@ -47,17 +47,17 @@ class AuthPageController {
       if (mode === 'signup') {
         if (this.tabSignIn) { this.tabSignIn.classList.remove('active'); this.tabSignIn.setAttribute('aria-selected', 'false'); }
         if (this.tabSignUp) { this.tabSignUp.classList.add('active'); this.tabSignUp.setAttribute('aria-selected', 'true'); }
-        if (this.title) this.title.textContent = 'Tạo Tài Khoản Universe';
-        if (pageSub) pageSub.textContent = 'Tạo tài khoản để lưu trữ nhân vật đại diện và các nhánh cốt truyện.';
-        if (this.submitText) this.submitText.textContent = 'Tạo Tài Khoản';
+        if (this.title) this.title.textContent = 'Create Universe Account';
+        if (pageSub) pageSub.textContent = 'Create an account to store custom personas and branching storyline threads.';
+        if (this.submitText) this.submitText.textContent = 'Create Account';
         if (this.nameWrapper) this.nameWrapper.classList.add('expanded');
         if (this.nameInput) setTimeout(() => this.nameInput.focus(), 150);
       } else {
         if (this.tabSignIn) { this.tabSignIn.classList.add('active'); this.tabSignIn.setAttribute('aria-selected', 'true'); }
         if (this.tabSignUp) { this.tabSignUp.classList.remove('active'); this.tabSignUp.setAttribute('aria-selected', 'false'); }
-        if (this.title) this.title.textContent = 'Đăng Nhập vào Universe';
-        if (pageSub) pageSub.textContent = 'Truy cập nhân vật đại diện và các nhánh cốt truyện của bạn.';
-        if (this.submitText) this.submitText.textContent = 'Đăng Nhập';
+        if (this.title) this.title.textContent = 'Sign In to Universe';
+        if (pageSub) pageSub.textContent = 'Access your custom personas and branching storyline threads.';
+        if (this.submitText) this.submitText.textContent = 'Sign In';
         if (this.nameWrapper) this.nameWrapper.classList.remove('expanded');
         if (this.usernameInput) setTimeout(() => this.usernameInput.focus(), 150);
       }
@@ -149,10 +149,10 @@ class AuthPageController {
               email: email || undefined,
               displayName: displayName || username
             });
-            showToast(`Tài khoản đã tạo thành công! Chào mừng, @${username}`);
+            showToast(`Account created successfully. Welcome, @${username}!`);
           } else {
             await api.login({ username, password });
-            showToast(`Chào mừng quay trở lại, @${username}`);
+            showToast(`Welcome back, @${username}!`);
           }
 
           const returnUrl = params.get('return') || '/';
@@ -160,7 +160,7 @@ class AuthPageController {
             window.location.href = returnUrl;
           }, 400);
         } catch (err) {
-          this.showAlert(err.message || 'Xác thực thất bại. Vui lòng kiểm tra lại thông tin.');
+          this.showAlert(err.message || 'Authentication failed. Please verify your credentials.');
           if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.style.opacity = '1';
@@ -172,7 +172,7 @@ class AuthPageController {
     const handleSocialAuth = async (provider) => {
       this.clearAlert();
       const providerName = provider === 'google' ? 'Google' : 'Facebook';
-      const promptEmail = prompt(`Nhập địa chỉ email ${providerName} để đăng nhập nhanh:`, `user@${provider === 'google' ? 'gmail.com' : 'facebook.com'}`);
+      const promptEmail = prompt(`Enter your ${providerName} email address for sign-in:`, `user@${provider === 'google' ? 'gmail.com' : 'facebook.com'}`);
       if (!promptEmail || !promptEmail.trim()) return;
 
       const cleanEmail = promptEmail.trim().toLowerCase();
@@ -183,13 +183,13 @@ class AuthPageController {
           name: cleanEmail.split('@')[0],
           providerId: `${provider}_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`
         });
-        showToast(`Đăng nhập thành công với ${providerName}!`);
+        showToast(`Signed in successfully with ${providerName}!`);
         const returnUrl = params.get('return') || '/';
         setTimeout(() => {
           window.location.href = returnUrl;
         }, 400);
       } catch (err) {
-        this.showAlert(err.message || `Đăng nhập ${providerName} thất bại.`);
+        this.showAlert(err.message || `${providerName} sign-in failed.`);
       }
     };
 

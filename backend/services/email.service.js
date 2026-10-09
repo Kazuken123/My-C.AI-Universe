@@ -48,7 +48,7 @@ export class EmailService {
    */
   async sendPasswordResetOtp({ email, code, baseUrl = 'http://localhost:3000' }) {
     const resetUrl = `${baseUrl.replace(/\/$/, '')}/reset-password.html?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`;
-    const subject = `[C.AI Universe] Mã xác nhận đặt lại mật khẩu: ${code}`;
+    const subject = `[C.AI Universe] Password Reset Code: ${code}`;
 
     const html = `
       <!DOCTYPE html>
@@ -69,22 +69,22 @@ export class EmailService {
       <body>
         <div class="container">
           <div class="brand">C.AI UNIVERSE</div>
-          <h2>Yêu cầu đặt lại mật khẩu</h2>
-          <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản liên kết với địa chỉ email <strong>${email}</strong>.</p>
-          <p>Mã xác nhận bảo mật gồm 6 chữ số của bạn là:</p>
+          <h2>Password Reset Request</h2>
+          <p>We received a request to reset the password for the account associated with <strong>${email}</strong>.</p>
+          <p>Your 6-digit security verification code is:</p>
           <div class="otp-badge">${code}</div>
-          <p>Mã có hiệu lực trong vòng <strong>15 phút</strong>. Vui lòng không chia sẻ mã này với bất kỳ ai.</p>
-          <p>Bạn cũng có thể bấm nút bên dưới để chuyển trực tiếp sang trang nhập mật khẩu mới:</p>
-          <a class="btn" href="${resetUrl}">Nhập mật khẩu mới</a>
+          <p>This code is valid for <strong>15 minutes</strong>. Please do not share this code with anyone.</p>
+          <p>You can also click the button below to proceed directly to the new password page:</p>
+          <a class="btn" href="${resetUrl}">Reset Password</a>
           <div class="footer">
-            Nếu bạn không yêu cầu đặt lại mật khẩu, bạn có thể yên tâm bỏ qua email này. Tài khoản của bạn vẫn an toàn.
+            If you did not request a password reset, you can safely ignore this email. Your account remains secure.
           </div>
         </div>
       </body>
       </html>
     `;
 
-    const text = `C.AI Universe - Yêu cầu đặt lại mật khẩu\n\nMã xác nhận của bạn là: ${code}\nMã có hiệu lực trong 15 phút.\nHoặc truy cập: ${resetUrl}\nNếu bạn không yêu cầu, vui lòng bỏ qua email này.`;
+    const text = `C.AI Universe - Password Reset Request\n\nYour verification code is: ${code}\nThis code is valid for 15 minutes.\nOr open: ${resetUrl}\nIf you did not request this, please ignore this email.`;
 
     if (this.transporter) {
       try {
