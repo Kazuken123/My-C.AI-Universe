@@ -640,3 +640,159 @@
   gap: 6px;
 }
 
+/* ============================================================================
+   RESPONSIVE MOBILE RULES (DASHBOARD & DIRECTORY)
+   ============================================================================ */
+@media (max-width: 900px) {
+  .hero-split-grid {
+    grid-template-columns: 1fr;
+    padding: 24px 20px;
+    gap: 24px;
+  }
+
+  .hero-display-title {
+    font-size: 1.75rem;
+    line-height: 1.25;
+  }
+
+  .hero-subtext {
+    font-size: 0.88rem;
+  }
+
+  .hero-Featured-col {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .discover-topbar {
+    max-height: none;
+    min-height: auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+  }
+
+  .topbar-heading {
+    font-size: 1.35rem;
+  }
+
+  .search-controls {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .search-box {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .search-controls .select-wrap {
+    width: 100%;
+  }
+
+  .search-controls .select-wrap .select-control,
+  .search-controls .select-wrap .custom-select-trigger {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  /* Horizontal swipeable category pills */
+  .category-pills {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 4px 2px 10px;
+    gap: 8px;
+  }
+
+  .category-pills::-webkit-scrollbar {
+    display: none;
+  }
+
+  .category-pill {
+    flex-shrink: 0;
+    white-space: nowrap;
+    min-height: 38px;
+    padding: 0 16px;
+    font-size: 0.82rem;
+  }
+
+  .continue-bento-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .hero-actions .btn-island,
+  .hero-actions .btn-ghost {
+    width: 100%;
+    justify-content: center;
+    min-height: 46px;
+  }
+
+  .bento-character-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .bento-cell,
+  .bento-cell.bento-wide,
+  .bento-cell.bento-half {
+    grid-column: span 1 !important;
+  }
+
+  .cai-card-core {
+    padding: 18px 16px;
+  }
+
+  .cai-card-avatar {
+    width: 52px;
+    height: 52px;
+  }
+
+  .cai-card-title {
+    font-size: 1.05rem;
+  }
+
+  .cai-card-footer {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .card-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .card-actions .btn-primary {
+    min-height: 40px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .bento-character-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .bento-cell,
+  .bento-cell.bento-wide,
+  .bento-cell.bento-half {
+    grid-column: span 1 !important;
+  }
+}
+
+

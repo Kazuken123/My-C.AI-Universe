@@ -68,6 +68,11 @@
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-glow: cubic-bezier(0.25, 0.1, 0.25, 1);
+  /* Safe Area Insets for Modern Mobile Phones (iOS / Android) */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
 }
 
 /* Theme: Editorial */
@@ -156,6 +161,8 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Ambient Film Grain Overlay */
@@ -1432,32 +1439,331 @@ html, body {
   background: rgba(255, 255, 255, 0.24);
 }
 
-/* Responsive Shell Collapse */
+/* ============================================================================
+   MOBILE NAVIGATION, APP DOCK & OFF-CANVAS SIDEBAR (Phones & Tablets)
+   ============================================================================ */
+
+/* Top Mobile App Bar (Hidden on desktop) */
+.mobile-header {
+  display: none;
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: calc(56px + var(--safe-top));
+  padding: var(--safe-top) 16px 0;
+  background: rgba(11, 11, 15, 0.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border-hairline);
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mobile-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-decoration: none;
+  color: var(--text-primary);
+}
+
+.mobile-brand .brand-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.mobile-brand .brand-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-menu-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-hairline);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.15s var(--ease-spring), background-color 0.2s ease;
+}
+
+.mobile-menu-btn:active {
+  transform: scale(0.92);
+}
+
+.mobile-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-telemetry {
+  display: inline-flex;
+  padding: 4px 6px;
+}
+
+.mobile-theme-btn {
+  width: 38px;
+  height: 38px;
+}
+
+/* Close Button inside Sidebar (Hidden on desktop) */
+.mobile-sidebar-close {
+  display: none;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-hairline);
+  color: var(--text-secondary);
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  cursor: pointer;
+  margin-left: auto;
+  touch-action: manipulation;
+}
+
+.mobile-sidebar-close:active {
+  transform: scale(0.92);
+}
+
+/* Sidebar Backdrop Overlay */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sidebar-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+body.mobile-drawer-locked {
+  overflow: hidden !important;
+  touch-action: none;
+}
+
+/* Mobile Bottom Navigation Dock (Hidden on desktop) */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 99;
+  height: calc(58px + var(--safe-bottom));
+  padding: 6px 8px var(--safe-bottom);
+  background: rgba(11, 11, 15, 0.94);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border-top: 1px solid var(--border-hairline);
+  align-items: center;
+  justify-content: space-around;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.mobile-nav-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.15s var(--ease-spring);
+  min-width: 52px;
+  min-height: 44px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-nav-tab i {
+  font-size: 1.25rem;
+  line-height: 1;
+  transition: transform 0.2s var(--ease-spring);
+}
+
+.mobile-nav-tab.active {
+  color: var(--text-primary);
+}
+
+.mobile-nav-tab.active i {
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.mobile-nav-tab:active {
+  transform: scale(0.92);
+}
+
+/* ============================================================================
+   RESPONSIVE BREAKPOINTS (Tablets & Phones)
+   ============================================================================ */
 @media (max-width: 1024px) {
+  .mobile-header {
+    display: flex;
+  }
+
+  .mobile-bottom-nav {
+    display: flex;
+  }
+
+  .sidebar-backdrop {
+    display: block;
+  }
+
+  .mobile-sidebar-close {
+    display: inline-flex;
+  }
+
+  /* App Shell & Page Workspaces */
   .app-shell {
-    flex-direction: column;
+    display: block;
     height: auto;
+    min-height: 100dvh;
     max-height: none;
     overflow: visible;
   }
+
+  /* Off-canvas Sliding Sidebar Drawer */
   .sidebar {
-    width: 100%;
-    height: auto;
-    max-height: none;
-    position: static;
-    overflow: visible;
-    border-right: none;
-    border-bottom: 1px solid var(--border-hairline);
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(320px, 86vw);
+    height: 100dvh;
+    max-height: 100dvh;
+    z-index: 1001;
+    transform: translateX(-100%);
+    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+    box-shadow: none;
+    border-right: 1px solid var(--border-hairline);
+    border-bottom: none;
+    padding: max(18px, var(--safe-top)) 16px max(18px, var(--safe-bottom));
   }
-  .recent-chats-list {
-    max-height: 200px;
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.85), 0 0 0 1px var(--border-subtle);
   }
+
+  .sidebar-header {
+    margin-bottom: 16px;
+  }
+
   .main-workspace {
     height: auto;
+    min-height: 100dvh;
     max-height: none;
     overflow: visible;
+    width: 100%;
   }
+
   .content-container {
-    padding: 24px 20px 60px;
+    padding: 20px 16px calc(76px + var(--safe-bottom));
+    max-width: 100%;
+  }
+
+  /* Chatroom Exception: Locks to 100dvh and disables general mobile header/dock */
+  .app-shell:has(.chat-page-main),
+  body.is-chat-page .app-shell {
+    display: flex;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
+  body.is-chat-page .mobile-header,
+  body.is-chat-page .mobile-bottom-nav {
+    display: none !important;
+  }
+
+  body.is-chat-page .chat-page-main {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
+  /* Toasts float comfortably above mobile dock */
+  .toast-container {
+    bottom: calc(72px + var(--safe-bottom));
+    right: 16px;
+    left: 16px;
+    align-items: center;
+  }
+
+  .toast {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Prevent iOS Safari from auto-zooming on input focus */
+  .form-input,
+  .form-textarea,
+  .select-control,
+  .search-box input,
+  input[type="text"],
+  input[type="password"],
+  input[type="url"],
+  input[type="search"],
+  textarea {
+    font-size: 16px !important;
+  }
+
+  .form-row-2col {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .custom-select-dropdown {
+    max-width: calc(100vw - 32px);
+    right: 0;
+    left: auto;
+  }
+
+  .btn-island {
+    padding: 4px 6px 4px 14px;
+    font-size: 0.84rem;
+  }
+
+  .btn-island-icon {
+    width: 30px;
+    height: 30px;
   }
 }

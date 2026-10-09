@@ -191,9 +191,49 @@
 @media (max-width: 1024px) {
   .personas-grid-layout {
     grid-template-columns: 1fr;
-    gap: 28px;
+    gap: 24px;
   }
   .persona-register-shell {
     position: static;
   }
 }
+
+@media (max-width: 640px) {
+  .persona-card-core {
+    padding: 18px 16px;
+  }
+
+  .persona-card-header {
+    gap: 12px;
+  }
+
+  .persona-avatar-wrap {
+    width: 44px;
+    height: 44px;
+    font-size: 1.35rem;
+  }
+
+  .persona-card-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .persona-card-actions .btn-secondary,
+  .persona-card-actions .icon-btn {
+    min-height: 38px;
+  }
+
+  .persona-register-core {
+    padding: 20px 16px;
+  }
+
+  #personaSubmitBtn {
+    width: 100%;
+    justify-content: center;
+    min-height: 48px;
+  }
+}
+

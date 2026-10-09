@@ -110,11 +110,52 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     });
   }
 
+  const drawerBackdrop = document.getElementById('drawerBackdrop');
+  const drawerCloseBtn = document.getElementById('drawerCloseBtn');
+
+  const closeRightDrawer = () => {
+    if (rightDrawer) {
+      rightDrawer.classList.add('collapsed');
+      rightDrawer.classList.remove('open');
+    }
+    if (drawerBackdrop) drawerBackdrop.classList.remove('active');
+  };
+
+  const openRightDrawer = () => {
+    if (rightDrawer) {
+      rightDrawer.classList.remove('collapsed');
+      rightDrawer.classList.add('open');
+    }
+    if (drawerBackdrop) drawerBackdrop.classList.add('active');
+  };
+
   if (toggleDrawerBtn && rightDrawer) {
     toggleDrawerBtn.addEventListener('click', () => {
-      rightDrawer.classList.toggle('collapsed');
+      if (window.innerWidth <= 768) {
+        if (rightDrawer.classList.contains('open')) {
+          closeRightDrawer();
+        } else {
+          openRightDrawer();
+        }
+      } else {
+        rightDrawer.classList.toggle('collapsed');
+      }
     });
   }
+
+  if (drawerCloseBtn) {
+    drawerCloseBtn.addEventListener('click', closeRightDrawer);
+  }
+
+  if (drawerBackdrop) {
+    drawerBackdrop.addEventListener('click', closeRightDrawer);
+  }
+
+  // Initial state on mobile screens: start collapsed
+  if (window.innerWidth <= 768 && rightDrawer) {
+    rightDrawer.classList.add('collapsed');
+  }
+
 
   // Drawer tab switching
   document.querySelectorAll('.drawer-tab').forEach(tab => {

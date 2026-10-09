@@ -2,7 +2,11 @@
 <html lang="en" data-theme="higgsfield">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="C.AI Universe" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <title>Narrative Chatroom — My C.AI Universe</title>
   <meta name="description" content="Engage in branching roleplay scenes with relational SQL memory, take reshoots, and real-time voice synthesis." />
   <!-- Fonts -->
@@ -24,7 +28,7 @@
   <link rel="stylesheet" href="/css/base.css" />
   <link rel="stylesheet" href="/css/chat.css" />
 </head>
-<body>
+<body class="is-chat-page">
   <!-- Tactical ambient grain -->
   <div class="ambient-grain" aria-hidden="true"></div>
 
@@ -41,6 +45,9 @@
             <span class="brand-version">SQL STUDIO v2.2</span>
           </div>
         </a>
+        <button class="icon-btn mobile-sidebar-close" id="mobileSidebarClose" type="button" aria-label="Close Navigation Menu">
+          <i class="ph-light ph-x"></i>
+        </button>
         <span class="engine-telemetry" id="ai-status-badge" title="AI Engine Status">
           <span class="status-dot"></span>
           <span class="status-label">Online</span>
@@ -233,6 +240,9 @@
               <i class="ph-light ph-git-branch"></i>
               <span>Threads</span>
             </button>
+            <button class="drawer-close-btn" id="drawerCloseBtn" type="button" aria-label="Close Dossier">
+              <i class="ph-light ph-x"></i>
+            </button>
           </div>
 
           <div class="drawer-body">
@@ -275,6 +285,10 @@
       </div>
     </main>
   </div>
+
+  <!-- Mobile Drawer & Sidebar Backdrops -->
+  <div class="drawer-backdrop" id="drawerBackdrop" aria-hidden="true"></div>
+  <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
 
   <!-- Toast Notifications -->
   <div class="toast-container" id="toast-container" aria-live="polite"></div>

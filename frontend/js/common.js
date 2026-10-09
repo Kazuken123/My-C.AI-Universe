@@ -160,6 +160,169 @@ export async function initSidebar(activePage = 'discover') {
 
   // Upgrade any select controls on page to luxury custom dropdowns
   initCustomSelects();
+
+  // Initialize Responsive Mobile App Bar, Dock & Off-Canvas Drawer
+  initMobileNavigation(activePage);
+}
+
+/**
+ * Universal Mobile Navigation Engine (Phones & Tablets)
+ * Manages Top Mobile App Bar, Bottom Touch Navigation Dock, and Off-Canvas Slide-out Sidebar Drawer
+ */
+export function initMobileNavigation(activePage = 'discover') {
+  const sidebar = document.querySelector('.sidebar');
+  if (!sidebar) return;
+
+  // 1. Ensure mobile sidebar close button exists in sidebar-header
+  const sidebarHeader = sidebar.querySelector('.sidebar-header');
+  let sidebarCloseBtn = document.getElementById('mobileSidebarClose');
+  if (sidebarHeader && !sidebarCloseBtn) {
+    sidebarCloseBtn = document.createElement('button');
+    sidebarCloseBtn.className = 'icon-btn mobile-sidebar-close';
+    sidebarCloseBtn.id = 'mobileSidebarClose';
+    sidebarCloseBtn.type = 'button';
+    sidebarCloseBtn.setAttribute('aria-label', 'Close Navigation Menu');
+    sidebarCloseBtn.innerHTML = '<i class="ph-light ph-x"></i>';
+    sidebarHeader.appendChild(sidebarCloseBtn);
+  }
+
+  // 2. Ensure sidebar backdrop exists
+  let backdrop = document.getElementById('sidebarBackdrop');
+  if (!backdrop) {
+    backdrop = document.createElement('div');
+    backdrop.className = 'sidebar-backdrop';
+    backdrop.id = 'sidebarBackdrop';
+    backdrop.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(backdrop);
+  }
+
+  const openSidebar = () => {
+    sidebar.classList.add('mobile-open');
+    if (backdrop) backdrop.classList.add('active');
+    document.body.classList.add('mobile-drawer-locked');
+  };
+
+  const closeSidebar = () => {
+    sidebar.classList.remove('mobile-open');
+    if (backdrop) backdrop.classList.remove('active');
+    document.body.classList.remove('mobile-drawer-locked');
+  };
+
+  if (sidebarCloseBtn && !sidebarCloseBtn.__mobileBound) {
+    sidebarCloseBtn.__mobileBound = true;
+    sidebarCloseBtn.addEventListener('click', closeSidebar);
+  }
+
+  if (backdrop && !backdrop.__mobileBound) {
+    backdrop.__mobileBound = true;
+    backdrop.addEventListener('click', closeSidebar);
+  }
+
+  // Close sidebar on Escape key
+  if (!window.__mobileEscBound) {
+    window.__mobileEscBound = true;
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeSidebar();
+    });
+  }
+
+  // Auto-close drawer when clicking any navigation link inside sidebar on mobile
+  sidebar.querySelectorAll('.sidebar-nav .nav-item, .recent-chat-item, .sidebar-cta-wrap a').forEach(el => {
+    if (!el.__mobileCloseBound) {
+      el.__mobileCloseBound = true;
+      el.addEventListener('click', () => {
+        if (window.innerWidth <= 1024) closeSidebar();
+      });
+    }
+  });
+
+  const isChatPage = document.body.classList.contains('is-chat-page') || !!document.querySelector('.chat-room-layout');
+  const isAuthPage = document.body.classList.contains('is-auth-page') || !!document.querySelector('.auth-page-wrapper');
+
+  if (!isChatPage && !isAuthPage) {
+    // 3. Ensure Mobile Header exists
+    let mobileHeader = document.querySelector('.mobile-header');
+    if (!mobileHeader) {
+      mobileHeader = document.createElement('header');
+      mobileHeader.className = 'mobile-header';
+      mobileHeader.setAttribute('aria-label', 'Mobile Navigation Bar');
+      mobileHeader.innerHTML = `
+        <button class="mobile-menu-btn" id="mobileMenuBtn" type="button" aria-label="Open Navigation Menu">
+          <i class="ph-light ph-list"></i>
+        </button>
+        <a href="/" class="mobile-brand">
+          <span class="brand-mark" aria-hidden="true">
+            <img src="/favicon.svg" alt="C.AI Universe" class="brand-mark-img" width="22" height="22" />
+          </span>
+          <span class="brand-title">C.AI Universe</span>
+        </a>
+        <div class="mobile-header-actions">
+          <button class="icon-btn mobile-theme-btn" id="mobileThemeBtn" type="button" aria-label="Cycle Theme" title="Theme">
+            <i class="ph-light ph-sliders-horizontal"></i>
+          </button>
+        </div>
+      `;
+      document.body.prepend(mobileHeader);
+    }
+
+    const menuBtn = document.getElementById('mobileMenuBtn');
+    if (menuBtn && !menuBtn.__mobileBound) {
+      menuBtn.__mobileBound = true;
+      menuBtn.addEventListener('click', openSidebar);
+    }
+
+    const mobileThemeBtn = document.getElementById('mobileThemeBtn');
+    if (mobileThemeBtn && !mobileThemeBtn.__mobileBound) {
+      mobileThemeBtn.__mobileBound = true;
+      mobileThemeBtn.addEventListener('click', () => {
+        const themeBtn = document.getElementById('themeToggleBtn');
+        if (themeBtn) themeBtn.click();
+      });
+    }
+
+    // 4. Ensure Mobile Bottom Navigation exists
+    let bottomNav = document.querySelector('.mobile-bottom-nav');
+    if (!bottomNav) {
+      bottomNav = document.createElement('nav');
+      bottomNav.className = 'mobile-bottom-nav';
+      bottomNav.setAttribute('aria-label', 'Mobile Navigation');
+      bottomNav.innerHTML = `
+        <a href="/" class="mobile-nav-tab ${activePage === 'discover' ? 'active' : ''}" data-page="discover">
+          <i class="ph-light ph-compass"></i>
+          <span>Discover</span>
+        </a>
+        <a href="/create.html" class="mobile-nav-tab ${activePage === 'create' ? 'active' : ''}" data-page="create">
+          <i class="ph-light ph-sparkle"></i>
+          <span>Studio</span>
+        </a>
+        <a href="/chats.html" class="mobile-nav-tab ${activePage === 'chats' ? 'active' : ''}" data-page="chats">
+          <i class="ph-light ph-chats-circle"></i>
+          <span>Threads</span>
+        </a>
+        <a href="/personas.html" class="mobile-nav-tab ${activePage === 'personas' ? 'active' : ''}" data-page="personas">
+          <i class="ph-light ph-identification-card"></i>
+          <span>Personas</span>
+        </a>
+        <button type="button" class="mobile-nav-tab" id="mobileNavMenuBtn" aria-label="Open Workspace Menu">
+          <i class="ph-light ph-squares-four"></i>
+          <span>Menu</span>
+        </button>
+      `;
+      document.body.appendChild(bottomNav);
+    }
+
+    const bottomMenuBtn = document.getElementById('mobileNavMenuBtn');
+    if (bottomMenuBtn && !bottomMenuBtn.__mobileBound) {
+      bottomMenuBtn.__mobileBound = true;
+      bottomMenuBtn.addEventListener('click', openSidebar);
+    }
+
+    // Sync active tab state
+    bottomNav.querySelectorAll('.mobile-nav-tab').forEach(tab => {
+      const p = tab.dataset.page;
+      if (p) tab.classList.toggle('active', p === activePage);
+    });
+  }
 }
 
 /**

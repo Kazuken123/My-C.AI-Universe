@@ -2,7 +2,11 @@
 <html lang="en" data-theme="higgsfield">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="C.AI Universe" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <title>Character Architecture Studio — My C.AI Universe</title>
   <meta name="description" content="Synthesize canonical characters from Fandom/Wikipedia or author custom personalities with persistent SQL memory." />
   <!-- Fonts -->
@@ -27,6 +31,24 @@
 <body>
   <div class="ambient-grain" aria-hidden="true"></div>
 
+  <!-- Top Mobile App Bar (Phones & Tablets) -->
+  <header class="mobile-header" aria-label="Mobile Navigation Bar">
+    <button class="mobile-menu-btn" id="mobileMenuBtn" type="button" aria-label="Open Navigation Menu">
+      <i class="ph-light ph-list"></i>
+    </button>
+    <a href="/" class="mobile-brand">
+      <span class="brand-mark" aria-hidden="true">
+        <img src="/favicon.svg" alt="C.AI Universe" class="brand-mark-img" width="22" height="22" />
+      </span>
+      <span class="brand-title">C.AI Universe</span>
+    </a>
+    <div class="mobile-header-actions">
+      <button class="icon-btn mobile-theme-btn" id="mobileThemeBtn" type="button" aria-label="Cycle Theme" title="Theme">
+        <i class="ph-light ph-sliders-horizontal"></i>
+      </button>
+    </div>
+  </header>
+
   <div class="app-shell">
     <!-- Left Studio Rail -->
     <aside class="sidebar" aria-label="Primary Navigation">
@@ -40,6 +62,9 @@
             <span class="brand-version">SQL STUDIO v2.2</span>
           </div>
         </a>
+        <button class="icon-btn mobile-sidebar-close" id="mobileSidebarClose" type="button" aria-label="Close Navigation Menu">
+          <i class="ph-light ph-x"></i>
+        </button>
         <span class="engine-telemetry" id="ai-status-badge" title="AI Engine Status">
           <span class="status-dot"></span>
           <span class="status-label">Online</span>
@@ -301,6 +326,33 @@
       </div>
     </main>
   </div>
+
+  <!-- Mobile Sidebar Backdrop -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+
+  <!-- Mobile Bottom Navigation Dock -->
+  <nav class="mobile-bottom-nav" aria-label="Mobile Navigation">
+    <a href="/" class="mobile-nav-tab" data-page="discover">
+      <i class="ph-light ph-compass"></i>
+      <span>Discover</span>
+    </a>
+    <a href="/create.html" class="mobile-nav-tab active" data-page="create">
+      <i class="ph-light ph-sparkle"></i>
+      <span>Studio</span>
+    </a>
+    <a href="/chats.html" class="mobile-nav-tab" data-page="chats">
+      <i class="ph-light ph-chats-circle"></i>
+      <span>Threads</span>
+    </a>
+    <a href="/personas.html" class="mobile-nav-tab" data-page="personas">
+      <i class="ph-light ph-identification-card"></i>
+      <span>Personas</span>
+    </a>
+    <button type="button" class="mobile-nav-tab" id="mobileNavMenuBtn" aria-label="Open Workspace Menu">
+      <i class="ph-light ph-squares-four"></i>
+      <span>Menu</span>
+    </button>
+  </nav>
 
   <!-- Toast Notifications -->
   <div class="toast-container" id="toast-container" aria-live="polite"></div>

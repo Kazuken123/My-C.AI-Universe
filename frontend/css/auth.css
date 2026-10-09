@@ -285,3 +285,36 @@
   font-size: 0.82rem;
   color: var(--text-muted);
 }
+
+/* ============================================================================
+   RESPONSIVE MOBILE RULES (AUTH & LOGIN)
+   ============================================================================ */
+@media (max-width: 640px) {
+  .auth-page-container {
+    padding: 16px 12px;
+    max-width: 100%;
+  }
+
+  .auth-card-core {
+    padding: 24px 18px;
+  }
+
+  .auth-card-title {
+    font-size: 1.45rem;
+  }
+
+  .auth-tabs {
+    padding: 3px;
+  }
+
+  .auth-tab {
+    padding: 10px 12px;
+    font-size: 0.84rem;
+  }
+
+  .auth-modal-footer .btn-island {
+    min-height: 48px;
+    justify-content: center;
+  }
+}
+
