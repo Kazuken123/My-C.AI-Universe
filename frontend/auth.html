@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="higgsfield">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Account Access — My C.AI Universe</title>
+  <meta name="description" content="Sign in or register your Universe account for isolated roleplay personas and persistent SQL storyline threads." />
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <!-- Icons -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="theme-color" content="#0c0b15" />
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+  <!-- Modular CSS for Auth -->
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/auth.css" />
+</head>
+<body>
+  <!-- Ambient tactical grain overlay -->
+  <div class="ambient-grain" aria-hidden="true"></div>
+
+  <div class="auth-page-wrapper">
+    <div class="auth-page-container">
+      
+      <a href="/" class="auth-back-link">
+        <i class="ph-light ph-arrow-left"></i>
+        <span>Return to Workspace Directory</span>
+      </a>
+
+      <a href="/" class="auth-brand-badge">
+        <span class="brand-mark" aria-hidden="true">
+          <img src="/favicon.svg" alt="C.AI Universe" class="brand-mark-img" width="28" height="28" />
+        </span>
+        <span class="brand-title">C.AI Universe</span>
+      </a>
+
+      <!-- Double Bezel Auth Card -->
+      <div class="double-bezel-shell">
+        <div class="double-bezel-core auth-card">
+
+          <!-- State A: Not Logged In (Tabs + Form) -->
+          <div id="authFormSection">
+            <header class="auth-card-header">
+              <span class="eyebrow-pill">USER ACCOUNTS &amp; ISOLATION</span>
+              <h1 class="auth-card-title" id="authPageTitle">Welcome to Universe</h1>
+            </header>
+
+            <!-- Mode Switcher Tabs with Sliding Spring Pill -->
+            <div class="auth-tabs" id="authTabs" data-mode="signin" role="tablist">
+              <div class="auth-tab-pill-slider" id="authTabSlider" aria-hidden="true"></div>
+              <button class="auth-tab active" id="authTabSignIn" type="button" role="tab" aria-selected="true">Sign In</button>
+              <button class="auth-tab" id="authTabSignUp" type="button" role="tab" aria-selected="false">Create Account</button>
+            </div>
+
+            <form id="authForm" class="auth-form" autocomplete="on">
+              <div class="auth-alert hidden" id="authAlert" role="alert"></div>
+
+              <!-- Accordion Fluid Height Display Name for Sign Up -->
+              <div class="auth-extra-field" id="authDisplayNameWrapper">
+                <div class="form-group" id="authDisplayNameGroup">
+                  <label class="form-label" for="authDisplayName">Display Name</label>
+                  <input class="form-input" type="text" id="authDisplayName" placeholder="e.g. Commander Shepard" autocomplete="name" />
+                  <span class="form-hint">The identity roleplay characters will address you by in dialogues.</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="authUsername">Username</label>
+                <input class="form-input" type="text" id="authUsername" placeholder="e.g. nova_pilot (letters, numbers, _)" required autocomplete="username" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="authPassword">Password</label>
+                <input class="form-input" type="password" id="authPassword" placeholder="Minimum 6 characters" required autocomplete="current-password" />
+              </div>
+
+              <div class="auth-modal-footer">
+                <button class="btn-island btn-island-full" id="authSubmitBtn" type="submit">
+                  <span id="authSubmitText">Sign In</span>
+                  <span class="btn-island-icon"><i class="ph-light ph-arrow-right"></i></span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- State B: Already Logged In -->
+          <div id="authActiveUserSection" class="hidden">
+            <header class="auth-card-header">
+              <span class="eyebrow-pill">ACTIVE SQL SESSION</span>
+              <h1 class="auth-card-title">You are Signed In</h1>
+            </header>
+
+            <div class="auth-profile-card">
+              <div class="auth-profile-meta">
+                <div class="auth-profile-avatar" id="activeProfileAvatar">👤</div>
+                <div class="auth-profile-info">
+                  <span class="auth-profile-name" id="activeProfileName">User</span>
+                  <span class="auth-profile-handle" id="activeProfileHandle">@username</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+              <a href="/" class="btn-island btn-island-full">
+                <span>Enter Workspace</span>
+                <span class="btn-island-icon"><i class="ph-light ph-arrow-right"></i></span>
+              </a>
+              <button type="button" class="btn-secondary btn-island-full" id="authLogoutActiveBtn">
+                <i class="ph-light ph-sign-out"></i>
+                <span>Sign Out</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script type="module" src="/js/auth-page.js"></script>
+</body>
+</html>

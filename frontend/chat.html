@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="higgsfield">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Narrative Chatroom — My C.AI Universe</title>
+  <meta name="description" content="Engage in branching roleplay scenes with relational SQL memory, take reshoots, and real-time voice synthesis." />
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <!-- Favicon & App Icons -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="theme-color" content="#0c0b15" />
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+  <!-- Dedicated Modular CSS -->
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/chat.css" />
+</head>
+<body>
+  <!-- Tactical ambient grain -->
+  <div class="ambient-grain" aria-hidden="true"></div>
+
+  <div class="app-shell">
+    <!-- Left Studio Rail -->
+    <aside class="sidebar" aria-label="Primary Navigation">
+      <div class="sidebar-header">
+        <a href="/" class="brand-logo" id="brand-home-link">
+          <span class="brand-mark" aria-hidden="true">
+            <img src="/favicon.svg" alt="C.AI Universe" class="brand-mark-img" width="24" height="24" />
+          </span>
+          <div class="brand-text-wrap">
+            <span class="brand-title">C.AI Universe</span>
+            <span class="brand-version">SQL STUDIO v2.2</span>
+          </div>
+        </a>
+        <span class="engine-telemetry" id="ai-status-badge" title="AI Engine Status">
+          <span class="status-dot"></span>
+          <span class="status-label">Online</span>
+        </span>
+      </div>
+
+      <div class="sidebar-cta-wrap">
+        <a href="/create.html" class="btn-island btn-island-full">
+          <span>New Character</span>
+          <span class="btn-island-icon" aria-hidden="true">
+            <i class="ph-light ph-arrow-up-right"></i>
+          </span>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Workspace Views">
+        <a href="/" class="nav-item" data-page="discover">
+          <i class="ph-light ph-compass"></i>
+          <span>Discover</span>
+          <kbd class="nav-kbd">1</kbd>
+        </a>
+        <a href="/create.html" class="nav-item" data-page="create">
+          <i class="ph-light ph-sparkle"></i>
+          <span>Studio</span>
+          <kbd class="nav-kbd">2</kbd>
+        </a>
+        <a href="/chats.html" class="nav-item active" data-page="chats">
+          <i class="ph-light ph-chats-circle"></i>
+          <span>Threads</span>
+          <kbd class="nav-kbd">3</kbd>
+        </a>
+        <a href="/personas.html" class="nav-item" data-page="personas">
+          <i class="ph-light ph-identification-card"></i>
+          <span>Personas</span>
+          <kbd class="nav-kbd">4</kbd>
+        </a>
+      </nav>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section-header">
+        <span>Active Storylines</span>
+        <span class="mono-counter" id="sidebar-session-count">0</span>
+      </div>
+      <div class="recent-chats-list" id="sidebar-recent-chats">
+        <!-- Populated dynamically -->
+      </div>
+
+      <!-- Footer: Account Status + Active Persona + Theme Switcher -->
+      <div class="sidebar-footer">
+        <div class="sidebar-account-box" id="sidebar-account-section">
+          <div class="auth-guest-view" id="authGuestView">
+            <a href="/auth.html" class="btn-island btn-island-full auth-launch-btn">
+              <span>Sign In / Register</span>
+              <span class="btn-island-icon" aria-hidden="true"><i class="ph-light ph-user-circle"></i></span>
+            </a>
+          </div>
+          <div class="auth-user-view hidden" id="authUserView">
+            <div class="auth-user-meta-wrap">
+              <span class="auth-user-avatar-tag" id="authUserAvatar">👤</span>
+              <div class="auth-user-text">
+                <div class="auth-user-name" id="authUserName">User</div>
+                <div class="auth-user-handle" id="authUserHandle">@username</div>
+              </div>
+            </div>
+            <button class="icon-btn auth-signout-btn" id="authSignOutBtn" type="button" title="Sign Out">
+              <i class="ph-light ph-sign-out"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="sidebar-footer-row">
+          <a href="/personas.html" class="persona-pill" id="sidebar-persona-pill" title="Switch Active Roleplay Identity">
+            <span class="persona-monogram" id="sidebar-persona-emoji">TR</span>
+            <div class="persona-info">
+              <div class="persona-name" id="sidebar-persona-name">Traveler</div>
+              <div class="persona-sub">Active Identity</div>
+            </div>
+            <i class="ph-light ph-caret-up-down persona-caret"></i>
+          </a>
+
+          <button class="icon-btn theme-toggle-btn" id="themeToggleBtn" type="button" title="Cycle Theme">
+            <i class="ph-light ph-sliders-horizontal" id="themeToggleIcon"></i>
+            <span class="theme-mode-label sr-only" id="themeModeLabel">Higgsfield</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Chat Workspace -->
+    <main class="main-workspace chat-page-main">
+      <div class="chat-room-layout">
+        <!-- Center Dialogue Stage -->
+        <div class="chat-main-column">
+          <header class="chat-topbar">
+            <div class="chat-char-header">
+              <a href="/" class="icon-btn back-to-discover-btn" id="btnBackToDiscover" title="Back to Character Directory">
+                <i class="ph-light ph-arrow-left"></i>
+              </a>
+              <div class="cai-avatar-wrap">
+                <img class="chat-header-avatar" id="chat-header-avatar" src="https://api.dicebear.com/9.x/adventurer/svg?seed=Default" alt="" />
+              </div>
+              <div class="chat-header-meta">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="chat-header-title" id="chat-header-name">Character</span>
+                  <span class="soul-id-badge"><span class="soul-dot"></span>SOUL-ID</span>
+                  <div class="voice-wave-visualizer" id="chat-voice-visualizer" aria-hidden="true" title="Live Voice Audio Wave">
+                    <span class="voice-wave-bar"></span>
+                    <span class="voice-wave-bar"></span>
+                    <span class="voice-wave-bar"></span>
+                    <span class="voice-wave-bar"></span>
+                  </div>
+                </div>
+                <div class="chat-header-sub" id="chat-header-sub">Cinema Studio &middot; 35mm Lens</div>
+              </div>
+            </div>
+
+            <div class="chat-toolbar">
+              <div class="select-wrap select-compact">
+                <i class="ph-light ph-user-circle select-icon"></i>
+                <select class="select-control" id="chatPersonaSelect" title="Active User Persona" aria-label="Active User Persona"></select>
+              </div>
+              <div class="select-wrap select-compact">
+                <i class="ph-light ph-cpu select-icon"></i>
+                <select class="select-control" id="aiProvider" title="Select AI Model Provider" aria-label="Select AI Model Provider">
+                  <option value="gemini" selected>Gemini 2.5 Flash</option>
+                  <option value="ollama">Ollama Local</option>
+                </select>
+              </div>
+              <button class="btn-secondary btn-sm" id="btnToggleTTS" type="button" title="Toggle Voice Read-Aloud">
+                <i class="ph-light ph-speaker-high"></i>
+                <span>Voice</span>
+              </button>
+              <button class="btn-secondary btn-sm" id="btnNewChatSession" type="button" title="Start a fresh branching thread">
+                <i class="ph-light ph-plus"></i>
+                <span>New Thread</span>
+              </button>
+              <button class="btn-secondary btn-sm" id="btnToggleDrawer" type="button" title="Toggle Lore &amp; Memory Vault">
+                <i class="ph-light ph-sidebar-simple"></i>
+                <span>Dossier</span>
+              </button>
+            </div>
+          </header>
+
+          <!-- Scrollable Dialogue Stream -->
+          <div class="chat-messages-scroll" id="chat-messages-scroll">
+            <div class="chat-stream-inner" id="chat-stream-inner"></div>
+          </div>
+
+          <!-- Composer Dock -->
+          <div class="chat-composer-wrap">
+            <div class="chat-composer-inner">
+              <div class="double-bezel-shell composer-shell">
+                <div class="composer-box">
+                  <textarea id="chatInput" rows="1" placeholder="Write dialogue or *action*..."></textarea>
+                  <div class="composer-actions">
+                    <button type="button" class="btn-secondary btn-sm" id="continueBtn" title="Let the character continue the scene (or press Enter on empty input)">
+                      <i class="ph-light ph-fast-forward"></i>
+                      <span>Continue</span>
+                    </button>
+                    <button type="button" class="composer-send-btn" id="sendBtn" title="Send message" aria-label="Send message">
+                      <i class="ph-light ph-paper-plane-right"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="composer-hint-bar">
+                <span>Press <kbd>Enter</kbd> on an empty field for scene continuation &middot; Use <kbd>*asterisks*</kbd> for stage directions</span>
+                <button type="button" class="msg-tool-btn" id="updateCmdBtn" title="Insert live /update trait command">
+                  <i class="ph-light ph-terminal-window"></i>
+                  <span>/update trait</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Character Dossier & Vector Memory Drawer -->
+        <aside class="chat-right-drawer" id="chat-right-drawer" aria-label="Character Dossier and Memory">
+          <div class="drawer-tabs" role="tablist">
+            <button class="drawer-tab active" data-pane="pane-lore" type="button">
+              <i class="ph-light ph-identification-badge"></i>
+              <span>Dossier</span>
+            </button>
+            <button class="drawer-tab" data-pane="pane-memories" type="button">
+              <i class="ph-light ph-brain"></i>
+              <span>Memory</span>
+            </button>
+            <button class="drawer-tab" data-pane="pane-sessions" type="button">
+              <i class="ph-light ph-git-branch"></i>
+              <span>Threads</span>
+            </button>
+          </div>
+
+          <div class="drawer-body">
+            <!-- Pane 1: Profile & Lore -->
+            <div class="drawer-pane active" id="pane-lore">
+              <div id="drawer-lore-content"></div>
+            </div>
+
+            <!-- Pane 2: Pinned Context & Semantic Memories -->
+            <div class="drawer-pane" id="pane-memories">
+              <div class="drawer-section-label">
+                <i class="ph-light ph-push-pin"></i>
+                <span>Pinned Context</span>
+              </div>
+              <div id="drawer-pins-list"></div>
+
+              <div class="drawer-section-label" style="margin-top: 20px;">
+                <i class="ph-light ph-database"></i>
+                <span>Semantic Vector Vault</span>
+              </div>
+              <form id="add-memory-form" class="memory-add-form">
+                <input type="text" class="form-input" id="newMemoryInput" placeholder="Store a canonical fact..." />
+                <button type="submit" class="btn-secondary btn-sm" aria-label="Add Memory">
+                  <i class="ph-light ph-plus"></i>
+                </button>
+              </form>
+              <div id="drawer-memories-list"></div>
+            </div>
+
+            <!-- Pane 3: Saved Sessions -->
+            <div class="drawer-pane" id="pane-sessions">
+              <div class="drawer-section-label">
+                <i class="ph-light ph-clock-counter-clockwise"></i>
+                <span>Branching Storylines</span>
+              </div>
+              <div id="drawer-sessions-list"></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script type="module" src="/js/chat-page.js"></script>
+</body>
+</html>

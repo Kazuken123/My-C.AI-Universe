@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My C.AI Universe — Character Roleplay &amp; Narrative Studio</title>
-  <meta name="description" content="Interactive character roleplay engine backed by relational SQL persistence, semantic vector recall, and multi-variant scene branching." />
-  <!-- Cabinet Grotesk & Satoshi (Fontshare) + JetBrains Mono -->
+  <title>Dashboard &amp; Character Directory — My C.AI Universe</title>
+  <meta name="description" content="Interactive character roleplay directory backed by relational SQL persistence, semantic vector recall, and multi-variant scene branching." />
+  <!-- Fonts -->
   <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
   <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -19,17 +19,17 @@
   <link rel="shortcut icon" href="/favicon.ico" />
   <link rel="manifest" href="/site.webmanifest" />
   <meta name="theme-color" content="#0c0b15" />
-  <!-- Phosphor Icons (Light & Regular weights — Zero Emojis) -->
   <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
-  <link rel="stylesheet" href="/css/styles.css" />
+  <!-- Modular CSS for Dashboard -->
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/dashboard.css" />
 </head>
 <body>
   <a href="#main-workspace" class="skip-link">Skip to workspace</a>
-  <!-- Fixed Film Grain / Tactical Overlay (pointer-events: none) -->
   <div class="ambient-grain" aria-hidden="true"></div>
 
   <div class="app-shell">
-    <!-- Left Studio Rail / Navigation -->
+    <!-- Left Studio Rail -->
     <aside class="sidebar" aria-label="Primary Navigation">
       <div class="sidebar-header">
         <a href="/" class="brand-logo" id="brand-home-link">
@@ -47,37 +47,36 @@
         </span>
       </div>
 
-      <!-- Nested Button-in-Button CTA (soft-skill Section 4.B) -->
       <div class="sidebar-cta-wrap">
-        <button class="btn-island btn-island-full" id="sidebar-create-btn" type="button">
+        <a href="/create.html" class="btn-island btn-island-full">
           <span>New Character</span>
           <span class="btn-island-icon" aria-hidden="true">
             <i class="ph-light ph-arrow-up-right"></i>
           </span>
-        </button>
+        </a>
       </div>
 
       <nav class="sidebar-nav" aria-label="Workspace Views">
-        <button class="nav-item active" data-view="discover" type="button">
+        <a href="/" class="nav-item active" data-page="discover">
           <i class="ph-light ph-compass"></i>
           <span>Discover</span>
           <kbd class="nav-kbd">1</kbd>
-        </button>
-        <button class="nav-item" data-view="characters" type="button">
-          <i class="ph-light ph-users-three"></i>
-          <span>Archive</span>
+        </a>
+        <a href="/create.html" class="nav-item" data-page="create">
+          <i class="ph-light ph-sparkle"></i>
+          <span>Studio</span>
           <kbd class="nav-kbd">2</kbd>
-        </button>
-        <button class="nav-item" data-view="chats" type="button">
+        </a>
+        <a href="/chats.html" class="nav-item" data-page="chats">
           <i class="ph-light ph-chats-circle"></i>
           <span>Threads</span>
           <kbd class="nav-kbd">3</kbd>
-        </button>
-        <button class="nav-item" data-view="personas" type="button">
+        </a>
+        <a href="/personas.html" class="nav-item" data-page="personas">
           <i class="ph-light ph-identification-card"></i>
           <span>Personas</span>
           <kbd class="nav-kbd">4</kbd>
-        </button>
+        </a>
       </nav>
 
       <div class="sidebar-divider"></div>
@@ -86,18 +85,15 @@
         <span>Active Storylines</span>
         <span class="mono-counter" id="sidebar-session-count">0</span>
       </div>
-      <div class="recent-chats-list" id="sidebar-recent-chats">
-        <!-- Populated dynamically -->
-      </div>
+      <div class="recent-chats-list" id="sidebar-recent-chats"></div>
 
-      <!-- Footer: Account Status + Active Persona + Theme Switcher -->
       <div class="sidebar-footer">
         <div class="sidebar-account-box" id="sidebar-account-section">
           <div class="auth-guest-view" id="authGuestView">
-            <button class="btn-island btn-island-full auth-launch-btn" id="openAuthModalBtn" type="button">
+            <a href="/auth.html" class="btn-island btn-island-full auth-launch-btn">
               <span>Sign In / Register</span>
               <span class="btn-island-icon" aria-hidden="true"><i class="ph-light ph-user-circle"></i></span>
-            </button>
+            </a>
           </div>
           <div class="auth-user-view hidden" id="authUserView">
             <div class="auth-user-meta-wrap">
@@ -114,16 +110,16 @@
         </div>
 
         <div class="sidebar-footer-row">
-          <button class="persona-pill" id="sidebar-persona-pill" type="button" title="Switch Active Roleplay Identity">
+          <a href="/personas.html" class="persona-pill" id="sidebar-persona-pill" title="Switch Active Roleplay Identity">
             <span class="persona-monogram" id="sidebar-persona-emoji">TR</span>
             <div class="persona-info">
               <div class="persona-name" id="sidebar-persona-name">Traveler</div>
               <div class="persona-sub">Active Identity</div>
             </div>
             <i class="ph-light ph-caret-up-down persona-caret"></i>
-          </button>
+          </a>
 
-          <button class="icon-btn theme-toggle-btn" id="themeToggleBtn" type="button" title="Cycle Theme: Higgsfield">
+          <button class="icon-btn theme-toggle-btn" id="themeToggleBtn" type="button" title="Cycle Theme">
             <i class="ph-light ph-sliders-horizontal" id="themeToggleIcon"></i>
             <span class="theme-mode-label sr-only" id="themeModeLabel">Higgsfield</span>
           </button>
@@ -131,565 +127,94 @@
       </div>
     </aside>
 
-    <!-- Main Workspace Area -->
+    <!-- Main Workspace -->
     <main class="main-workspace" id="main-workspace">
+      <div class="content-container">
+        <!-- Top Command Bar -->
+        <header class="discover-topbar">
+          <div class="topbar-title-group">
+            <span class="topbar-index">01 / DIRECTORY</span>
+            <h1 class="topbar-heading">Character Roster</h1>
+          </div>
 
-      <!-- =========================================================
-           VIEW 1: DISCOVER (Editorial Split Hero + Asymmetric Bento)
-           ========================================================= -->
-      <section class="view-panel active" id="view-discover">
-        <div class="content-container">
-          <!-- Single-line Command Bar (design-taste-frontend Section 4.7: max 72px height) -->
-          <header class="discover-topbar">
-            <div class="topbar-title-group">
-              <span class="topbar-index">01 / DIRECTORY</span>
-              <h1 class="topbar-heading">Character Roster</h1>
+          <div class="search-controls">
+            <div class="search-box">
+              <i class="ph-light ph-magnifying-glass search-icon"></i>
+              <input type="text" id="discoverSearch" placeholder="Filter by name, canon, or archetype..." autocomplete="off" />
+              <kbd class="search-kbd">/</kbd>
+            </div>
+            <div class="select-wrap">
+              <i class="ph-light ph-funnel-simple select-icon"></i>
+              <select class="select-control" id="discoverSort" aria-label="Sort characters">
+                <option value="popular">Most Interactions</option>
+                <option value="likes">Highest Rated</option>
+                <option value="newest">Recently Added</option>
+                <option value="name">Alphabetical (A–Z)</option>
+              </select>
+            </div>
+          </div>
+        </header>
+
+        <!-- Editorial Split Hero -->
+        <div class="double-bezel-shell hero-shell">
+          <div class="double-bezel-core hero-split-grid">
+            <div class="hero-copy-col">
+              <span class="eyebrow-pill">RELATIONAL NARRATIVE ENGINE</span>
+              <h2 class="hero-display-title">Write scenes with characters that remember.</h2>
+              <p class="hero-subtext">Multi-variant dialogue branching, long-term vector recall, and instant Fandom lore extraction in one studio.</p>
+              <div class="hero-actions">
+                <a href="/chat.html" class="btn-island" id="hero-start-chat-btn">
+                  <span>Enter Featured Scene</span>
+                  <span class="btn-island-icon" aria-hidden="true">
+                    <i class="ph-light ph-arrow-up-right"></i>
+                  </span>
+                </a>
+                <a href="/create.html" class="btn-ghost" id="hero-create-btn">
+                  <i class="ph-light ph-sparkle"></i>
+                  <span>Open Character Studio</span>
+                </a>
+              </div>
             </div>
 
-            <div class="search-controls">
-              <div class="search-box">
-                <i class="ph-light ph-magnifying-glass search-icon"></i>
-                <input type="text" id="discoverSearch" placeholder="Filter by name, canon, or archetype..." autocomplete="off" />
-                <kbd class="search-kbd">/</kbd>
-              </div>
-              <div class="select-wrap">
-                <i class="ph-light ph-funnel-simple select-icon"></i>
-                <select class="select-control" id="discoverSort" aria-label="Sort characters">
-                  <option value="popular">Most Interactions</option>
-                  <option value="likes">Highest Rated</option>
-                  <option value="newest">Recently Added</option>
-                  <option value="name">Alphabetical (A–Z)</option>
-                </select>
-              </div>
-            </div>
-          </header>
+            <!-- Right Column: Featured Character Spotlight Card -->
+            <div class="hero-Featured-col" id="hero-spotlight-card"></div>
+          </div>
+        </div>
 
-          <!-- Editorial Split Hero (soft-skill 3.B.3 + design-taste-frontend 4.3 & 4.7)
-               Max 4 text elements on left: Eyebrow, 2-line Headline, <=20-word Subtext, CTAs -->
-          <div class="double-bezel-shell hero-shell">
-            <div class="double-bezel-core hero-split-grid">
-              <div class="hero-copy-col">
-                <span class="eyebrow-pill">RELATIONAL NARRATIVE ENGINE</span>
-                <h2 class="hero-display-title">Write scenes with characters that remember.</h2>
-                <p class="hero-subtext">Multi-variant dialogue branching, long-term vector recall, and instant Fandom lore extraction in one studio.</p>
-                <div class="hero-actions">
-                  <button class="btn-island" id="hero-start-chat-btn" type="button">
-                    <span>Enter Featured Scene</span>
-                    <span class="btn-island-icon" aria-hidden="true">
-                      <i class="ph-light ph-arrow-up-right"></i>
-                    </span>
-                  </button>
-                  <button class="btn-ghost" id="hero-create-btn" type="button">
-                    <i class="ph-light ph-sparkle"></i>
-                    <span>Open Character Studio</span>
-                  </button>
-                </div>
-              </div>
+        <!-- Resume Active Scenes Strip -->
+        <div id="continue-chatting-section" class="section-block" style="display: none;">
+          <div class="section-header">
+            <h2 class="section-title">Resume Active Scenes</h2>
+            <a href="/chats.html" class="section-meta-link">View all threads <i class="ph-light ph-arrow-right"></i></a>
+          </div>
+          <div class="continue-bento-row" id="continue-chatting-row"></div>
+        </div>
 
-              <!-- Right Column: Live Featured Character Dossier Preview -->
-              <div class="hero-Featured-col" id="hero-spotlight-card">
-                <!-- Populated dynamically from top SQL character -->
-              </div>
+        <!-- Category Filter Pills & Bento Character Roster -->
+        <div class="section-block">
+          <div class="roster-filter-bar">
+            <div class="category-pills" id="category-pills" role="tablist" aria-label="Character Categories">
+              <button class="category-pill active" data-category="All" type="button">All Canon</button>
+              <button class="category-pill" data-category="Anime" type="button">Anime</button>
+              <button class="category-pill" data-category="Roleplay" type="button">Roleplay</button>
+              <button class="category-pill" data-category="Fantasy" type="button">Fantasy</button>
+              <button class="category-pill" data-category="Action" type="button">Action</button>
+              <button class="category-pill" data-category="Slice of Life" type="button">Slice of Life</button>
+              <button class="category-pill" data-category="Mystery" type="button">Mystery</button>
+              <button class="category-pill" data-category="Helper" type="button">Mentor</button>
+              <button class="category-pill" data-category="Original" type="button">Original</button>
             </div>
           </div>
 
-          <!-- Continue Chatting Horizontal Strip -->
-          <div id="continue-chatting-section" class="section-block" style="display: none;">
-            <div class="section-header">
-              <h2 class="section-title">Resume Active Scenes</h2>
-              <span class="section-meta-link" data-nav-trigger="chats">View all threads <i class="ph-light ph-arrow-right"></i></span>
-            </div>
-            <div class="continue-bento-row" id="continue-chatting-row"></div>
-          </div>
-
-          <!-- Category Filter Bar + Asymmetric Bento Roster -->
-          <div class="section-block">
-            <div class="roster-filter-bar">
-              <div class="category-pills" id="category-pills" role="tablist" aria-label="Character Categories">
-                <button class="category-pill active" data-category="All" type="button">All Canon</button>
-                <button class="category-pill" data-category="Anime" type="button">Anime</button>
-                <button class="category-pill" data-category="Roleplay" type="button">Roleplay</button>
-                <button class="category-pill" data-category="Fantasy" type="button">Fantasy</button>
-                <button class="category-pill" data-category="Action" type="button">Action</button>
-                <button class="category-pill" data-category="Slice of Life" type="button">Slice of Life</button>
-                <button class="category-pill" data-category="Mystery" type="button">Mystery</button>
-                <button class="category-pill" data-category="Helper" type="button">Mentor</button>
-                <button class="category-pill" data-category="Original" type="button">Original</button>
-              </div>
-            </div>
-
-            <!-- Asymmetric 12-Col Bento Grid -->
-            <div class="bento-character-grid" id="discover-grid"></div>
-          </div>
+          <!-- Asymmetric 12-Col Bento Grid -->
+          <div class="bento-character-grid" id="discover-grid"></div>
         </div>
-      </section>
-
-      <!-- =========================================================
-           VIEW 2: CHARACTER STUDIO (CREATE / EDIT)
-           ========================================================= -->
-      <section class="view-panel" id="view-create">
-        <div class="content-container">
-          <header class="view-header">
-            <div>
-              <h2 class="view-title" id="studio-heading">Character Architecture Studio</h2>
-              <p class="view-subtitle">Synthesize from Fandom/Wikipedia canon, generate via AI prompt, or author manually.</p>
-            </div>
-            <button class="btn-ghost" id="btnResetStudio" type="button">
-              <i class="ph-light ph-arrow-counter-clockwise"></i>
-              <span>Reset Draft</span>
-            </button>
-          </header>
-
-          <div class="studio-grid">
-            <div class="studio-left-col">
-              <!-- Double-Bezel Automated Ingestion Card -->
-              <div class="double-bezel-shell">
-                <div class="double-bezel-core studio-card">
-                  <div class="card-header-row">
-                    <h3 class="card-heading">Automated Canon Ingestion</h3>
-                    <span class="mono-tag">WIKI + LLM</span>
-                  </div>
-                  <p class="hint">Extract infobox traits and portraits from any Fandom or Wikipedia URL, or synthesize a complete character from a single prompt.</p>
-
-                  <div class="form-group">
-                    <label for="charWikiInput">Fandom or Wikipedia Source URL</label>
-                    <div class="inline-input-group">
-                      <input type="url" class="form-input" id="charWikiInput" placeholder="https://jujutsu-kaisen.fandom.com/wiki/Satoru_Gojo" />
-                      <button type="button" class="btn-secondary" id="btnExtractWiki">
-                        <i class="ph-light ph-globe-hemisphere-west"></i>
-                        <span>Extract Lore</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div class="form-group" style="margin-bottom: 0;">
-                    <label for="aiConceptInput">One-Line Concept Synthesizer</label>
-                    <div class="inline-input-group">
-                      <input type="text" class="form-input" id="aiConceptInput" placeholder="A sharp-tongued cyberpunk watchmaker who trades memories for time..." />
-                      <button type="button" class="btn-secondary" id="btnGenerateAI">
-                        <i class="ph-light ph-wand"></i>
-                        <span>Synthesize</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Main Character Specification Form -->
-              <div class="double-bezel-shell">
-                <form class="double-bezel-core studio-card" id="studio-form">
-                  <input type="hidden" id="studioCharId" value="" />
-
-                  <div class="form-row-2col">
-                    <div class="form-group">
-                      <label for="charNameInput">Character Name *</label>
-                      <input type="text" class="form-input" id="charNameInput" placeholder="Satoru Gojo" required />
-                    </div>
-                    <div class="form-group">
-                      <label for="charCategoriesInput">Classification Tags</label>
-                      <input type="text" class="form-input" id="charCategoriesInput" value="Anime, Roleplay" placeholder="Anime, Roleplay, Fantasy" />
-                    </div>
-                  </div>
-
-                  <div class="form-group">
-                    <label for="charTaglineInput">Role &amp; Narrative Headline</label>
-                    <input type="text" class="form-input" id="charTaglineInput" placeholder="The Strongest Jujutsu Sorcerer • Special Grade Teacher" />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="charAvatarInput">Portrait Image URL</label>
-                    <div class="inline-input-group">
-                      <input type="text" class="form-input" id="charAvatarInput" placeholder="https://... (Leave blank for procedural portrait)" />
-                      <button type="button" class="btn-secondary" id="btnRandomAvatar">
-                        <i class="ph-light ph-shuffle"></i>
-                        <span>Generate Seed</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div class="form-group">
-                    <label for="charGreetingInput">Opening Scene &amp; First Line</label>
-                    <textarea class="form-textarea" id="charGreetingInput" rows="4" placeholder="*He lowers his dark sunglasses slightly, infinite blue eyes locking onto you.*&#10;&#10;Satoru Gojo: &quot;Yo! You must be the new transfer student.&quot;"></textarea>
-                  </div>
-
-                  <div class="form-row-2col">
-                    <div class="form-group">
-                      <label for="charPersonalityInput">Temperament &amp; Psychology</label>
-                      <textarea class="form-textarea" id="charPersonalityInput" rows="4" placeholder="Core traits, motivations, flaws, and emotional demeanor..."></textarea>
-                    </div>
-                    <div class="form-group">
-                      <label for="charAppearanceInput">Visual Design &amp; Attire</label>
-                      <textarea class="form-textarea" id="charAppearanceInput" rows="4" placeholder="Distinctive features, posture, and signature wardrobe..."></textarea>
-                    </div>
-                  </div>
-
-                  <div class="form-row-2col">
-                    <div class="form-group">
-                      <label for="charAbilitiesInput">Capabilities &amp; Domain</label>
-                      <textarea class="form-textarea" id="charAbilitiesInput" rows="3" placeholder="Combat techniques, intellectual specialties, or craft..."></textarea>
-                    </div>
-                    <div class="form-group">
-                      <label for="charBackgroundInput">Canon Backstory</label>
-                      <textarea class="form-textarea" id="charBackgroundInput" rows="3" placeholder="Formative history, allegiances, and world context..."></textarea>
-                    </div>
-                  </div>
-
-                  <div class="form-group">
-                    <label for="charSpeakingStyleInput">Cadence &amp; Diction</label>
-                    <input type="text" class="form-input" id="charSpeakingStyleInput" placeholder="Playful, irreverent, switches between teasing banter and cold authority" />
-                  </div>
-
-                  <div class="form-row-2col">
-                    <div class="form-group">
-                      <label for="charExampleDialoguesInput">Sample Dialogue Exchanges</label>
-                      <textarea class="form-textarea" id="charExampleDialoguesInput" rows="3" placeholder="*Action cue*&#10;Character: &quot;Sample spoken line.&quot;"></textarea>
-                    </div>
-                    <div class="form-group">
-                      <label for="charInitialMemoryInput">Immutable Core Memories</label>
-                      <textarea class="form-textarea" id="charInitialMemoryInput" rows="3" placeholder="Facts permanently indexed in semantic vector memory..."></textarea>
-                    </div>
-                  </div>
-
-                  <div class="form-submit-bar">
-                    <button type="submit" class="btn-island" id="btnSaveCharacter">
-                      <span>Commit to SQL &amp; Launch Scene</span>
-                      <span class="btn-island-icon" aria-hidden="true">
-                        <i class="ph-light ph-arrow-right"></i>
-                      </span>
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-
-            <!-- Right Column: Sticky Live Hardware Dossier Preview -->
-            <div class="studio-right-col">
-              <div class="double-bezel-shell sticky-preview-shell">
-                <div class="double-bezel-core studio-card">
-                  <div class="card-header-row">
-                    <h3 class="card-heading">Live Dossier Preview</h3>
-                    <span class="mono-tag">REALTIME</span>
-                  </div>
-
-                  <div class="preview-dossier-card">
-                    <div class="cai-card-top">
-                      <img class="cai-avatar" id="preview-avatar" src="https://api.dicebear.com/9.x/adventurer/svg?seed=Preview" alt="Character portrait preview" />
-                      <div class="cai-card-info">
-                        <div class="cai-card-name" id="preview-name">New Character</div>
-                        <div class="cai-card-creator">Authored by @you</div>
-                        <div class="cai-card-tagline" id="preview-tagline">AI Roleplay Character</div>
-                      </div>
-                    </div>
-                    <div class="cai-card-tags" id="preview-tags">
-                      <span class="tag-badge">Anime</span>
-                      <span class="tag-badge">Roleplay</span>
-                    </div>
-                  </div>
-
-                  <div class="lore-block" style="margin-top: 16px;">
-                    <h4>Opening Scene Render</h4>
-                    <div id="preview-greeting" class="preview-greeting-box"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- =========================================================
-           VIEW 3: CHARACTER ARCHIVE (MY CHARACTERS)
-           ========================================================= -->
-      <section class="view-panel" id="view-characters">
-        <div class="content-container">
-          <header class="view-header">
-            <div>
-              <h2 class="view-title">Character Archive</h2>
-              <p class="view-subtitle">Inspect, modify, or initiate a dialogue thread with any character in your SQL database.</p>
-            </div>
-          </header>
-          <div class="bento-character-grid" id="my-characters-grid"></div>
-        </div>
-      </section>
-
-      <!-- =========================================================
-           VIEW 4: SAVED THREADS (CHATS)
-           ========================================================= -->
-      <section class="view-panel" id="view-chats">
-        <div class="content-container">
-          <header class="view-header">
-            <div>
-              <h2 class="view-title">Saved Narrative Threads</h2>
-              <p class="view-subtitle">Every branching conversation and variant history persisted in SQLite.</p>
-            </div>
-          </header>
-          <div class="bento-character-grid" id="saved-chats-grid"></div>
-        </div>
-      </section>
-
-      <!-- =========================================================
-           VIEW 5: USER PERSONAS
-           ========================================================= -->
-      <section class="view-panel" id="view-personas">
-        <div class="content-container">
-          <header class="view-header">
-            <div>
-              <h2 class="view-title">Roleplay Identities</h2>
-              <p class="view-subtitle">Configure the persona injected into the system prompt so characters address you by name and history.</p>
-            </div>
-          </header>
-
-          <div class="studio-grid">
-            <div>
-              <div class="personas-stack" id="personas-list"></div>
-            </div>
-            <div>
-              <div class="double-bezel-shell">
-                <div class="double-bezel-core studio-card">
-                  <div class="card-header-row">
-                    <h3 class="card-heading">Register Identity</h3>
-                    <span class="mono-tag">PERSONA</span>
-                  </div>
-                  <p class="hint">Characters automatically adapt their opening greeting and dialogue to your active persona.</p>
-                  <form id="persona-form">
-                    <div class="form-row-2col">
-                      <div class="form-group">
-                        <label for="personaNameInput">Identity Name *</label>
-                        <input type="text" class="form-input" id="personaNameInput" placeholder="Akira / First-Year Sorcerer" required />
-                      </div>
-                      <div class="form-group">
-                        <label for="personaAvatarInput">Monogram / Glyph</label>
-                        <input type="text" class="form-input" id="personaAvatarInput" value="AK" maxlength="4" />
-                      </div>
-                    </div>
-                    <div class="form-group">
-                      <label for="personaDescInput">Backstory &amp; Traits</label>
-                      <textarea class="form-textarea" id="personaDescInput" rows="4" placeholder="Describe your appearance, abilities, and role in the story..."></textarea>
-                    </div>
-                    <div class="form-group checkbox-row">
-                      <input type="checkbox" id="personaDefaultCheck" checked />
-                      <label for="personaDefaultCheck" style="margin: 0;">Set as active default identity</label>
-                    </div>
-                    <button type="submit" class="btn-island btn-island-full">
-                      <span>Save Identity</span>
-                      <span class="btn-island-icon" aria-hidden="true">
-                        <i class="ph-light ph-check"></i>
-                      </span>
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- =========================================================
-           VIEW 6: NARRATIVE CHAT ROOM (impeccable Operate Mode)
-           ========================================================= -->
-      <section class="view-panel" id="view-chat">
-        <div class="chat-room-layout">
-          <!-- Center Dialogue Stage -->
-          <div class="chat-main-column">
-            <header class="chat-topbar">
-              <div class="chat-char-header">
-                <button class="icon-btn back-to-discover-btn" id="btnBackToDiscover" type="button" title="Back to Roster">
-                  <i class="ph-light ph-arrow-left"></i>
-                </button>
-                <div class="cai-avatar-wrap">
-                  <img class="chat-header-avatar" id="chat-header-avatar" src="https://api.dicebear.com/9.x/adventurer/svg?seed=Default" alt="" />
-                </div>
-                <div class="chat-header-meta">
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <span class="chat-header-title" id="chat-header-name">Character</span>
-                    <span class="soul-id-badge"><span class="soul-dot"></span>SOUL-ID</span>
-                    <div class="voice-wave-visualizer" id="chat-voice-visualizer" aria-hidden="true" title="Live Voice Audio Wave">
-                      <span class="voice-wave-bar"></span>
-                      <span class="voice-wave-bar"></span>
-                      <span class="voice-wave-bar"></span>
-                      <span class="voice-wave-bar"></span>
-                    </div>
-                  </div>
-                  <div class="chat-header-sub" id="chat-header-sub">Cinema Studio &middot; 35mm Lens</div>
-                </div>
-              </div>
-
-              <div class="chat-toolbar">
-                <div class="select-wrap select-compact">
-                  <i class="ph-light ph-user-circle select-icon"></i>
-                  <select class="select-control" id="chatPersonaSelect" title="Active User Persona" aria-label="Active User Persona"></select>
-                </div>
-                <div class="select-wrap select-compact">
-                  <i class="ph-light ph-cpu select-icon"></i>
-                  <select class="select-control" id="aiProvider" title="Select AI Model Provider" aria-label="Select AI Model Provider">
-                    <option value="gemini" selected>Gemini 2.5 Flash</option>
-                    <option value="ollama">Ollama Local</option>
-                  </select>
-                </div>
-                <button class="btn-secondary btn-sm" id="btnToggleTTS" type="button" title="Toggle Voice Read-Aloud">
-                  <i class="ph-light ph-speaker-high"></i>
-                  <span>Voice</span>
-                </button>
-                <button class="btn-secondary btn-sm" id="btnNewChatSession" type="button" title="Start a fresh branching thread">
-                  <i class="ph-light ph-plus"></i>
-                  <span>New Thread</span>
-                </button>
-                <button class="btn-secondary btn-sm" id="btnToggleDrawer" type="button" title="Toggle Lore &amp; Memory Vault">
-                  <i class="ph-light ph-sidebar-simple"></i>
-                  <span>Dossier</span>
-                </button>
-              </div>
-            </header>
-
-            <!-- Scrollable Dialogue Stream -->
-            <div class="chat-messages-scroll" id="chat-messages-scroll">
-              <div class="chat-stream-inner" id="chat-stream-inner"></div>
-            </div>
-
-            <!-- Composer Dock -->
-            <div class="chat-composer-wrap">
-              <div class="chat-composer-inner">
-                <div class="double-bezel-shell composer-shell">
-                  <div class="composer-box">
-                    <textarea id="chatInput" rows="1" placeholder="Write dialogue or *action*..."></textarea>
-                    <div class="composer-actions">
-                      <button type="button" class="btn-secondary btn-sm" id="continueBtn" title="Let the character continue the scene (or press Enter on empty input)">
-                        <i class="ph-light ph-fast-forward"></i>
-                        <span>Continue</span>
-                      </button>
-                      <button type="button" class="composer-send-btn" id="sendBtn" title="Send message" aria-label="Send message">
-                        <i class="ph-light ph-paper-plane-right"></i>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div class="composer-hint-bar">
-                  <span>Press <kbd>Enter</kbd> on an empty field for scene continuation &middot; Use <kbd>*asterisks*</kbd> for stage directions</span>
-                  <button type="button" class="msg-tool-btn" id="updateCmdBtn" title="Insert live /update trait command">
-                    <i class="ph-light ph-terminal-window"></i>
-                    <span>/update trait</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Right Character Dossier & Vector Memory Drawer -->
-          <aside class="chat-right-drawer" id="chat-right-drawer" aria-label="Character Dossier and Memory">
-            <div class="drawer-tabs" role="tablist">
-              <button class="drawer-tab active" data-pane="pane-lore" type="button">
-                <i class="ph-light ph-identification-badge"></i>
-                <span>Dossier</span>
-              </button>
-              <button class="drawer-tab" data-pane="pane-memories" type="button">
-                <i class="ph-light ph-brain"></i>
-                <span>Memory</span>
-              </button>
-              <button class="drawer-tab" data-pane="pane-sessions" type="button">
-                <i class="ph-light ph-git-branch"></i>
-                <span>Threads</span>
-              </button>
-            </div>
-
-            <div class="drawer-body">
-              <!-- Pane 1: Character Profile & Lore -->
-              <div class="drawer-pane active" id="pane-lore">
-                <div id="drawer-lore-content"></div>
-              </div>
-
-              <!-- Pane 2: Pinned Messages & Long-Term Semantic Memory -->
-              <div class="drawer-pane" id="pane-memories">
-                <div class="drawer-section-label">
-                  <i class="ph-light ph-push-pin"></i>
-                  <span>Pinned Context</span>
-                </div>
-                <div id="drawer-pins-list"></div>
-
-                <div class="drawer-section-label" style="margin-top: 20px;">
-                  <i class="ph-light ph-database"></i>
-                  <span>Semantic Vector Vault</span>
-                </div>
-                <form id="add-memory-form" class="memory-add-form">
-                  <input type="text" class="form-input" id="newMemoryInput" placeholder="Store a canonical fact..." />
-                  <button type="submit" class="btn-secondary btn-sm" aria-label="Add Memory">
-                    <i class="ph-light ph-plus"></i>
-                  </button>
-                </form>
-                <div id="drawer-memories-list"></div>
-              </div>
-
-              <!-- Pane 3: Saved Sessions for this Character -->
-              <div class="drawer-pane" id="pane-sessions">
-                <div class="drawer-section-label">
-                  <i class="ph-light ph-clock-counter-clockwise"></i>
-                  <span>Branching Storylines</span>
-                </div>
-                <div id="drawer-sessions-list"></div>
-              </div>
-            </div>
-          </aside>
-        </div>
-      </section>
-
+      </div>
     </main>
   </div>
 
-  <!-- =========================================================
-       MODAL: AUTHENTICATION (Sign In & Register)
-       ========================================================= -->
-  <dialog class="auth-dialog-modal" id="authModal">
-    <div class="auth-modal-card">
-      <header class="auth-modal-header">
-        <div class="auth-modal-title-group">
-          <span class="eyebrow-pill">USER ACCOUNTS &amp; ISOLATION</span>
-          <h2 class="auth-modal-title" id="authModalTitle">Welcome to Universe</h2>
-        </div>
-        <button class="icon-btn auth-close-btn" id="closeAuthModalBtn" type="button" aria-label="Close Authentication Modal">
-          <i class="ph-light ph-x"></i>
-        </button>
-      </header>
-
-      <!-- Mode Switcher -->
-      <div class="auth-tabs" id="authTabs" data-mode="signin" role="tablist">
-        <div class="auth-tab-pill-slider" id="authTabSlider" aria-hidden="true"></div>
-        <button class="auth-tab active" id="authTabSignIn" type="button" role="tab" aria-selected="true">Sign In</button>
-        <button class="auth-tab" id="authTabSignUp" type="button" role="tab" aria-selected="false">Create Account</button>
-      </div>
-
-      <form id="authForm" class="auth-form" autocomplete="on">
-        <div class="auth-alert hidden" id="authAlert" role="alert"></div>
-
-        <div class="auth-extra-field" id="authDisplayNameWrapper">
-          <div class="form-group" id="authDisplayNameGroup">
-            <label class="form-label" for="authDisplayName">Display Name</label>
-            <input class="form-input" type="text" id="authDisplayName" placeholder="e.g. Commander Shepard" autocomplete="name" />
-            <span class="form-hint">The identity roleplay characters will address you by.</span>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="authUsername">Username</label>
-          <input class="form-input" type="text" id="authUsername" placeholder="e.g. nova_pilot (letters, numbers, underscores)" required autocomplete="username" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="authPassword">Password</label>
-          <input class="form-input" type="password" id="authPassword" placeholder="Minimum 6 characters" required autocomplete="current-password" />
-        </div>
-
-        <div class="auth-modal-footer">
-          <button class="btn-island btn-island-full" id="authSubmitBtn" type="submit">
-            <span id="authSubmitText">Sign In</span>
-            <span class="btn-island-icon"><i class="ph-light ph-arrow-right"></i></span>
-          </button>
-        </div>
-      </form>
-    </div>
-  </dialog>
-
-  <!-- Toast Notifications -->
   <div class="toast-container" id="toast-container" aria-live="polite"></div>
 
-  <script type="module" src="/js/app.js"></script>
+  <script type="module" src="/js/dashboard.js"></script>
 </body>
 </html>

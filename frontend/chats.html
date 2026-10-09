@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="higgsfield">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saved Threads — My C.AI Universe</title>
+  <meta name="description" content="Resume any persistent branching roleplay conversation or variant history saved in SQLite." />
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <!-- Icons -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="theme-color" content="#0c0b15" />
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+  <!-- Modular CSS -->
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/dashboard.css" />
+</head>
+<body>
+  <div class="ambient-grain" aria-hidden="true"></div>
+
+  <div class="app-shell">
+    <!-- Left Studio Rail -->
+    <aside class="sidebar" aria-label="Primary Navigation">
+      <div class="sidebar-header">
+        <a href="/" class="brand-logo" id="brand-home-link">
+          <span class="brand-mark" aria-hidden="true">
+            <img src="/favicon.svg" alt="C.AI Universe" class="brand-mark-img" width="24" height="24" />
+          </span>
+          <div class="brand-text-wrap">
+            <span class="brand-title">C.AI Universe</span>
+            <span class="brand-version">SQL STUDIO v2.2</span>
+          </div>
+        </a>
+        <span class="engine-telemetry" id="ai-status-badge" title="AI Engine Status">
+          <span class="status-dot"></span>
+          <span class="status-label">Online</span>
+        </span>
+      </div>
+
+      <div class="sidebar-cta-wrap">
+        <a href="/create.html" class="btn-island btn-island-full">
+          <span>New Character</span>
+          <span class="btn-island-icon" aria-hidden="true">
+            <i class="ph-light ph-arrow-up-right"></i>
+          </span>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Workspace Views">
+        <a href="/" class="nav-item" data-page="discover">
+          <i class="ph-light ph-compass"></i>
+          <span>Discover</span>
+          <kbd class="nav-kbd">1</kbd>
+        </a>
+        <a href="/create.html" class="nav-item" data-page="create">
+          <i class="ph-light ph-sparkle"></i>
+          <span>Studio</span>
+          <kbd class="nav-kbd">2</kbd>
+        </a>
+        <a href="/chats.html" class="nav-item active" data-page="chats">
+          <i class="ph-light ph-chats-circle"></i>
+          <span>Threads</span>
+          <kbd class="nav-kbd">3</kbd>
+        </a>
+        <a href="/personas.html" class="nav-item" data-page="personas">
+          <i class="ph-light ph-identification-card"></i>
+          <span>Personas</span>
+          <kbd class="nav-kbd">4</kbd>
+        </a>
+      </nav>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section-header">
+        <span>Active Storylines</span>
+        <span class="mono-counter" id="sidebar-session-count">0</span>
+      </div>
+      <div class="recent-chats-list" id="sidebar-recent-chats"></div>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-account-box" id="sidebar-account-section">
+          <div class="auth-guest-view" id="authGuestView">
+            <a href="/auth.html" class="btn-island btn-island-full auth-launch-btn">
+              <span>Sign In / Register</span>
+              <span class="btn-island-icon" aria-hidden="true"><i class="ph-light ph-user-circle"></i></span>
+            </a>
+          </div>
+          <div class="auth-user-view hidden" id="authUserView">
+            <div class="auth-user-meta-wrap">
+              <span class="auth-user-avatar-tag" id="authUserAvatar">👤</span>
+              <div class="auth-user-text">
+                <div class="auth-user-name" id="authUserName">User</div>
+                <div class="auth-user-handle" id="authUserHandle">@username</div>
+              </div>
+            </div>
+            <button class="icon-btn auth-signout-btn" id="authSignOutBtn" type="button" title="Sign Out">
+              <i class="ph-light ph-sign-out"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="sidebar-footer-row">
+          <a href="/personas.html" class="persona-pill" id="sidebar-persona-pill" title="Switch Active Roleplay Identity">
+            <span class="persona-monogram" id="sidebar-persona-emoji">TR</span>
+            <div class="persona-info">
+              <div class="persona-name" id="sidebar-persona-name">Traveler</div>
+              <div class="persona-sub">Active Identity</div>
+            </div>
+            <i class="ph-light ph-caret-up-down persona-caret"></i>
+          </a>
+
+          <button class="icon-btn theme-toggle-btn" id="themeToggleBtn" type="button" title="Cycle Theme">
+            <i class="ph-light ph-sliders-horizontal" id="themeToggleIcon"></i>
+            <span class="theme-mode-label sr-only" id="themeModeLabel">Higgsfield</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="main-workspace">
+      <div class="content-container">
+        <header class="view-header">
+          <div>
+            <h1 class="view-title">Saved Narrative Threads</h1>
+            <p class="view-subtitle">Every branching conversation and variant history persisted in SQLite.</p>
+          </div>
+        </header>
+
+        <div class="bento-character-grid" id="saved-chats-grid">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script type="module" src="/js/chats-page.js"></script>
+</body>
+</html>

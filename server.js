@@ -89,21 +89,31 @@ export class ApplicationServer {
     const frontendDir = path.join(__dirname, 'frontend');
     this.app.use(express.static(frontendDir));
 
-    const spaRoutes = [
-      '/',
-      '/index.html',
-      '/chat.html',
-      '/create.html',
-      '/characters.html',
-      '/chats.html',
-      '/chat',
-      '/create',
-      '/characters',
-      '/chats',
-      '/personas'
-    ];
+    this.app.get(['/', '/dashboard', '/index.html'], (_req, res) => {
+      res.sendFile(path.join(frontendDir, 'index.html'));
+    });
 
-    this.app.get(spaRoutes, (_req, res) => {
+    this.app.get(['/chat', '/chat.html'], (_req, res) => {
+      res.sendFile(path.join(frontendDir, 'chat.html'));
+    });
+
+    this.app.get(['/auth', '/auth.html', '/login', '/login.html'], (_req, res) => {
+      res.sendFile(path.join(frontendDir, 'auth.html'));
+    });
+
+    this.app.get(['/create', '/create.html'], (_req, res) => {
+      res.sendFile(path.join(frontendDir, 'create.html'));
+    });
+
+    this.app.get(['/chats', '/chats.html'], (_req, res) => {
+      res.sendFile(path.join(frontendDir, 'chats.html'));
+    });
+
+    this.app.get(['/personas', '/personas.html'], (_req, res) => {
+      res.sendFile(path.join(frontendDir, 'personas.html'));
+    });
+
+    this.app.get(['/characters', '/characters.html'], (_req, res) => {
       res.sendFile(path.join(frontendDir, 'index.html'));
     });
   }

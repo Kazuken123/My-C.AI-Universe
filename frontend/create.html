@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="higgsfield">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Character Architecture Studio — My C.AI Universe</title>
+  <meta name="description" content="Synthesize canonical characters from Fandom/Wikipedia or author custom personalities with persistent SQL memory." />
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <!-- Icons -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="theme-color" content="#0c0b15" />
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+  <!-- Modular CSS for Studio -->
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/studio.css" />
+</head>
+<body>
+  <div class="ambient-grain" aria-hidden="true"></div>
+
+  <div class="app-shell">
+    <!-- Left Studio Rail -->
+    <aside class="sidebar" aria-label="Primary Navigation">
+      <div class="sidebar-header">
+        <a href="/" class="brand-logo" id="brand-home-link">
+          <span class="brand-mark" aria-hidden="true">
+            <img src="/favicon.svg" alt="C.AI Universe" class="brand-mark-img" width="24" height="24" />
+          </span>
+          <div class="brand-text-wrap">
+            <span class="brand-title">C.AI Universe</span>
+            <span class="brand-version">SQL STUDIO v2.2</span>
+          </div>
+        </a>
+        <span class="engine-telemetry" id="ai-status-badge" title="AI Engine Status">
+          <span class="status-dot"></span>
+          <span class="status-label">Online</span>
+        </span>
+      </div>
+
+      <div class="sidebar-cta-wrap">
+        <a href="/create.html" class="btn-island btn-island-full">
+          <span>New Character</span>
+          <span class="btn-island-icon" aria-hidden="true">
+            <i class="ph-light ph-arrow-up-right"></i>
+          </span>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Workspace Views">
+        <a href="/" class="nav-item" data-page="discover">
+          <i class="ph-light ph-compass"></i>
+          <span>Discover</span>
+          <kbd class="nav-kbd">1</kbd>
+        </a>
+        <a href="/create.html" class="nav-item active" data-page="create">
+          <i class="ph-light ph-sparkle"></i>
+          <span>Studio</span>
+          <kbd class="nav-kbd">2</kbd>
+        </a>
+        <a href="/chats.html" class="nav-item" data-page="chats">
+          <i class="ph-light ph-chats-circle"></i>
+          <span>Threads</span>
+          <kbd class="nav-kbd">3</kbd>
+        </a>
+        <a href="/personas.html" class="nav-item" data-page="personas">
+          <i class="ph-light ph-identification-card"></i>
+          <span>Personas</span>
+          <kbd class="nav-kbd">4</kbd>
+        </a>
+      </nav>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section-header">
+        <span>Active Storylines</span>
+        <span class="mono-counter" id="sidebar-session-count">0</span>
+      </div>
+      <div class="recent-chats-list" id="sidebar-recent-chats">
+        <!-- Populated dynamically -->
+      </div>
+
+      <!-- Footer: Account Status + Active Persona + Theme Switcher -->
+      <div class="sidebar-footer">
+        <div class="sidebar-account-box" id="sidebar-account-section">
+          <div class="auth-guest-view" id="authGuestView">
+            <a href="/auth.html" class="btn-island btn-island-full auth-launch-btn">
+              <span>Sign In / Register</span>
+              <span class="btn-island-icon" aria-hidden="true"><i class="ph-light ph-user-circle"></i></span>
+            </a>
+          </div>
+          <div class="auth-user-view hidden" id="authUserView">
+            <div class="auth-user-meta-wrap">
+              <span class="auth-user-avatar-tag" id="authUserAvatar">👤</span>
+              <div class="auth-user-text">
+                <div class="auth-user-name" id="authUserName">User</div>
+                <div class="auth-user-handle" id="authUserHandle">@username</div>
+              </div>
+            </div>
+            <button class="icon-btn auth-signout-btn" id="authSignOutBtn" type="button" title="Sign Out">
+              <i class="ph-light ph-sign-out"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="sidebar-footer-row">
+          <a href="/personas.html" class="persona-pill" id="sidebar-persona-pill" title="Switch Active Roleplay Identity">
+            <span class="persona-monogram" id="sidebar-persona-emoji">TR</span>
+            <div class="persona-info">
+              <div class="persona-name" id="sidebar-persona-name">Traveler</div>
+              <div class="persona-sub">Active Identity</div>
+            </div>
+            <i class="ph-light ph-caret-up-down persona-caret"></i>
+          </a>
+
+          <button class="icon-btn theme-toggle-btn" id="themeToggleBtn" type="button" title="Cycle Theme">
+            <i class="ph-light ph-sliders-horizontal" id="themeToggleIcon"></i>
+            <span class="theme-mode-label sr-only" id="themeModeLabel">Higgsfield</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Studio Workspace -->
+    <main class="main-workspace">
+      <div class="content-container">
+        <header class="view-header">
+          <div>
+            <h1 class="view-title" id="studio-heading">Character Architecture Studio</h1>
+            <p class="view-subtitle">Synthesize from Fandom/Wikipedia canon, generate via AI prompt, or author manually.</p>
+          </div>
+          <button class="btn-ghost" id="btnResetStudio" type="button">
+            <i class="ph-light ph-arrow-counter-clockwise"></i>
+            <span>Reset Draft</span>
+          </button>
+        </header>
+
+        <div class="studio-grid">
+          <div class="studio-left-col">
+            <!-- Double-Bezel Automated Ingestion Card -->
+            <div class="double-bezel-shell">
+              <div class="double-bezel-core studio-card">
+                <div class="card-header-row">
+                  <h3 class="card-heading">Automated Canon Ingestion</h3>
+                  <span class="mono-tag">WIKI + LLM</span>
+                </div>
+                <p class="hint">Extract infobox traits and portraits from any Fandom or Wikipedia URL, or synthesize a complete character from a single prompt.</p>
+
+                <div class="form-group">
+                  <label for="charWikiInput">Fandom or Wikipedia Source URL</label>
+                  <div class="inline-input-group">
+                    <input type="url" class="form-input" id="charWikiInput" placeholder="https://jujutsu-kaisen.fandom.com/wiki/Satoru_Gojo" />
+                    <button type="button" class="btn-secondary" id="btnExtractWiki">
+                      <i class="ph-light ph-globe-hemisphere-west"></i>
+                      <span>Extract Lore</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="aiConceptInput">One-Line Concept Synthesizer</label>
+                  <div class="inline-input-group">
+                    <input type="text" class="form-input" id="aiConceptInput" placeholder="A sharp-tongued cyberpunk watchmaker who trades memories for time..." />
+                    <button type="button" class="btn-secondary" id="btnGenerateAI">
+                      <i class="ph-light ph-wand"></i>
+                      <span>Synthesize</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Main Character Specification Form -->
+            <div class="double-bezel-shell">
+              <form class="double-bezel-core studio-card" id="studio-form">
+                <input type="hidden" id="studioCharId" value="" />
+
+                <div class="form-row-2col">
+                  <div class="form-group">
+                    <label for="charNameInput">Character Name *</label>
+                    <input type="text" class="form-input" id="charNameInput" placeholder="Satoru Gojo" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="charCategoriesInput">Classification Tags</label>
+                    <input type="text" class="form-input" id="charCategoriesInput" value="Anime, Roleplay" placeholder="Anime, Roleplay, Fantasy" />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="charTaglineInput">Role &amp; Narrative Headline</label>
+                  <input type="text" class="form-input" id="charTaglineInput" placeholder="The Strongest Jujutsu Sorcerer • Special Grade Teacher" />
+                </div>
+
+                <div class="form-group">
+                  <label for="charAvatarInput">Portrait Image URL</label>
+                  <div class="inline-input-group">
+                    <input type="text" class="form-input" id="charAvatarInput" placeholder="https://... (Leave blank for procedural portrait)" />
+                    <button type="button" class="btn-secondary" id="btnRandomAvatar">
+                      <i class="ph-light ph-shuffle"></i>
+                      <span>Generate Seed</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="charGreetingInput">Opening Scene &amp; First Line</label>
+                  <textarea class="form-textarea" id="charGreetingInput" rows="4" placeholder="*He lowers his dark sunglasses slightly, infinite blue eyes locking onto you.*&#10;&#10;Satoru Gojo: &quot;Yo! You must be the new transfer student.&quot;"></textarea>
+                </div>
+
+                <div class="form-row-2col">
+                  <div class="form-group">
+                    <label for="charPersonalityInput">Temperament &amp; Psychology</label>
+                    <textarea class="form-textarea" id="charPersonalityInput" rows="4" placeholder="Core traits, motivations, flaws, and emotional demeanor..."></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label for="charAppearanceInput">Visual Design &amp; Attire</label>
+                    <textarea class="form-textarea" id="charAppearanceInput" rows="4" placeholder="Distinctive features, posture, and signature wardrobe..."></textarea>
+                  </div>
+                </div>
+
+                <div class="form-row-2col">
+                  <div class="form-group">
+                    <label for="charAbilitiesInput">Capabilities &amp; Domain</label>
+                    <textarea class="form-textarea" id="charAbilitiesInput" rows="3" placeholder="Combat techniques, intellectual specialties, or craft..."></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label for="charBackgroundInput">Canon Backstory</label>
+                    <textarea class="form-textarea" id="charBackgroundInput" rows="3" placeholder="Formative history, allegiances, and world context..."></textarea>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="charSpeakingStyleInput">Cadence &amp; Diction</label>
+                  <input type="text" class="form-input" id="charSpeakingStyleInput" placeholder="Playful, irreverent, switches between teasing banter and cold authority" />
+                </div>
+
+                <div class="form-row-2col">
+                  <div class="form-group">
+                    <label for="charExampleDialoguesInput">Sample Dialogue Exchanges</label>
+                    <textarea class="form-textarea" id="charExampleDialoguesInput" rows="3" placeholder="*Action cue*&#10;Character: &quot;Sample spoken line.&quot;"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label for="charInitialMemoryInput">Immutable Core Memories</label>
+                    <textarea class="form-textarea" id="charInitialMemoryInput" rows="3" placeholder="Facts permanently indexed in semantic vector memory..."></textarea>
+                  </div>
+                </div>
+
+                <div class="form-submit-bar">
+                  <button type="submit" class="btn-island" id="btnSaveCharacter">
+                    <span id="btnSaveText">Commit to SQL &amp; Launch Scene</span>
+                    <span class="btn-island-icon" aria-hidden="true">
+                      <i class="ph-light ph-arrow-right"></i>
+                    </span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Right Column: Sticky Live Hardware Dossier Preview -->
+          <div class="studio-right-col">
+            <div class="double-bezel-shell sticky-preview-shell">
+              <div class="double-bezel-core studio-card">
+                <div class="card-header-row">
+                  <h3 class="card-heading">Live Dossier Preview</h3>
+                  <span class="mono-tag">REALTIME</span>
+                </div>
+
+                <div class="preview-dossier-card">
+                  <div class="cai-card-top">
+                    <img class="cai-avatar" id="preview-avatar" src="https://api.dicebear.com/9.x/adventurer/svg?seed=Preview" alt="Character portrait preview" />
+                    <div class="cai-card-info">
+                      <div class="cai-card-name" id="preview-name">New Character</div>
+                      <div class="cai-card-creator">Authored by @you</div>
+                      <div class="cai-card-tagline" id="preview-tagline">AI Roleplay Character</div>
+                    </div>
+                  </div>
+                  <div class="cai-card-tags" id="preview-tags">
+                    <span class="tag-badge">Anime</span>
+                    <span class="tag-badge">Roleplay</span>
+                  </div>
+                </div>
+
+                <div class="lore-block" style="margin-top: 16px;">
+                  <h4 style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Opening Scene Render</h4>
+                  <div id="preview-greeting" class="preview-greeting-box" style="font-style: italic; color: var(--text-secondary); margin-top: 8px; line-height: 1.5;">*Scene awaits first line...*</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script type="module" src="/js/studio-page.js"></script>
+</body>
+</html>
