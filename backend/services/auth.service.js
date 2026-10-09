@@ -235,13 +235,24 @@ export class AuthService {
     // If token provided, verify with provider if possible
     if (token && cleanProvider === 'google') {
       try {
-        const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`);
+        let verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`);
         if (verifyRes.ok) {
           const payload = await verifyRes.json();
           profileId = payload.sub || profileId;
           profileEmail = payload.email || profileEmail;
           profileName = payload.name || profileName;
           profileAvatar = payload.picture || profileAvatar;
+        } else {
+          const userinfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (userinfoRes.ok) {
+            const userinfo = await userinfoRes.json();
+            profileId = userinfo.sub || profileId;
+            profileEmail = userinfo.email || profileEmail;
+            profileName = userinfo.name || profileName;
+            profileAvatar = userinfo.picture || profileAvatar;
+          }
         }
       } catch {
         // Fallback to client payload

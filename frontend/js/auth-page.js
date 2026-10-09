@@ -169,38 +169,93 @@ class AuthPageController {
       });
     }
 
-    const handleSocialAuth = async (provider) => {
-      this.clearAlert();
-      const providerName = provider === 'google' ? 'Google' : 'Facebook';
-      const promptEmail = prompt(`Enter your ${providerName} email address for sign-in:`, `user@${provider === 'google' ? 'gmail.com' : 'facebook.com'}`);
-      if (!promptEmail || !promptEmail.trim()) return;
+    const GOOGLE_CLIENT_ID = '254873060516-vtieqsbihjcle1lqgpqfp3u5lpgocf7g.apps.googleusercontent.com';
 
-      const cleanEmail = promptEmail.trim().toLowerCase();
+    const loginWithGoogleToken = async (token) => {
+      this.clearAlert();
       try {
+        showToast('Authenticating with Google');
         await api.socialLogin({
-          provider,
-          email: cleanEmail,
-          name: cleanEmail.split('@')[0],
-          providerId: `${provider}_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`
+          provider: 'google',
+          token
         });
-        showToast(`Signed in successfully with ${providerName}!`);
+        showToast('Signed in successfully with Google!');
         const returnUrl = params.get('return') || '/';
         setTimeout(() => {
           window.location.href = returnUrl;
         }, 400);
       } catch (err) {
-        this.showAlert(err.message || `${providerName} sign-in failed.`);
+        this.showAlert(err.message || 'Google sign-in failed.');
       }
     };
 
-    const googleBtn = document.getElementById('btnGoogleAuth');
-    if (googleBtn) {
-      googleBtn.addEventListener('click', () => handleSocialAuth('google'));
+    const setupGoogleAuth = () => {
+      if (!window.google?.accounts) return false;
+
+      try {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: async (response) => {
+            if (response?.credential) {
+              await loginWithGoogleToken(response.credential);
+            }
+          }
+        });
+        window.google.accounts.id.prompt();
+      } catch {
+        // One Tap fallback
+      }
+
+      let tokenClient = null;
+      try {
+        tokenClient = window.google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: 'email profile openid',
+          callback: async (tokenResponse) => {
+            if (tokenResponse?.error) {
+              this.showAlert(`Google authentication error: ${tokenResponse.error}`);
+              return;
+            }
+            if (tokenResponse?.access_token) {
+              await loginWithGoogleToken(tokenResponse.access_token);
+            }
+          }
+        });
+      } catch {
+        // tokenClient fallback
+      }
+
+      const googleBtn = document.getElementById('btnGoogleAuth');
+      if (googleBtn) {
+        googleBtn.onclick = () => {
+          this.clearAlert();
+          if (tokenClient) {
+            tokenClient.requestAccessToken();
+          } else if (window.google?.accounts?.id) {
+            window.google.accounts.id.prompt();
+          } else {
+            this.showAlert('Google Sign-In is unavailable. Please check your network connection.');
+          }
+        };
+      }
+      return true;
+    };
+
+    if (!setupGoogleAuth()) {
+      const checkGsi = setInterval(() => {
+        if (setupGoogleAuth()) {
+          clearInterval(checkGsi);
+        }
+      }, 150);
+      setTimeout(() => clearInterval(checkGsi), 4000);
     }
 
     const fbBtn = document.getElementById('btnFacebookAuth');
     if (fbBtn) {
-      fbBtn.addEventListener('click', () => handleSocialAuth('facebook'));
+      fbBtn.onclick = () => {
+        this.clearAlert();
+        this.showAlert('Facebook Sign-In requires a registered Facebook App ID.');
+      };
     }
 
     this.checkCurrentSession();

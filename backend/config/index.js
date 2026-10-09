@@ -20,6 +20,7 @@ export const config = {
   OLLAMA_URL: process.env.OLLAMA_URL || 'http://localhost:11434',
   OLLAMA_MODEL: process.env.OLLAMA_MODEL || 'qwen2.5:1.5b',
   MEMORY_SERVICE_URL: process.env.MEMORY_SERVICE_URL || 'http://localhost:5001',
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '254873060516-vtieqsbihjcle1lqgpqfp3u5lpgocf7g.apps.googleusercontent.com',
 
   // Database file paths (relative to project root for compatibility, plus absolute paths)
   DB_PATH: './backend/db/characters.json',
