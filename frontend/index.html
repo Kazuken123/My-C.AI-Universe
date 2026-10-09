@@ -11,6 +11,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <!-- Favicon & App Icons -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="theme-color" content="#0c0b15" />
   <!-- Phosphor Icons (Light & Regular weights — Zero Emojis) -->
   <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
   <link rel="stylesheet" href="/css/styles.css" />
@@ -26,7 +34,7 @@
       <div class="sidebar-header">
         <a href="/" class="brand-logo" id="brand-home-link">
           <span class="brand-mark" aria-hidden="true">
-            <i class="ph-light ph-planet"></i>
+            <img src="/favicon.svg" alt="C.AI Universe" class="brand-mark-img" width="24" height="24" />
           </span>
           <div class="brand-text-wrap">
             <span class="brand-title">C.AI Universe</span>
@@ -570,7 +578,7 @@
           <aside class="chat-right-drawer" id="chat-right-drawer" aria-label="Character Dossier and Memory">
             <div class="drawer-tabs" role="tablist">
               <button class="drawer-tab active" data-pane="pane-lore" type="button">
-                <i class="ph-light ph-Identification-badge"></i>
+                <i class="ph-light ph-identification-badge"></i>
                 <span>Dossier</span>
               </button>
               <button class="drawer-tab" data-pane="pane-memories" type="button">

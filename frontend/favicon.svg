@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#161329"/>
+      <stop offset="45%" stop-color="#0e0c18"/>
+      <stop offset="100%" stop-color="#06050b"/>
+    </linearGradient>
+
+    <!-- Outer Border Glow -->
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7" stop-opacity="0.6"/>
+      <stop offset="50%" stop-color="#6366f1" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.1"/>
+    </linearGradient>
+
+    <!-- Ambient Planet Glow -->
+    <radialGradient id="ambientGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#9333ea" stop-opacity="0.45"/>
+      <stop offset="50%" stop-color="#6366f1" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Planet Sphere Gradient -->
+    <linearGradient id="planetGrad" x1="15%" y1="15%" x2="85%" y2="85%">
+      <stop offset="0%" stop-color="#e9d5ff"/>
+      <stop offset="18%" stop-color="#c084fc"/>
+      <stop offset="48%" stop-color="#8b5cf6"/>
+      <stop offset="78%" stop-color="#6d28d9"/>
+      <stop offset="100%" stop-color="#3b0764"/>
+    </linearGradient>
+
+    <!-- Planet Inner Shadow / Atmosphere Rim -->
+    <radialGradient id="sphereShadow" cx="38%" cy="32%" r="68%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.25"/>
+      <stop offset="45%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="75%" stop-color="#1e0b36" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#0b0214" stop-opacity="0.85"/>
+    </radialGradient>
+
+    <!-- Orbit Ring Gradient -->
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="35%" stop-color="#a855f7"/>
+      <stop offset="70%" stop-color="#c084fc"/>
+      <stop offset="100%" stop-color="#f472b6"/>
+    </linearGradient>
+
+    <!-- Ring Glow Gradient -->
+    <linearGradient id="ringGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.7"/>
+      <stop offset="50%" stop-color="#c084fc" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#f472b6" stop-opacity="0.7"/>
+    </linearGradient>
+
+    <!-- Sparkle Star Gradient -->
+    <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="60%" stop-color="#f5d0fe"/>
+      <stop offset="100%" stop-color="#c084fc"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Base Badge / Squircle with subtle border -->
+  <rect x="16" y="16" width="480" height="480" rx="116" fill="url(#bgGrad)"/>
+  <rect x="16" y="16" width="480" height="480" rx="116" fill="none" stroke="url(#borderGrad)" stroke-width="4"/>
+
+  <!-- Radial Cosmic Glow behind Planet -->
+  <circle cx="256" cy="256" r="210" fill="url(#ambientGlow)"/>
+
+  <!-- Background Orbit Arc (Passes behind planet sphere) -->
+  <g transform="rotate(-26 256 256)">
+    <!-- Outer faint glow behind -->
+    <path d="M 66 256 A 190 56 0 0 1 446 256" fill="none" stroke="url(#ringGlow)" stroke-width="32" stroke-linecap="round" opacity="0.3"/>
+    <!-- Main ring arc behind -->
+    <path d="M 66 256 A 190 56 0 0 1 446 256" fill="none" stroke="url(#ringGrad)" stroke-width="18" stroke-linecap="round"/>
+    <path d="M 66 256 A 190 56 0 0 1 446 256" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+  </g>
+
+  <!-- Planet Celestial Sphere -->
+  <circle cx="256" cy="256" r="102" fill="url(#planetGrad)"/>
+  <circle cx="256" cy="256" r="102" fill="url(#sphereShadow)"/>
+
+  <!-- Foreground Orbit Arc (Passes in front of planet sphere) -->
+  <g transform="rotate(-26 256 256)">
+    <!-- Outer faint glow in front -->
+    <path d="M 446 256 A 190 56 0 0 1 66 256" fill="none" stroke="url(#ringGlow)" stroke-width="32" stroke-linecap="round" opacity="0.35"/>
+    <!-- Main ring arc in front -->
+    <path d="M 446 256 A 190 56 0 0 1 66 256" fill="none" stroke="url(#ringGrad)" stroke-width="18" stroke-linecap="round"/>
+    <path d="M 446 256 A 190 56 0 0 1 66 256" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.85"/>
+  </g>
+
+  <!-- Primary AI Sparkle Star (Top Right) -->
+  <path d="M 382 92 Q 382 128 418 128 Q 382 128 382 164 Q 382 128 346 128 Q 382 128 382 92 Z" fill="url(#starGrad)"/>
+  <circle cx="382" cy="128" r="4" fill="#ffffff"/>
+
+  <!-- Secondary Satellite Star (Bottom Left) -->
+  <path d="M 126 358 Q 126 376 144 376 Q 126 376 126 394 Q 126 376 108 376 Q 126 376 126 358 Z" fill="#c084fc" opacity="0.85"/>
+  <circle cx="126" cy="376" r="2.5" fill="#ffffff"/>
+
+  <!-- Ambient micro stars -->
+  <circle cx="170" cy="136" r="3" fill="#e9d5ff" opacity="0.75"/>
+  <circle cx="366" cy="388" r="2.5" fill="#a855f7" opacity="0.6"/>
+</svg>
