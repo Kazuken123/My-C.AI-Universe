@@ -59,6 +59,17 @@ export class ApiClient {
     return this.request('/api/auth/me');
   }
 
+  async getCurrentUser() {
+    const token = this.getToken();
+    if (!token) return null;
+    try {
+      const data = await this.getMe();
+      return data?.user || null;
+    } catch {
+      return null;
+    }
+  }
+
   logout() {
     this.setToken(null);
     return this.request('/api/auth/logout', { method: 'POST' }).catch(() => ({}));
@@ -116,11 +127,19 @@ export class ApiClient {
     });
   }
 
+  parseWiki(url) {
+    return this.parseWikiPreview(url);
+  }
+
   generateCharacterAI(concept) {
     return this.request('/api/character/generate', {
       method: 'POST',
       body: JSON.stringify({ concept })
     });
+  }
+
+  generateCharacter(concept) {
+    return this.generateCharacterAI(concept);
   }
 
   // Chat Sessions & Messages
@@ -184,6 +203,10 @@ export class ApiClient {
       method: 'PUT',
       body: JSON.stringify(payload)
     });
+  }
+
+  setDefaultPersona(id) {
+    return this.updatePersona(id, { isDefault: true });
   }
 
   deletePersona(id) {

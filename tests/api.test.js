@@ -68,7 +68,17 @@ async function runTests() {
   // 5. Personas CRUD
   const personasRes = await fetch(`${BASE_URL}/api/personas`);
   const personas = await assertResponse(personasRes, 'Get Personas');
-  console.log(`✅ 5. Loaded ${personas.length} user personas from SQL`);
+  if (personas.length > 0) {
+    const targetPersona = personas[0];
+    const updateRes = await fetch(`${BASE_URL}/api/personas/${targetPersona.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isDefault: true })
+    });
+    const updated = await assertResponse(updateRes, 'Update Persona to Default');
+    if (!updated.isDefault) throw new Error('Expected updated persona to be default');
+  }
+  console.log(`✅ 5. Loaded & verified default user persona update in SQL (${personas.length} available)`);
 
   // 6. Create Chat Session (inserts into chat_sessions, chat_messages, message_variants)
   const sessionRes = await fetch(`${BASE_URL}/api/chats`, {
