@@ -40,7 +40,10 @@ export class CAIUniverseApp {
     toast.innerHTML = `<i class="ph-light ph-info"></i> <span></span>`;
     toast.querySelector('span').textContent = message;
     container.appendChild(toast);
-    setTimeout(() => toast.remove(), 3200);
+    setTimeout(() => {
+      toast.classList.add('exiting');
+      setTimeout(() => toast.remove(), 180);
+    }, 3000);
   }
 
   navigateTo(viewName, pushState = true) {

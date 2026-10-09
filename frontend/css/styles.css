@@ -58,8 +58,10 @@
   --shadow-ambient: 0 20px 50px -12px rgba(8, 5, 4, 0.75);
   --shadow-card-hover: 0 24px 48px -12px rgba(224, 86, 56, 0.12);
 
-  /* Custom Spring Physics Curves (soft-skill Section 5) */
+  /* Custom Spring Physics Curves (emil-design-eng + soft-skill) */
   --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -251,7 +253,7 @@
 
 .skip-link {
   position: absolute;
-  top: -100px;
+  top: 12px;
   left: 16px;
   background: var(--accent);
   color: var(--text-on-accent);
@@ -260,11 +262,12 @@
   font-weight: 600;
   z-index: 999;
   text-decoration: none;
-  transition: top 0.2s var(--ease-out-expo);
+  transform: translateY(-140%);
+  transition: transform 0.2s var(--ease-out);
 }
 
 .skip-link:focus {
-  top: 12px;
+  transform: translateY(0);
 }
 
 html, body {
@@ -429,8 +432,9 @@ html, body {
 }
 
 .btn-island:active {
-  transform: scale(0.98);
-  filter: brightness(0.95);
+  transform: scale(0.965);
+  filter: brightness(0.96);
+  transition-duration: 0.1s;
 }
 
 /* Secondary & Ghost Controls */
@@ -601,6 +605,7 @@ html, body {
   font-size: 1.2rem;
   overflow: hidden;
   flex-shrink: 0;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.25s ease, transform 0.15s var(--ease-spring);
 }
 
 .brand-mark-img {
@@ -610,11 +615,22 @@ html, body {
   display: block;
   object-fit: contain;
   box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.2s var(--ease-spring), filter 0.2s ease;
+}
+
+.brand-logo:hover .brand-mark {
+  border-color: var(--accent);
+  box-shadow: 0 0 16px var(--accent-soft);
 }
 
 .brand-logo:hover .brand-mark-img {
-  transform: scale(1.08) rotate(3deg);
+  transform: scale(1.04);
+  filter: brightness(1.15);
+}
+
+.brand-logo:active .brand-mark {
+  transform: scale(0.96);
+  transition-duration: 0.1s;
 }
 
 .brand-text-wrap {
@@ -710,7 +726,8 @@ html, body {
 }
 
 .nav-item:active {
-  transform: scale(0.98);
+  transform: scale(0.965);
+  transition-duration: 0.1s;
 }
 
 .nav-item.active {
@@ -925,13 +942,13 @@ html, body {
 
 .view-panel.active {
   display: block;
-  animation: viewReveal 0.45s var(--ease-out-expo);
+  animation: viewReveal 0.2s var(--ease-out);
 }
 
 @keyframes viewReveal {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -1493,20 +1510,29 @@ html, body {
   font-family: var(--font-mono);
   font-size: 0.74rem;
   font-variant-numeric: tabular-nums;
-  transition: color 0.15s ease, transform 0.2s var(--ease-spring);
+  transition: color 0.15s ease;
+}
+
+.like-btn i {
+  display: inline-block;
+  transition: transform 0.2s var(--ease-spring);
 }
 
 .like-btn:hover {
   color: var(--accent);
-  transform: scale(1.08);
+}
+
+.like-btn:hover i {
+  transform: scale(1.18);
 }
 
 .like-btn.liked {
   color: var(--accent);
 }
 
-.like-btn:active {
-  transform: scale(0.96);
+.like-btn:active i {
+  transform: scale(0.88);
+  transition-duration: 0.1s;
 }
 
 .card-actions {
@@ -1631,8 +1657,7 @@ html, body {
   color: var(--text-primary);
   font-family: var(--font-sans);
   font-size: 0.87rem;
-  line-height: 1.5;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .form-input::placeholder,
@@ -1644,6 +1669,7 @@ html, body {
 .form-textarea:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .form-textarea {
@@ -1957,20 +1983,23 @@ html, body {
   border: none;
   color: var(--text-secondary);
   cursor: pointer;
-  padding: 2px 4px;
+  padding: 3px 5px;
   display: inline-flex;
   align-items: center;
   font-size: 0.8rem;
-  transition: color 0.15s ease, transform 0.15s var(--ease-spring);
+  border-radius: 4px;
+  transition: color 0.15s ease, transform 0.15s var(--ease-spring), background-color 0.15s ease;
 }
 
 .swipe-btn:hover:not(:disabled) {
   color: #ffffff;
-  transform: scale(1.15);
+  background: rgba(255, 255, 255, 0.08);
+  transform: scale(1.08);
 }
 
 .swipe-btn:active:not(:disabled) {
-  transform: scale(0.95);
+  transform: scale(0.92);
+  transition-duration: 0.1s;
 }
 
 .swipe-btn:disabled {
@@ -2271,6 +2300,24 @@ kbd {
   display: flex;
   align-items: center;
   gap: 8px;
+  animation: toastEnter 0.22s var(--ease-spring);
+  transition: transform 0.18s var(--ease-out), opacity 0.18s var(--ease-out);
+}
+
+.toast.exiting {
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
+}
+
+@keyframes toastEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* ============================================================================
@@ -2382,10 +2429,12 @@ kbd {
 }
 .voice-wave-bar {
   width: 2.5px;
-  height: 35%;
+  height: 100%;
+  transform: scaleY(0.35);
+  transform-origin: bottom;
   background: var(--accent);
   border-radius: 1px;
-  transition: height 0.2s ease;
+  transition: transform 0.2s ease;
 }
 .voice-wave-visualizer.active .voice-wave-bar:nth-child(1) {
   animation: waveBar 0.75s ease-in-out infinite alternate;
@@ -2400,8 +2449,8 @@ kbd {
   animation: waveBar 1.05s ease-in-out 0.1s infinite alternate;
 }
 @keyframes waveBar {
-  0% { height: 25%; }
-  100% { height: 100%; }
+  0% { transform: scaleY(0.25); }
+  100% { transform: scaleY(1); }
 }
 
 /* Cinematic Viewfinder Corner Marks */
@@ -2547,7 +2596,7 @@ kbd {
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease, transform 0.15s var(--ease-spring);
   box-sizing: border-box;
 }
 .auth-launch-btn:hover {
@@ -2556,6 +2605,10 @@ kbd {
   color: #ffffff;
   filter: brightness(1.15);
   box-shadow: 0 0 18px rgba(255, 255, 255, 0.08);
+}
+.auth-launch-btn:active {
+  transform: scale(0.97);
+  transition-duration: 0.1s;
 }
 
 .auth-user-view {
@@ -2643,11 +2696,38 @@ kbd {
   box-shadow: 0 32px 80px rgba(0, 0, 0, 0.95);
   color: var(--text-primary);
 }
+.auth-dialog-modal[open] {
+  animation: modalEnter 0.22s var(--ease-spring);
+}
 .auth-dialog-modal::backdrop {
   background: rgba(0, 0, 0, 0.88);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
+.auth-dialog-modal[open]::backdrop {
+  animation: backdropEnter 0.2s var(--ease-out);
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes backdropEnter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .auth-modal-card {
   background: #111116;
   border: 1px solid var(--border-strong, rgba(255, 255, 255, 0.14));
@@ -2691,7 +2771,11 @@ kbd {
   font-weight: 600;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease, transform 0.15s var(--ease-spring);
+}
+.auth-tab:active {
+  transform: scale(0.97);
+  transition-duration: 0.1s;
 }
 .auth-tab.active {
   background: #1d1d24;
