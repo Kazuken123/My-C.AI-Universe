@@ -47,17 +47,17 @@ class AuthPageController {
       if (mode === 'signup') {
         if (this.tabSignIn) { this.tabSignIn.classList.remove('active'); this.tabSignIn.setAttribute('aria-selected', 'false'); }
         if (this.tabSignUp) { this.tabSignUp.classList.add('active'); this.tabSignUp.setAttribute('aria-selected', 'true'); }
-        if (this.title) this.title.textContent = 'Create Universe Account';
-        if (pageSub) pageSub.textContent = 'Create your account to save custom personas and branching storylines.';
-        if (this.submitText) this.submitText.textContent = 'Create Account';
+        if (this.title) this.title.textContent = 'Tạo Tài Khoản Universe';
+        if (pageSub) pageSub.textContent = 'Tạo tài khoản để lưu trữ nhân vật đại diện và các nhánh cốt truyện.';
+        if (this.submitText) this.submitText.textContent = 'Tạo Tài Khoản';
         if (this.nameWrapper) this.nameWrapper.classList.add('expanded');
         if (this.nameInput) setTimeout(() => this.nameInput.focus(), 150);
       } else {
         if (this.tabSignIn) { this.tabSignIn.classList.add('active'); this.tabSignIn.setAttribute('aria-selected', 'true'); }
         if (this.tabSignUp) { this.tabSignUp.classList.remove('active'); this.tabSignUp.setAttribute('aria-selected', 'false'); }
-        if (this.title) this.title.textContent = 'Sign In to Universe';
-        if (pageSub) pageSub.textContent = 'Access your custom personas and branching storyline threads.';
-        if (this.submitText) this.submitText.textContent = 'Sign In';
+        if (this.title) this.title.textContent = 'Đăng Nhập vào Universe';
+        if (pageSub) pageSub.textContent = 'Truy cập nhân vật đại diện và các nhánh cốt truyện của bạn.';
+        if (this.submitText) this.submitText.textContent = 'Đăng Nhập';
         if (this.nameWrapper) this.nameWrapper.classList.remove('expanded');
         if (this.usernameInput) setTimeout(() => this.usernameInput.focus(), 150);
       }
