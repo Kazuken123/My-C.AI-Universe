@@ -41,15 +41,49 @@ export class ApiClient {
   }
 
   // Authentication
-  register(payload) {
-    return this.request('/api/auth/register', {
+  async register(payload) {
+    const res = await this.request('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    if (res?.token) this.setToken(res.token);
+    return res;
+  }
+
+  async login(payload) {
+    const res = await this.request('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    if (res?.token) this.setToken(res.token);
+    return res;
+  }
+
+  async socialLogin(payload) {
+    const res = await this.request('/api/auth/social', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    if (res?.token) this.setToken(res.token);
+    return res;
+  }
+
+  forgotPassword(email) {
+    return this.request('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+  }
+
+  verifyResetCode(payload) {
+    return this.request('/api/auth/verify-code', {
       method: 'POST',
       body: JSON.stringify(payload)
     });
   }
 
-  login(payload) {
-    return this.request('/api/auth/login', {
+  resetPassword(payload) {
+    return this.request('/api/auth/reset-password', {
       method: 'POST',
       body: JSON.stringify(payload)
     });

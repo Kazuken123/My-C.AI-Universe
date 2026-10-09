@@ -11,6 +11,7 @@ class AuthPageController {
     this.submitText = document.getElementById('authSubmitText');
     this.nameWrapper = document.getElementById('authDisplayNameWrapper');
     this.nameInput = document.getElementById('authDisplayName');
+    this.emailInput = document.getElementById('authEmail');
     this.usernameInput = document.getElementById('authUsername');
     this.passwordInput = document.getElementById('authPassword');
     this.authForm = document.getElementById('authForm');
@@ -141,11 +142,17 @@ class AuthPageController {
 
         try {
           if (this.mode === 'signup') {
-            await api.register({ username, password, displayName: displayName || username });
-            showToast(`Account created! Welcome, @${username}`);
+            const email = this.emailInput?.value.trim();
+            await api.register({
+              username,
+              password,
+              email: email || undefined,
+              displayName: displayName || username
+            });
+            showToast(`Tài khoản đã tạo thành công! Chào mừng, @${username}`);
           } else {
             await api.login({ username, password });
-            showToast(`Welcome back, @${username}`);
+            showToast(`Chào mừng quay trở lại, @${username}`);
           }
 
           const returnUrl = params.get('return') || '/';
@@ -153,13 +160,47 @@ class AuthPageController {
             window.location.href = returnUrl;
           }, 400);
         } catch (err) {
-          this.showAlert(err.message || 'Authentication failed. Please check credentials.');
+          this.showAlert(err.message || 'Xác thực thất bại. Vui lòng kiểm tra lại thông tin.');
           if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.style.opacity = '1';
           }
         }
       });
+    }
+
+    const handleSocialAuth = async (provider) => {
+      this.clearAlert();
+      const providerName = provider === 'google' ? 'Google' : 'Facebook';
+      const promptEmail = prompt(`Nhập địa chỉ email ${providerName} để đăng nhập nhanh:`, `user@${provider === 'google' ? 'gmail.com' : 'facebook.com'}`);
+      if (!promptEmail || !promptEmail.trim()) return;
+
+      const cleanEmail = promptEmail.trim().toLowerCase();
+      try {
+        await api.socialLogin({
+          provider,
+          email: cleanEmail,
+          name: cleanEmail.split('@')[0],
+          providerId: `${provider}_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`
+        });
+        showToast(`Đăng nhập thành công với ${providerName}!`);
+        const returnUrl = params.get('return') || '/';
+        setTimeout(() => {
+          window.location.href = returnUrl;
+        }, 400);
+      } catch (err) {
+        this.showAlert(err.message || `Đăng nhập ${providerName} thất bại.`);
+      }
+    };
+
+    const googleBtn = document.getElementById('btnGoogleAuth');
+    if (googleBtn) {
+      googleBtn.addEventListener('click', () => handleSocialAuth('google'));
+    }
+
+    const fbBtn = document.getElementById('btnFacebookAuth');
+    if (fbBtn) {
+      fbBtn.addEventListener('click', () => handleSocialAuth('facebook'));
     }
 
     this.checkCurrentSession();

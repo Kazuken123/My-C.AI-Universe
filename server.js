@@ -101,6 +101,10 @@ export class ApplicationServer {
       res.sendFile(path.join(frontendDir, 'auth.html'));
     });
 
+    this.app.get(['/reset-password', '/reset-password.html', '/forgot-password'], (_req, res) => {
+      res.sendFile(path.join(frontendDir, 'reset-password.html'));
+    });
+
     this.app.get(['/create', '/create.html'], (_req, res) => {
       res.sendFile(path.join(frontendDir, 'create.html'));
     });

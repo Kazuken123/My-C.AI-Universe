@@ -20,16 +20,19 @@ export class UserRepository extends BaseRepository {
     user.validate();
 
     const stmt = this.db.prepare(`
-      INSERT INTO users (id, username, password_hash, display_name, avatar, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO users (id, username, email, password_hash, display_name, avatar, auth_provider, provider_id, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
       user.id,
       user.username,
+      user.email || null,
       user.passwordHash,
       user.displayName,
       user.avatar,
+      user.authProvider,
+      user.providerId || null,
       user.createdAt,
       user.updatedAt
     );
@@ -48,6 +51,34 @@ export class UserRepository extends BaseRepository {
     const row = this.db
       .prepare('SELECT * FROM users WHERE username = ? COLLATE NOCASE LIMIT 1')
       .get(clean);
+    return User.fromDatabaseRow(row);
+  }
+
+  /**
+   * Find user by email (case-insensitive)
+   * @param {string} email
+   * @returns {User|null}
+   */
+  findByEmail(email) {
+    if (!email) return null;
+    const clean = String(email).trim().toLowerCase();
+    const row = this.db
+      .prepare('SELECT * FROM users WHERE email = ? COLLATE NOCASE LIMIT 1')
+      .get(clean);
+    return User.fromDatabaseRow(row);
+  }
+
+  /**
+   * Find user by social provider and provider user ID
+   * @param {string} provider
+   * @param {string} providerId
+   * @returns {User|null}
+   */
+  findByProvider(provider, providerId) {
+    if (!provider || !providerId) return null;
+    const row = this.db
+      .prepare('SELECT * FROM users WHERE auth_provider = ? AND provider_id = ? LIMIT 1')
+      .get(String(provider).toLowerCase(), String(providerId));
     return User.fromDatabaseRow(row);
   }
 
@@ -72,14 +103,31 @@ export class UserRepository extends BaseRepository {
     user.touch();
     const stmt = this.db.prepare(`
       UPDATE users SET
+        email = ?,
         display_name = ?,
         avatar = ?,
         password_hash = ?,
         updated_at = ?
       WHERE id = ?
     `);
-    stmt.run(user.displayName, user.avatar, user.passwordHash, user.updatedAt, user.id);
+    stmt.run(user.email || null, user.displayName, user.avatar, user.passwordHash, user.updatedAt, user.id);
     return user;
+  }
+
+  /**
+   * Update password hash directly
+   * @param {string} userId
+   * @param {string} newPasswordHash
+   */
+  updatePassword(userId, newPasswordHash) {
+    const updatedAt = new Date().toISOString();
+    const stmt = this.db.prepare(`
+      UPDATE users SET
+        password_hash = ?,
+        updated_at = ?
+      WHERE id = ?
+    `);
+    stmt.run(newPasswordHash, updatedAt, userId);
   }
 }
 

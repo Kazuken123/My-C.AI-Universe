@@ -15,12 +15,26 @@ PRAGMA foreign_keys = ON;
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     username TEXT UNIQUE NOT NULL COLLATE NOCASE,
+    email TEXT UNIQUE COLLATE NOCASE,
     password_hash TEXT NOT NULL,
     display_name TEXT NOT NULL,
     avatar TEXT NOT NULL DEFAULT '👤',
+    auth_provider TEXT NOT NULL DEFAULT 'local',
+    provider_id TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
+
+-- 0.1 PASSWORD_RESETS Table
+CREATE TABLE IF NOT EXISTS password_resets (
+    id TEXT PRIMARY KEY,
+    email TEXT NOT NULL COLLATE NOCASE,
+    code TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    used INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_password_resets_email_code ON password_resets(email, code);
 
 -- 1. USER_PERSONA Table
 CREATE TABLE IF NOT EXISTS user_personas (

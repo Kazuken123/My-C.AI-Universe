@@ -282,7 +282,7 @@ async function runTests() {
   // 16. System Telemetry Ping API
   const pingRes = await fetch(`${BASE_URL}/api/system/ping`);
   const pingData = await assertResponse(pingRes, 'System Ping');
-  if (pingData.status !== 'ok' || pingData.version !== '2.2.0') {
+  if (pingData.status !== 'ok' || pingData.version !== '2.3.0') {
     throw new Error(`System ping unexpected response: ${JSON.stringify(pingData)}`);
   }
   console.log(`✅ 16. System Ping & Telemetry verified (status: ${pingData.status}, v${pingData.version}, uptime: ${pingData.uptime}s)`);
@@ -315,6 +315,100 @@ async function runTests() {
     throw new Error(`Profile update did not save: ${JSON.stringify(updateData)}`);
   }
   console.log(`✅ 17. User Profile Update verified (displayName updated to "${updateData.user.displayName}", avatar: "${updateData.user.avatar}")`);
+
+  // 18. Social Authentication (Google & Facebook OAuth)
+  const socialRes = await fetch(`${BASE_URL}/api/auth/social`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      provider: 'google',
+      email: `pilot_spec_${Date.now()}@gmail.com`,
+      name: 'Google Space Pilot',
+      providerId: `g_${Date.now()}`
+    })
+  });
+  const socialData = await assertResponse(socialRes, 'Google Social Auth');
+  if (!socialData.token || socialData.user.authProvider !== 'google') {
+    throw new Error(`Google social auth failed: ${JSON.stringify(socialData)}`);
+  }
+  console.log(`✅ 18. Social Authentication verified (Google user created: @${socialData.user.username}, provider: ${socialData.user.authProvider})`);
+
+  // 19. Forgot Password & OTP Code Verification
+  const resetUser = `reset_user_${Date.now()}`;
+  const resetEmail = `${resetUser}@universe.ai`;
+  await assertResponse(await fetch(`${BASE_URL}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: resetUser,
+      email: resetEmail,
+      password: 'initialPass123',
+      displayName: 'Reset Subject'
+    })
+  }), 'Register Reset User');
+
+  const forgotRes = await fetch(`${BASE_URL}/api/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: resetEmail })
+  });
+  const forgotData = await assertResponse(forgotRes, 'Forgot Password Request');
+  if (!forgotData.previewCode) {
+    throw new Error('Forgot password did not return previewCode in test environment');
+  }
+
+  // Verify wrong code returns error
+  const wrongCodeRes = await fetch(`${BASE_URL}/api/auth/verify-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: resetEmail, code: '000000' })
+  });
+  if (wrongCodeRes.status !== 400) {
+    throw new Error(`Expected 400 for invalid code, got ${wrongCodeRes.status}`);
+  }
+
+  // Verify correct OTP code
+  const verifyRes = await fetch(`${BASE_URL}/api/auth/verify-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: resetEmail, code: forgotData.previewCode })
+  });
+  await assertResponse(verifyRes, 'Verify OTP Code');
+  console.log(`✅ 19. Forgot Password & OTP generation verified (OTP: ${forgotData.previewCode} sent to ${resetEmail})`);
+
+  // 20. Password Reset & Verification with New Password
+  const resetSubmitRes = await fetch(`${BASE_URL}/api/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: resetEmail,
+      code: forgotData.previewCode,
+      newPassword: 'newSecretPass789'
+    })
+  });
+  await assertResponse(resetSubmitRes, 'Submit Password Reset');
+
+  // Verify old password fails
+  const oldLoginRes = await fetch(`${BASE_URL}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: resetUser, password: 'initialPass123' })
+  });
+  if (oldLoginRes.status !== 401) {
+    throw new Error(`Old password should fail with 401, got ${oldLoginRes.status}`);
+  }
+
+  // Verify new password succeeds
+  const newLoginRes = await fetch(`${BASE_URL}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: resetUser, password: 'newSecretPass789' })
+  });
+  const newLoginData = await assertResponse(newLoginRes, 'Login with New Password');
+  if (!newLoginData.token) {
+    throw new Error('Login with new password failed to yield session token');
+  }
+  console.log(`✅ 20. Password Reset verified (old password rejected, new password authenticated for @${resetUser})`);
 
   console.log('\n✨ All automated SQL, Security & API tests passed!');
   if (startedInProcess) {

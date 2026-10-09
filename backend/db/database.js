@@ -60,6 +60,9 @@ export class DatabaseConnection {
   #runMigrationsAndSeed() {
     this.#ensureColumnExists('user_personas', 'user_id', 'TEXT');
     this.#ensureColumnExists('chat_sessions', 'user_id', 'TEXT');
+    this.#ensureColumnExists('users', 'email', 'TEXT');
+    this.#ensureColumnExists('users', 'auth_provider', "TEXT NOT NULL DEFAULT 'local'");
+    this.#ensureColumnExists('users', 'provider_id', 'TEXT');
 
     // Purge any legacy unassigned chat sessions from before user auth was introduced
     try {

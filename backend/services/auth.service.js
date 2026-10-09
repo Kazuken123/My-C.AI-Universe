@@ -2,7 +2,9 @@ import crypto from 'node:crypto';
 import { User } from '../models/User.js';
 import { UserPersona } from '../models/UserPersona.js';
 import { userRepository, personaRepository } from '../repositories/index.js';
-import { AuthenticationError, ConflictError, ValidationError } from '../ai/errors.js';
+import { getDatabase } from '../db/database.js';
+import { emailService } from './email.service.js';
+import { AuthenticationError, ConflictError, ValidationError, NotFoundError } from '../ai/errors.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'cai-universe-secret-jwt-key-autumn-2026';
 const TOKEN_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
@@ -110,7 +112,7 @@ export class AuthService {
    * @param {Object} param0
    * @returns {{ user: Object, token: string }}
    */
-  register({ username, password, displayName, avatar = '👤' }) {
+  register({ username, email, password, displayName, avatar = '👤' }) {
     if (!username || !password) {
       throw new ValidationError('Username and password are required');
     }
@@ -121,9 +123,18 @@ export class AuthService {
       throw new ConflictError(`Username "${cleanUsername}" is already taken`);
     }
 
+    const cleanEmail = email ? String(email).trim().toLowerCase() : '';
+    if (cleanEmail) {
+      const existingEmail = this.userRepo.findByEmail(cleanEmail);
+      if (existingEmail) {
+        throw new ConflictError(`Email "${cleanEmail}" is already registered`);
+      }
+    }
+
     const passwordHash = User.hashPassword(password);
     const user = new User({
       username: cleanUsername,
+      email: cleanEmail || null,
       passwordHash,
       displayName: displayName || cleanUsername,
       avatar
@@ -196,6 +207,255 @@ export class AuthService {
     }
     this.userRepo.update(user);
     return user.toJSON();
+  }
+
+  /**
+   * Authenticate via Social OAuth (Google / Facebook)
+   * Auto-links existing accounts by email/providerId or creates a new user with default persona
+   * @param {Object} param0
+   * @param {'google'|'facebook'} param0.provider
+   * @param {string} [param0.providerId]
+   * @param {string} [param0.email]
+   * @param {string} [param0.name]
+   * @param {string} [param0.avatar]
+   * @param {string} [param0.token]
+   * @returns {Promise<{ user: Object, token: string, isNewUser: boolean }>}
+   */
+  async socialAuth({ provider, providerId, email, name, avatar, token }) {
+    const cleanProvider = String(provider || '').trim().toLowerCase();
+    if (!['google', 'facebook'].includes(cleanProvider)) {
+      throw new ValidationError('Nhà cung cấp đăng nhập phải là google hoặc facebook', 'provider');
+    }
+
+    let profileEmail = email ? String(email).trim().toLowerCase() : '';
+    let profileId = providerId ? String(providerId).trim() : '';
+    let profileName = name ? String(name).trim() : '';
+    let profileAvatar = avatar ? String(avatar).trim() : (cleanProvider === 'google' ? '🌐' : '📘');
+
+    // If token provided, verify with provider if possible
+    if (token && cleanProvider === 'google') {
+      try {
+        const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`);
+        if (verifyRes.ok) {
+          const payload = await verifyRes.json();
+          profileId = payload.sub || profileId;
+          profileEmail = payload.email || profileEmail;
+          profileName = payload.name || profileName;
+          profileAvatar = payload.picture || profileAvatar;
+        }
+      } catch {
+        // Fallback to client payload
+      }
+    } else if (token && cleanProvider === 'facebook') {
+      try {
+        const verifyRes = await fetch(`https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token=${encodeURIComponent(token)}`);
+        if (verifyRes.ok) {
+          const payload = await verifyRes.json();
+          profileId = payload.id || profileId;
+          profileEmail = payload.email || profileEmail;
+          profileName = payload.name || profileName;
+          profileAvatar = payload.picture?.data?.url || profileAvatar;
+        }
+      } catch {
+        // Fallback to client payload
+      }
+    }
+
+    if (!profileId && !profileEmail) {
+      throw new ValidationError('Đăng nhập mạng xã hội yêu cầu mã định danh hoặc email');
+    }
+
+    // 1. Look up user by provider and providerId
+    let user = profileId ? this.userRepo.findByProvider(cleanProvider, profileId) : null;
+
+    // 2. Look up user by email if not found
+    if (!user && profileEmail) {
+      user = this.userRepo.findByEmail(profileEmail);
+      if (user) {
+        user.authProvider = cleanProvider;
+        user.providerId = profileId || user.providerId;
+        if (profileAvatar && user.avatar === '👤') user.avatar = profileAvatar;
+        this.userRepo.update(user);
+      }
+    }
+
+    if (user) {
+      const sessionToken = this.generateToken(user);
+      return {
+        user: user.toJSON(),
+        token: sessionToken,
+        isNewUser: false
+      };
+    }
+
+    // 3. New user: generate a clean unique username
+    let baseUsername = '';
+    if (profileEmail) {
+      baseUsername = profileEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_');
+    } else if (profileName) {
+      baseUsername = profileName.replace(/[^a-zA-Z0-9_]/g, '_');
+    } else {
+      baseUsername = `${cleanProvider}_user`;
+    }
+    if (baseUsername.length < 3) baseUsername = `${baseUsername}_cai`;
+    if (baseUsername.length > 20) baseUsername = baseUsername.slice(0, 20);
+
+    let finalUsername = baseUsername.toLowerCase();
+    let suffix = 1;
+    while (this.userRepo.findByUsername(finalUsername)) {
+      finalUsername = `${baseUsername}_${suffix++}`.toLowerCase();
+    }
+
+    const dummyPasswordHash = User.hashPassword(crypto.randomBytes(24).toString('hex'));
+    const newUser = new User({
+      username: finalUsername,
+      email: profileEmail || null,
+      passwordHash: dummyPasswordHash,
+      displayName: profileName || finalUsername,
+      avatar: profileAvatar,
+      authProvider: cleanProvider,
+      providerId: profileId || null
+    });
+
+    const savedUser = this.userRepo.create(newUser);
+
+    const starterPersona = new UserPersona({
+      userId: savedUser.id,
+      name: savedUser.displayName || 'Adventurer',
+      avatar: '🌟',
+      description: `Default roleplay identity for @${savedUser.username}. Customize or create more in Personas!`,
+      isDefault: true
+    });
+    this.personaRepo.save(starterPersona, savedUser.id);
+
+    const sessionToken = this.generateToken(savedUser);
+    return {
+      user: savedUser.toJSON(),
+      token: sessionToken,
+      isNewUser: true
+    };
+  }
+
+  /**
+   * Generate 6-digit OTP and send Password Reset Email
+   * @param {Object} param0
+   * @param {string} param0.email
+   * @param {string} [param0.baseUrl]
+   * @returns {Promise<Object>}
+   */
+  async requestPasswordReset({ email, baseUrl }) {
+    if (!email || typeof email !== 'string') {
+      throw new ValidationError('Email là bắt buộc', 'email');
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    let user = this.userRepo.findByEmail(cleanEmail);
+
+    if (!user) {
+      user = this.userRepo.findByUsername(cleanEmail);
+    }
+
+    if (!user) {
+      throw new NotFoundError('Không tìm thấy tài khoản với email hoặc tên đăng nhập này');
+    }
+
+    const targetEmail = user.email || cleanEmail;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(targetEmail)) {
+      throw new ValidationError('Tài khoản này chưa thiết lập địa chỉ email hợp lệ để nhận mã xác nhận');
+    }
+
+    // Generate 6-digit OTP
+    const code = String(crypto.randomInt(100000, 999999));
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    const id = `reset_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+    const db = getDatabase();
+    db.prepare(`
+      INSERT INTO password_resets (id, email, code, expires_at, used, created_at)
+      VALUES (?, ?, ?, ?, 0, ?)
+    `).run(id, targetEmail, code, expiresAt, new Date().toISOString());
+
+    const emailResult = await emailService.sendPasswordResetOtp({
+      email: targetEmail,
+      code,
+      baseUrl
+    });
+
+    return {
+      success: true,
+      message: 'Mã xác nhận 6 chữ số đã được gửi tới email của bạn.',
+      email: targetEmail,
+      previewCode: emailResult.previewCode
+    };
+  }
+
+  /**
+   * Verify whether an OTP code is valid and unexpired
+   * @param {Object} param0
+   * @param {string} param0.email
+   * @param {string} param0.code
+   * @returns {{ valid: boolean }}
+   */
+  verifyResetCode({ email, code }) {
+    if (!email || !code) {
+      throw new ValidationError('Email và mã xác nhận là bắt buộc');
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanCode = String(code).trim();
+
+    const db = getDatabase();
+    const row = db.prepare(`
+      SELECT * FROM password_resets
+      WHERE email = ? COLLATE NOCASE AND code = ? AND used = 0
+      ORDER BY created_at DESC LIMIT 1
+    `).get(cleanEmail, cleanCode);
+
+    if (!row) {
+      throw new ValidationError('Mã xác nhận không đúng hoặc đã qua sử dụng');
+    }
+
+    if (Date.now() > new Date(row.expires_at).getTime()) {
+      throw new ValidationError('Mã xác nhận đã hết hạn (quá 15 phút)');
+    }
+
+    return { valid: true };
+  }
+
+  /**
+   * Set a new password using a verified OTP code
+   * @param {Object} param0
+   * @param {string} param0.email
+   * @param {string} param0.code
+   * @param {string} param0.newPassword
+   * @returns {{ success: boolean, message: string }}
+   */
+  resetPassword({ email, code, newPassword }) {
+    this.verifyResetCode({ email, code });
+
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 6) {
+      throw new ValidationError('Mật khẩu mới phải có tối thiểu 6 ký tự', 'newPassword');
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    const user = this.userRepo.findByEmail(cleanEmail) || this.userRepo.findByUsername(cleanEmail);
+    if (!user) {
+      throw new NotFoundError('Tài khoản người dùng không tồn tại');
+    }
+
+    const newHash = User.hashPassword(newPassword);
+    this.userRepo.updatePassword(user.id, newHash);
+
+    const db = getDatabase();
+    db.prepare(`
+      UPDATE password_resets SET used = 1
+      WHERE email = ? COLLATE NOCASE AND code = ?
+    `).run(cleanEmail, String(code).trim());
+
+    return {
+      success: true,
+      message: 'Mật khẩu đã được thay đổi thành công. Bạn có thể đăng nhập ngay.'
+    };
   }
 
   /**

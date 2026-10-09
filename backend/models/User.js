@@ -8,17 +8,23 @@ export class User {
   constructor({
     id = `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
     username = '',
+    email = '',
     passwordHash = '',
     displayName = '',
     avatar = '👤',
+    authProvider = 'local',
+    providerId = null,
     createdAt = new Date().toISOString(),
     updatedAt = new Date().toISOString()
   } = {}) {
     this.id = String(id);
     this.username = String(username).trim().toLowerCase();
+    this.email = email ? String(email).trim().toLowerCase() : '';
     this.passwordHash = String(passwordHash);
     this.displayName = String(displayName).trim() || this.username;
     this.avatar = String(avatar).trim() || '👤';
+    this.authProvider = String(authProvider || 'local');
+    this.providerId = providerId ? String(providerId) : null;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }
@@ -27,11 +33,14 @@ export class User {
    * Validate user constraints
    */
   validate() {
-    if (!this.username || this.username.length < 3 || this.username.length > 30) {
-      throw new ValidationError('Username must be between 3 and 30 characters', 'username');
+    if (!this.username || this.username.length < 3 || this.username.length > 50) {
+      throw new ValidationError('Username must be between 3 and 50 characters', 'username');
     }
-    if (!/^[a-zA-Z0-9_]+$/.test(this.username)) {
-      throw new ValidationError('Username may only contain letters, numbers, and underscores', 'username');
+    if (!/^[a-zA-Z0-9_.-]+$/.test(this.username)) {
+      throw new ValidationError('Username may only contain letters, numbers, underscores, dashes, and dots', 'username');
+    }
+    if (this.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email)) {
+      throw new ValidationError('Invalid email format', 'email');
     }
     if (!this.displayName || this.displayName.length < 1 || this.displayName.length > 50) {
       throw new ValidationError('Display name must be between 1 and 50 characters', 'displayName');
@@ -82,8 +91,10 @@ export class User {
     return {
       id: this.id,
       username: this.username,
+      email: this.email,
       displayName: this.displayName,
       avatar: this.avatar,
+      authProvider: this.authProvider,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt
     };
@@ -97,9 +108,12 @@ export class User {
     return new User({
       id: row.id,
       username: row.username,
+      email: row.email,
       passwordHash: row.password_hash,
       displayName: row.display_name,
       avatar: row.avatar,
+      authProvider: row.auth_provider,
+      providerId: row.provider_id,
       createdAt: row.created_at,
       updatedAt: row.updated_at
     });
