@@ -696,13 +696,19 @@ html, body {
    ============================================================================ */
 .app-shell {
   display: flex;
-  min-height: 100dvh;
+  height: 100dvh;
+  max-height: 100dvh;
   width: 100%;
+  overflow: hidden;
 }
 
 .sidebar {
   width: 270px;
+  height: 100dvh;
+  max-height: 100dvh;
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
   background: rgba(10, 9, 15, 0.85);
   border-right: 1px solid var(--border-hairline);
   display: flex;
@@ -711,6 +717,16 @@ html, body {
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   z-index: 20;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sidebar-header,
+.sidebar-cta-wrap,
+.sidebar-nav,
+.sidebar-divider,
+.sidebar-section-header {
+  flex-shrink: 0;
 }
 
 .sidebar-header {
@@ -863,11 +879,11 @@ html, body {
 
 .recent-chats-list {
   flex: 1;
+  min-height: 48px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: 260px;
 }
 
 .recent-chat-item {
@@ -924,6 +940,7 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .sidebar-account-box {
@@ -1095,9 +1112,14 @@ html, body {
 .main-workspace {
   flex: 1;
   min-width: 0;
-  min-height: 100dvh;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
 }
 
 .content-container {
@@ -1171,15 +1193,54 @@ html, body {
   to { opacity: 0; transform: translateY(-8px) scale(0.96); }
 }
 
+/* Custom Sleek Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
 /* Responsive Shell Collapse */
 @media (max-width: 1024px) {
   .app-shell {
     flex-direction: column;
+    height: auto;
+    max-height: none;
+    overflow: visible;
   }
   .sidebar {
     width: 100%;
+    height: auto;
+    max-height: none;
+    position: static;
+    overflow: visible;
     border-right: none;
     border-bottom: 1px solid var(--border-hairline);
+  }
+  .recent-chats-list {
+    max-height: 200px;
+  }
+  .main-workspace {
+    height: auto;
+    max-height: none;
+    overflow: visible;
   }
   .content-container {
     padding: 24px 20px 60px;

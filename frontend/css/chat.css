@@ -5,9 +5,14 @@
 /* ============================================================================
    VIEW 6: NARRATIVE CHAT ROOM (impeccable Operate Mode)
    ============================================================================ */
+.chat-page-main {
+  height: 100dvh;
+  overflow: hidden;
+}
+
 .chat-room-layout {
   display: flex;
-  height: 100dvh;
+  height: 100%;
   width: 100%;
   overflow: hidden;
 }
