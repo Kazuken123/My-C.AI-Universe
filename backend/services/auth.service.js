@@ -311,7 +311,7 @@ export class AuthService {
       this.userRepo.update(user);
 
       // Ensure user has an active persona configured
-      const personas = this.personaRepo.findByUserId(user.id);
+      const personas = this.personaRepo.findAll ? this.personaRepo.findAll(user.id) : [];
       if (!personas || personas.length === 0) {
         try {
           const defaultPersona = new UserPersona({
@@ -321,7 +321,7 @@ export class AuthService {
             description: `Default roleplay identity for @${user.username}. Customize or create more in Personas!`,
             isDefault: true
           });
-          this.personaRepo.create(defaultPersona);
+          this.personaRepo.save(defaultPersona, user.id);
         } catch {
           // ignore
         }

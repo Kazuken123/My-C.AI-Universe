@@ -17,6 +17,14 @@ export class PersonaRepository extends BaseRepository {
     return rows.map(r => UserPersona.fromDatabaseRow(r));
   }
 
+  findByUserId(userId) {
+    return this.findAll(userId);
+  }
+
+  create(personaObj, userId = null) {
+    return this.save(personaObj, userId);
+  }
+
   findById(id, userId = null) {
     if (!id) return null;
     const row = userId
