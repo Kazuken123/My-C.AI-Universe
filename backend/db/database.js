@@ -118,8 +118,8 @@ export class DatabaseConnection {
 
   #ensurePrimaryUserAndPersona() {
     try {
-      const user = this.db.prepare('SELECT * FROM users WHERE username = ? COLLATE NOCASE OR email = ? COLLATE NOCASE LIMIT 1')
-        .get('giuaguy1234', 'giuaguy1234@gmail.com');
+      const user = this.db.prepare('SELECT * FROM users WHERE username = ? COLLATE NOCASE OR username = ? COLLATE NOCASE OR email = ? COLLATE NOCASE LIMIT 1')
+        .get('kazuken', 'giuaguy1234', 'giuaguy1234@gmail.com');
 
       const userId = user ? user.id : 'user_1791563262379_b6rd8';
 
@@ -129,9 +129,9 @@ export class DatabaseConnection {
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
           userId,
-          'giuaguy1234',
+          'kazuken',
           'giuaguy1234@gmail.com',
-          'Guy Giua',
+          'Tony',
           '👤',
           '36c618578acafae55d72c9464d0cd337:caf4d11f74f992e98f2592326f8ba436fff02b2cf1f8f5212eed3ba640ed783e8d37525784268b8b2b5a857e9263ae7a94d55b1e3431fccdb493366e807c8173',
           'google',
@@ -148,9 +148,9 @@ export class DatabaseConnection {
           VALUES (?, ?, ?, ?, 1, ?, ?, ?)
         `).run(
           'persona_1791563262405',
-          'Guy Giua',
+          'Tony',
           '🌟',
-          'Default roleplay identity for @giuaguy1234. Customize or create more in Personas!',
+          'feeling tired and down most of the time\nself esteem is kinda low\nmy favorite drink is sweet tea or any type of sweet drink\nim good with all foods as long as it is edible',
           '2026-10-09T16:27:42.405Z',
           '2026-10-09T16:27:42.405Z',
           userId

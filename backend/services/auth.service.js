@@ -307,7 +307,6 @@ export class AuthService {
       user.authProvider = cleanProvider;
       user.providerId = profileId || user.providerId;
       if (!user.email && profileEmail) user.email = profileEmail;
-      if (profileAvatar && user.avatar === '👤') user.avatar = profileAvatar;
       this.userRepo.update(user);
 
       // Ensure user has an active persona configured
