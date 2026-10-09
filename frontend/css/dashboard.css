@@ -426,8 +426,26 @@
   width: 58px;
   height: 58px;
   border-radius: 14px;
+  overflow: hidden;
+  position: relative;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-hairline);
   transition: border-color 0.35s var(--ease-glow), box-shadow 0.4s var(--ease-glow), filter 0.35s var(--ease-glow);
+}
+
+.cai-avatar-wrap .cai-avatar,
+.cai-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+  transition: transform 0.3s ease;
 }
 
 .double-bezel-shell.card-shell:hover .cai-avatar-wrap {
