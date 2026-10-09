@@ -1,5 +1,5 @@
 import { api } from './api.js';
-import { initTheme, bindSpotlightHover, showToast } from './common.js';
+import { initTheme, bindSpotlightHover, showToast, renderUserAvatar } from './common.js';
 
 class AuthPageController {
   constructor() {
@@ -89,7 +89,7 @@ class AuthPageController {
 
         if (nameEl) nameEl.textContent = user.displayName || user.username;
         if (handleEl) handleEl.textContent = `@${user.username}`;
-        if (avatarEl) avatarEl.textContent = user.avatar || '👤';
+        if (avatarEl) renderUserAvatar(avatarEl, user.avatar);
 
         const logoutBtn = document.getElementById('authLogoutActiveBtn');
         if (logoutBtn) {
@@ -150,15 +150,17 @@ class AuthPageController {
               displayName: displayName || username
             });
             showToast(`Account created successfully. Welcome, @${username}!`);
+            setTimeout(() => {
+              window.location.href = '/profile-setup.html?new=1';
+            }, 400);
           } else {
             await api.login({ username, password });
             showToast(`Welcome back, @${username}!`);
+            const returnUrl = params.get('return') || '/';
+            setTimeout(() => {
+              window.location.href = returnUrl;
+            }, 400);
           }
-
-          const returnUrl = params.get('return') || '/';
-          setTimeout(() => {
-            window.location.href = returnUrl;
-          }, 400);
         } catch (err) {
           this.showAlert(err.message || 'Authentication failed. Please verify your credentials.');
           if (submitBtn) {
@@ -175,14 +177,14 @@ class AuthPageController {
       this.clearAlert();
       try {
         showToast('Authenticating with Google');
-        await api.socialLogin({
+        const authResult = await api.socialLogin({
           provider: 'google',
           token
         });
         showToast('Signed in successfully with Google!');
-        const returnUrl = params.get('return') || '/';
+        const targetUrl = authResult?.isNewUser ? '/profile-setup.html?new=1' : (params.get('return') || '/');
         setTimeout(() => {
-          window.location.href = returnUrl;
+          window.location.href = targetUrl;
         }, 400);
       } catch (err) {
         this.showAlert(err.message || 'Google sign-in failed.');

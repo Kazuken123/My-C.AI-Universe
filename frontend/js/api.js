@@ -93,6 +93,13 @@ export class ApiClient {
     return this.request('/api/auth/me');
   }
 
+  updateProfile(payload) {
+    return this.request('/api/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    });
+  }
+
   async getCurrentUser() {
     const token = this.getToken();
     if (!token) return null;

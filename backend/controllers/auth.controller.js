@@ -71,10 +71,11 @@ export class AuthController extends BaseController {
 
   updateProfile(req, res) {
     try {
-      const { displayName, avatar } = req.body || {};
+      const { displayName, username, avatar } = req.body || {};
       const result = this.service.updateProfile({
         userId: req.user.id,
         displayName,
+        username,
         avatar
       });
       return this.sendJson(res, { user: result, message: 'Profile updated successfully' }, 200);

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="higgsfield">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="C.AI Universe" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Profile & Persona Setup — My C.AI Universe</title>
+  <meta name="description" content="Set up your display name, username handle, and active roleplay persona." />
+  <!-- Fonts: Cabinet Grotesk, Satoshi, JetBrains Mono -->
+  <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <!-- Icons -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <meta name="theme-color" content="#0c0b15" />
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+  <!-- Modular CSS for Auth & Setup -->
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/auth.css" />
+  <style>
+    .setup-avatar-preview-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+    .setup-avatar-preview {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: #191826;
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .setup-avatar-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .setup-preset-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .setup-preset-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: #ffffff;
+      font-size: 1.1rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.18s ease, transform 0.18s ease;
+    }
+    .setup-preset-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: scale(1.05);
+    }
+    .setup-section-heading {
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #c9b037;
+      margin: 20px 0 10px 0;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border-hairline);
+    }
+    .setup-textarea {
+      min-height: 85px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body class="is-auth-page">
+  <!-- Ambient grain -->
+  <div class="ambient-grain" aria-hidden="true"></div>
+
+  <div class="auth-page-wrapper">
+    <div class="auth-page-container">
+
+      <!-- Top Bar: Back & Brand -->
+      <div class="auth-top-nav">
+        <a href="/" class="auth-back-link">
+          <i class="ph-light ph-arrow-left"></i>
+          <span>Workspace</span>
+        </a>
+
+        <a href="/" class="auth-brand-badge">
+          <span class="brand-mark" aria-hidden="true">
+            <img src="/favicon.svg" alt="C.AI Universe" class="brand-mark-img" width="22" height="22" />
+          </span>
+          <span class="brand-title">C.AI Universe</span>
+        </a>
+      </div>
+
+      <!-- Double-Bezel Concentric Chassis -->
+      <div class="auth-card-shell double-bezel-shell">
+        <div class="auth-card-core double-bezel-core">
+
+          <header class="auth-card-header">
+            <span class="eyebrow-pill">IDENTITY &amp; PERSONA SETUP</span>
+            <h1 class="auth-card-title" id="setupCardTitle">Configure Profile &amp; Persona</h1>
+            <p class="auth-card-sub" id="setupCardSub">Set up your display name, username handle, and active roleplay persona so AI characters recognize you.</p>
+          </header>
+
+          <div class="auth-alert hidden" id="setupAlert" role="alert"></div>
+
+          <form id="profileSetupForm" class="auth-form">
+
+            <!-- Section 1: User Account Identity -->
+            <div class="setup-section-heading">Account Identity</div>
+
+            <div class="form-group">
+              <label class="form-label" for="setupAvatarInput">Account Avatar</label>
+              <div class="setup-avatar-preview-row">
+                <div class="setup-avatar-preview" id="setupAvatarPreview">👤</div>
+                <div style="flex: 1;">
+                  <input class="form-input" type="text" id="setupAvatarInput" placeholder="Image URL or emoji symbol" />
+                </div>
+              </div>
+              <div class="setup-preset-pills" id="avatarPresetPills">
+                <button type="button" class="setup-preset-btn" data-val="👤">👤</button>
+                <button type="button" class="setup-preset-btn" data-val="🚀">🚀</button>
+                <button type="button" class="setup-preset-btn" data-val="🌟">🌟</button>
+                <button type="button" class="setup-preset-btn" data-val="🛡️">🛡️</button>
+                <button type="button" class="setup-preset-btn" data-val="⚔️">⚔️</button>
+                <button type="button" class="setup-preset-btn" data-val="🎭">🎭</button>
+                <button type="button" class="setup-preset-btn" data-val="🧙">🧙</button>
+                <button type="button" class="setup-preset-btn" data-val="🐺">🐺</button>
+              </div>
+              <span class="form-hint">Choose an icon or paste a picture URL.</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="setupDisplayName">Display Name</label>
+              <input class="form-input" type="text" id="setupDisplayName" placeholder="e.g. Commander Shepard" required maxlength="50" autocomplete="name" />
+              <span class="form-hint">The identity roleplay characters will address you by in dialogue.</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="setupUsername">Nickname / Handle</label>
+              <input class="form-input" type="text" id="setupUsername" placeholder="e.g. nova_pilot" required pattern="[a-zA-Z0-9_]{3,25}" autocomplete="username" />
+              <span class="form-hint">Your unique username handle. Letters, numbers, and underscores only.</span>
+            </div>
+
+            <!-- Section 2: Active Roleplay Persona -->
+            <div class="setup-section-heading">Active Roleplay Persona</div>
+
+            <div class="form-group">
+              <label class="form-label" for="setupPersonaName">Persona Name</label>
+              <input class="form-input" type="text" id="setupPersonaName" placeholder="e.g. Galactic Commander" required maxlength="50" />
+              <span class="form-hint">Name of your primary roleplay identity.</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="setupPersonaAvatar">Persona Glyph</label>
+              <input class="form-input mono-input" type="text" id="setupPersonaAvatar" placeholder="GC" maxlength="4" style="max-width: 110px; font-weight: 700;" />
+              <span class="form-hint">Two-letter monogram or emoji displayed on the identity card.</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="setupPersonaDesc">Backstory &amp; Roleplay Traits</label>
+              <textarea class="form-input setup-textarea" id="setupPersonaDesc" placeholder="e.g. A veteran fleet officer who speaks with calm authority and values precision." rows="3"></textarea>
+              <span class="form-hint">AI characters will recognize this backstory and adapt their dialogue accordingly.</span>
+            </div>
+
+            <div class="auth-modal-footer">
+              <button class="btn-island btn-island-full" id="btnSaveSetup" type="submit">
+                <span>Save Profile &amp; Persona</span>
+                <span class="btn-island-icon"><i class="ph-light ph-check"></i></span>
+              </button>
+            </div>
+
+            <div style="text-align: center; margin-top: 14px;">
+              <a href="/" class="text-link-btn" id="btnSkipSetup">
+                Skip to Workspace
+              </a>
+            </div>
+
+          </form>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script type="module" src="/js/profile-setup-page.js"></script>
+</body>
+</html>

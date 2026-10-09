@@ -1,4 +1,5 @@
 import { api } from './api.js';
+import { renderUserAvatar } from './common.js';
 
 /**
  * AuthManager Class (Frontend Authentication, Modal Controller & Multi-Tenant State Lifecycle)
@@ -206,7 +207,7 @@ export class AuthManager {
     if (user) {
       if (guestView) guestView.classList.add('hidden');
       if (userView) userView.classList.remove('hidden');
-      if (avatarEl) avatarEl.textContent = user.avatar || '👤';
+      if (avatarEl) renderUserAvatar(avatarEl, user.avatar);
       if (nameEl) nameEl.textContent = user.displayName || user.username;
       if (handleEl) handleEl.textContent = `@${user.username}`;
     } else {

@@ -183,11 +183,11 @@ export class AuthService {
   }
 
   /**
-   * Update user profile (display name and avatar)
+   * Update user profile: display name, username, and avatar
    * @param {Object} param0
    * @returns {Object}
    */
-  updateProfile({ userId, displayName, avatar }) {
+  updateProfile({ userId, displayName, username, avatar }) {
     if (!userId) {
       throw new AuthenticationError('Authentication required');
     }
@@ -201,6 +201,17 @@ export class AuthService {
         throw new ValidationError('Display name must be between 1 and 50 characters');
       }
       user.displayName = cleanName;
+    }
+    if (username !== undefined) {
+      const cleanUsername = String(username).trim().toLowerCase();
+      if (!/^[a-zA-Z0-9_]{3,25}$/.test(cleanUsername)) {
+        throw new ValidationError('Username must be 3 to 25 characters and contain only letters, numbers, and underscores', 'username');
+      }
+      const existing = this.userRepo.findByUsername(cleanUsername);
+      if (existing && existing.id !== user.id) {
+        throw new ValidationError('Username is already taken by another user', 'username');
+      }
+      user.username = cleanUsername;
     }
     if (avatar !== undefined) {
       user.avatar = String(avatar).trim().slice(0, 500);
