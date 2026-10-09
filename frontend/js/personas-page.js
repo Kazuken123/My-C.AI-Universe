@@ -25,26 +25,40 @@ class PersonasPageApp {
       }
 
       this.listEl.innerHTML = personas.map(p => `
-        <div class="persona-card ${p.isDefault ? 'active' : ''}">
-          <div class="persona-card-meta">
-            <div class="persona-avatar-tag">${escapeHtml(p.avatar || 'TR')}</div>
-            <div>
-              <div class="persona-card-title">
-                ${escapeHtml(p.name)}
-                ${p.isDefault ? '<span class="tag-badge" style="margin-left: 8px; font-size: 0.65rem; color: var(--accent);">Active Default</span>' : ''}
+        <div class="persona-card-shell double-bezel-shell ${p.isDefault ? 'active' : ''}">
+          <div class="persona-card-core double-bezel-core">
+            <div class="persona-card-header">
+              <div class="persona-card-meta">
+                <div class="persona-glyph-badge">${escapeHtml(p.avatar || 'TR')}</div>
+                <div class="persona-card-title-group">
+                  <div class="persona-card-name">
+                    <span>${escapeHtml(p.name)}</span>
+                    ${p.isDefault ? `
+                      <span class="persona-active-badge">
+                        <span class="persona-active-dot"></span>
+                        ACTIVE DEFAULT
+                      </span>
+                    ` : ''}
+                  </div>
+                </div>
               </div>
-              <div class="persona-card-desc">${escapeHtml(p.description || 'No backstory defined.')}</div>
+
+              <div class="persona-card-actions">
+                ${!p.isDefault ? `
+                  <button class="btn-secondary btn-sm" data-set-default="${escapeHtml(p.id)}" type="button" title="Set as default identity">
+                    <i class="ph-light ph-check"></i>
+                    <span>Set Default</span>
+                  </button>
+                ` : ''}
+                <button class="icon-btn" data-delete-persona="${escapeHtml(p.id)}" type="button" title="Delete Persona">
+                  <i class="ph-light ph-trash"></i>
+                </button>
+              </div>
             </div>
-          </div>
-          <div class="persona-card-actions">
-            ${!p.isDefault ? `
-              <button class="btn-secondary btn-sm" data-set-default="${escapeHtml(p.id)}" type="button">
-                Set Default
-              </button>
-            ` : ''}
-            <button class="icon-btn" data-delete-persona="${escapeHtml(p.id)}" type="button" title="Delete Persona">
-              <i class="ph-light ph-trash"></i>
-            </button>
+
+            <div class="persona-card-desc">
+              ${escapeHtml(p.description || 'No backstory defined. Characters will use default traveler dialogue.')}
+            </div>
           </div>
         </div>
       `).join('');

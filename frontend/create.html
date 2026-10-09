@@ -275,23 +275,24 @@
                 </div>
 
                 <div class="preview-dossier-card">
-                  <div class="cai-card-top">
-                    <img class="cai-avatar" id="preview-avatar" src="https://api.dicebear.com/9.x/adventurer/svg?seed=Preview" alt="Character portrait preview" />
-                    <div class="cai-card-info">
-                      <div class="cai-card-name" id="preview-name">New Character</div>
-                      <div class="cai-card-creator">Authored by @you</div>
-                      <div class="cai-card-tagline" id="preview-tagline">AI Roleplay Character</div>
+                  <div class="preview-avatar-frame">
+                    <img id="preview-avatar" src="https://api.dicebear.com/9.x/adventurer/svg?seed=Preview" alt="Character portrait preview" />
+                  </div>
+
+                  <div class="preview-meta-block">
+                    <div class="preview-dossier-creator">Authored by @you &middot; Relational SQL</div>
+                    <div class="preview-dossier-name" id="preview-name">New Character</div>
+                    <div class="preview-dossier-tagline" id="preview-tagline">AI Roleplay Character</div>
+                    <div class="preview-dossier-tags" id="preview-tags">
+                      <span class="tag-badge">Anime</span>
+                      <span class="tag-badge">Roleplay</span>
                     </div>
                   </div>
-                  <div class="cai-card-tags" id="preview-tags">
-                    <span class="tag-badge">Anime</span>
-                    <span class="tag-badge">Roleplay</span>
-                  </div>
-                </div>
 
-                <div class="lore-block" style="margin-top: 16px;">
-                  <h4 style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Opening Scene Render</h4>
-                  <div id="preview-greeting" class="preview-greeting-box" style="font-style: italic; color: var(--text-secondary); margin-top: 8px; line-height: 1.5;">*Scene awaits first line...*</div>
+                  <div class="preview-scene-section">
+                    <span class="preview-scene-heading">Opening Scene Render</span>
+                    <div id="preview-greeting" class="preview-greeting-box">*Scene awaits first line...*</div>
+                  </div>
                 </div>
               </div>
             </div>

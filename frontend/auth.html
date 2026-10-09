@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Account Access — My C.AI Universe</title>
   <meta name="description" content="Sign in or register your Universe account for isolated roleplay personas and persistent SQL storyline threads." />
-  <!-- Fonts -->
+  <!-- Fonts: Cabinet Grotesk, Satoshi, JetBrains Mono -->
   <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
   <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -25,33 +25,37 @@
   <link rel="stylesheet" href="/css/auth.css" />
 </head>
 <body>
-  <!-- Ambient tactical grain overlay -->
+  <!-- Ambient grain -->
   <div class="ambient-grain" aria-hidden="true"></div>
 
   <div class="auth-page-wrapper">
     <div class="auth-page-container">
       
-      <a href="/" class="auth-back-link">
-        <i class="ph-light ph-arrow-left"></i>
-        <span>Return to Workspace Directory</span>
-      </a>
+      <!-- Top Bar: Back & Brand -->
+      <div class="auth-top-nav">
+        <a href="/" class="auth-back-link">
+          <i class="ph-light ph-arrow-left"></i>
+          <span>Workspace</span>
+        </a>
 
-      <a href="/" class="auth-brand-badge">
-        <span class="brand-mark" aria-hidden="true">
-          <img src="/favicon.svg" alt="C.AI Universe" class="brand-mark-img" width="28" height="28" />
-        </span>
-        <span class="brand-title">C.AI Universe</span>
-      </a>
+        <a href="/" class="auth-brand-badge">
+          <span class="brand-mark" aria-hidden="true">
+            <img src="/favicon.svg" alt="C.AI Universe" class="brand-mark-img" width="22" height="22" />
+          </span>
+          <span class="brand-title">C.AI Universe</span>
+        </a>
+      </div>
 
-      <!-- Double Bezel Auth Card -->
-      <div class="double-bezel-shell">
-        <div class="double-bezel-core auth-card">
+      <!-- Double-Bezel Concentric Chassis -->
+      <div class="auth-card-shell double-bezel-shell">
+        <div class="auth-card-core double-bezel-core">
 
-          <!-- State A: Not Logged In (Tabs + Form) -->
+          <!-- State A: Form (Sign In / Register) -->
           <div id="authFormSection">
             <header class="auth-card-header">
-              <span class="eyebrow-pill">USER ACCOUNTS &amp; ISOLATION</span>
-              <h1 class="auth-card-title" id="authPageTitle">Welcome to Universe</h1>
+              <span class="eyebrow-pill">USER IDENTITY PORTAL</span>
+              <h1 class="auth-card-title" id="authPageTitle">Sign In to Universe</h1>
+              <p class="auth-card-sub" id="authPageSub">Access your custom personas and branching storyline threads.</p>
             </header>
 
             <!-- Mode Switcher Tabs with Sliding Spring Pill -->
@@ -69,7 +73,7 @@
                 <div class="form-group" id="authDisplayNameGroup">
                   <label class="form-label" for="authDisplayName">Display Name</label>
                   <input class="form-input" type="text" id="authDisplayName" placeholder="e.g. Commander Shepard" autocomplete="name" />
-                  <span class="form-hint">The identity roleplay characters will address you by in dialogues.</span>
+                  <span class="form-hint">The identity roleplay characters will address you by in dialogue.</span>
                 </div>
               </div>
 
@@ -92,31 +96,30 @@
             </form>
           </div>
 
-          <!-- State B: Already Logged In -->
+          <!-- State B: Already Logged In Session -->
           <div id="authActiveUserSection" class="hidden">
             <header class="auth-card-header">
               <span class="eyebrow-pill">ACTIVE SQL SESSION</span>
               <h1 class="auth-card-title">You are Signed In</h1>
+              <p class="auth-card-sub">Your session is authenticated via scrypt + JWT token.</p>
             </header>
 
             <div class="auth-profile-card">
-              <div class="auth-profile-meta">
-                <div class="auth-profile-avatar" id="activeProfileAvatar">👤</div>
-                <div class="auth-profile-info">
-                  <span class="auth-profile-name" id="activeProfileName">User</span>
-                  <span class="auth-profile-handle" id="activeProfileHandle">@username</span>
-                </div>
+              <div class="auth-profile-avatar" id="activeProfileAvatar">👤</div>
+              <div class="auth-profile-info">
+                <span class="auth-profile-name" id="activeProfileName">User</span>
+                <span class="auth-profile-handle" id="activeProfileHandle">@username</span>
               </div>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
               <a href="/" class="btn-island btn-island-full">
-                <span>Enter Workspace</span>
+                <span>Enter Workspace Directory</span>
                 <span class="btn-island-icon"><i class="ph-light ph-arrow-right"></i></span>
               </a>
               <button type="button" class="btn-secondary btn-island-full" id="authLogoutActiveBtn">
                 <i class="ph-light ph-sign-out"></i>
-                <span>Sign Out</span>
+                <span>Sign Out of Account</span>
               </button>
             </div>
           </div>
@@ -127,7 +130,6 @@
     </div>
   </div>
 
-  <!-- Toast Notifications -->
   <div class="toast-container" id="toast-container" aria-live="polite"></div>
 
   <script type="module" src="/js/auth-page.js"></script>

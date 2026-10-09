@@ -1,177 +1,199 @@
 /* ============================================================================
    ROLEPLAY IDENTITIES & PERSONAS STYLES (PERSONAS.HTML)
+   Double-Bezel Chassis, Concentric Monograms & Two-Column Studio Layout
    ============================================================================ */
-/* ============================================================================
-   VIEW 2: CHARACTER STUDIO & FORMS (design-taste-frontend Section 4.6)
-   ============================================================================ */
-.view-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border-hairline);
-}
 
-.view-title {
-  font-family: var(--font-display);
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-}
-
-.view-subtitle {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  margin-top: 4px;
-}
-
-.studio-grid {
+.personas-grid-layout {
   display: grid;
-  grid-template-columns: 1.35fr 0.85fr;
-  gap: 24px;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 32px;
   align-items: start;
-}
-.hint {
-  font-size: 0.83rem;
-  color: var(--text-secondary);
-  margin-bottom: 18px;
-  line-height: 1.5;
-}
-
-.form-row-2col {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-group label,
-.form-label {
-  display: block;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 6px;
-}
-
-.form-hint {
-  display: block;
-  font-size: 0.78rem;
-  line-height: 1.45;
-  color: var(--text-secondary);
-  margin-top: 6px;
-}
-
-.form-input,
-.form-textarea {
   width: 100%;
-  background: var(--bg-input);
-  border: 1px solid var(--border-hairline);
-  border-radius: var(--radius-md);
-  padding: 10px 13px;
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  font-size: 0.87rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
-}
-
-.form-input::placeholder,
-.form-textarea::placeholder {
-  color: var(--text-muted);
-}
-
-.form-input:focus,
-.form-textarea:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
-}
-
-.form-textarea {
-  resize: vertical;
-}
-
-.inline-input-group {
-  display: flex;
-
-.preview-greeting-box {
-  font-size: 0.84rem;
-  line-height: 1.55;
-  color: var(--text-secondary);
-  margin-top: 6px;
 }
 
 .personas-stack {
   display: flex;
   flex-direction: column;
+  gap: 16px;
+}
+
+.persona-card-shell {
+  padding: 6px;
+  border-radius: var(--radius-shell);
+  background: var(--bg-shell);
+  border: 1px solid var(--border-hairline);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.3s var(--ease-spring),
+              border-color 0.35s var(--ease-glow),
+              box-shadow 0.4s var(--ease-glow);
+}
+
+.persona-card-shell:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+.persona-card-shell.active {
+  border-color: var(--accent-border);
+  box-shadow: var(--accent-glow), 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+.persona-card-core {
+  background: var(--bg-core);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-core);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
   gap: 14px;
 }
 
-
-.personas-grid-layout {
-  display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 24px;
-  align-items: start;
-}
-.persona-card {
+.persona-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 18px;
-  background: var(--bg-core);
-  border: 1px solid var(--border-hairline);
-  border-radius: var(--radius-md);
-  transition: border-color 0.35s var(--ease-glow), box-shadow 0.4s var(--ease-glow), background-color 0.35s var(--ease-glow);
+  gap: 14px;
 }
-.persona-card:hover {
-  border-color: rgba(255, 255, 255, 0.22);
-  background: #181822;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-.persona-card.active {
-  border-color: var(--accent);
-  box-shadow: 0 0 16px var(--accent-soft);
-}
+
 .persona-card-meta {
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
 }
-.persona-avatar-tag {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-hairline);
+
+.persona-glyph-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="vanguard"] .persona-glyph-badge {
+  background: rgba(224, 86, 56, 0.12);
+  border-color: rgba(224, 86, 56, 0.32);
+  color: #e05638;
+}
+
+[data-theme="editorial"] .persona-glyph-badge {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+[data-theme="telemetry"] .persona-glyph-badge {
+  background: rgba(230, 25, 25, 0.12);
+  border-color: rgba(230, 25, 25, 0.4);
+  color: #e61919;
+}
+
+.persona-card-title-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.persona-card-name {
+  font-family: var(--font-display);
+  font-size: 1.08rem;
   font-weight: 700;
-  color: var(--accent);
-  font-size: 0.95rem;
-}
-.persona-card-title {
-  font-weight: 600;
-  font-size: 0.92rem;
-  color: var(--text-primary);
-}
-.persona-card-desc {
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  margin-top: 2px;
-  max-width: 48ch;
-  line-height: 1.4;
-}
-.persona-card-actions {
+  letter-spacing: -0.02em;
+  color: #ffffff;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+.persona-active-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34d399;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.persona-active-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 6px #34d399;
+}
+
+.persona-card-desc {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-hairline);
+}
+
+.persona-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-end;
+}
+
+/* Right Column Register Card */
+.persona-register-shell {
+  position: sticky;
+  top: 24px;
+}
+
+.persona-register-core {
+  padding: 28px 24px;
+}
+
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.card-heading {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+.card-subtext {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 1024px) {
+  .personas-grid-layout {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .persona-register-shell {
+    position: static;
+  }
+}
