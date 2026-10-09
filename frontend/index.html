@@ -650,7 +650,8 @@
       </header>
 
       <!-- Mode Switcher -->
-      <div class="auth-tabs" role="tablist">
+      <div class="auth-tabs" id="authTabs" data-mode="signin" role="tablist">
+        <div class="auth-tab-pill-slider" id="authTabSlider" aria-hidden="true"></div>
         <button class="auth-tab active" id="authTabSignIn" type="button" role="tab" aria-selected="true">Sign In</button>
         <button class="auth-tab" id="authTabSignUp" type="button" role="tab" aria-selected="false">Create Account</button>
       </div>
@@ -658,10 +659,12 @@
       <form id="authForm" class="auth-form" autocomplete="on">
         <div class="auth-alert hidden" id="authAlert" role="alert"></div>
 
-        <div class="form-group" id="authDisplayNameGroup" style="display: none;">
-          <label class="form-label" for="authDisplayName">Display Name</label>
-          <input class="form-input" type="text" id="authDisplayName" placeholder="e.g. Commander Shepard" autocomplete="name" />
-          <span class="form-hint">The identity roleplay characters will address you by.</span>
+        <div class="auth-extra-field" id="authDisplayNameWrapper">
+          <div class="form-group" id="authDisplayNameGroup">
+            <label class="form-label" for="authDisplayName">Display Name</label>
+            <input class="form-input" type="text" id="authDisplayName" placeholder="e.g. Commander Shepard" autocomplete="name" />
+            <span class="form-hint">The identity roleplay characters will address you by.</span>
+          </div>
         </div>
 
         <div class="form-group">

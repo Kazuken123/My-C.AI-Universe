@@ -57,34 +57,58 @@ export class AuthManager {
     const modal = document.getElementById('authModal');
     if (!modal) return;
     this.clearAlert();
-    this.setMode(mode);
+    this.setMode(mode, false);
     modal.showModal();
-    const usernameInput = document.getElementById('authUsername');
-    if (usernameInput) setTimeout(() => usernameInput.focus(), 50);
+    const targetInput = mode === 'signup' 
+      ? document.getElementById('authDisplayName') 
+      : document.getElementById('authUsername');
+    if (targetInput) setTimeout(() => targetInput.focus(), 100);
   }
 
-  setMode(mode) {
+  setMode(mode, animate = true) {
     this.mode = mode;
     this.clearAlert();
 
+    const authTabs = document.getElementById('authTabs');
     const tabSignIn = document.getElementById('authTabSignIn');
     const tabSignUp = document.getElementById('authTabSignUp');
     const title = document.getElementById('authModalTitle');
     const submitText = document.getElementById('authSubmitText');
-    const nameGroup = document.getElementById('authDisplayNameGroup');
+    const nameWrapper = document.getElementById('authDisplayNameWrapper');
+    const nameInput = document.getElementById('authDisplayName');
 
-    if (mode === 'signup') {
-      if (tabSignIn) { tabSignIn.classList.remove('active'); tabSignIn.setAttribute('aria-selected', 'false'); }
-      if (tabSignUp) { tabSignUp.classList.add('active'); tabSignUp.setAttribute('aria-selected', 'true'); }
-      if (title) title.textContent = 'Create Universe Account';
-      if (submitText) submitText.textContent = 'Create Account';
-      if (nameGroup) nameGroup.style.display = 'block';
+    if (authTabs) {
+      authTabs.setAttribute('data-mode', mode);
+    }
+
+    const updateDom = () => {
+      if (mode === 'signup') {
+        if (tabSignIn) { tabSignIn.classList.remove('active'); tabSignIn.setAttribute('aria-selected', 'false'); }
+        if (tabSignUp) { tabSignUp.classList.add('active'); tabSignUp.setAttribute('aria-selected', 'true'); }
+        if (title) title.textContent = 'Create Universe Account';
+        if (submitText) submitText.textContent = 'Create Account';
+        if (nameWrapper) nameWrapper.classList.add('expanded');
+        if (nameInput) setTimeout(() => nameInput.focus(), 150);
+      } else {
+        if (tabSignIn) { tabSignIn.classList.add('active'); tabSignIn.setAttribute('aria-selected', 'true'); }
+        if (tabSignUp) { tabSignUp.classList.remove('active'); tabSignUp.setAttribute('aria-selected', 'false'); }
+        if (title) title.textContent = 'Sign In to Universe';
+        if (submitText) submitText.textContent = 'Sign In';
+        if (nameWrapper) nameWrapper.classList.remove('expanded');
+      }
+    };
+
+    if (animate) {
+      if (title) title.classList.add('auth-text-swap');
+      if (submitText) submitText.classList.add('auth-text-swap');
+
+      setTimeout(() => {
+        updateDom();
+        if (title) title.classList.remove('auth-text-swap');
+        if (submitText) submitText.classList.remove('auth-text-swap');
+      }, 90);
     } else {
-      if (tabSignIn) { tabSignIn.classList.add('active'); tabSignIn.setAttribute('aria-selected', 'true'); }
-      if (tabSignUp) { tabSignUp.classList.remove('active'); tabSignUp.setAttribute('aria-selected', 'false'); }
-      if (title) title.textContent = 'Sign In to Universe';
-      if (submitText) submitText.textContent = 'Sign In';
-      if (nameGroup) nameGroup.style.display = 'none';
+      updateDom();
     }
   }
 
