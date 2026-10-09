@@ -76,10 +76,15 @@ export class WikiScraperService {
    */
   extractAvatar($, baseUrl) {
     const candidates = [
+      $('figure.pi-item.pi-image img.pi-image-thumbnail').attr('data-src'),
       $('figure.pi-item.pi-image img.pi-image-thumbnail').attr('src'),
+      $('figure.pi-item.pi-image img').first().attr('data-src'),
+      $('figure.pi-item.pi-image img').first().attr('src'),
+      $('.portable-infobox img').first().attr('data-src'),
       $('.portable-infobox img').first().attr('src'),
       $('.infobox img').first().attr('src'),
-      $('meta[property="og:image"]').attr('content')
+      $('meta[property="og:image"]').attr('content'),
+      $('meta[name="twitter:image"]').attr('content')
     ].filter(Boolean);
 
     for (let rawUrl of candidates) {
@@ -94,6 +99,10 @@ export class WikiScraperService {
         }
       }
       if (rawUrl.startsWith('http')) {
+        // Strip downscale parameter if present on fandom wikis
+        if (rawUrl.includes('/revision/latest/scale-to-width-down/')) {
+          rawUrl = rawUrl.replace(/\/revision\/latest\/scale-to-width-down\/\d+/, '/revision/latest');
+        }
         return rawUrl;
       }
     }

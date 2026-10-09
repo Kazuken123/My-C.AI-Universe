@@ -770,34 +770,34 @@ html, body {
    UNIVERSAL SHARED CARD & AVATAR PRIMITIVES
    ============================================================ */
 .cai-avatar-wrap {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   flex-shrink: 0;
-  border: 1px solid var(--border-hairline);
-  background: var(--bg-core);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-core-elevated);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  position: relative;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
+.cai-avatar-wrap .cai-avatar,
 .cai-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  object-fit: cover;
-  display: block;
-  flex-shrink: 0;
-}
-
-.cai-avatar-wrap .cai-avatar {
   width: 100%;
   height: 100%;
   border-radius: inherit;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+  flex-shrink: 0;
+  transition: filter 0.3s ease, transform 0.3s ease;
 }
 
 .cai-card-top {
   display: flex;
-  align-items: center;
-  gap: 14px;
+  align-items: flex-start;
+  gap: 16px;
 }
 
 .cai-card-info {

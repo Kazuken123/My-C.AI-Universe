@@ -205,21 +205,26 @@
   filter: brightness(1.05);
 }
 
+.dossier-header-strip,
 .spotlight-top {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
 }
 
+.dossier-avatar,
 .spotlight-avatar {
-  width: 64px;
-  height: 64px;
+  width: 66px;
+  height: 66px;
   border-radius: var(--radius-md);
   object-fit: cover;
+  object-position: center top;
   border: 1px solid var(--border-strong);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
   flex-shrink: 0;
 }
 
+.dossier-header-meta,
 .spotlight-meta {
   flex: 1;
   min-width: 0;
@@ -233,6 +238,7 @@
   text-transform: uppercase;
 }
 
+.dossier-name,
 .spotlight-name {
   font-family: var(--font-display);
   font-size: 1.22rem;
@@ -241,6 +247,7 @@
   margin-top: 2px;
 }
 
+.dossier-tagline,
 .spotlight-tagline {
   font-size: 0.8rem;
   color: var(--text-secondary);
@@ -412,29 +419,31 @@
 }
 
 .bento-wide .cai-card-top {
-  gap: 20px;
+  gap: 22px;
 }
 
-.cai-avatar {
+.cai-avatar-wrap {
   width: 58px;
   height: 58px;
-  border-radius: var(--radius-md);
-  object-fit: cover;
-  background: var(--bg-core-elevated);
-  border: 1px solid var(--border-hairline);
+  border-radius: 14px;
   flex-shrink: 0;
-  transition: border-color 0.35s var(--ease-glow), box-shadow 0.4s var(--ease-glow), filter 0.35s var(--ease-glow), transform 0.35s var(--ease-spring);
+  transition: border-color 0.35s var(--ease-glow), box-shadow 0.4s var(--ease-glow), filter 0.35s var(--ease-glow);
 }
 
-.double-bezel-shell.card-shell:hover .cai-avatar {
+.double-bezel-shell.card-shell:hover .cai-avatar-wrap {
   border-color: var(--accent-border);
-  box-shadow: 0 0 16px var(--accent-soft);
+  box-shadow: 0 0 18px var(--accent-soft);
   filter: brightness(1.08);
 }
 
-.bento-wide .cai-avatar {
-  width: 78px;
-  height: 78px;
+.double-bezel-shell.card-shell:hover .cai-avatar {
+  transform: scale(1.04);
+}
+
+.bento-wide .cai-avatar-wrap {
+  width: 80px;
+  height: 80px;
+  border-radius: 18px;
 }
 
 .cai-card-info {
