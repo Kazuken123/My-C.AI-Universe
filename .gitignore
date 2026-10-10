@@ -33,3 +33,7 @@ memory-service/test_memory.py
 .agents/
 graphify-out/
 
+# Dynamic user uploaded avatars (persisted in Turso Cloud media_assets table)
+frontend/assets/avatars/avatar_*
+frontend/assets/avatars/son-goku.*
+
