@@ -17,9 +17,11 @@ My C.AI Universe is a full-stack Character.AI (`c.ai`) roleplay web application 
 - **`scripts/`**: Setup utilities (`setup-memory.js`)
 - **`tests/`**: End-to-end API test suite (`api.test.js`)
 
-## AI Agent Guidelines & Progress Tracking
+## Mandatory AI Agent Workflow Rules
 1. **Always Read `PROGRESS.md` First**: Before writing or refactoring code, review `PROGRESS.md` for current version context (`v2.3.0`), recent bug fixes, and database patterns.
 2. **Fast SQL Mutations**: For take switching, message editing, or pinning, use `ChatSessionRepository.updateMessageFields()` to perform single-row updates instead of rewriting the session.
 3. **Optimistic UI Updates**: Swiping takes must remain 0ms in the DOM, using debounced background synchronization.
-4. **Maintain Progress Log**: When introducing major architectural changes or solving critical bugs, update `PROGRESS.md` with details of the fix and increment the log.
-5. **Run Test Suite**: Run `npm test` after modifying backend controllers, repositories, or routes to guarantee zero regressions.
+4. **Update `PROGRESS.md`**: When introducing features or resolving bugs, update `PROGRESS.md` with the milestone details.
+5. **Update Graphify**: Run `graphify update .` after code modifications to keep AST knowledge graph fresh.
+6. **Verify with Tests**: Always run `npm test` (all 21 E2E tests must pass).
+7. **Always Push to GitHub**: Commit code with standard commit messages and execute `git push origin main`. Never push `.env` or SQLite binaries.

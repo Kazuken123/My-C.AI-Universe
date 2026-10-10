@@ -113,6 +113,16 @@ The test suite validates:
 
 ---
 
+## ⚙️ Mandatory Agent Workflow Rule
+
+For any task performed in this project:
+1. **Push to GitHub**: Always commit and execute `git push origin main`.
+2. **Update PROGRESS.md**: Record newly delivered fixes, architectural milestones, and solved issues.
+3. **Update Graphify**: Run `graphify update .` to keep knowledge graph current.
+4. **Pass All Tests**: Verify zero regressions via `npm test` (21/21 passing).
+
+---
+
 ## 📋 Ongoing Backlog & Next Steps
 
 - [ ] **Voice / Audio TTS**: Expand browser Web Speech API with optional high-fidelity server-side neural TTS (e.g. Edge TTS / ElevenLabs).

@@ -33,7 +33,8 @@ Thumbs.db
 # Test temporary files & local agent skills
 memory-service/test_memories.json
 memory-service/test_memory.py
-.agents/
+.agents/*
+!.agents/rules/
 graphify-out/
 
 # Avatar media files (Persisted directly in Turso Cloud media_assets table)
