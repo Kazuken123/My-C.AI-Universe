@@ -1009,6 +1009,7 @@ html, body {
   font-family: var(--font-mono);
   font-size: 0.68rem;
   color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .status-dot {

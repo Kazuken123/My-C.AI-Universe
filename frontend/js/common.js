@@ -115,8 +115,18 @@ export async function initSidebar(activePage = 'discover') {
     if (statusEl) {
       const label = statusEl.querySelector('.status-label');
       const dot = statusEl.querySelector('.status-dot');
-      if (label) label.textContent = health.gemini_available ? 'Gemini 2.5' : 'Local SQL';
-      if (dot) dot.style.background = health.gemini_available ? 'var(--success)' : 'var(--warning)';
+      const model = (health?.gemini_model || '').toLowerCase();
+      let displayModel = 'Gemini 3.5 Lite';
+      if (model.includes('3.5-flash-lite')) displayModel = 'Gemini 3.5 Lite';
+      else if (model.includes('3.1-flash-lite')) displayModel = 'Gemini 3.1 Lite';
+      else if (model.includes('3.5')) displayModel = 'Gemini 3.5';
+      else if (model.includes('3.1')) displayModel = 'Gemini 3.1';
+      else if (model.includes('2.5')) displayModel = 'Gemini 2.5';
+      else if (health?.gemini_available) displayModel = 'Gemini AI';
+
+      if (label) label.textContent = health?.gemini_available ? displayModel : 'Local SQL';
+      if (dot) dot.style.background = health?.gemini_available ? 'var(--success)' : 'var(--warning)';
+      statusEl.title = health?.gemini_available ? `AI Engine: ${health.gemini_model || 'Gemini 3.5 Flash Lite'}` : 'Local SQL Mode';
     }
   } catch {
     // offline or loading
