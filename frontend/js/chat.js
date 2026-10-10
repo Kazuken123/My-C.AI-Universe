@@ -383,7 +383,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         <h3>${escapeHtml(character.name)}</h3>
         <p>${escapeHtml(character.tagline || '')}</p>
         <div style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted);">
-          AUTHORED BY ${escapeHtml((character.creator || '@system').toUpperCase())} &middot; SQL SESSION ACTIVE
+          AUTHORED BY ${escapeHtml(((character.creator && character.creator !== '@you') ? character.creator : '@community').toUpperCase())} &middot; SQL SESSION ACTIVE
         </div>
       </div>
     `;

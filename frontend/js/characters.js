@@ -540,7 +540,8 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
         speaking_style: speakingStyleInput.value.trim(),
         example_dialogues: exampleDialoguesInput.value.trim(),
         initial_memory: initialMemoryInput.value.trim(),
-        wiki: wikiUrlInput.value.trim()
+        wiki: wikiUrlInput.value.trim(),
+        creator: (api.getCurrentUser()?.username ? `@${api.getCurrentUser().username}` : undefined)
       };
 
       if (!payload.name && !payload.wiki) {

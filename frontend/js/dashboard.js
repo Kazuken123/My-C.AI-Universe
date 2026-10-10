@@ -48,7 +48,7 @@ class DashboardApp {
               </div>
               <div class="cai-card-info">
                 <div class="cai-card-name">${escapeHtml(char.name)}</div>
-                <div class="cai-card-creator">Authored by ${escapeHtml(char.creator || '@system')}</div>
+                <div class="cai-card-creator">Authored by ${escapeHtml((char.creator && char.creator !== '@you') ? char.creator : '@community')}</div>
                 <div class="cai-card-tagline">${escapeHtml(char.tagline || '')}</div>
               </div>
             </div>

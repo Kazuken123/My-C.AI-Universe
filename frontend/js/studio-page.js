@@ -10,6 +10,7 @@ class StudioPageApp {
     this.nameInput = document.getElementById('charNameInput');
     this.categoriesInput = document.getElementById('charCategoriesInput');
     this.taglineInput = document.getElementById('charTaglineInput');
+    this.creatorInput = document.getElementById('charCreatorInput');
     this.avatarInput = document.getElementById('charAvatarInput');
     this.greetingInput = document.getElementById('charGreetingInput');
     this.personalityInput = document.getElementById('charPersonalityInput');
@@ -32,6 +33,7 @@ class StudioPageApp {
     // Live preview elements
     this.previewAvatar = document.getElementById('preview-avatar');
     this.previewAvatarFrame = document.getElementById('previewAvatarFrame');
+    this.previewCreator = document.getElementById('preview-creator');
     this.previewName = document.getElementById('preview-name');
     this.previewTagline = document.getElementById('preview-tagline');
     this.previewTags = document.getElementById('preview-tags');
@@ -43,6 +45,7 @@ class StudioPageApp {
     const tagline = this.taglineInput?.value.trim() || 'AI Roleplay Character';
     const avatar = this.avatarInput?.value.trim() || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(name)}`;
     const greeting = this.greetingInput?.value.trim() || '*Scene awaits first line...*';
+    const creator = this.creatorInput?.value.trim() || (api.getCurrentUser()?.username ? `@${api.getCurrentUser().username}` : '@community');
     const categories = (this.categoriesInput?.value.trim() || 'Anime, Roleplay')
       .split(',')
       .map(t => t.trim())
@@ -52,6 +55,7 @@ class StudioPageApp {
     if (this.previewTagline) this.previewTagline.textContent = tagline;
     if (this.previewAvatar) this.previewAvatar.src = avatar;
     if (this.previewGreeting) this.previewGreeting.textContent = greeting;
+    if (this.previewCreator) this.previewCreator.textContent = `Authored by ${creator} · Relational SQL`;
 
     if (this.previewTags) {
       this.previewTags.innerHTML = categories
@@ -62,7 +66,7 @@ class StudioPageApp {
   }
 
   bindLiveInputs() {
-    const inputs = [this.nameInput, this.taglineInput, this.avatarInput, this.greetingInput, this.categoriesInput];
+    const inputs = [this.nameInput, this.taglineInput, this.creatorInput, this.avatarInput, this.greetingInput, this.categoriesInput];
     inputs.forEach(el => {
       if (el) el.addEventListener('input', () => this.updatePreview());
     });
@@ -90,6 +94,10 @@ class StudioPageApp {
     if (this.heading) this.heading.textContent = 'Character Architecture Studio';
     const btnSaveText = document.getElementById('btnSaveText');
     if (btnSaveText) btnSaveText.textContent = 'Commit to SQL & Launch Scene';
+    if (this.creatorInput) {
+      const user = api.getCurrentUser();
+      this.creatorInput.value = user?.username ? `@${user.username}` : '';
+    }
     this.updatePreview();
   }
 
@@ -104,6 +112,7 @@ class StudioPageApp {
 
       if (this.charIdInput) this.charIdInput.value = char.id;
       if (this.nameInput) this.nameInput.value = char.name || '';
+      if (this.creatorInput) this.creatorInput.value = char.creator || '';
       if (this.categoriesInput) this.categoriesInput.value = Array.isArray(char.categories) ? char.categories.join(', ') : (char.categories || '');
       if (this.taglineInput) this.taglineInput.value = char.tagline || '';
       if (this.avatarInput) this.avatarInput.value = char.avatar || '';
@@ -124,6 +133,10 @@ class StudioPageApp {
 
   async init() {
     await initSidebar('create');
+    const currentUser = api.getCurrentUser();
+    if (this.creatorInput && !this.creatorInput.value && currentUser?.username) {
+      this.creatorInput.value = `@${currentUser.username}`;
+    }
     this.bindLiveInputs();
 
     if (this.btnReset) {
@@ -255,7 +268,8 @@ class StudioPageApp {
           background: this.backgroundInput?.value.trim(),
           speakingStyle: this.speakingStyleInput?.value.trim(),
           exampleDialogues: this.exampleDialoguesInput?.value.trim(),
-          initialMemory: this.initialMemoryInput?.value.trim()
+          initialMemory: this.initialMemoryInput?.value.trim(),
+          creator: (api.getCurrentUser()?.username ? `@${api.getCurrentUser().username}` : undefined)
         };
 
         const submitBtn = document.getElementById('btnSaveCharacter');

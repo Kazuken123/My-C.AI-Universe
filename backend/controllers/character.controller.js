@@ -46,9 +46,21 @@ export class CharacterController extends BaseController {
         wikiData = await this.wikiService.parse(wiki.trim());
       }
 
+      let creatorHandle = req.body.creator ? String(req.body.creator).trim() : '';
+      if (!creatorHandle) {
+        if (req.user && req.user.username) {
+          creatorHandle = `@${req.user.username}`;
+        } else {
+          creatorHandle = '@community';
+        }
+      } else if (!creatorHandle.startsWith('@')) {
+        creatorHandle = `@${creatorHandle}`;
+      }
+
       const character = new Character({
         ...wikiData,
         ...req.body,
+        creator: creatorHandle,
         name: (name && name.trim()) || wikiData.name || 'Unnamed Character',
         tagline: (req.body.tagline && req.body.tagline.trim()) || wikiData.tagline || 'AI Roleplay Character',
         avatar: (req.body.avatar && req.body.avatar.trim()) || wikiData.avatar || '',
@@ -108,12 +120,17 @@ export class CharacterController extends BaseController {
       const updatableFields = [
         'name', 'tagline', 'avatar', 'greeting', 'personality',
         'appearance', 'abilities', 'background', 'speaking_style',
-        'example_dialogues', 'initial_memory', 'wiki', 'categories'
+        'example_dialogues', 'initial_memory', 'wiki', 'categories', 'creator'
       ];
 
       for (const field of updatableFields) {
         if (req.body[field] !== undefined) {
-          character[field] = req.body[field];
+          if (field === 'creator' && req.body[field]) {
+            const raw = String(req.body[field]).trim();
+            character.creator = raw.startsWith('@') ? raw : `@${raw}`;
+          } else {
+            character[field] = req.body[field];
+          }
         }
       }
 

@@ -35,7 +35,7 @@ export class Character extends BaseEntity {
     this.categories = Array.isArray(props.categories) && props.categories.length > 0
       ? props.categories
       : ['Roleplay', 'Original'];
-    this.creator = props.creator || '@you';
+    this.creator = props.creator || '@community';
     this.interactions = Number(props.interactions) || 0;
     this.likes = props.likes !== undefined ? Number(props.likes) : 1;
     this.isLiked = Boolean(props.isLiked ?? props.is_liked ?? false);
