@@ -295,6 +295,10 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
     container.querySelectorAll('[data-like-char]').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
+        if (!api.getToken()) {
+          window.location.href = `/auth.html?mode=signin&return=/`;
+          return;
+        }
         try {
           await api.toggleLike(btn.dataset.likeChar);
           await loadCharacters();
@@ -485,6 +489,10 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
   }
 
   function openStudioForCreate() {
+    if (!api.getToken()) {
+      window.location.href = '/auth.html?mode=signin&return=/create.html';
+      return;
+    }
     if (studioForm) studioForm.reset();
     if (editCharIdInput) editCharIdInput.value = '';
     if (studioTitle) studioTitle.textContent = 'Character Architecture Studio';
@@ -495,6 +503,10 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
 
   function openStudioForEdit(char) {
     if (!char) return;
+    if (!api.getToken()) {
+      window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(`/create.html?id=${char.id}`)}`;
+      return;
+    }
     if (editCharIdInput) editCharIdInput.value = char.id;
     if (studioTitle) studioTitle.textContent = `Edit Dossier: ${char.name}`;
     if (nameInput) nameInput.value = char.name || '';

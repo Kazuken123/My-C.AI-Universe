@@ -179,11 +179,38 @@ export async function initSidebar(activePage = 'discover') {
   // Active Persona in Sidebar
   await initPersonaPill();
 
+  // Intercept protected navigation links for unauthenticated guests
+  document.querySelectorAll('.sidebar a[href*="create.html"], .sidebar a[href*="chats.html"], .sidebar a[href*="personas.html"], .mobile-bottom-nav a[href*="create.html"], .mobile-bottom-nav a[href*="chats.html"], .mobile-bottom-nav a[href*="personas.html"], .sidebar-cta-wrap a, #sidebar-persona-pill').forEach(link => {
+    if (!link.__authGuardBound) {
+      link.__authGuardBound = true;
+      link.addEventListener('click', (e) => {
+        if (!api.getToken()) {
+          e.preventDefault();
+          e.stopPropagation();
+          const href = link.getAttribute('href') || '/';
+          window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(href)}`;
+        }
+      });
+    }
+  });
+
   // Upgrade any select controls on page to luxury custom dropdowns
   initCustomSelects();
 
   // Initialize Responsive Mobile App Bar, Dock & Off-Canvas Drawer
   initMobileNavigation(activePage);
+}
+
+/**
+ * Universal authentication guard helper
+ */
+export function requireAuthOrRedirect(targetUrl = null) {
+  if (!api.getToken()) {
+    const ret = targetUrl || (window.location.pathname + window.location.search);
+    window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(ret)}`;
+    return false;
+  }
+  return true;
 }
 
 /**

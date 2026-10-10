@@ -132,8 +132,14 @@ class StudioPageApp {
   }
 
   async init() {
+    const currentUser = await api.getCurrentUser();
+    if (!currentUser) {
+      const returnUrl = window.location.pathname + window.location.search;
+      window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(returnUrl || '/create.html')}`;
+      return;
+    }
+
     await initSidebar('create');
-    const currentUser = api.getCurrentUser();
     if (this.creatorInput && !this.creatorInput.value && currentUser?.username) {
       this.creatorInput.value = `@${currentUser.username}`;
     }

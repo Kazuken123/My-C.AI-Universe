@@ -66,10 +66,10 @@ class DashboardApp {
                 <span class="mono-tag">${formatCount(char.interactions || 0)} chats</span>
               </div>
               <div class="cai-card-actions">
-                <a href="/create.html?id=${encodeURIComponent(char.id)}" class="icon-btn" title="Edit Architecture" onclick="event.stopPropagation();">
+                <a href="/create.html?id=${encodeURIComponent(char.id)}" class="icon-btn" data-edit-char="${escapeHtml(char.id)}" title="Edit Architecture" onclick="event.stopPropagation();">
                   <i class="ph-light ph-pencil-simple"></i>
                 </a>
-                <a href="/chat.html?id=${encodeURIComponent(char.id)}" class="btn-secondary btn-sm" onclick="event.stopPropagation();">
+                <a href="/chat.html?id=${encodeURIComponent(char.id)}" class="btn-secondary btn-sm" data-enter-scene="${escapeHtml(char.id)}" onclick="event.stopPropagation();">
                   <i class="ph-light ph-chat-circle-dots"></i>
                   <span>Enter Scene</span>
                 </a>
@@ -105,10 +105,16 @@ class DashboardApp {
 
     if (this.heroStartChatBtn) {
       this.heroStartChatBtn.href = `/chat.html?id=${encodeURIComponent(topChar.id)}`;
+      this.heroStartChatBtn.onclick = (e) => {
+        if (!api.getToken()) {
+          e.preventDefault();
+          window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(`/chat.html?id=${topChar.id}`)}`;
+        }
+      };
     }
 
     this.heroSpotlightCard.innerHTML = `
-      <div class="hero-spotlight-dossier" onclick="window.location.href='/chat.html?id=${encodeURIComponent(topChar.id)}'" style="cursor: pointer;">
+      <div class="hero-spotlight-dossier" id="hero-spotlight-dossier-card" style="cursor: pointer;">
         <div class="dossier-header-strip">
           <img class="dossier-avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(topChar.name)}" />
           <div class="dossier-header-meta">
@@ -138,6 +144,17 @@ class DashboardApp {
         </div>
       </div>
     `;
+
+    const dossierCard = this.heroSpotlightCard.querySelector('#hero-spotlight-dossier-card');
+    if (dossierCard) {
+      dossierCard.addEventListener('click', () => {
+        if (!api.getToken()) {
+          window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(`/chat.html?id=${topChar.id}`)}`;
+          return;
+        }
+        window.location.href = `/chat.html?id=${encodeURIComponent(topChar.id)}`;
+      });
+    }
   }
 
   renderDiscoverGrid(chars) {
@@ -157,6 +174,16 @@ class DashboardApp {
           </div>
         </div>
       `;
+
+      const emptyCreateBtn = this.discoverGrid.querySelector('a[href="/create.html"]');
+      if (emptyCreateBtn) {
+        emptyCreateBtn.addEventListener('click', (e) => {
+          if (!api.getToken()) {
+            e.preventDefault();
+            window.location.href = `/auth.html?mode=signin&return=/create.html`;
+          }
+        });
+      }
       return;
     }
 
@@ -169,13 +196,44 @@ class DashboardApp {
     this.discoverGrid.querySelectorAll('[data-char-card]').forEach(card => {
       card.addEventListener('click', (e) => {
         if (e.target.closest('button') || e.target.closest('a')) return;
-        window.location.href = `/chat.html?id=${encodeURIComponent(card.dataset.charCard)}`;
+        const charId = card.dataset.charCard;
+        if (!api.getToken()) {
+          window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(`/chat.html?id=${charId}`)}`;
+          return;
+        }
+        window.location.href = `/chat.html?id=${encodeURIComponent(charId)}`;
+      });
+    });
+
+    this.discoverGrid.querySelectorAll('[data-enter-scene]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        const charId = link.dataset.enterScene;
+        if (!api.getToken()) {
+          e.preventDefault();
+          e.stopPropagation();
+          window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(`/chat.html?id=${charId}`)}`;
+        }
+      });
+    });
+
+    this.discoverGrid.querySelectorAll('[data-edit-char]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        const charId = link.dataset.editChar;
+        if (!api.getToken()) {
+          e.preventDefault();
+          e.stopPropagation();
+          window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(`/create.html?id=${charId}`)}`;
+        }
       });
     });
 
     this.discoverGrid.querySelectorAll('[data-like-char]').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
+        if (!api.getToken()) {
+          window.location.href = `/auth.html?mode=signin&return=/`;
+          return;
+        }
         try {
           await api.toggleLike(btn.dataset.likeChar);
           await this.loadCharacters();
@@ -244,6 +302,16 @@ class DashboardApp {
 
     if (this.sortSelect) {
       this.sortSelect.addEventListener('change', () => this.loadCharacters());
+    }
+
+    const heroCreateBtn = document.getElementById('hero-create-btn');
+    if (heroCreateBtn) {
+      heroCreateBtn.addEventListener('click', (e) => {
+        if (!api.getToken()) {
+          e.preventDefault();
+          window.location.href = '/auth.html?mode=signin&return=/create.html';
+        }
+      });
     }
 
     window.addEventListener('keydown', (e) => {

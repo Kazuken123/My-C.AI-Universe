@@ -47,6 +47,16 @@ export class CAIUniverseApp {
   }
 
   navigateTo(viewName, pushState = true) {
+    if ((viewName === 'create' || viewName === 'chats' || viewName === 'personas') && !api.getToken()) {
+      const pathMap = {
+        create: '/create.html',
+        chats: '/chats.html',
+        personas: '/personas.html'
+      };
+      window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(pathMap[viewName] || '/')}`;
+      return;
+    }
+
     document.querySelectorAll('.view-panel').forEach(panel => {
       panel.classList.toggle('active', panel.id === `view-${viewName}`);
     });
@@ -61,7 +71,7 @@ export class CAIUniverseApp {
         create: '/create.html',
         characters: '/characters.html',
         chats: '/chats.html',
-        personas: '/personas'
+        personas: '/personas.html'
       };
       const targetUrl = pathMap[viewName];
       if (targetUrl && window.location.pathname !== targetUrl) {
@@ -118,7 +128,13 @@ export class CAIUniverseApp {
     this.characterManager = initCharactersModule(
       this.state,
       navFn,
-      (charId, sessionId) => this.chatController.openChatWithCharacter(charId, sessionId),
+      (charId, sessionId) => {
+        if (!api.getToken()) {
+          window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(`/chat.html?id=${charId}`)}`;
+          return;
+        }
+        this.chatController.openChatWithCharacter(charId, sessionId);
+      },
       toastFn
     );
 
