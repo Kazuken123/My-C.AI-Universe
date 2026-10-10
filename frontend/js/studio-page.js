@@ -187,8 +187,8 @@ class StudioPageApp {
         this.btnExtractWiki.innerHTML = `<i class="ph-light ph-spinner-gap"></i> Ingesting...`;
         try {
           const res = await api.parseWiki(url);
-          if (res.character) {
-            const c = res.character;
+          const c = res.character || res;
+          if (c && (c.name || c.greeting || c.background || c.appearance)) {
             if (this.nameInput) this.nameInput.value = c.name || this.nameInput.value;
             if (this.taglineInput) this.taglineInput.value = c.tagline || this.taglineInput.value;
             if (this.avatarInput && c.avatar) this.avatarInput.value = c.avatar;
@@ -197,14 +197,25 @@ class StudioPageApp {
             if (this.appearanceInput && c.appearance) this.appearanceInput.value = c.appearance;
             if (this.abilitiesInput && c.abilities) this.abilitiesInput.value = c.abilities;
             if (this.backgroundInput && c.background) this.backgroundInput.value = c.background;
+            if (this.speakingStyleInput && (c.speaking_style || c.speakingStyle)) {
+              this.speakingStyleInput.value = c.speaking_style || c.speakingStyle;
+            }
+            if (this.exampleDialoguesInput && (c.example_dialogues || c.exampleDialogues)) {
+              this.exampleDialoguesInput.value = c.example_dialogues || c.exampleDialogues;
+            }
+            if (this.initialMemoryInput && (c.initial_memory || c.initialMemory)) {
+              this.initialMemoryInput.value = c.initial_memory || c.initialMemory;
+            }
             if (this.categoriesInput && c.categories) {
               this.categoriesInput.value = Array.isArray(c.categories) ? c.categories.join(', ') : c.categories;
             }
             this.updatePreview();
             showToast(`Ingested canon lore for ${c.name || 'character'}!`);
+          } else {
+            showToast('No canon lore could be extracted from this URL.');
           }
         } catch (err) {
-          showToast('Lore extraction failed: ' + err.message);
+          showToast('Lore extraction failed: ' + (err.message || 'Unknown error'));
         } finally {
           this.btnExtractWiki.disabled = false;
           this.btnExtractWiki.innerHTML = `<i class="ph-light ph-globe-hemisphere-west"></i> <span>Extract Lore</span>`;

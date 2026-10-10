@@ -427,21 +427,22 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
       btnExtractWiki.innerHTML = '<i class="ph-light ph-spinner"></i> <span>Extracting...</span>';
       try {
         const data = await api.parseWikiPreview(url);
-        if (data.name && !nameInput.value.trim()) nameInput.value = data.name;
-        if (data.tagline) taglineInput.value = data.tagline;
-        if (data.avatar) avatarInput.value = data.avatar;
-        if (data.greeting) greetingInput.value = data.greeting;
-        if (data.personality) personalityInput.value = data.personality;
-        if (data.appearance) appearanceInput.value = data.appearance;
-        if (data.abilities) abilitiesInput.value = data.abilities;
-        if (data.background) backgroundInput.value = data.background;
-        if (data.speaking_style) speakingStyleInput.value = data.speaking_style;
-        if (data.initial_memory) initialMemoryInput.value = data.initial_memory;
-        if (Array.isArray(data.categories) && data.categories.length > 0) {
-          categoriesInput.value = data.categories.join(', ');
+        const charData = data.character || data;
+        if (charData.name) nameInput.value = charData.name;
+        if (charData.tagline) taglineInput.value = charData.tagline;
+        if (charData.avatar) avatarInput.value = charData.avatar;
+        if (charData.greeting) greetingInput.value = charData.greeting;
+        if (charData.personality) personalityInput.value = charData.personality;
+        if (charData.appearance) appearanceInput.value = charData.appearance;
+        if (charData.abilities) abilitiesInput.value = charData.abilities;
+        if (charData.background) backgroundInput.value = charData.background;
+        if (charData.speaking_style) speakingStyleInput.value = charData.speaking_style;
+        if (charData.initial_memory) initialMemoryInput.value = charData.initial_memory;
+        if (Array.isArray(charData.categories) && charData.categories.length > 0) {
+          categoriesInput.value = charData.categories.join(', ');
         }
         updateStudioPreview();
-        showToast('Extracted canonical character profile from Wiki.');
+        showToast(`Extracted canon profile for ${charData.name || 'character'}!`);
       } catch (error) {
         showToast('Wiki extraction error: ' + error.message);
       } finally {

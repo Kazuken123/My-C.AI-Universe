@@ -177,7 +177,10 @@ export class CharacterController extends BaseController {
         throw new ValidationError('Wiki URL is required', 'url');
       }
       const extracted = await this.wikiService.parse(url);
-      return this.sendJson(res, extracted);
+      return this.sendJson(res, {
+        ...extracted,
+        character: extracted
+      });
     } catch (error) {
       return this.handleError(res, error, 'Failed to parse Wiki URL');
     }
