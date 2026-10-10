@@ -4,6 +4,7 @@
  * Database Initialization & Inspection Utility
  * Creates/verifies database (Turso or local SQLite) and prints table stats.
  */
+import 'dotenv/config';
 import { DatabaseConnection } from '../backend/db/database.js';
 import { characterRepository, chatSessionRepository, personaRepository, memoryRepository } from '../backend/repositories/index.js';
 
