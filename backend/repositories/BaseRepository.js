@@ -19,17 +19,19 @@ export class BaseRepository {
     return getDatabase();
   }
 
-  runInTransaction(callback) {
-    return runTransaction(callback);
+  async runInTransaction(callback) {
+    return await runTransaction(callback);
   }
 
-  count() {
-    const row = this.db.prepare(`SELECT COUNT(*) AS count FROM ${this.tableName}`).get();
+  async count(targetDb = null) {
+    const conn = targetDb || this.db;
+    const row = await conn.prepare(`SELECT COUNT(*) AS count FROM ${this.tableName}`).get();
     return Number(row?.count) || 0;
   }
 
-  deleteById(id) {
-    const result = this.db.prepare(`DELETE FROM ${this.tableName} WHERE id = ?`).run(id);
+  async deleteById(id, targetDb = null) {
+    const conn = targetDb || this.db;
+    const result = await conn.prepare(`DELETE FROM ${this.tableName} WHERE id = ?`).run(id);
     return result.changes > 0;
   }
 }

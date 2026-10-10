@@ -1,4 +1,4 @@
-import { DatabaseSync } from 'node:sqlite';
+import { createClient } from '@libsql/client';
 import fs from 'fs';
 import path from 'path';
 import { DB_DIR } from '../config/index.js';
@@ -23,25 +23,100 @@ function resolveSqlitePath() {
 }
 
 /**
- * DatabaseConnection Singleton Class (OOP Database Manager)
- * Encapsulates SQLite connection lifecycle, DDL migration, seed execution, and ACID transactions.
+ * Statement Wrapper for @libsql/client providing SQLite-compatible prepare/all/get/run APIs
+ */
+export class LibsqlStatementWrapper {
+  constructor(executor, sql, dbConnection = null) {
+    this.executor = executor;
+    this.sql = sql;
+    this.dbConnection = dbConnection;
+  }
+
+  #flattenArgs(args) {
+    if (args.length === 1 && Array.isArray(args[0])) {
+      return args[0];
+    }
+    return args;
+  }
+
+  async all(...args) {
+    if (this.dbConnection) await this.dbConnection.ensureReady();
+    const flat = this.#flattenArgs(args);
+    const res = await this.executor.execute({ sql: this.sql, args: flat });
+    return res.rows || [];
+  }
+
+  async get(...args) {
+    if (this.dbConnection) await this.dbConnection.ensureReady();
+    const flat = this.#flattenArgs(args);
+    const res = await this.executor.execute({ sql: this.sql, args: flat });
+    return (res.rows && res.rows.length > 0) ? res.rows[0] : null;
+  }
+
+  async run(...args) {
+    if (this.dbConnection) await this.dbConnection.ensureReady();
+    const flat = this.#flattenArgs(args);
+    const res = await this.executor.execute({ sql: this.sql, args: flat });
+    return {
+      changes: res.rowsAffected || 0,
+      lastInsertRowid: res.lastInsertRowid
+    };
+  }
+}
+
+/**
+ * Connection Wrapper around @libsql/client or Transaction object
+ */
+export class LibsqlConnectionWrapper {
+  constructor(client, dbConnection = null) {
+    this.client = client;
+    this.dbConnection = dbConnection;
+  }
+
+  prepare(sql) {
+    return new LibsqlStatementWrapper(this.client, sql, this.dbConnection);
+  }
+
+  async exec(sql) {
+    if (this.dbConnection) await this.dbConnection.ensureReady();
+    return await this.client.executeMultiple(sql);
+  }
+
+  async execute(sqlOrObj) {
+    if (this.dbConnection) await this.dbConnection.ensureReady();
+    return await this.client.execute(sqlOrObj);
+  }
+
+  close() {
+    if (this.client && typeof this.client.close === 'function') {
+      this.client.close();
+    }
+  }
+}
+
+/**
+ * DatabaseConnection Singleton Class (Turso / libSQL Unified Manager)
+ * Automatically connects to Turso Cloud (via TURSO_DATABASE_URL) or falls back
+ * transparently to local SQLite (backend/db/universe.sqlite).
  */
 export class DatabaseConnection {
   static #instance = null;
+  #rawClient = null;
+  #wrappedDb = null;
+  #initPromise = null;
 
   constructor() {
     if (DatabaseConnection.#instance) {
       return DatabaseConnection.#instance;
     }
-    this.db = null;
     this.dbPath = resolveSqlitePath();
+    this.isTurso = Boolean(process.env.TURSO_DATABASE_URL && process.env.TURSO_DATABASE_URL.trim());
+    this.engineName = this.isTurso
+      ? `Turso Cloud libSQL (${process.env.TURSO_DATABASE_URL.trim()})`
+      : `SQLite (${this.dbPath})`;
     DatabaseConnection.#instance = this;
   }
 
-  /**
-   * Get the singleton DatabaseConnection instance
-   * @returns {DatabaseConnection}
-   */
   static getInstance() {
     if (!DatabaseConnection.#instance) {
       DatabaseConnection.#instance = new DatabaseConnection();
@@ -49,154 +124,169 @@ export class DatabaseConnection {
     return DatabaseConnection.#instance;
   }
 
-  /**
-   * Open and initialize the SQLite database connection
-   * @returns {DatabaseSync}
-   */
   connect() {
-    if (this.db) return this.db;
+    if (this.#wrappedDb) return this.#wrappedDb;
 
-    const targetDir = path.dirname(this.dbPath);
-    if (!fs.existsSync(targetDir)) {
-      fs.mkdirSync(targetDir, { recursive: true });
-    }
+    this.isTurso = Boolean(process.env.TURSO_DATABASE_URL && process.env.TURSO_DATABASE_URL.trim());
 
-    if (this.dbPath !== DEFAULT_SQLITE_PATH && !fs.existsSync(this.dbPath) && fs.existsSync(DEFAULT_SQLITE_PATH)) {
-      try {
-        fs.copyFileSync(DEFAULT_SQLITE_PATH, this.dbPath);
-      } catch (copyErr) {
-        console.warn('[SQL DB] Could not copy default database to persistent path:', copyErr.message);
+    if (this.isTurso) {
+      const url = process.env.TURSO_DATABASE_URL.trim();
+      const authToken = (process.env.TURSO_AUTH_TOKEN || '').trim();
+      this.#rawClient = createClient({
+        url,
+        authToken: authToken || undefined
+      });
+      this.engineName = `Turso Cloud libSQL (${url})`;
+      console.log(`🌐 [DatabaseConnection] Connected to Turso Cloud: ${url}`);
+    } else {
+      const targetDir = path.dirname(this.dbPath);
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
       }
-    }
 
-    this.db = new DatabaseSync(this.dbPath);
-    this.db.exec('PRAGMA foreign_keys = ON;');
-    this.db.exec('PRAGMA journal_mode = WAL;');
-
-    this.#runMigrationsAndSeed();
-    return this.db;
-  }
-
-  /**
-   * Execute schema.sql and seed.sql if database is empty, and verify migrations
-   */
-  #runMigrationsAndSeed() {
-    this.#ensureColumnExists('user_personas', 'user_id', 'TEXT');
-    this.#ensureColumnExists('chat_sessions', 'user_id', 'TEXT');
-    this.#ensureColumnExists('users', 'email', 'TEXT');
-    this.#ensureColumnExists('users', 'auth_provider', "TEXT NOT NULL DEFAULT 'local'");
-    this.#ensureColumnExists('users', 'provider_id', 'TEXT');
-
-    // Purge any legacy unassigned chat sessions from before user auth was introduced
-    try {
-      this.db.exec('DELETE FROM chat_sessions WHERE user_id IS NULL;');
-    } catch {
-      // ignore
-    }
-
-    const schemaSql = fs.readFileSync(SCHEMA_SQL_PATH, 'utf8');
-    this.db.exec(schemaSql);
-
-    const countRow = this.db.prepare('SELECT COUNT(*) AS count FROM characters').get();
-    if (!countRow || countRow.count === 0) {
-      if (fs.existsSync(SEED_SQL_PATH)) {
-        const seedSql = fs.readFileSync(SEED_SQL_PATH, 'utf8');
-        this.db.exec(seedSql);
-
-        const rows = this.db.prepare('SELECT * FROM characters').all();
-        const updateStmt = this.db.prepare('UPDATE characters SET system_prompt = ? WHERE id = ?');
-        for (const r of rows) {
-          const compiled = compileCharacterSystemPrompt(r);
-          updateStmt.run(compiled, r.id);
+      if (this.dbPath !== DEFAULT_SQLITE_PATH && !fs.existsSync(this.dbPath) && fs.existsSync(DEFAULT_SQLITE_PATH)) {
+        try {
+          fs.copyFileSync(DEFAULT_SQLITE_PATH, this.dbPath);
+        } catch (copyErr) {
+          console.warn('[SQL DB] Could not copy default database to persistent path:', copyErr.message);
         }
-        console.log(`[SQL DB] Initialized schema and seeded ${rows.length} characters into universe.sqlite`);
       }
+
+      const fileUrl = `file:${path.resolve(this.dbPath)}`;
+      this.#rawClient = createClient({ url: fileUrl });
+      this.engineName = `SQLite (${this.dbPath})`;
+      console.log(`🗄️  [DatabaseConnection] Connected to local SQLite: ${this.dbPath}`);
     }
 
-    this.#ensurePrimaryUserAndPersona();
+    this.#wrappedDb = new LibsqlConnectionWrapper(this.#rawClient, this);
+    return this.#wrappedDb;
   }
 
-  #ensurePrimaryUserAndPersona() {
-    try {
-      const user = this.db.prepare('SELECT * FROM users WHERE username = ? COLLATE NOCASE OR username = ? COLLATE NOCASE OR email = ? COLLATE NOCASE LIMIT 1')
-        .get('kazuken', 'giuaguy1234', 'giuaguy1234@gmail.com');
+  async ensureReady() {
+    if (!this.#initPromise) {
+      this.#initPromise = this.#runMigrationsAndSeed();
+    }
+    return this.#initPromise;
+  }
 
+  async #runMigrationsAndSeed() {
+    const raw = this.#rawClient;
+    if (!raw) return;
+
+    try {
+      if (fs.existsSync(SCHEMA_SQL_PATH)) {
+        const schemaSql = fs.readFileSync(SCHEMA_SQL_PATH, 'utf8');
+        await raw.executeMultiple(schemaSql);
+      }
+
+      // Check if characters table is empty
+      const countRes = await raw.execute('SELECT COUNT(*) AS count FROM characters');
+      const count = Number(countRes.rows[0]?.count || 0);
+
+      if (count === 0 && fs.existsSync(SEED_SQL_PATH)) {
+        const seedSql = fs.readFileSync(SEED_SQL_PATH, 'utf8');
+        await raw.executeMultiple(seedSql);
+
+        const rowsRes = await raw.execute('SELECT * FROM characters');
+        for (const r of rowsRes.rows) {
+          const compiled = compileCharacterSystemPrompt(r);
+          await raw.execute({
+            sql: 'UPDATE characters SET system_prompt = ? WHERE id = ?',
+            args: [compiled, r.id]
+          });
+        }
+        console.log(`[SQL DB] Initialized schema and seeded ${rowsRes.rows.length} characters into database`);
+      }
+
+      await this.#ensurePrimaryUserAndPersona();
+    } catch (err) {
+      console.warn('[SQL DB] Migration/seed notice:', err.message);
+    }
+  }
+
+  async #ensurePrimaryUserAndPersona() {
+    const raw = this.#rawClient;
+    if (!raw) return;
+
+    try {
+      const userRes = await raw.execute({
+        sql: 'SELECT * FROM users WHERE username = ? COLLATE NOCASE OR username = ? COLLATE NOCASE OR email = ? COLLATE NOCASE LIMIT 1',
+        args: ['kazuken', 'giuaguy1234', 'giuaguy1234@gmail.com']
+      });
+
+      const user = userRes.rows[0] || null;
       const userId = user ? user.id : 'user_1791563262379_b6rd8';
 
       if (!user) {
-        this.db.prepare(`
-          INSERT INTO users (id, username, email, display_name, avatar, password_hash, auth_provider, provider_id, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-          userId,
-          'kazuken',
-          'giuaguy1234@gmail.com',
-          'Tony',
-          '👤',
-          '36c618578acafae55d72c9464d0cd337:caf4d11f74f992e98f2592326f8ba436fff02b2cf1f8f5212eed3ba640ed783e8d37525784268b8b2b5a857e9263ae7a94d55b1e3431fccdb493366e807c8173',
-          'google',
-          'real_google_sub_999',
-          '2026-10-09T16:27:42.379Z',
-          '2026-10-09T16:29:25.213Z'
-        );
+        await raw.execute({
+          sql: `
+            INSERT INTO users (id, username, email, display_name, avatar, password_hash, auth_provider, provider_id, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `,
+          args: [
+            userId,
+            'kazuken',
+            'giuaguy1234@gmail.com',
+            'Tony',
+            '👤',
+            '36c618578acafae55d72c9464d0cd337:caf4d11f74f992e98f2592326f8ba436fff02b2cf1f8f5212eed3ba640ed783e8d37525784268b8b2b5a857e9263ae7a94d55b1e3431fccdb493366e807c8173',
+            'google',
+            'real_google_sub_999',
+            '2026-10-09T16:27:42.379Z',
+            '2026-10-09T16:29:25.213Z'
+          ]
+        });
       }
 
-      const persona = this.db.prepare('SELECT * FROM user_personas WHERE user_id = ? LIMIT 1').get(userId);
+      const personaRes = await raw.execute({
+        sql: 'SELECT * FROM user_personas WHERE user_id = ? LIMIT 1',
+        args: [userId]
+      });
+
+      const persona = personaRes.rows[0] || null;
       if (!persona) {
-        this.db.prepare(`
-          INSERT INTO user_personas (id, name, avatar, description, is_default, created_at, updated_at, user_id)
-          VALUES (?, ?, ?, ?, 1, ?, ?, ?)
-        `).run(
-          'persona_1791563262405',
-          'Tony',
-          '🌟',
-          'feeling tired and down most of the time\nself esteem is kinda low\nmy favorite drink is sweet tea or any type of sweet drink\nim good with all foods as long as it is edible',
-          '2026-10-09T16:27:42.405Z',
-          '2026-10-09T16:27:42.405Z',
-          userId
-        );
+        await raw.execute({
+          sql: `
+            INSERT INTO user_personas (id, name, avatar, description, is_default, created_at, updated_at, user_id)
+            VALUES (?, ?, ?, ?, 1, ?, ?, ?)
+          `,
+          args: [
+            'persona_1791563262405',
+            'Tony',
+            '🌟',
+            'feeling tired and down most of the time\nself esteem is kinda low\nmy favorite drink is sweet tea or any type of sweet drink\nim good with all foods as long as it is edible',
+            '2026-10-09T16:27:42.405Z',
+            '2026-10-09T16:27:42.405Z',
+            userId
+          ]
+        });
       }
     } catch (err) {
       console.warn('[SQL DB] Primary user initialization notice:', err.message);
     }
   }
 
-  #ensureColumnExists(table, column, colType) {
+  async runTransaction(callback) {
+    this.connect();
+    await this.ensureReady();
+    const tx = await this.#rawClient.transaction();
+    const txWrapper = new LibsqlConnectionWrapper(tx, null);
     try {
-      const cols = this.db.prepare(`PRAGMA table_info(${table})`).all();
-      const hasCol = cols.some(c => c.name === column);
-      if (!hasCol) {
-        this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${colType};`);
-      }
-    } catch {
-      // ignore
-    }
-  }
-
-  /**
-   * Execute a function inside an atomic SQL transaction
-   * @param {Function} callback
-   */
-  runTransaction(callback) {
-    const conn = this.connect();
-    conn.exec('BEGIN IMMEDIATE TRANSACTION;');
-    try {
-      const result = callback(conn);
-      conn.exec('COMMIT;');
+      const result = await callback(txWrapper);
+      await tx.commit();
       return result;
     } catch (error) {
-      conn.exec('ROLLBACK;');
+      await tx.rollback().catch(() => {});
       throw error;
     }
   }
 
-  /**
-   * Close the active SQLite connection
-   */
   close() {
-    if (this.db) {
-      this.db.close();
-      this.db = null;
+    if (this.#wrappedDb) {
+      this.#wrappedDb.close();
+      this.#wrappedDb = null;
+      this.#rawClient = null;
+      this.#initPromise = null;
     }
   }
 }
@@ -205,8 +295,8 @@ export function getDatabase() {
   return DatabaseConnection.getInstance().connect();
 }
 
-export function runTransaction(fn) {
-  return DatabaseConnection.getInstance().runTransaction(fn);
+export async function runTransaction(fn) {
+  return await DatabaseConnection.getInstance().runTransaction(fn);
 }
 
 export function closeDatabase() {

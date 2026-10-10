@@ -16,10 +16,10 @@ export class MemoryController extends BaseController {
     this.deleteMemory = this.deleteMemory.bind(this);
   }
 
-  getMemories(req, res) {
+  async getMemories(req, res) {
     try {
       const { characterId } = req.query;
-      const memories = this.service.getMemories(characterId || null);
+      const memories = await this.service.getMemories(characterId || null);
       return this.sendJson(res, { memories, count: memories.length });
     } catch (error) {
       return this.handleError(res, error, 'Failed to load memories');
@@ -47,9 +47,9 @@ export class MemoryController extends BaseController {
     }
   }
 
-  deleteMemory(req, res) {
+  async deleteMemory(req, res) {
     try {
-      const deleted = this.service.deleteMemory(req.params.id);
+      const deleted = await this.service.deleteMemory(req.params.id);
       if (!deleted) {
         throw new NotFoundError('Memory not found');
       }

@@ -18,14 +18,14 @@ function extractToken(req) {
  * Optional Authentication Middleware
  * Attaches req.user if a valid token is provided, without blocking unauthenticated requests
  */
-export function optionalAuth(req, _res, next) {
+export async function optionalAuth(req, _res, next) {
   const token = extractToken(req);
   if (!token) {
     req.user = null;
     return next();
   }
 
-  const user = authService.getUserFromToken(token);
+  const user = await authService.getUserFromToken(token);
   req.user = user ? user : null;
   return next();
 }

@@ -74,8 +74,9 @@ export class SemanticMemoryService {
   /**
    * Get memories (optionally filtered by characterId)
    */
-  getMemories(characterId = null) {
-    return this.repository.findAll(characterId).map(m => m.toJSON());
+  async getMemories(characterId = null) {
+    const rows = await this.repository.findAll(characterId);
+    return rows.map(m => m.toJSON());
   }
 
   /**
@@ -85,7 +86,7 @@ export class SemanticMemoryService {
     if (!content || !content.trim() || !characterId) return null;
     const cleanContent = content.trim();
 
-    const charMemories = this.repository.findAll(characterId);
+    const charMemories = await this.repository.findAll(characterId);
     const isDuplicate = charMemories.some(
       m => m.content.toLowerCase() === cleanContent.toLowerCase() ||
            this.computeSimilarity(cleanContent, m.content) > 0.85
@@ -99,7 +100,7 @@ export class SemanticMemoryService {
       source
     });
 
-    this.repository.save(newMemory);
+    await this.repository.save(newMemory);
     this.pyClient.addMemory(cleanContent, characterId, { source, sessionId }).catch(() => {});
 
     return newMemory.toJSON();
@@ -108,8 +109,8 @@ export class SemanticMemoryService {
   /**
    * Delete a memory by ID
    */
-  deleteMemory(memoryId) {
-    return this.repository.deleteById(memoryId);
+  async deleteMemory(memoryId) {
+    return await this.repository.deleteById(memoryId);
   }
 
   /**
@@ -121,7 +122,7 @@ export class SemanticMemoryService {
       return pyResults;
     }
 
-    const charMemories = this.repository.findAll(characterId);
+    const charMemories = await this.repository.findAll(characterId);
     if (charMemories.length === 0) return [];
 
     const scored = charMemories.map((mem, idx) => {

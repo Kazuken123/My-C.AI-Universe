@@ -70,8 +70,8 @@ export class ApplicationServer {
       res.json({ message: 'My C.AI Universe OOP + SQL API is working!' });
     });
 
-    this.app.get('/api/health', (_req, res) => {
-      const sqlStats = storage.getSqlStats();
+    this.app.get('/api/health', async (_req, res) => {
+      const sqlStats = await storage.getSqlStats();
       res.json({
         status: 'healthy',
         architecture: 'OOP (Models, Repositories, Services, Controllers, Providers)',
@@ -154,7 +154,7 @@ export class ApplicationServer {
   start(port = config.PORT) {
     this.httpServer = this.app.listen(port, '0.0.0.0', () => {
       console.log(`🚀 My C.AI Universe (OOP + SQL) running at http://localhost:${port}`);
-      console.log(`🗄️  Relational Database: SQLite (backend/db/universe.sqlite | schema.sql)`);
+      console.log(`🗄️  Relational Database: ${this.dbConnection.engineName}`);
       console.log(`🤖 Primary AI Provider: ${config.AI_PROVIDER} (${config.GEMINI_MODEL})`);
     });
     return this.httpServer;

@@ -4,6 +4,7 @@ import {
   personaRepository,
   memoryRepository
 } from '../repositories/index.js';
+import { DatabaseConnection } from '../db/database.js';
 
 /**
  * StorageService Class (OOP Facade Pattern over Relational SQL Repositories)
@@ -23,49 +24,64 @@ export class StorageService {
     this.memories = memoriesRepo;
   }
 
-  getCharacters() {
-    return this.characters.findAll().map(c => c.toJSON());
+  async getCharacters() {
+    const chars = await this.characters.findAll();
+    return chars.map(c => c.toJSON());
   }
 
-  saveCharacters(chars) {
-    this.characters.saveAll(chars);
+  async saveCharacters(chars) {
+    await this.characters.saveAll(chars);
   }
 
-  getChats() {
-    return this.chats.findAll().map(s => s.toJSON());
+  async getChats() {
+    const chats = await this.chats.findAll();
+    return chats.map(s => s.toJSON());
   }
 
-  saveChats(chats) {
-    this.chats.saveAll(chats);
+  async saveChats(chats) {
+    await this.chats.saveAll(chats);
   }
 
-  getPersonas() {
-    return this.personas.findAll().map(p => p.toJSON());
+  async getPersonas() {
+    const personas = await this.personas.findAll();
+    return personas.map(p => p.toJSON());
   }
 
-  savePersonas(personas) {
-    this.personas.saveAll(personas);
+  async savePersonas(personas) {
+    await this.personas.saveAll(personas);
   }
 
-  getMemories() {
-    return this.memories.findAll().map(m => m.toJSON());
+  async getMemories() {
+    const memories = await this.memories.findAll();
+    return memories.map(m => m.toJSON());
   }
 
-  saveMemories(memories) {
-    this.memories.saveAll(memories);
+  async saveMemories(memories) {
+    await this.memories.saveAll(memories);
   }
 
-  getSqlStats() {
+  async getSqlStats() {
     const db = this.characters.db;
+    const connMgr = DatabaseConnection.getInstance();
+
+    const [charsCount, chatsCount, msgCountRow, varCountRow, personasCount, memCount] = await Promise.all([
+      this.characters.count(),
+      this.chats.count(),
+      db.prepare('SELECT COUNT(*) AS c FROM chat_messages').get(),
+      db.prepare('SELECT COUNT(*) AS c FROM message_variants').get(),
+      this.personas.count(),
+      this.memories.count()
+    ]);
+
     return {
-      engine: 'SQLite (node:sqlite Relational SQL + OOP Repositories)',
+      engine: connMgr.engineName,
       tables: {
-        characters: this.characters.count(),
-        chat_sessions: this.chats.count(),
-        chat_messages: Number(db.prepare('SELECT COUNT(*) AS c FROM chat_messages').get()?.c) || 0,
-        message_variants: Number(db.prepare('SELECT COUNT(*) AS c FROM message_variants').get()?.c) || 0,
-        user_personas: this.personas.count(),
-        character_memories: this.memories.count()
+        characters: charsCount,
+        chat_sessions: chatsCount,
+        chat_messages: Number(msgCountRow?.c) || 0,
+        message_variants: Number(varCountRow?.c) || 0,
+        user_personas: personasCount,
+        character_memories: memCount
       }
     };
   }

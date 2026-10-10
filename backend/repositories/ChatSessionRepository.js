@@ -13,17 +13,19 @@ export class ChatSessionRepository extends BaseRepository {
   /**
    * Hydrate messages and variants for a given session row
    */
-  _hydrateSession(sessionRow) {
+  async _hydrateSession(sessionRow, targetDb = null) {
     if (!sessionRow) return null;
-    const msgRows = this.db
+    const conn = targetDb || this.db;
+    const msgRows = await conn
       .prepare('SELECT * FROM chat_messages WHERE session_id = ? ORDER BY position ASC, created_at ASC')
       .all(sessionRow.id);
-    const varStmt = this.db.prepare('SELECT * FROM message_variants WHERE message_id = ? ORDER BY variant_index ASC');
+    const varStmt = conn.prepare('SELECT * FROM message_variants WHERE message_id = ? ORDER BY variant_index ASC');
 
-    const messages = msgRows.map(mRow => {
-      const vRows = varStmt.all(mRow.id);
-      return ChatMessage.fromDatabaseRow(mRow, vRows);
-    });
+    const messages = [];
+    for (const mRow of msgRows) {
+      const vRows = await varStmt.all(mRow.id);
+      messages.push(ChatMessage.fromDatabaseRow(mRow, vRows));
+    }
 
     return ChatSession.fromDatabaseRow(sessionRow, messages);
   }
@@ -32,9 +34,11 @@ export class ChatSessionRepository extends BaseRepository {
    * Find all chat sessions (optionally filtered by characterId and userId)
    * @param {string|null} characterId
    * @param {string|null} userId
-   * @returns {ChatSession[]}
+   * @param {Object} [targetDb]
+   * @returns {Promise<ChatSession[]>}
    */
-  findAll(characterId = null, userId = null) {
+  async findAll(characterId = null, userId = null, targetDb = null) {
+    const conn = targetDb || this.db;
     let query = 'SELECT * FROM chat_sessions WHERE 1=1';
     const params = [];
 
@@ -51,38 +55,47 @@ export class ChatSessionRepository extends BaseRepository {
     }
 
     query += ' ORDER BY updated_at DESC';
-    const rows = this.db.prepare(query).all(...params);
+    const rows = await conn.prepare(query).all(...params);
 
-    return rows.map(row => this._hydrateSession(row));
+    const hydratedSessions = [];
+    for (const row of rows) {
+      const s = await this._hydrateSession(row, conn);
+      if (s) hydratedSessions.push(s);
+    }
+
+    return hydratedSessions;
   }
 
   /**
    * Find a single chat session by ID
    * @param {string} sessionId
    * @param {string|null} userId
-   * @returns {ChatSession|null}
+   * @param {Object} [targetDb]
+   * @returns {Promise<ChatSession|null>}
    */
-  findById(sessionId, userId = null) {
+  async findById(sessionId, userId = null, targetDb = null) {
     if (!sessionId) return null;
+    const conn = targetDb || this.db;
     const query = userId
       ? 'SELECT * FROM chat_sessions WHERE id = ? AND (user_id = ? OR user_id IS NULL)'
       : 'SELECT * FROM chat_sessions WHERE id = ?';
     const row = userId
-      ? this.db.prepare(query).get(sessionId, userId)
-      : this.db.prepare(query).get(sessionId);
-    return this._hydrateSession(row);
+      ? await conn.prepare(query).get(sessionId, userId)
+      : await conn.prepare(query).get(sessionId);
+    return await this._hydrateSession(row, conn);
   }
 
   /**
    * Save a single ChatSession and its composed ChatMessages and MessageVariants in an ACID transaction
    * @param {ChatSession|Object} sessionObj
-   * @returns {ChatSession}
+   * @param {Object} [targetDb]
+   * @returns {Promise<ChatSession>}
    */
-  save(sessionObj) {
+  async save(sessionObj, targetDb = null) {
     const session = sessionObj instanceof ChatSession ? sessionObj : new ChatSession(sessionObj);
 
-    this.runInTransaction((db) => {
-      db.prepare(`
+    const persistInConn = async (db) => {
+      await db.prepare(`
         INSERT INTO chat_sessions (id, user_id, character_id, persona_id, title, provider, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
@@ -102,7 +115,7 @@ export class ChatSessionRepository extends BaseRepository {
         session.updatedAt
       );
 
-      db.prepare('DELETE FROM chat_messages WHERE session_id = ?').run(session.id);
+      await db.prepare('DELETE FROM chat_messages WHERE session_id = ?').run(session.id);
 
       const insertMsgStmt = db.prepare(`
         INSERT INTO chat_messages (
@@ -114,8 +127,9 @@ export class ChatSessionRepository extends BaseRepository {
         VALUES (?, ?, ?, ?, ?)
       `);
 
-      session.messages.forEach((msg, posIdx) => {
-        insertMsgStmt.run(
+      for (let posIdx = 0; posIdx < session.messages.length; posIdx++) {
+        const msg = session.messages[posIdx];
+        await insertMsgStmt.run(
           msg.id,
           session.id,
           msg.role,
@@ -127,36 +141,50 @@ export class ChatSessionRepository extends BaseRepository {
           msg.createdAt
         );
 
-        msg.variants.forEach((v, varIdx) => {
-          insertVarStmt.run(
-            v.id || `${msg.id}_v${varIdx + 1}`,
-            msg.id,
-            varIdx,
-            v.text,
-            v.createdAt
-          );
-        });
+        if (Array.isArray(msg.variants)) {
+          for (let varIdx = 0; varIdx < msg.variants.length; varIdx++) {
+            const v = msg.variants[varIdx];
+            await insertVarStmt.run(
+              v.id || `${msg.id}_v${varIdx + 1}`,
+              msg.id,
+              varIdx,
+              v.text,
+              v.createdAt
+            );
+          }
+        }
+      }
+    };
+
+    if (targetDb) {
+      await persistInConn(targetDb);
+    } else {
+      await this.runInTransaction(async (txDb) => {
+        await persistInConn(txDb);
       });
-    });
+    }
 
     return session;
   }
 
   /**
    * Bulk synchronize chat sessions
+   * @param {ChatSession[]} sessions
    */
-  saveAll(sessions) {
-    this.runInTransaction((db) => {
+  async saveAll(sessions) {
+    return await this.runInTransaction(async (db) => {
       const keepIds = sessions.map(s => s.id);
       if (keepIds.length === 0) {
-        db.prepare('DELETE FROM chat_sessions').run();
+        await db.prepare('DELETE FROM chat_sessions').run();
         return;
       }
       const placeholders = keepIds.map(() => '?').join(',');
-      db.prepare(`DELETE FROM chat_sessions WHERE id NOT IN (${placeholders})`).run(...keepIds);
+      await db.prepare(`DELETE FROM chat_sessions WHERE id NOT IN (${placeholders})`).run(...keepIds);
       for (const s of sessions) {
-        this.save(s);
+        await this.save(s, db);
       }
     });
   }
 }
+
+export const chatSessionRepository = new ChatSessionRepository();

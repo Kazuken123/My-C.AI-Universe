@@ -2,29 +2,37 @@
 
 /**
  * Database Initialization & Inspection Utility
- * Creates/verifies `backend/db/universe.sqlite` from `schema.sql` & `seed.sql` and prints table stats.
+ * Creates/verifies database (Turso or local SQLite) and prints table stats.
  */
 import { DatabaseConnection } from '../backend/db/database.js';
 import { characterRepository, chatSessionRepository, personaRepository, memoryRepository } from '../backend/repositories/index.js';
 
-const dbConn = DatabaseConnection.getInstance();
-const db = dbConn.connect();
+async function main() {
+  const dbConn = DatabaseConnection.getInstance();
+  dbConn.connect();
+  await dbConn.ensureReady();
 
-console.log('==============================================================');
-console.log('🗄️  My C.AI Universe — Relational SQL Database Initialized');
-console.log('==============================================================');
-console.log(`📂 Database File : ${dbConn.dbPath}`);
-console.log(`👥 Characters    : ${characterRepository.count()} rows`);
-console.log(`🎭 User Personas : ${personaRepository.count()} rows`);
-console.log(`💬 Chat Sessions : ${chatSessionRepository.count()} rows`);
-console.log(`🧠 Memories      : ${memoryRepository.count()} rows`);
-console.log('--------------------------------------------------------------');
+  console.log('==============================================================');
+  console.log('🗄️  My C.AI Universe — Relational SQL Database Initialized');
+  console.log('==============================================================');
+  console.log(`🌐 Database Engine: ${dbConn.engineName}`);
+  console.log(`👥 Characters    : ${await characterRepository.count()} rows`);
+  console.log(`🎭 User Personas : ${await personaRepository.count()} rows`);
+  console.log(`💬 Chat Sessions : ${await chatSessionRepository.count()} rows`);
+  console.log(`🧠 Memories      : ${await memoryRepository.count()} rows`);
+  console.log('--------------------------------------------------------------');
 
-const chars = characterRepository.findAllFiltered({ sort: 'popular' });
-console.log('🌟 Seeded Characters in SQL:');
-for (const c of chars) {
-  console.log(`  - [${c.id}] ${c.name} (${c.tagline}) | 💬 ${c.interactions} | ❤️ ${c.likes}`);
+  const chars = await characterRepository.findAllFiltered({ sort: 'popular' });
+  console.log('🌟 Seeded Characters in SQL:');
+  for (const c of chars) {
+    console.log(`  - [${c.id}] ${c.name} (${c.tagline}) | 💬 ${c.interactions} | ❤️ ${c.likes}`);
+  }
+  console.log('==============================================================');
+
+  dbConn.close();
 }
-console.log('==============================================================');
 
-dbConn.close();
+main().catch(err => {
+  console.error('Initialization error:', err);
+  process.exit(1);
+});

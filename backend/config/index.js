@@ -23,7 +23,9 @@ export const config = {
   MEMORY_SERVICE_URL: process.env.MEMORY_SERVICE_URL || 'http://localhost:5001',
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '254873060516-vtieqsbihjcle1lqgpqfp3u5lpgocf7g.apps.googleusercontent.com',
 
-  // Database file paths (relative to project root for compatibility, plus absolute paths)
+  // Database & Persistence
+  TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL || '',
+  TURSO_AUTH_TOKEN: process.env.TURSO_AUTH_TOKEN || '',
   DB_PATH: './backend/db/characters.json',
   CHARACTERS_DB_PATH: path.join(DB_DIR, 'characters.json'),
   CHATS_DB_PATH: path.join(DB_DIR, 'chats.json'),

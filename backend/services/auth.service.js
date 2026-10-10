@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
-import path from 'node:path';
+import path from 'path';
 import { User } from '../models/User.js';
 import { UserPersona } from '../models/UserPersona.js';
 import { userRepository, personaRepository } from '../repositories/index.js';
@@ -112,22 +112,22 @@ export class AuthService {
   /**
    * Register a new user, create a clean starter persona, and return session token
    * @param {Object} param0
-   * @returns {{ user: Object, token: string }}
+   * @returns {Promise<{ user: Object, token: string }>}
    */
-  register({ username, email, password, displayName, avatar = '👤' }) {
+  async register({ username, email, password, displayName, avatar = '👤' }) {
     if (!username || !password) {
       throw new ValidationError('Username and password are required');
     }
 
     const cleanUsername = String(username).trim().toLowerCase();
-    const existing = this.userRepo.findByUsername(cleanUsername);
+    const existing = await this.userRepo.findByUsername(cleanUsername);
     if (existing) {
       throw new ConflictError(`Username "${cleanUsername}" is already taken`);
     }
 
     const cleanEmail = email ? String(email).trim().toLowerCase() : '';
     if (cleanEmail) {
-      const existingEmail = this.userRepo.findByEmail(cleanEmail);
+      const existingEmail = await this.userRepo.findByEmail(cleanEmail);
       if (existingEmail) {
         throw new ConflictError(`Email "${cleanEmail}" is already registered`);
       }
@@ -142,7 +142,7 @@ export class AuthService {
       avatar
     });
 
-    const savedUser = this.userRepo.create(user);
+    const savedUser = await this.userRepo.create(user);
 
     // Give the new user a fresh personal starter persona
     const starterPersona = new UserPersona({
@@ -152,7 +152,7 @@ export class AuthService {
       description: `Default roleplay identity for @${savedUser.username}. Customize or create more in Personas!`,
       isDefault: true
     });
-    this.personaRepo.save(starterPersona, savedUser.id);
+    await this.personaRepo.save(starterPersona, savedUser.id);
 
     const token = this.generateToken(savedUser);
     return {
@@ -164,15 +164,15 @@ export class AuthService {
   /**
    * Log in an existing user and return session token
    * @param {Object} param0
-   * @returns {{ user: Object, token: string }}
+   * @returns {Promise<{ user: Object, token: string }>}
    */
-  login({ username, password }) {
+  async login({ username, password }) {
     if (!username || !password) {
       throw new ValidationError('Username and password are required');
     }
 
     const cleanUsername = String(username).trim().toLowerCase();
-    const user = this.userRepo.findByUsername(cleanUsername);
+    const user = await this.userRepo.findByUsername(cleanUsername);
     if (!user || !user.verifyPassword(password)) {
       throw new AuthenticationError('Invalid username or password');
     }
@@ -187,13 +187,13 @@ export class AuthService {
   /**
    * Update user profile: display name, username, and avatar
    * @param {Object} param0
-   * @returns {Object}
+   * @returns {Promise<Object>}
    */
-  updateProfile({ userId, displayName, username, avatar }) {
+  async updateProfile({ userId, displayName, username, avatar }) {
     if (!userId) {
       throw new AuthenticationError('Authentication required');
     }
-    const user = this.userRepo.findById(userId);
+    const user = await this.userRepo.findById(userId);
     if (!user) {
       throw new AuthenticationError('User not found');
     }
@@ -209,7 +209,7 @@ export class AuthService {
       if (!/^[a-zA-Z0-9_]{3,25}$/.test(cleanUsername)) {
         throw new ValidationError('Username must be 3 to 25 characters and contain only letters, numbers, and underscores', 'username');
       }
-      const existing = this.userRepo.findByUsername(cleanUsername);
+      const existing = await this.userRepo.findByUsername(cleanUsername);
       if (existing && existing.id !== user.id) {
         throw new ValidationError('Username is already taken by another user', 'username');
       }
@@ -218,7 +218,7 @@ export class AuthService {
     if (avatar !== undefined) {
       user.avatar = String(avatar).trim().slice(0, 100000);
     }
-    this.userRepo.update(user);
+    await this.userRepo.update(user);
     return user.toJSON();
   }
 
@@ -226,12 +226,6 @@ export class AuthService {
    * Authenticate via Social OAuth (Google / Facebook)
    * Auto-links existing accounts by email/providerId or creates a new user with default persona
    * @param {Object} param0
-   * @param {'google'|'facebook'} param0.provider
-   * @param {string} [param0.providerId]
-   * @param {string} [param0.email]
-   * @param {string} [param0.name]
-   * @param {string} [param0.avatar]
-   * @param {string} [param0.token]
    * @returns {Promise<{ user: Object, token: string, isNewUser: boolean }>}
    */
   async socialAuth({ provider, providerId, email, name, avatar, token }) {
@@ -290,27 +284,27 @@ export class AuthService {
     }
 
     // 1. Look up user by provider and providerId
-    let user = profileId ? this.userRepo.findByProvider(cleanProvider, profileId) : null;
+    let user = profileId ? await this.userRepo.findByProvider(cleanProvider, profileId) : null;
 
     // 2. Look up user by email if not found
     if (!user && profileEmail) {
-      user = this.userRepo.findByEmail(profileEmail);
+      user = await this.userRepo.findByEmail(profileEmail);
     }
 
     // 3. Look up user by username if not found
     if (!user && profileEmail) {
       const derivedUsername = profileEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
-      user = this.userRepo.findByUsername(derivedUsername);
+      user = await this.userRepo.findByUsername(derivedUsername);
     }
 
     if (user) {
       user.authProvider = cleanProvider;
       user.providerId = profileId || user.providerId;
       if (!user.email && profileEmail) user.email = profileEmail;
-      this.userRepo.update(user);
+      await this.userRepo.update(user);
 
       // Ensure user has an active persona configured
-      const personas = this.personaRepo.findAll ? this.personaRepo.findAll(user.id) : [];
+      const personas = await this.personaRepo.findAll(user.id);
       if (!personas || personas.length === 0) {
         try {
           const defaultPersona = new UserPersona({
@@ -320,7 +314,7 @@ export class AuthService {
             description: `Default roleplay identity for @${user.username}. Customize or create more in Personas!`,
             isDefault: true
           });
-          this.personaRepo.save(defaultPersona, user.id);
+          await this.personaRepo.save(defaultPersona, user.id);
         } catch {
           // ignore
         }
@@ -348,7 +342,7 @@ export class AuthService {
 
     let finalUsername = baseUsername.toLowerCase();
     let suffix = 1;
-    while (this.userRepo.findByUsername(finalUsername)) {
+    while (await this.userRepo.findByUsername(finalUsername)) {
       finalUsername = `${baseUsername}_${suffix++}`.toLowerCase();
     }
 
@@ -363,7 +357,7 @@ export class AuthService {
       providerId: profileId || null
     });
 
-    const savedUser = this.userRepo.create(newUser);
+    const savedUser = await this.userRepo.create(newUser);
 
     const starterPersona = new UserPersona({
       userId: savedUser.id,
@@ -372,7 +366,7 @@ export class AuthService {
       description: `Default roleplay identity for @${savedUser.username}. Customize or create more in Personas!`,
       isDefault: true
     });
-    this.personaRepo.save(starterPersona, savedUser.id);
+    await this.personaRepo.save(starterPersona, savedUser.id);
 
     const sessionToken = this.generateToken(savedUser);
     return {
@@ -385,8 +379,6 @@ export class AuthService {
   /**
    * Generate 6-digit OTP and send Password Reset Email
    * @param {Object} param0
-   * @param {string} param0.email
-   * @param {string} [param0.baseUrl]
    * @returns {Promise<Object>}
    */
   async requestPasswordReset({ email, baseUrl }) {
@@ -395,10 +387,10 @@ export class AuthService {
     }
 
     const cleanEmail = String(email).trim().toLowerCase();
-    let user = this.userRepo.findByEmail(cleanEmail);
+    let user = await this.userRepo.findByEmail(cleanEmail);
 
     if (!user) {
-      user = this.userRepo.findByUsername(cleanEmail);
+      user = await this.userRepo.findByUsername(cleanEmail);
     }
 
     if (!user) {
@@ -416,7 +408,7 @@ export class AuthService {
     const id = `reset_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
     const db = getDatabase();
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO password_resets (id, email, code, expires_at, used, created_at)
       VALUES (?, ?, ?, ?, 0, ?)
     `).run(id, targetEmail, code, expiresAt, new Date().toISOString());
@@ -438,11 +430,9 @@ export class AuthService {
   /**
    * Verify whether an OTP code is valid and unexpired
    * @param {Object} param0
-   * @param {string} param0.email
-   * @param {string} param0.code
-   * @returns {{ valid: boolean }}
+   * @returns {Promise<{ valid: boolean }>}
    */
-  verifyResetCode({ email, code }) {
+  async verifyResetCode({ email, code }) {
     if (!email || !code) {
       throw new ValidationError('Email and verification code are required');
     }
@@ -451,7 +441,7 @@ export class AuthService {
     const cleanCode = String(code).trim();
 
     const db = getDatabase();
-    const row = db.prepare(`
+    const row = await db.prepare(`
       SELECT * FROM password_resets
       WHERE email = ? COLLATE NOCASE AND code = ? AND used = 0
       ORDER BY created_at DESC LIMIT 1
@@ -471,29 +461,26 @@ export class AuthService {
   /**
    * Set a new password using a verified OTP code
    * @param {Object} param0
-   * @param {string} param0.email
-   * @param {string} param0.code
-   * @param {string} param0.newPassword
-   * @returns {{ success: boolean, message: string }}
+   * @returns {Promise<{ success: boolean, message: string }>}
    */
-  resetPassword({ email, code, newPassword }) {
-    this.verifyResetCode({ email, code });
+  async resetPassword({ email, code, newPassword }) {
+    await this.verifyResetCode({ email, code });
 
     if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 6) {
       throw new ValidationError('New password must contain at least 6 characters', 'newPassword');
     }
 
     const cleanEmail = String(email).trim().toLowerCase();
-    const user = this.userRepo.findByEmail(cleanEmail) || this.userRepo.findByUsername(cleanEmail);
+    const user = (await this.userRepo.findByEmail(cleanEmail)) || (await this.userRepo.findByUsername(cleanEmail));
     if (!user) {
       throw new NotFoundError('User account not found');
     }
 
     const newHash = User.hashPassword(newPassword);
-    this.userRepo.updatePassword(user.id, newHash);
+    await this.userRepo.updatePassword(user.id, newHash);
 
     const db = getDatabase();
-    db.prepare(`
+    await db.prepare(`
       UPDATE password_resets SET used = 1
       WHERE email = ? COLLATE NOCASE AND code = ?
     `).run(cleanEmail, String(code).trim());
@@ -509,24 +496,32 @@ export class AuthService {
    * @param {string} dataUrl
    * @returns {{ url: string, filename: string, size: number }}
    */
-  saveUploadedAvatar(dataUrl) {
-    if (!dataUrl || typeof dataUrl !== 'string') {
-      throw new ValidationError('Image payload is required', 'image');
+  saveBase64Avatar(dataUrl) {
+    if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
+      throw new ValidationError('Invalid image payload; expected data:image/ base64 URL');
     }
-    const match = dataUrl.match(/^data:image\/(png|jpeg|jpg|webp|gif);base64,(.+)$/i);
-    if (!match) {
-      throw new ValidationError('Invalid image format. Supported formats: PNG, JPEG, WEBP, GIF', 'image');
+
+    const matches = dataUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      throw new ValidationError('Invalid data URL image format');
     }
-    const ext = match[1].toLowerCase() === 'jpeg' ? 'jpg' : match[1].toLowerCase();
-    const base64Data = match[2];
+
+    let ext = matches[1].toLowerCase();
+    if (ext === 'jpeg') ext = 'jpg';
+    if (ext === 'svg+xml') ext = 'svg';
+
+    const base64Data = matches[2];
     const buffer = Buffer.from(base64Data, 'base64');
-    if (buffer.length > 10 * 1024 * 1024) {
-      throw new ValidationError('Image size exceeds maximum limit of 10MB', 'image');
+
+    if (buffer.length > 5 * 1024 * 1024) {
+      throw new ValidationError('Uploaded image size exceeds 5MB limit');
     }
-    const avatarsDir = path.join(process.cwd(), 'frontend', 'assets', 'avatars');
+
+    const avatarsDir = path.resolve('frontend', 'assets', 'avatars');
     if (!fs.existsSync(avatarsDir)) {
       fs.mkdirSync(avatarsDir, { recursive: true });
     }
+
     const filename = `avatar_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.${ext}`;
     const filePath = path.join(avatarsDir, filename);
     fs.writeFileSync(filePath, buffer);
@@ -538,14 +533,21 @@ export class AuthService {
   }
 
   /**
+   * Save uploaded avatar (alias for test and client compatibility)
+   */
+  saveUploadedAvatar(image) {
+    return this.saveBase64Avatar(image);
+  }
+
+  /**
    * Retrieve active user entity from a Bearer token
    * @param {string} token
-   * @returns {User|null}
+   * @returns {Promise<User|null>}
    */
-  getUserFromToken(token) {
+  async getUserFromToken(token) {
     try {
       const payload = this.verifyToken(token);
-      return this.userRepo.findById(payload.sub);
+      return await this.userRepo.findById(payload.sub);
     } catch {
       return null;
     }

@@ -18,13 +18,13 @@ export class PersonaController extends BaseController {
     this.deletePersona = this.deletePersona.bind(this);
   }
 
-  getPersonas(req, res) {
+  async getPersonas(req, res) {
     try {
       const userId = req.user ? req.user.id : null;
-      let personas = this.repository.findAll(userId);
+      let personas = await this.repository.findAll(userId);
       // If user is guest and has no personas, fall back to global seeded personas
       if (personas.length === 0 && !userId) {
-        personas = this.repository.findAll(null);
+        personas = await this.repository.findAll(null);
       }
       return this.sendJson(res, personas.map(p => p.toJSON()));
     } catch (error) {
@@ -32,11 +32,11 @@ export class PersonaController extends BaseController {
     }
   }
 
-  createPersona(req, res) {
+  async createPersona(req, res) {
     try {
       const userId = req.user ? req.user.id : null;
       const { name, avatar, description, isDefault } = req.body;
-      const currentPersonas = this.repository.findAll(userId);
+      const currentPersonas = await this.repository.findAll(userId);
       const persona = new UserPersona({
         userId,
         name,
@@ -44,17 +44,17 @@ export class PersonaController extends BaseController {
         description,
         isDefault: Boolean(isDefault) || currentPersonas.length === 0
       });
-      this.repository.save(persona, userId);
+      await this.repository.save(persona, userId);
       return this.sendJson(res, persona.toJSON(), 201);
     } catch (error) {
       return this.handleError(res, error, 'Failed to create persona');
     }
   }
 
-  updatePersona(req, res) {
+  async updatePersona(req, res) {
     try {
       const userId = req.user ? req.user.id : null;
-      const persona = this.repository.findById(req.params.id, userId);
+      const persona = await this.repository.findById(req.params.id, userId);
       if (!persona) {
         throw new NotFoundError('Persona not found');
       }
@@ -66,32 +66,32 @@ export class PersonaController extends BaseController {
       if (isDefault) persona.activate();
       else persona.touch();
 
-      this.repository.save(persona, userId);
+      await this.repository.save(persona, userId);
       return this.sendJson(res, persona.toJSON());
     } catch (error) {
       return this.handleError(res, error, 'Failed to update persona');
     }
   }
 
-  deletePersona(req, res) {
+  async deletePersona(req, res) {
     try {
       const userId = req.user ? req.user.id : null;
-      const personas = this.repository.findAll(userId);
+      const personas = await this.repository.findAll(userId);
       if (personas.length <= 1) {
         throw new ValidationError('Cannot delete the last remaining persona');
       }
-      const target = this.repository.findById(req.params.id);
+      const target = await this.repository.findById(req.params.id);
       if (!target) {
         throw new NotFoundError('Persona not found');
       }
 
-      this.repository.deleteById(req.params.id);
+      await this.repository.deleteById(req.params.id);
 
       if (target.isDefault) {
-        const remaining = this.repository.findAll();
+        const remaining = await this.repository.findAll();
         if (remaining.length > 0) {
           remaining[0].activate();
-          this.repository.save(remaining[0]);
+          await this.repository.save(remaining[0]);
         }
       }
 

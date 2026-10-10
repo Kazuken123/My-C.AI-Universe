@@ -50,30 +50,30 @@ export class AuthController extends BaseController {
     }
   }
 
-  verifyResetCode(req, res) {
+  async verifyResetCode(req, res) {
     try {
       const { email, code } = req.body || {};
-      const result = this.service.verifyResetCode({ email, code });
+      const result = await this.service.verifyResetCode({ email, code });
       return this.sendJson(res, result, 200);
     } catch (error) {
       return this.handleError(res, error, 'Verification code validation failed');
     }
   }
 
-  resetPassword(req, res) {
+  async resetPassword(req, res) {
     try {
       const { email, code, newPassword } = req.body || {};
-      const result = this.service.resetPassword({ email, code, newPassword });
+      const result = await this.service.resetPassword({ email, code, newPassword });
       return this.sendJson(res, result, 200);
     } catch (error) {
       return this.handleError(res, error, 'Password reset failed');
     }
   }
 
-  updateProfile(req, res) {
+  async updateProfile(req, res) {
     try {
       const { displayName, username, avatar } = req.body || {};
-      const result = this.service.updateProfile({
+      const result = await this.service.updateProfile({
         userId: req.user.id,
         displayName,
         username,
@@ -85,20 +85,20 @@ export class AuthController extends BaseController {
     }
   }
 
-  register(req, res) {
+  async register(req, res) {
     try {
       const { username, email, password, displayName, avatar } = req.body || {};
-      const result = this.service.register({ username, email, password, displayName, avatar });
+      const result = await this.service.register({ username, email, password, displayName, avatar });
       return this.sendJson(res, result, 201);
     } catch (error) {
       return this.handleError(res, error, 'Registration failed');
     }
   }
 
-  login(req, res) {
+  async login(req, res) {
     try {
       const { username, password } = req.body || {};
-      const result = this.service.login({ username, password });
+      const result = await this.service.login({ username, password });
       return this.sendJson(res, result, 200);
     } catch (error) {
       return this.handleError(res, error, 'Sign in failed');
@@ -118,8 +118,8 @@ export class AuthController extends BaseController {
 
   uploadAvatar(req, res) {
     try {
-      const { image } = req.body || {};
-      const result = this.service.saveUploadedAvatar(image);
+      const { image, dataUrl } = req.body || {};
+      const result = this.service.saveUploadedAvatar(image || dataUrl);
       return this.sendJson(res, result, 200);
     } catch (error) {
       return this.handleError(res, error, 'Failed to upload avatar image');
@@ -132,3 +132,16 @@ export class AuthController extends BaseController {
 }
 
 export const authController = new AuthController();
+
+export const {
+  register,
+  login,
+  me,
+  updateProfile,
+  socialAuth,
+  forgotPassword,
+  verifyResetCode,
+  resetPassword,
+  uploadAvatar,
+  logout
+} = authController;

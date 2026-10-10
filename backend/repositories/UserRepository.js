@@ -13,18 +13,20 @@ export class UserRepository extends BaseRepository {
   /**
    * Create a new user in SQL database
    * @param {User|Object} userObj
-   * @returns {User}
+   * @param {Object} [targetDb]
+   * @returns {Promise<User>}
    */
-  create(userObj) {
+  async create(userObj, targetDb = null) {
+    const conn = targetDb || this.db;
     const user = userObj instanceof User ? userObj : new User(userObj);
     user.validate();
 
-    const stmt = this.db.prepare(`
+    const stmt = conn.prepare(`
       INSERT INTO users (id, username, email, password_hash, display_name, avatar, auth_provider, provider_id, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
-    stmt.run(
+    await stmt.run(
       user.id,
       user.username,
       user.email || null,
@@ -43,12 +45,14 @@ export class UserRepository extends BaseRepository {
   /**
    * Find user by unique username (case-insensitive)
    * @param {string} username
-   * @returns {User|null}
+   * @param {Object} [targetDb]
+   * @returns {Promise<User|null>}
    */
-  findByUsername(username) {
+  async findByUsername(username, targetDb = null) {
     if (!username) return null;
+    const conn = targetDb || this.db;
     const clean = String(username).trim().toLowerCase();
-    const row = this.db
+    const row = await conn
       .prepare('SELECT * FROM users WHERE username = ? COLLATE NOCASE LIMIT 1')
       .get(clean);
     return User.fromDatabaseRow(row);
@@ -57,12 +61,14 @@ export class UserRepository extends BaseRepository {
   /**
    * Find user by email (case-insensitive)
    * @param {string} email
-   * @returns {User|null}
+   * @param {Object} [targetDb]
+   * @returns {Promise<User|null>}
    */
-  findByEmail(email) {
+  async findByEmail(email, targetDb = null) {
     if (!email) return null;
+    const conn = targetDb || this.db;
     const clean = String(email).trim().toLowerCase();
-    const row = this.db
+    const row = await conn
       .prepare('SELECT * FROM users WHERE email = ? COLLATE NOCASE LIMIT 1')
       .get(clean);
     return User.fromDatabaseRow(row);
@@ -72,11 +78,13 @@ export class UserRepository extends BaseRepository {
    * Find user by social provider and provider user ID
    * @param {string} provider
    * @param {string} providerId
-   * @returns {User|null}
+   * @param {Object} [targetDb]
+   * @returns {Promise<User|null>}
    */
-  findByProvider(provider, providerId) {
+  async findByProvider(provider, providerId, targetDb = null) {
     if (!provider || !providerId) return null;
-    const row = this.db
+    const conn = targetDb || this.db;
+    const row = await conn
       .prepare('SELECT * FROM users WHERE auth_provider = ? AND provider_id = ? LIMIT 1')
       .get(String(provider).toLowerCase(), String(providerId));
     return User.fromDatabaseRow(row);
@@ -85,23 +93,27 @@ export class UserRepository extends BaseRepository {
   /**
    * Find user by ID
    * @param {string} id
-   * @returns {User|null}
+   * @param {Object} [targetDb]
+   * @returns {Promise<User|null>}
    */
-  findById(id) {
+  async findById(id, targetDb = null) {
     if (!id) return null;
-    const row = this.db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+    const conn = targetDb || this.db;
+    const row = await conn.prepare('SELECT * FROM users WHERE id = ?').get(id);
     return User.fromDatabaseRow(row);
   }
 
   /**
    * Update user details
    * @param {User} user
-   * @returns {User}
+   * @param {Object} [targetDb]
+   * @returns {Promise<User>}
    */
-  update(user) {
+  async update(user, targetDb = null) {
+    const conn = targetDb || this.db;
     user.validate();
     user.touch();
-    const stmt = this.db.prepare(`
+    const stmt = conn.prepare(`
       UPDATE users SET
         username = ?,
         email = ?,
@@ -113,7 +125,7 @@ export class UserRepository extends BaseRepository {
         updated_at = ?
       WHERE id = ?
     `);
-    stmt.run(
+    await stmt.run(
       user.username,
       user.email || null,
       user.displayName,
@@ -131,16 +143,18 @@ export class UserRepository extends BaseRepository {
    * Update password hash directly
    * @param {string} userId
    * @param {string} newPasswordHash
+   * @param {Object} [targetDb]
    */
-  updatePassword(userId, newPasswordHash) {
+  async updatePassword(userId, newPasswordHash, targetDb = null) {
+    const conn = targetDb || this.db;
     const updatedAt = new Date().toISOString();
-    const stmt = this.db.prepare(`
+    const stmt = conn.prepare(`
       UPDATE users SET
         password_hash = ?,
         updated_at = ?
       WHERE id = ?
     `);
-    stmt.run(newPasswordHash, updatedAt, userId);
+    await stmt.run(newPasswordHash, updatedAt, userId);
   }
 }
 

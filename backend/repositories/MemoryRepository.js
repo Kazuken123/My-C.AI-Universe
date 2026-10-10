@@ -10,26 +10,29 @@ export class MemoryRepository extends BaseRepository {
     super('character_memories');
   }
 
-  findAll(characterId = null) {
+  async findAll(characterId = null, targetDb = null) {
+    const conn = targetDb || this.db;
     const rows = characterId
-      ? this.db
+      ? await conn
           .prepare('SELECT * FROM character_memories WHERE character_id = ? ORDER BY created_at ASC')
           .all(characterId)
-      : this.db.prepare('SELECT * FROM character_memories ORDER BY created_at ASC').all();
+      : await conn.prepare('SELECT * FROM character_memories ORDER BY created_at ASC').all();
 
     return rows.map(r => CharacterMemory.fromDatabaseRow(r));
   }
 
-  findById(id) {
-    const row = this.db.prepare('SELECT * FROM character_memories WHERE id = ?').get(id);
+  async findById(id, targetDb = null) {
+    const conn = targetDb || this.db;
+    const row = await conn.prepare('SELECT * FROM character_memories WHERE id = ?').get(id);
     return CharacterMemory.fromDatabaseRow(row);
   }
 
-  save(memoryObj) {
+  async save(memoryObj, targetDb = null) {
+    const conn = targetDb || this.db;
     const memory = memoryObj instanceof CharacterMemory ? memoryObj : new CharacterMemory(memoryObj);
     memory.validate();
 
-    this.db.prepare(`
+    await conn.prepare(`
       INSERT INTO character_memories (id, character_id, session_id, content, source, created_at)
       VALUES (?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
@@ -47,18 +50,20 @@ export class MemoryRepository extends BaseRepository {
     return memory;
   }
 
-  saveAll(memories) {
-    this.runInTransaction((db) => {
+  async saveAll(memories) {
+    return await this.runInTransaction(async (db) => {
       const keepIds = memories.map(m => m.id);
       if (keepIds.length === 0) {
-        db.prepare('DELETE FROM character_memories').run();
+        await db.prepare('DELETE FROM character_memories').run();
         return;
       }
       const placeholders = keepIds.map(() => '?').join(',');
-      db.prepare(`DELETE FROM character_memories WHERE id NOT IN (${placeholders})`).run(...keepIds);
+      await db.prepare(`DELETE FROM character_memories WHERE id NOT IN (${placeholders})`).run(...keepIds);
       for (const m of memories) {
-        this.save(m);
+        await this.save(m, db);
       }
     });
   }
 }
+
+export const memoryRepository = new MemoryRepository();

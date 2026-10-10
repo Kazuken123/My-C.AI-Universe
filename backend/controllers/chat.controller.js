@@ -62,16 +62,16 @@ export class ChatController extends BaseController {
     return session;
   }
 
-  getChatSessions(req, res) {
+  async getChatSessions(req, res) {
     try {
       const { characterId } = req.query;
       const userId = req.user ? req.user.id : null;
       if (!userId) {
         return this.sendJson(res, []);
       }
-      const characters = this.charsRepo.findAll();
+      const characters = await this.charsRepo.findAll();
       const charMap = new Map(characters.map(c => [c.id, c]));
-      const sessions = this.sessionsRepo.findAll(characterId || null, userId);
+      const sessions = await this.sessionsRepo.findAll(characterId || null, userId);
 
       const enriched = sessions.map(chat => {
         const char = charMap.get(chat.characterId);
@@ -99,7 +99,7 @@ export class ChatController extends BaseController {
     }
   }
 
-  createChatSession(req, res) {
+  async createChatSession(req, res) {
     try {
       const { characterId, personaId, provider, title } = req.body;
       const userId = req.user ? req.user.id : null;
@@ -107,14 +107,14 @@ export class ChatController extends BaseController {
         throw new ValidationError('characterId is required', 'characterId');
       }
 
-      const character = this.charsRepo.findById(characterId);
+      const character = await this.charsRepo.findById(characterId);
       if (!character) {
         throw new NotFoundError('Character not found');
       }
 
       const activePersona =
-        (personaId && this.personasRepo.findById(personaId, userId)) ||
-        this.personasRepo.findDefault(userId);
+        (personaId && (await this.personasRepo.findById(personaId, userId))) ||
+        (await this.personasRepo.findDefault(userId));
 
       const session = this.#createNewSessionEntity(
         character,
@@ -124,17 +124,17 @@ export class ChatController extends BaseController {
         userId
       );
 
-      this.sessionsRepo.save(session);
+      await this.sessionsRepo.save(session);
       return this.sendJson(res, session.toJSON(), 201);
     } catch (error) {
       return this.handleError(res, error, 'Failed to create chat session');
     }
   }
 
-  getChatSession(req, res) {
+  async getChatSession(req, res) {
     try {
       const userId = req.user ? req.user.id : null;
-      const session = this.sessionsRepo.findById(req.params.sessionId, userId);
+      const session = await this.sessionsRepo.findById(req.params.sessionId, userId);
       if (!session) {
         throw new NotFoundError('Chat session not found');
       }
@@ -144,14 +144,14 @@ export class ChatController extends BaseController {
     }
   }
 
-  deleteChatSession(req, res) {
+  async deleteChatSession(req, res) {
     try {
       const userId = req.user ? req.user.id : null;
-      const session = this.sessionsRepo.findById(req.params.sessionId, userId);
+      const session = await this.sessionsRepo.findById(req.params.sessionId, userId);
       if (!session) {
         throw new NotFoundError('Chat session not found');
       }
-      const deleted = this.sessionsRepo.deleteById(req.params.sessionId);
+      const deleted = await this.sessionsRepo.deleteById(req.params.sessionId);
       if (!deleted) {
         throw new NotFoundError('Chat session not found');
       }
@@ -161,13 +161,13 @@ export class ChatController extends BaseController {
     }
   }
 
-  updateChatMessage(req, res) {
+  async updateChatMessage(req, res) {
     try {
       const { sessionId, messageId } = req.params;
       const userId = req.user ? req.user.id : null;
       const { content, selectedVariantIndex, isPinned, rating } = req.body;
 
-      const session = this.sessionsRepo.findById(sessionId, userId);
+      const session = await this.sessionsRepo.findById(sessionId, userId);
       if (!session) {
         throw new NotFoundError('Chat session not found');
       }
@@ -194,7 +194,7 @@ export class ChatController extends BaseController {
       }
 
       session.touch();
-      this.sessionsRepo.save(session);
+      await this.sessionsRepo.save(session);
 
       return this.sendJson(res, {
         message: msg.toJSON(),
@@ -205,13 +205,13 @@ export class ChatController extends BaseController {
     }
   }
 
-  rewindChatSession(req, res) {
+  async rewindChatSession(req, res) {
     try {
       const { sessionId } = req.params;
       const userId = req.user ? req.user.id : null;
       const { messageId } = req.body;
 
-      const session = this.sessionsRepo.findById(sessionId, userId);
+      const session = await this.sessionsRepo.findById(sessionId, userId);
       if (!session) {
         throw new NotFoundError('Chat session not found');
       }
@@ -220,7 +220,7 @@ export class ChatController extends BaseController {
         throw new NotFoundError('Target message not found in session');
       }
 
-      this.sessionsRepo.save(session);
+      await this.sessionsRepo.save(session);
       return this.sendJson(res, session.toJSON());
     } catch (error) {
       return this.handleError(res, error, 'Failed to rewind chat session');
@@ -267,7 +267,7 @@ export class ChatController extends BaseController {
         throw new ValidationError(`Message too long (max ${config.MAX_MESSAGE_LENGTH} characters)`, 'message');
       }
 
-      const character = this.charsRepo.findById(charId);
+      const character = await this.charsRepo.findById(charId);
       if (!character) {
         throw new ValidationError('Character not found', 'charId');
       }
@@ -282,7 +282,7 @@ export class ChatController extends BaseController {
         const field = updateCmd.substring(0, colonIdx).trim();
         const value = updateCmd.substring(colonIdx + 1).trim();
         const feedback = character.applyFieldUpdate(field, value);
-        this.charsRepo.save(character);
+        await this.charsRepo.save(character);
         return this.sendJson(res, {
           response: feedback,
           characterUpdated: character.toJSON()
@@ -290,16 +290,16 @@ export class ChatController extends BaseController {
       }
 
       // Load or create ChatSession entity
-      let session = sessionId ? this.sessionsRepo.findById(sessionId, userId) : null;
+      let session = sessionId ? await this.sessionsRepo.findById(sessionId, userId) : null;
       if (!session) {
-        const existingForChar = this.sessionsRepo.findAll(charId, userId);
+        const existingForChar = await this.sessionsRepo.findAll(charId, userId);
         session = existingForChar[0] || null;
       }
 
       const activePersona =
-        (personaId && this.personasRepo.findById(personaId, userId)) ||
-        (session?.personaId && this.personasRepo.findById(session.personaId, userId)) ||
-        this.personasRepo.findDefault(userId);
+        (personaId && (await this.personasRepo.findById(personaId, userId))) ||
+        (session?.personaId && (await this.personasRepo.findById(session.personaId, userId))) ||
+        (await this.personasRepo.findDefault(userId));
 
       if (!session) {
         session = this.#createNewSessionEntity(
@@ -362,7 +362,7 @@ ${existingVariants.length > 0 ? `- Do NOT repeat these previous variants:\n${exi
           targetModelMsg.addVariant(reply);
         }
         session.touch();
-        this.sessionsRepo.save(session);
+        await this.sessionsRepo.save(session);
 
         return this.sendJson(res, {
           response: reply || 'AI did not respond',
@@ -395,10 +395,10 @@ Your last reply: "${anchorMsg}"`;
           role: 'model',
           content: reply
         });
-        this.sessionsRepo.save(session);
+        await this.sessionsRepo.save(session);
 
         character.incrementInteractions();
-        this.charsRepo.save(character);
+        await this.charsRepo.save(character);
 
         return this.sendJson(res, {
           response: reply || 'AI did not respond',
@@ -421,10 +421,10 @@ Your last reply: "${anchorMsg}"`;
         content: reply
       });
 
-      this.sessionsRepo.save(session);
+      await this.sessionsRepo.save(session);
 
       character.incrementInteractions();
-      this.charsRepo.save(character);
+      await this.charsRepo.save(character);
 
       if (reply) {
         this.memoryService.detectAndStoreFromTurn(message, reply, charId, session.id);

@@ -12,18 +12,23 @@ export class CharacterRepository extends BaseRepository {
 
   /**
    * Find all characters as Character model instances
-   * @returns {Character[]}
+   * @param {Object} [targetDb]
+   * @returns {Promise<Character[]>}
    */
-  findAll() {
-    const rows = this.db.prepare('SELECT * FROM characters ORDER BY created_at DESC').all();
+  async findAll(targetDb = null) {
+    const conn = targetDb || this.db;
+    const rows = await conn.prepare('SELECT * FROM characters ORDER BY created_at DESC').all();
     return rows.map(row => Character.fromDatabaseRow(row));
   }
 
   /**
    * Find characters with search, category filter, and sorting
+   * @param {Object} [options]
+   * @returns {Promise<Character[]>}
    */
-  findAllFiltered({ search = '', category = 'All', sort = 'popular' } = {}) {
-    let chars = this.findAll().filter(c => c && c.name && c.name.trim().length > 0);
+  async findAllFiltered({ search = '', category = 'All', sort = 'popular' } = {}) {
+    const allChars = await this.findAll();
+    let chars = allChars.filter(c => c && c.name && c.name.trim().length > 0);
 
     if (search && search.trim()) {
       const q = search.trim().toLowerCase();
@@ -58,23 +63,27 @@ export class CharacterRepository extends BaseRepository {
   /**
    * Find a single character by ID
    * @param {string} id
-   * @returns {Character|null}
+   * @param {Object} [targetDb]
+   * @returns {Promise<Character|null>}
    */
-  findById(id) {
-    const row = this.db.prepare('SELECT * FROM characters WHERE id = ?').get(id);
+  async findById(id, targetDb = null) {
+    const conn = targetDb || this.db;
+    const row = await conn.prepare('SELECT * FROM characters WHERE id = ?').get(id);
     return Character.fromDatabaseRow(row);
   }
 
   /**
    * Insert or update a single Character entity in SQL
    * @param {Character|Object} charObj
-   * @returns {Character}
+   * @param {Object} [targetDb]
+   * @returns {Promise<Character>}
    */
-  save(charObj) {
+  async save(charObj, targetDb = null) {
+    const conn = targetDb || this.db;
     const char = charObj instanceof Character ? charObj : new Character(charObj);
     char.validate();
 
-    const stmt = this.db.prepare(`
+    const stmt = conn.prepare(`
       INSERT INTO characters (
         id, name, tagline, avatar, greeting, personality, appearance, abilities,
         background, speaking_style, example_dialogues, initial_memory, system_prompt,
@@ -104,7 +113,7 @@ export class CharacterRepository extends BaseRepository {
         updated_at = excluded.updated_at
     `);
 
-    stmt.run(
+    await stmt.run(
       char.id,
       char.name,
       char.tagline,
@@ -134,19 +143,22 @@ export class CharacterRepository extends BaseRepository {
 
   /**
    * Bulk synchronize character collection inside a transaction
+   * @param {Character[]} chars
    */
-  saveAll(chars) {
-    this.runInTransaction((db) => {
+  async saveAll(chars) {
+    return await this.runInTransaction(async (db) => {
       const keepIds = chars.map(c => c.id);
       if (keepIds.length === 0) {
-        db.prepare('DELETE FROM characters').run();
+        await db.prepare('DELETE FROM characters').run();
         return;
       }
       const placeholders = keepIds.map(() => '?').join(',');
-      db.prepare(`DELETE FROM characters WHERE id NOT IN (${placeholders})`).run(...keepIds);
+      await db.prepare(`DELETE FROM characters WHERE id NOT IN (${placeholders})`).run(...keepIds);
       for (const c of chars) {
-        this.save(c);
+        await this.save(c, db);
       }
     });
   }
 }
+
+export const characterRepository = new CharacterRepository();

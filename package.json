@@ -8,6 +8,7 @@
     "start": "node server.js",
     "test": "node tests/api.test.js",
     "db:init": "node scripts/init-database.js",
+    "db:turso:push": "node scripts/migrate-to-turso.js",
     "setup-memory": "node scripts/setup-memory.js"
   },
   "engines": {
@@ -15,6 +16,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.34.0",
+    "@libsql/client": "^0.18.0",
     "body-parser": "^2.2.1",
     "cheerio": "^1.1.2",
     "cors": "^2.8.5",

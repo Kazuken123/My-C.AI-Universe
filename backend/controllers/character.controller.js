@@ -76,7 +76,7 @@ export class CharacterController extends BaseController {
       });
 
       character.recompilePrompt();
-      this.repository.save(character);
+      await this.repository.save(character);
 
       if (character.initial_memory) {
         await this.memoryService.addMemory(character.initial_memory, character.id, 'wiki');
@@ -88,19 +88,19 @@ export class CharacterController extends BaseController {
     }
   }
 
-  getCharacters(req, res) {
+  async getCharacters(req, res) {
     try {
       const { search, category, sort } = req.query;
-      const characters = this.repository.findAllFiltered({ search, category, sort });
+      const characters = await this.repository.findAllFiltered({ search, category, sort });
       return this.sendJson(res, characters.map(c => c.toJSON()));
     } catch (error) {
       return this.handleError(res, error, 'Failed to load characters');
     }
   }
 
-  getCharacter(req, res) {
+  async getCharacter(req, res) {
     try {
-      const character = this.repository.findById(req.params.id);
+      const character = await this.repository.findById(req.params.id);
       if (!character) {
         throw new NotFoundError('Character not found');
       }
@@ -110,9 +110,9 @@ export class CharacterController extends BaseController {
     }
   }
 
-  updateCharacter(req, res) {
+  async updateCharacter(req, res) {
     try {
-      const character = this.repository.findById(req.params.id);
+      const character = await this.repository.findById(req.params.id);
       if (!character) {
         throw new NotFoundError('Character not found');
       }
@@ -136,7 +136,7 @@ export class CharacterController extends BaseController {
 
       character.validate();
       character.recompilePrompt();
-      this.repository.save(character);
+      await this.repository.save(character);
 
       return this.sendJson(res, character.toJSON());
     } catch (error) {
@@ -144,9 +144,9 @@ export class CharacterController extends BaseController {
     }
   }
 
-  deleteCharacter(req, res) {
+  async deleteCharacter(req, res) {
     try {
-      const deleted = this.repository.deleteById(req.params.id);
+      const deleted = await this.repository.deleteById(req.params.id);
       if (!deleted) {
         throw new NotFoundError('Character not found');
       }
@@ -156,14 +156,14 @@ export class CharacterController extends BaseController {
     }
   }
 
-  toggleLikeCharacter(req, res) {
+  async toggleLikeCharacter(req, res) {
     try {
-      const character = this.repository.findById(req.params.id);
+      const character = await this.repository.findById(req.params.id);
       if (!character) {
         throw new NotFoundError('Character not found');
       }
       const result = character.toggleLike();
-      this.repository.save(character);
+      await this.repository.save(character);
       return this.sendJson(res, result);
     } catch (error) {
       return this.handleError(res, error, 'Failed to like character');

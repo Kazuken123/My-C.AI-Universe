@@ -492,13 +492,13 @@ async function runTests() {
     const testUsernames = [pilotUser, testUserA, testUserB, socialData.user.username, resetUser];
     for (const un of testUsernames) {
       if (un) {
-        db.prepare('DELETE FROM users WHERE username = ? COLLATE NOCASE').run(un);
+        await db.prepare('DELETE FROM users WHERE username = ? COLLATE NOCASE').run(un);
       }
     }
     // Clean up test personas, sessions, and password resets
-    db.prepare('DELETE FROM user_personas WHERE user_id NOT IN (SELECT id FROM users) AND user_id IS NOT NULL').run();
-    db.prepare('DELETE FROM chat_sessions WHERE user_id NOT IN (SELECT id FROM users) AND user_id IS NOT NULL').run();
-    db.prepare('DELETE FROM password_resets WHERE email LIKE ?').run('%universe.ai');
+    await db.prepare('DELETE FROM user_personas WHERE user_id NOT IN (SELECT id FROM users) AND user_id IS NOT NULL').run();
+    await db.prepare('DELETE FROM chat_sessions WHERE user_id NOT IN (SELECT id FROM users) AND user_id IS NOT NULL').run();
+    await db.prepare('DELETE FROM password_resets WHERE email LIKE ?').run('%universe.ai');
   } catch (cleanErr) {
     console.warn('Note: Test cleanup encountered notice:', cleanErr.message);
   }
