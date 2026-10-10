@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'node:fs';
 import { fileURLToPath } from 'url';
 import { config, validateEnvironment } from './backend/config/index.js';
 import apiRoutes from './backend/routes/index.js';
@@ -87,6 +88,38 @@ export class ApplicationServer {
     this.app.use('/api', apiRoutes);
 
     const frontendDir = path.join(__dirname, 'frontend');
+
+    // Dynamic Database Fallback for Media Assets (/assets/avatars/:filename)
+    // Ensures avatars persist even without committing images to Git or on ephemeral hosting
+    this.app.get('/assets/avatars/:filename', async (req, res, next) => {
+      const { filename } = req.params;
+      const localFilePath = path.join(frontendDir, 'assets', 'avatars', filename);
+      if (fs.existsSync(localFilePath)) {
+        return next(); // Served statically from disk cache
+      }
+
+      try {
+        const db = this.dbConnection.connect();
+        const asset = await db.prepare('SELECT mime_type, data_base64 FROM media_assets WHERE filename = ?').get(filename);
+        if (asset && asset.data_base64) {
+          const buffer = Buffer.from(asset.data_base64, 'base64');
+          // Self-heal disk cache if folder is writable
+          try {
+            const avatarsDir = path.join(frontendDir, 'assets', 'avatars');
+            if (!fs.existsSync(avatarsDir)) fs.mkdirSync(avatarsDir, { recursive: true });
+            fs.writeFileSync(localFilePath, buffer);
+          } catch {}
+
+          res.setHeader('Content-Type', asset.mime_type || 'image/jpeg');
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          return res.send(buffer);
+        }
+      } catch (err) {
+        console.warn('[Server] Media asset SQL fallback notice:', err.message);
+      }
+      next();
+    });
+
     this.app.use(express.static(frontendDir));
 
     this.app.get(['/', '/dashboard', '/index.html'], (_req, res) => {

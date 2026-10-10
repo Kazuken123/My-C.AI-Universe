@@ -126,6 +126,16 @@ CREATE TABLE IF NOT EXISTS character_memories (
     FOREIGN KEY (session_id) REFERENCES chat_sessions(id) ON DELETE SET NULL
 );
 
+-- 7. MEDIA_ASSET Table (Persistent cloud storage for user uploaded images: webp, png, jpg, gif, svg)
+CREATE TABLE IF NOT EXISTS media_assets (
+    id TEXT PRIMARY KEY,
+    filename TEXT UNIQUE NOT NULL,
+    mime_type TEXT NOT NULL,
+    data_base64 TEXT NOT NULL,
+    size INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+);
+
 -- Relational Indexes for Performance
 CREATE INDEX IF NOT EXISTS idx_personas_user_id ON user_personas(user_id);
 CREATE INDEX IF NOT EXISTS idx_chat_sessions_user_id ON chat_sessions(user_id);
@@ -135,3 +145,4 @@ CREATE INDEX IF NOT EXISTS idx_chat_sessions_character ON chat_sessions(characte
 CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON chat_messages(session_id, position ASC);
 CREATE INDEX IF NOT EXISTS idx_message_variants_message ON message_variants(message_id, variant_index ASC);
 CREATE INDEX IF NOT EXISTS idx_character_memories_character ON character_memories(character_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_media_assets_filename ON media_assets(filename);

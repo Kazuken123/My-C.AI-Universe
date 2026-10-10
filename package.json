@@ -10,6 +10,7 @@
     "db:init": "node scripts/init-database.js",
     "db:turso:push": "node scripts/migrate-to-turso.js",
     "db:sync:stats": "node scripts/sync-real-stats.js",
+    "db:assets:sync": "node scripts/migrate-media-assets.js",
     "setup-memory": "node scripts/setup-memory.js"
   },
   "engines": {

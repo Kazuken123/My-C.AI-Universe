@@ -92,3 +92,13 @@ CREATE TABLE IF NOT EXISTS character_memories (
     CONSTRAINT fk_memory_character FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     CONSTRAINT fk_memory_session FOREIGN KEY (session_id) REFERENCES chat_sessions(id) ON DELETE SET NULL
 );
+
+-- 7. Table: media_assets (Cloud persistence for user uploaded images: webp, png, jpg, gif, svg)
+CREATE TABLE IF NOT EXISTS media_assets (
+    id VARCHAR(64) PRIMARY KEY,
+    filename VARCHAR(255) UNIQUE NOT NULL,
+    mime_type VARCHAR(100) NOT NULL,
+    data_base64 LONGTEXT NOT NULL,
+    size INT NOT NULL DEFAULT 0,
+    created_at VARCHAR(40) NOT NULL
+);

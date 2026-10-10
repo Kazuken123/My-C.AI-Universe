@@ -116,10 +116,10 @@ export class AuthController extends BaseController {
     }
   }
 
-  uploadAvatar(req, res) {
+  async uploadAvatar(req, res) {
     try {
       const { image, dataUrl } = req.body || {};
-      const result = this.service.saveUploadedAvatar(image || dataUrl);
+      const result = await this.service.saveUploadedAvatar(image || dataUrl);
       return this.sendJson(res, result, 200);
     } catch (error) {
       return this.handleError(res, error, 'Failed to upload avatar image');

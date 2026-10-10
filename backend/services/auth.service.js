@@ -496,19 +496,37 @@ export class AuthService {
    * @param {string} dataUrl
    * @returns {{ url: string, filename: string, size: number }}
    */
-  saveBase64Avatar(dataUrl) {
+  async saveBase64Avatar(dataUrl) {
     if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
       throw new ValidationError('Invalid image payload; expected data:image/ base64 URL');
     }
 
-    const matches = dataUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+    const matches = dataUrl.match(/^data:image\/([a-zA-Z0-9.+-]+);base64,(.+)$/i);
     if (!matches || matches.length !== 3) {
       throw new ValidationError('Invalid data URL image format');
     }
 
-    let ext = matches[1].toLowerCase();
-    if (ext === 'jpeg') ext = 'jpg';
-    if (ext === 'svg+xml') ext = 'svg';
+    const sub = matches[1].toLowerCase();
+    let ext = 'jpg';
+    let mimeType = `image/${sub}`;
+    if (sub === 'jpeg' || sub === 'jpg') {
+      ext = 'jpg';
+      mimeType = 'image/jpeg';
+    } else if (sub === 'png') {
+      ext = 'png';
+      mimeType = 'image/png';
+    } else if (sub === 'webp') {
+      ext = 'webp';
+      mimeType = 'image/webp';
+    } else if (sub === 'gif') {
+      ext = 'gif';
+      mimeType = 'image/gif';
+    } else if (sub === 'svg' || sub === 'svg+xml') {
+      ext = 'svg';
+      mimeType = 'image/svg+xml';
+    } else {
+      ext = sub.replace(/[^a-z0-9]/g, '') || 'jpg';
+    }
 
     const base64Data = matches[2];
     const buffer = Buffer.from(base64Data, 'base64');
@@ -519,12 +537,37 @@ export class AuthService {
 
     const avatarsDir = path.resolve('frontend', 'assets', 'avatars');
     if (!fs.existsSync(avatarsDir)) {
-      fs.mkdirSync(avatarsDir, { recursive: true });
+      try {
+        fs.mkdirSync(avatarsDir, { recursive: true });
+      } catch {}
     }
 
     const filename = `avatar_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.${ext}`;
     const filePath = path.join(avatarsDir, filename);
-    fs.writeFileSync(filePath, buffer);
+    try {
+      fs.writeFileSync(filePath, buffer);
+    } catch (fsErr) {
+      console.warn('[AuthService] Local filesystem cache write notice:', fsErr.message);
+    }
+
+    // Persist to relational SQL database (Turso libSQL / SQLite) for cloud durability
+    try {
+      const db = getDatabase();
+      await db.prepare(`
+        INSERT OR REPLACE INTO media_assets (id, filename, mime_type, data_base64, size, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        `asset_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
+        filename,
+        mimeType,
+        base64Data,
+        buffer.length,
+        new Date().toISOString()
+      );
+    } catch (dbErr) {
+      console.warn('[AuthService] Could not persist media asset to SQL DB:', dbErr.message);
+    }
+
     return {
       url: `/assets/avatars/${filename}`,
       filename,
@@ -535,8 +578,8 @@ export class AuthService {
   /**
    * Save uploaded avatar (alias for test and client compatibility)
    */
-  saveUploadedAvatar(image) {
-    return this.saveBase64Avatar(image);
+  async saveUploadedAvatar(image) {
+    return await this.saveBase64Avatar(image);
   }
 
   /**
