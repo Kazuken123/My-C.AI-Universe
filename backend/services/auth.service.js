@@ -7,8 +7,9 @@ import { userRepository, personaRepository } from '../repositories/index.js';
 import { getDatabase } from '../db/database.js';
 import { emailService } from './email.service.js';
 import { AuthenticationError, ConflictError, ValidationError, NotFoundError } from '../ai/errors.js';
+import { config } from '../config/index.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'cai-universe-secret-jwt-key-autumn-2026';
+const JWT_SECRET = config.JWT_SECRET;
 const TOKEN_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 
 /**

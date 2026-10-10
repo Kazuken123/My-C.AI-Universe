@@ -47,6 +47,9 @@ export const config = {
   WIKI_TIMEOUT: 15000, // 15 seconds
   AI_TIMEOUT: 30000,   // 30 seconds
 
+  // Authentication & Security
+  JWT_SECRET: process.env.JWT_SECRET || 'cai-universe-secret-jwt-key-autumn-2026',
+
   // CORS
   CORS_ORIGINS: [
     'http://localhost:3000',
@@ -67,6 +70,10 @@ export function validateEnvironment() {
       warnings.push(`Missing environment variable: ${key} (required for Gemini AI)`);
     }
   });
+
+  if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+    warnings.push('JWT_SECRET environment variable is not defined in production! Set a custom JWT_SECRET to protect user session integrity.');
+  }
 
   if (warnings.length > 0) {
     console.warn('[CONFIG WARNINGS]');

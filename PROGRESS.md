@@ -19,7 +19,17 @@ This document serves as the **single source of truth** for project history, rece
 
 ## 🚀 Version History & Milestones
 
-### 🏷️ `v2.3.0` (Current) — Performance, Continuity & Reliability
+### 🏷️ `v2.3.1` (Current) — Public Open-Source Hardening & Security Audit
+- **Authentication & Secret Hardening**:
+  - Wired `JWT_SECRET` through central `config` and added strict validation in `validateEnvironment()` to warn against insecure fallbacks in production (`NODE_ENV === 'production'`).
+  - Updated `.env.example` with clear `JWT_SECRET` instructions for cloners and self-hosters.
+- **Open-Source Licensing**:
+  - Added official `LICENSE` file (MIT License, Copyright 2026 Kazuken).
+- **Git History & Deployment Audit**:
+  - Audited commit diffs and verified zero leaks of live `GEMINI_API_KEY` or `TURSO_AUTH_TOKEN`.
+  - Passing 21/21 E2E automated test suite.
+
+### 🏷️ `v2.3.0` — Performance, Continuity & Reliability
 - **Instant Message Variant Swiping (`<-` / `->`)**:
   - Converted swipe buttons from blocking network awaits to **0ms instantaneous in-place DOM updates**.
   - Implemented debounced background synchronization (`queueVariantSync`, 250ms) to update `chat_messages.selected_variant_index` in Turso without freezing the UI.
