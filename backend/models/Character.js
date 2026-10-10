@@ -37,7 +37,7 @@ export class Character extends BaseEntity {
       : ['Roleplay', 'Original'];
     this.creator = props.creator || '@community';
     this.interactions = Number(props.interactions) || 0;
-    this.likes = props.likes !== undefined ? Number(props.likes) : 1;
+    this.likes = props.likes !== undefined ? Number(props.likes) : 0;
     this.isLiked = Boolean(props.isLiked ?? props.is_liked ?? false);
 
     // Ensure greeting and systemPrompt are always compiled

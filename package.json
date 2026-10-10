@@ -9,6 +9,7 @@
     "test": "node tests/api.test.js",
     "db:init": "node scripts/init-database.js",
     "db:turso:push": "node scripts/migrate-to-turso.js",
+    "db:sync:stats": "node scripts/sync-real-stats.js",
     "setup-memory": "node scripts/setup-memory.js"
   },
   "engines": {
