@@ -124,41 +124,58 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
 
     if (heroSpotlightCard) {
       const avatarUrl = featured.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(featured.name)}`;
-      const cleanGreeting = (featured.greeting || '')
+      const tags = Array.isArray(featured.categories) ? featured.categories : (featured.categories || '').split(',').map(s => s.trim()).filter(Boolean);
+      const creator = (featured.creator && featured.creator !== '@you') ? featured.creator : '@community';
+      const cleanGreeting = (featured.greeting || featured.personality || 'Step into the scene and begin your dialogue.')
         .replace(/\*/g, '')
         .replace(/\n+/g, ' ')
-        .trim()
-        .slice(0, 160);
+        .trim();
+      const excerpt = cleanGreeting.length > 155 ? cleanGreeting.slice(0, 152) + '...' : cleanGreeting;
 
       heroSpotlightCard.innerHTML = `
-        <article class="hero-spotlight-dossier" data-spotlight-char="${escapeHtml(featured.id)}" title="Click to enter scene with ${escapeHtml(featured.name)}">
-          <div class="spotlight-top">
-            <div class="cai-avatar-wrap">
-              <img class="spotlight-avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(featured.name)}" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
-              <div class="voice-wave-visualizer active" aria-hidden="true" title="Voice & Motion Engine Ready">
-                <span class="voice-wave-bar"></span>
-                <span class="voice-wave-bar"></span>
-                <span class="voice-wave-bar"></span>
-                <span class="voice-wave-bar"></span>
-              </div>
+        <article class="hero-spotlight-dossier" data-spotlight-char="${escapeHtml(featured.id)}" role="button" tabindex="0" title="Click to enter scene with ${escapeHtml(featured.name)}">
+          <div class="dossier-header-strip">
+            <div class="dossier-avatar-wrap">
+              <img class="dossier-avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(featured.name)}" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
+              <span class="dossier-live-dot" title="Ready for scene"></span>
             </div>
-            <div class="spotlight-meta">
-              <div class="spotlight-kicker" style="display: flex; align-items: center; gap: 8px;">
-                <span>FEATURED DOSSIER // 01</span>
-                <span class="soul-id-badge"><span class="soul-dot"></span>SOUL-ID</span>
+            <div class="dossier-header-meta">
+              <div class="dossier-badge-row">
+                <span class="soul-id-badge"><span class="soul-dot"></span>FEATURED CANON</span>
+                <span class="dossier-creator-badge">${escapeHtml(creator)}</span>
               </div>
-              <div class="spotlight-name">${escapeHtml(featured.name)}</div>
-              <div class="spotlight-tagline">${escapeHtml(featured.tagline || 'Canonical Roleplay Character')}</div>
+              <div class="dossier-name">${escapeHtml(featured.name)}</div>
+              <div class="dossier-tagline">${escapeHtml(featured.tagline || 'Canonical Roleplay Character')}</div>
             </div>
           </div>
-          <div class="spotlight-excerpt">
-            "${escapeHtml(cleanGreeting || 'Step into the scene and begin your dialogue.')}"
+
+          <div class="dossier-bio">
+            <span class="dossier-quote-mark">“</span>${escapeHtml(excerpt)}
           </div>
-          <div class="spotlight-footer">
-            <span><i class="ph-light ph-chats"></i> ${formatCount(featured.interactions || 0)} turns</span>
-            <span><i class="ph-light ph-heart"></i> ${formatCount(featured.likes || 0)} likes</span>
-            <span class="cinema-meta-tag"><i class="ph-light ph-film-strip"></i> 35mm f/1.4</span>
-            <span>Launch Scene <i class="ph-light ph-arrow-up-right"></i></span>
+
+          <div class="dossier-stats-grid">
+            <div class="dossier-meta-card">
+              <span class="dossier-meta-label"><i class="ph-light ph-chats-circle"></i> Chats</span>
+              <span class="dossier-meta-val">${formatCount(featured.interactions || 0)}</span>
+            </div>
+            <div class="dossier-meta-card">
+              <span class="dossier-meta-label"><i class="ph-light ph-heart"></i> Likes</span>
+              <span class="dossier-meta-val">${formatCount(featured.likes || 0)}</span>
+            </div>
+            <div class="dossier-meta-card">
+              <span class="dossier-meta-label"><i class="ph-light ph-tag"></i> Genre</span>
+              <span class="dossier-meta-val">${escapeHtml(tags[0] || 'Canon')}</span>
+            </div>
+          </div>
+
+          <div class="dossier-footer-bar">
+            <div class="dossier-tags-wrap">
+              ${tags.slice(0, 2).map(t => `<span class="dossier-pill-tag">${escapeHtml(t)}</span>`).join('')}
+            </div>
+            <div class="dossier-cta-btn">
+              <span>Enter Scene</span>
+              <i class="ph-light ph-arrow-up-right"></i>
+            </div>
           </div>
         </article>
       `;
@@ -166,6 +183,12 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
       const dossierEl = heroSpotlightCard.querySelector('[data-spotlight-char]');
       if (dossierEl) {
         dossierEl.addEventListener('click', () => openChatWithCharacter(featured.id));
+        dossierEl.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openChatWithCharacter(featured.id);
+          }
+        });
       }
     }
   }

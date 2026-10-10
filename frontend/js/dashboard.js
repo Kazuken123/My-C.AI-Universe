@@ -102,6 +102,7 @@ class DashboardApp {
     if (!this.heroSpotlightCard || !topChar) return;
     const tags = Array.isArray(topChar.categories) ? topChar.categories : (topChar.categories || '').split(',').map(s => s.trim()).filter(Boolean);
     const avatarUrl = topChar.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(topChar.name)}`;
+    const creator = (topChar.creator && topChar.creator !== '@you') ? topChar.creator : '@community';
 
     if (this.heroStartChatBtn) {
       this.heroStartChatBtn.href = `/chat.html?id=${encodeURIComponent(topChar.id)}`;
@@ -113,33 +114,57 @@ class DashboardApp {
       };
     }
 
+    // Clean scene opening quote excerpt
+    const rawGreeting = (topChar.greeting || topChar.personality || 'Scene awaits your arrival...').trim();
+    const cleanExcerpt = rawGreeting
+      .replace(/\*/g, '')
+      .replace(/\n+/g, ' ')
+      .trim();
+    const excerpt = cleanExcerpt.length > 155 ? cleanExcerpt.slice(0, 152) + '...' : cleanExcerpt;
+
     this.heroSpotlightCard.innerHTML = `
-      <div class="hero-spotlight-dossier" id="hero-spotlight-dossier-card" style="cursor: pointer;">
+      <div class="hero-spotlight-dossier" id="hero-spotlight-dossier-card" role="button" tabindex="0" title="Click to start scene with ${escapeHtml(topChar.name)}">
         <div class="dossier-header-strip">
-          <img class="dossier-avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(topChar.name)}" />
+          <div class="dossier-avatar-wrap">
+            <img class="dossier-avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(topChar.name)}" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
+            <span class="dossier-live-dot" title="Ready for scene"></span>
+          </div>
           <div class="dossier-header-meta">
-            <span class="soul-id-badge"><span class="soul-dot"></span>FEATURED CANON</span>
+            <div class="dossier-badge-row">
+              <span class="soul-id-badge"><span class="soul-dot"></span>FEATURED CANON</span>
+              <span class="dossier-creator-badge">${escapeHtml(creator)}</span>
+            </div>
             <div class="dossier-name">${escapeHtml(topChar.name)}</div>
             <div class="dossier-tagline">${escapeHtml(topChar.tagline || 'AI Roleplay Model')}</div>
           </div>
         </div>
 
         <div class="dossier-bio">
-          "${escapeHtml((topChar.greeting || topChar.personality || 'Scene awaits...').replace(/\*/g, '').slice(0, 140))}..."
+          <span class="dossier-quote-mark">“</span>${escapeHtml(excerpt)}
         </div>
 
         <div class="dossier-stats-grid">
           <div class="dossier-meta-card">
-            <span class="dossier-meta-label">Interactions</span>
+            <span class="dossier-meta-label"><i class="ph-light ph-chats-circle"></i> Chats</span>
             <span class="dossier-meta-val">${formatCount(topChar.interactions || 0)}</span>
           </div>
           <div class="dossier-meta-card">
-            <span class="dossier-meta-label">Rating</span>
-            <span class="dossier-meta-val">${formatCount(topChar.likes || 0)} Likes</span>
+            <span class="dossier-meta-label"><i class="ph-light ph-heart"></i> Likes</span>
+            <span class="dossier-meta-val">${formatCount(topChar.likes || 0)}</span>
           </div>
           <div class="dossier-meta-card">
-            <span class="dossier-meta-label">Primary Tag</span>
+            <span class="dossier-meta-label"><i class="ph-light ph-tag"></i> Genre</span>
             <span class="dossier-meta-val">${escapeHtml(tags[0] || 'Canon')}</span>
+          </div>
+        </div>
+
+        <div class="dossier-footer-bar">
+          <div class="dossier-tags-wrap">
+            ${tags.slice(0, 2).map(t => `<span class="dossier-pill-tag">${escapeHtml(t)}</span>`).join('')}
+          </div>
+          <div class="dossier-cta-btn">
+            <span>Enter Scene</span>
+            <i class="ph-light ph-arrow-up-right"></i>
           </div>
         </div>
       </div>
@@ -147,12 +172,19 @@ class DashboardApp {
 
     const dossierCard = this.heroSpotlightCard.querySelector('#hero-spotlight-dossier-card');
     if (dossierCard) {
-      dossierCard.addEventListener('click', () => {
+      const enterScene = () => {
         if (!api.getToken()) {
           window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(`/chat.html?id=${topChar.id}`)}`;
           return;
         }
         window.location.href = `/chat.html?id=${encodeURIComponent(topChar.id)}`;
+      };
+      dossierCard.addEventListener('click', enterScene);
+      dossierCard.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          enterScene();
+        }
       });
     }
   }
