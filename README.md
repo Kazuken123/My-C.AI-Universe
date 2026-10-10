@@ -1,6 +1,8 @@
-# 🌟 My C.AI Universe (v2.1 — OOP + Relational SQL Edition)
+# 🌟 My C.AI Universe (v2.3 — Cloud SQL & Production Edition)
 
-A full-stack **Character.AI (`c.ai`)** roleplay platform built with an **Object-Oriented Programming (OOP)** architecture and a **6-table Relational SQL Database (`SQLite` / `MySQL` compatible)**, powered by Google Gemini & local Ollama.
+A full-stack **Character.AI (`c.ai`)** roleplay platform built with an **Object-Oriented Programming (OOP)** architecture and a **6-table Relational SQL Database (`Turso Cloud` / `libSQL`)**, powered by Google Gemini.
+
+> 📈 **Living Progress & Architecture Log:** Check [PROGRESS.md](PROGRESS.md) for version history, recent bug fixes, Turso database patterns, and active roadmap.
 
 ---
 
