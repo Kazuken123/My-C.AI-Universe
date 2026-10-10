@@ -11,7 +11,10 @@ env/
 .env.local
 .env.*.local
 
-# SQLite WAL / SHM runtime files
+# SQLite runtime & database files (Production DB is Turso Cloud)
+*.sqlite
+*.sqlite3
+*.db
 *.sqlite-shm
 *.sqlite-wal
 
@@ -33,7 +36,7 @@ memory-service/test_memory.py
 .agents/
 graphify-out/
 
-# Dynamic user uploaded avatars (persisted in Turso Cloud media_assets table)
-frontend/assets/avatars/avatar_*
-frontend/assets/avatars/son-goku.*
+# Avatar media files (Persisted directly in Turso Cloud media_assets table)
+frontend/assets/avatars/*
+!frontend/assets/avatars/.gitkeep
 
