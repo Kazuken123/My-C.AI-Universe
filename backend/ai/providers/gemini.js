@@ -20,71 +20,104 @@ export class GeminiProvider extends BaseAIProvider {
   }
 
   get modelName() {
-    return process.env.GEMINI_MODEL || config.GEMINI_MODEL || 'gemini-2.5-flash';
+    return process.env.GEMINI_MODEL || config.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+  }
+
+  get fallbackModelName() {
+    return process.env.GEMINI_FALLBACK_MODEL || config.GEMINI_FALLBACK_MODEL || 'gemini-3.1-flash-lite';
+  }
+
+  #getModelsToTry() {
+    const list = [this.modelName];
+    if (this.fallbackModelName && this.fallbackModelName !== this.modelName) {
+      list.push(this.fallbackModelName);
+    }
+    return list;
   }
 
   /**
    * Polymorphic implementation of generateReply using Google Gemini
    */
   async generateReply(character, userMsg, memory = null, options = {}) {
-    try {
-      const ai = this.#getClient();
-      const systemPrompt = this.buildSystemPrompt(character, options);
-      const contents = [];
+    const ai = this.#getClient();
+    const systemPrompt = this.buildSystemPrompt(character, options);
+    const contents = [];
 
-      contents.push({
-        role: 'user',
-        parts: [{ text: systemPrompt }]
-      });
+    contents.push({
+      role: 'user',
+      parts: [{ text: systemPrompt }]
+    });
 
-      contents.push({
-        role: 'model',
-        parts: [{
-          text: `*${character.name} nods in acknowledgment, stepping fully into character.*\n\n${character.name}: "Understood. I am ${character.name} and will respond naturally in character."`
-        }]
-      });
+    contents.push({
+      role: 'model',
+      parts: [{
+        text: `*${character.name} nods in acknowledgment, stepping fully into character.*\n\n${character.name}: "Understood. I am ${character.name} and will respond naturally in character."`
+      }]
+    });
 
-      if (Array.isArray(memory) && memory.length > 0) {
-        for (const msg of memory) {
-          if (!msg || !msg.content || !msg.content.trim()) continue;
-          contents.push({
-            role: msg.role === 'user' ? 'user' : 'model',
-            parts: [{ text: msg.content }]
-          });
-        }
+    if (Array.isArray(memory) && memory.length > 0) {
+      for (const msg of memory) {
+        if (!msg || !msg.content || !msg.content.trim()) continue;
+        contents.push({
+          role: msg.role === 'user' ? 'user' : 'model',
+          parts: [{ text: msg.content }]
+        });
       }
-
-      contents.push({
-        role: 'user',
-        parts: [{ text: userMsg }]
-      });
-
-      const response = await ai.models.generateContent({
-        model: this.modelName,
-        contents
-      });
-
-      const text = response.text?.trim();
-      if (!text) {
-        throw new AIError('Empty response from Gemini', 503);
-      }
-
-      return text;
-    } catch (error) {
-      console.error('[GEMINI PROVIDER ERROR]', error.message);
-
-      if (error.message?.includes('quota') || error.message?.includes('rate limit') || error.status === 429) {
-        throw new AIError('Gemini quota exceeded', 429, error);
-      }
-      if (error.message?.includes('API_KEY') || error.status === 401) {
-        throw new AIError('Invalid Gemini API key', 401, error);
-      }
-      if (error.status === 403) {
-        throw new AIError('Gemini access forbidden', 403, error);
-      }
-
-      throw new AIError(error.message || 'Gemini service temporarily unavailable', 503, error);
     }
+
+    contents.push({
+      role: 'user',
+      parts: [{ text: userMsg }]
+    });
+
+    const modelsToTry = this.#getModelsToTry();
+    let lastError = null;
+
+    for (let i = 0; i < modelsToTry.length; i++) {
+      const currentModel = modelsToTry[i];
+      try {
+        const response = await ai.models.generateContent({
+          model: currentModel,
+          contents
+        });
+
+        const text = response.text?.trim();
+        if (!text) {
+          throw new AIError('Empty response from Gemini', 503);
+        }
+
+        return text;
+      } catch (error) {
+        lastError = error;
+        console.error(`[GEMINI PROVIDER ERROR] Model '${currentModel}':`, error.message);
+
+        const isRateLimitOrQuota =
+          error.message?.includes('quota') ||
+          error.message?.includes('rate limit') ||
+          error.message?.includes('RESOURCE_EXHAUSTED') ||
+          error.status === 429;
+
+        if (isRateLimitOrQuota && i < modelsToTry.length - 1) {
+          const nextModel = modelsToTry[i + 1];
+          console.warn(`[GEMINI PROVIDER] Rate limit/quota reached on ${currentModel}. Falling back to ${nextModel}...`);
+          continue;
+        }
+
+        break;
+      }
+    }
+
+    if (lastError.message?.includes('quota') || lastError.message?.includes('rate limit') || lastError.message?.includes('RESOURCE_EXHAUSTED') || lastError.status === 429) {
+      throw new AIError('Gemini quota exceeded', 429, lastError);
+    }
+    if (lastError.message?.includes('API_KEY') || lastError.status === 401) {
+      throw new AIError('Invalid Gemini API key', 401, lastError);
+    }
+    if (lastError.status === 403) {
+      throw new AIError('Gemini access forbidden', 403, lastError);
+    }
+
+    throw new AIError(lastError.message || 'Gemini service temporarily unavailable', 503, lastError);
   }
 
   /**
@@ -111,16 +144,43 @@ Return STRICT JSON with the following keys:
   "categories": ["Roleplay", "Original"]
 }`;
 
-    const response = await ai.models.generateContent({
-      model: this.modelName,
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json'
-      }
-    });
+    const modelsToTry = this.#getModelsToTry();
+    let lastError = null;
 
-    const rawText = (response.text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-    return JSON.parse(rawText);
+    for (let i = 0; i < modelsToTry.length; i++) {
+      const currentModel = modelsToTry[i];
+      try {
+        const response = await ai.models.generateContent({
+          model: currentModel,
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json'
+          }
+        });
+
+        const rawText = (response.text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+        return JSON.parse(rawText);
+      } catch (error) {
+        lastError = error;
+        console.error(`[GEMINI PROVIDER ERROR] Profile creation on '${currentModel}':`, error.message);
+
+        const isRateLimitOrQuota =
+          error.message?.includes('quota') ||
+          error.message?.includes('rate limit') ||
+          error.message?.includes('RESOURCE_EXHAUSTED') ||
+          error.status === 429;
+
+        if (isRateLimitOrQuota && i < modelsToTry.length - 1) {
+          const nextModel = modelsToTry[i + 1];
+          console.warn(`[GEMINI PROVIDER] Falling back to ${nextModel} for character creation...`);
+          continue;
+        }
+
+        throw error;
+      }
+    }
+
+    throw lastError;
   }
 }
 
