@@ -71,8 +71,14 @@ export class AIOrchestrator {
   #buildInCharacterFallback(character, userMsg, options = {}) {
     const name = character.name || 'Character';
     const userName = options.persona?.name || 'friend';
-    const cleanInput = (userMsg || '').replace(/^Relevant memories:[\s\S]*?User message:\s*/i, '').trim();
     const styleHint = character.tagline ? `(${character.tagline})` : '';
+
+    const isDirective = !userMsg || userMsg.includes('Directive') || userMsg.includes('[Scene Continuation') || userMsg.trim().startsWith('[');
+    if (isDirective) {
+      return `*${name} ${styleHint ? styleHint + ' ' : ''}stays close and observes in the quiet moment, keeping watch over ${userName}.*\n\n${name}: "I'm right here with you. Just take your time and rest, ${userName}."`;
+    }
+
+    const cleanInput = (userMsg || '').replace(/^Relevant memories:[\s\S]*?User message:\s*/i, '').trim();
     return `*${name} ${styleHint ? styleHint + ' ' : ''}pauses thoughtfully, considering what ${userName} just said.*\n\n${name}: "I hear you—'${cleanInput.slice(0, 90)}${cleanInput.length > 90 ? '...' : ''}'. Give me just a moment to gather my thoughts on that, ${userName}."`;
   }
 }

@@ -352,9 +352,14 @@ export class ChatController extends BaseController {
         const isContinuationTurn = Boolean(req.body.isContinuation) ||
           (lastModelIdx > 0 && sessionMsgs[lastModelIdx - 1].role === 'model');
 
-        const existingVariants = Array.isArray(excludeVariants) && excludeVariants.length > 0
+        const rawVariants = Array.isArray(excludeVariants) && excludeVariants.length > 0
           ? excludeVariants
           : (targetModelMsg ? targetModelMsg.variants.map(v => v.text) : (previousResponse ? [previousResponse] : []));
+
+        // Filter out fallback texts and only keep at most the last 3 clean snippets
+        const existingVariants = rawVariants
+          .filter(t => t && typeof t === 'string' && !t.includes('Directive') && !t.includes('pauses thoughtfully') && !t.includes('gather my thoughts'))
+          .slice(-3);
 
         const userName = activePersona ? activePersona.name : 'the user';
         let reply;
@@ -385,8 +390,7 @@ ${anchorMsg}
 
 Rules:
 - Write in light-novel style (*italic narration/actions*, ${character.name}: "Dialogue").
-- Do NOT repeat what happened in your previous takes:
-${existingVariants.length > 0 ? existingVariants.map(v => `  * "${v.slice(0, 140)}"`).join('\n') : '  (None)'}
+${existingVariants.length > 0 ? `- Do NOT repeat previous takes:\n${existingVariants.map(v => `  * "${v.slice(0, 100)}"`).join('\n')}` : ''}
 - Do NOT speak or act for ${userName}.`;
 
           reply = await this.orchestrator.chat(character.toJSON(), regeneratePrompt, historyBeforeContinuation, aiOptions);
