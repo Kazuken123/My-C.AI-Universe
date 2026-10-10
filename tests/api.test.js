@@ -148,6 +148,27 @@ async function runTests() {
   const updateCmdData = await assertResponse(updateCmdRes, 'In-Chat /update Command');
   console.log(`✅ 7. Verified unauthenticated /api/chat blocked with 401; in-chat /update SQL command succeeded: ${updateCmdData.response}`);
 
+  // 7b. Fast Message Variant Switching & In-Place Update (PUT /api/chats/:sessionId/messages/:messageId)
+  const greetingMsg = session.messages && session.messages[0];
+  if (greetingMsg) {
+    const updateMsgRes = await fetch(`${BASE_URL}/api/chats/${session.id}/messages/${greetingMsg.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${pilotAuth.token}`
+      },
+      body: JSON.stringify({
+        selectedVariantIndex: 0,
+        isPinned: true
+      })
+    });
+    const updateMsgData = await assertResponse(updateMsgRes, 'Fast Update Message Variant & Pin');
+    if (!updateMsgData.message || !updateMsgData.message.isPinned) {
+      throw new Error('Message pin update failed');
+    }
+    console.log(`✅ 7b. Verified fast targeted message update in SQL (isPinned: ${updateMsgData.message.isPinned}, variant: ${updateMsgData.message.selectedVariantIndex})`);
+  }
+
   // 8. Long-Term Memory CRUD (inserts into character_memories)
   const addMemRes = await fetch(`${BASE_URL}/api/memories`, {
     method: 'POST',

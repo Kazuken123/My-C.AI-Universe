@@ -115,21 +115,38 @@ export class ChatSessionRepository extends BaseRepository {
         session.updatedAt
       );
 
-      await db.prepare('DELETE FROM chat_messages WHERE session_id = ?').run(session.id);
+      // Only remove messages that are no longer part of this session (e.g. on rewind)
+      const currentMsgIds = session.messages.map(m => m.id);
+      if (currentMsgIds.length > 0) {
+        const placeholders = currentMsgIds.map(() => '?').join(',');
+        await db.prepare(`DELETE FROM chat_messages WHERE session_id = ? AND id NOT IN (${placeholders})`).run(session.id, ...currentMsgIds);
+      } else {
+        await db.prepare('DELETE FROM chat_messages WHERE session_id = ?').run(session.id);
+      }
 
-      const insertMsgStmt = db.prepare(`
+      const upsertMsgStmt = db.prepare(`
         INSERT INTO chat_messages (
           id, session_id, role, content, selected_variant_index, is_pinned, rating, position, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          role = excluded.role,
+          content = excluded.content,
+          selected_variant_index = excluded.selected_variant_index,
+          is_pinned = excluded.is_pinned,
+          rating = excluded.rating,
+          position = excluded.position
       `);
-      const insertVarStmt = db.prepare(`
+      const upsertVarStmt = db.prepare(`
         INSERT INTO message_variants (id, message_id, variant_index, text, created_at)
         VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          variant_index = excluded.variant_index,
+          text = excluded.text
       `);
 
       for (let posIdx = 0; posIdx < session.messages.length; posIdx++) {
         const msg = session.messages[posIdx];
-        await insertMsgStmt.run(
+        await upsertMsgStmt.run(
           msg.id,
           session.id,
           msg.role,
@@ -144,7 +161,7 @@ export class ChatSessionRepository extends BaseRepository {
         if (Array.isArray(msg.variants)) {
           for (let varIdx = 0; varIdx < msg.variants.length; varIdx++) {
             const v = msg.variants[varIdx];
-            await insertVarStmt.run(
+            await upsertVarStmt.run(
               v.id || `${msg.id}_v${varIdx + 1}`,
               msg.id,
               varIdx,
@@ -165,6 +182,42 @@ export class ChatSessionRepository extends BaseRepository {
     }
 
     return session;
+  }
+
+  /**
+   * Fast targeted update for a single message in a session without rewriting the entire session
+   * @param {string} sessionId
+   * @param {string} messageId
+   * @param {Object} fields
+   * @returns {Promise<boolean>}
+   */
+  async updateMessageFields(sessionId, messageId, fields = {}) {
+    const sets = [];
+    const params = [];
+
+    if (typeof fields.selectedVariantIndex === 'number') {
+      sets.push('selected_variant_index = ?');
+      params.push(fields.selectedVariantIndex);
+    }
+    if (typeof fields.content === 'string') {
+      sets.push('content = ?');
+      params.push(fields.content);
+    }
+    if (typeof fields.isPinned === 'boolean') {
+      sets.push('is_pinned = ?');
+      params.push(fields.isPinned ? 1 : 0);
+    }
+    if (typeof fields.rating === 'number') {
+      sets.push('rating = ?');
+      params.push(fields.rating);
+    }
+
+    if (sets.length === 0) return false;
+
+    params.push(messageId, sessionId);
+    await this.db.prepare(`UPDATE chat_messages SET ${sets.join(', ')} WHERE id = ? AND session_id = ?`).run(...params);
+    await this.db.prepare('UPDATE chat_sessions SET updated_at = ? WHERE id = ?').run(new Date().toISOString(), sessionId);
+    return true;
   }
 
   /**

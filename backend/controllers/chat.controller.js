@@ -177,24 +177,30 @@ export class ChatController extends BaseController {
         throw new NotFoundError('Message not found');
       }
 
+      const updateFields = {};
       if (typeof selectedVariantIndex === 'number') {
         msg.selectVariant(selectedVariantIndex);
+        updateFields.selectedVariantIndex = msg.selectedVariantIndex;
+        updateFields.content = msg.content;
       }
       if (typeof content === 'string' && content.trim()) {
         if (content.length > config.MAX_MESSAGE_LENGTH) {
           throw new ValidationError(`Message content too long (max ${config.MAX_MESSAGE_LENGTH} characters)`, 'content');
         }
         msg.updateContent(content);
+        updateFields.content = msg.content;
       }
       if (typeof isPinned === 'boolean') {
         msg.isPinned = isPinned;
+        updateFields.isPinned = isPinned;
       }
       if (typeof rating === 'number' && rating >= 0 && rating <= 4) {
         msg.rating = rating;
+        updateFields.rating = rating;
       }
 
       session.touch();
-      await this.sessionsRepo.save(session);
+      await this.sessionsRepo.updateMessageFields(sessionId, messageId, updateFields);
 
       return this.sendJson(res, {
         message: msg.toJSON(),
@@ -319,7 +325,10 @@ export class ChatController extends BaseController {
         ? clientMemory.slice(-config.MAX_MEMORY_MESSAGES)
         : session.messages
             .slice(-config.MAX_MEMORY_MESSAGES)
-            .map(m => ({ role: m.role, content: m.content }));
+            .map(m => ({
+              role: m.role,
+              content: (m.variants && m.variants[m.selectedVariantIndex]?.text) || m.content
+            }));
 
       const queryForMemory = message || lastMessage || character.name;
       const relevantMemories = await this.memoryService.retrieveRelevantMemories(queryForMemory, charId, 4);
@@ -336,19 +345,66 @@ export class ChatController extends BaseController {
         const sessionMsgs = session.messages;
         const lastModelIdx = sessionMsgs.map(m => m.role).lastIndexOf('model');
         const targetModelMsg = lastModelIdx !== -1 ? sessionMsgs[lastModelIdx] : null;
-        const precedingUserMsg = lastModelIdx > 0 && sessionMsgs[lastModelIdx - 1].role === 'user'
-          ? sessionMsgs[lastModelIdx - 1].content
-          : (message || 'Continue roleplay');
+        if (!targetModelMsg) {
+          throw new ValidationError('No character message found to regenerate', 'regenerate');
+        }
+
+        const isContinuationTurn = Boolean(req.body.isContinuation) ||
+          (lastModelIdx > 0 && sessionMsgs[lastModelIdx - 1].role === 'model');
 
         const existingVariants = Array.isArray(excludeVariants) && excludeVariants.length > 0
           ? excludeVariants
           : (targetModelMsg ? targetModelMsg.variants.map(v => v.text) : (previousResponse ? [previousResponse] : []));
 
-        const historyBeforeLastModel = lastModelIdx > 0
-          ? sessionMsgs.slice(0, lastModelIdx - 1).slice(-config.MAX_MEMORY_MESSAGES).map(m => ({ role: m.role, content: m.content }))
-          : effectiveHistory.slice(0, -1);
+        const userName = activePersona ? activePersona.name : 'the user';
+        let reply;
 
-        const regeneratePrompt = `Generate a fresh, distinct alternative reply to this user message:
+        if (isContinuationTurn) {
+          const anchorMsg = lastModelIdx > 0
+            ? ((sessionMsgs[lastModelIdx - 1].variants &&
+                sessionMsgs[lastModelIdx - 1].variants[sessionMsgs[lastModelIdx - 1].selectedVariantIndex]?.text) ||
+               sessionMsgs[lastModelIdx - 1].content)
+            : (lastMessage || '');
+
+          // Keep all previous turns including the anchor character turn right before this continuation
+          const historyBeforeContinuation = sessionMsgs
+            .slice(0, lastModelIdx)
+            .slice(-config.MAX_MEMORY_MESSAGES)
+            .map(m => ({
+              role: m.role,
+              content: (m.variants && m.variants[m.selectedVariantIndex]?.text) || m.content
+            }));
+
+          const regeneratePrompt = `[Scene Continuation - Alternative Take Directive]
+The user (${userName}) remains quiet/silent and did NOT speak or take any action. Do NOT act or speak as the user, and do NOT react as if the user just replied.
+Continue the roleplay scene naturally from your perspective as ${character.name}.
+Advance the moment forward from your previous message below with a fresh, distinct action, movement, quiet reflection, or spoken line:
+"""
+${anchorMsg}
+"""
+
+Rules:
+- Write in light-novel style (*italic narration/actions*, ${character.name}: "Dialogue").
+- Do NOT repeat what happened in your previous takes:
+${existingVariants.length > 0 ? existingVariants.map(v => `  * "${v.slice(0, 140)}"`).join('\n') : '  (None)'}
+- Do NOT speak or act for ${userName}.`;
+
+          reply = await this.orchestrator.chat(character.toJSON(), regeneratePrompt, historyBeforeContinuation, aiOptions);
+        } else {
+          const precedingUserMsg = lastModelIdx > 0 && sessionMsgs[lastModelIdx - 1].role === 'user'
+            ? ((sessionMsgs[lastModelIdx - 1].variants &&
+                sessionMsgs[lastModelIdx - 1].variants[sessionMsgs[lastModelIdx - 1].selectedVariantIndex]?.text) ||
+               sessionMsgs[lastModelIdx - 1].content)
+            : (message || 'Continue roleplay');
+
+          const historyBeforeLastModel = lastModelIdx > 0
+            ? sessionMsgs.slice(0, lastModelIdx - 1).slice(-config.MAX_MEMORY_MESSAGES).map(m => ({
+                role: m.role,
+                content: (m.variants && m.variants[m.selectedVariantIndex]?.text) || m.content
+              }))
+            : effectiveHistory.slice(0, -1);
+
+          const regeneratePrompt = `Generate a fresh, distinct alternative reply to this user message:
 "${precedingUserMsg}"
 
 Rules:
@@ -356,7 +412,8 @@ Rules:
 - Keep the light-novel formatting (*italic actions* and ${character.name}: "Dialogue")
 ${existingVariants.length > 0 ? `- Do NOT repeat these previous variants:\n${existingVariants.map(v => `  * "${v.slice(0, 140)}"`).join('\n')}` : ''}`;
 
-        const reply = await this.orchestrator.chat(character.toJSON(), regeneratePrompt, historyBeforeLastModel, aiOptions);
+          reply = await this.orchestrator.chat(character.toJSON(), regeneratePrompt, historyBeforeLastModel, aiOptions);
+        }
 
         if (targetModelMsg) {
           targetModelMsg.addVariant(reply);
@@ -374,20 +431,24 @@ ${existingVariants.length > 0 ? `- Do NOT repeat these previous variants:\n${exi
 
       // Case 2: Scene Continuation
       if (isContinue) {
+        const lastSessionMsg = session.messages.length > 0 ? session.messages[session.messages.length - 1] : null;
         const anchorMsg = lastMessage ||
-          (session.messages.length > 0 ? session.messages[session.messages.length - 1].content : '');
+          (lastSessionMsg
+            ? ((lastSessionMsg.variants && lastSessionMsg.variants[lastSessionMsg.selectedVariantIndex]?.text) || lastSessionMsg.content)
+            : '');
 
-        const continuationPrompt = continueFromAssistant
-          ? `Continue the roleplay scene naturally from your previous message below.
-Do not restart the conversation. Do not speak or act as the user. Advance the moment with a new action or line of dialogue in light-novel style.
-
-Your previous message:
+        const userName = activePersona ? activePersona.name : 'the user';
+        const continuationPrompt = `[Scene Continuation Directive]
+The user (${userName}) has NOT spoken and has taken no new action (they remain silent, resting, or observing).
+Do NOT treat this as a new response from the user. Do NOT react as if the user just spoke or replied to you.
+Continue the roleplay scene naturally from your perspective as ${character.name}.
+Advance the moment forward: describe your character's next physical movement, expression, quiet thoughts, or ongoing dialogue.
+Maintain natural continuity with what you just said or did in your previous message:
 """
 ${anchorMsg}
-"""`
-          : `Continue the conversation naturally based on your last reply without repeating yourself. Write in light-novel style as ${character.name}.
-
-Your last reply: "${anchorMsg}"`;
+"""
+Write in light-novel style with *italicized narration/actions* and dialogue formatted as ${character.name}: "Dialogue".
+Do not repeat your previous words. Do not speak or act for ${userName}.`;
 
         const reply = await this.orchestrator.chat(character.toJSON(), continuationPrompt, effectiveHistory, aiOptions);
 

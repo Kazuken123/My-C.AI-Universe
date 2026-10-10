@@ -58,6 +58,22 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
   let autoSpeakTTS = false;
   let isSending = false;
+  const pendingVariantSyncs = new Map();
+
+  function queueVariantSync(sessionId, msgId, selectedVariantIndex) {
+    if (pendingVariantSyncs.has(msgId)) {
+      clearTimeout(pendingVariantSyncs.get(msgId));
+    }
+    const timer = setTimeout(async () => {
+      pendingVariantSyncs.delete(msgId);
+      try {
+        await api.updateChatMessage(sessionId, msgId, { selectedVariantIndex });
+      } catch (err) {
+        console.warn('Background variant sync error:', err.message);
+      }
+    }, 250);
+    pendingVariantSyncs.set(msgId, timer);
+  }
 
   if (btnBackToDiscover) {
     btnBackToDiscover.addEventListener('click', () => navigateTo('discover'));
@@ -471,7 +487,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     if (!streamInner) return;
 
     streamInner.querySelectorAll('[data-swipe-dir]').forEach(btn => {
-      btn.addEventListener('click', async () => {
+      btn.addEventListener('click', () => {
         const msgId = btn.dataset.msgId;
         const dir = Number(btn.dataset.swipeDir);
         const msg = session.messages.find(m => m.id === msgId);
@@ -480,15 +496,30 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         const nextIdx = (msg.selectedVariantIndex || 0) + dir;
         if (nextIdx < 0 || nextIdx >= msg.variants.length) return;
 
-        try {
-          const updated = await api.updateChatMessage(session.id, msgId, {
-            selectedVariantIndex: nextIdx
-          });
-          appState.activeSession = updated.session;
-          renderChatStream(character, updated.session);
-        } catch (err) {
-          showToast(err.message);
+        // 1. Instant local model update
+        msg.selectedVariantIndex = nextIdx;
+        const variantText = msg.variants[nextIdx]?.text || msg.content;
+        msg.content = variantText;
+
+        // 2. Instant in-place DOM update (0ms latency, zero flicker)
+        const msgRow = streamInner.querySelector(`[data-msg-id="${msgId}"]`);
+        if (msgRow) {
+          const bubble = msgRow.querySelector(`[data-bubble-id="${msgId}"]`);
+          if (bubble) {
+            bubble.innerHTML = formatRoleplayText(variantText);
+          }
+          const badge = msgRow.querySelector('.take-switcher-badge');
+          if (badge) {
+            badge.innerHTML = `<i class="ph-light ph-film-slate"></i> Take ${nextIdx + 1}/${msg.variants.length}`;
+          }
+          const prevBtn = msgRow.querySelector('[data-swipe-dir="-1"]');
+          if (prevBtn) prevBtn.disabled = (nextIdx <= 0);
+          const nextBtn = msgRow.querySelector('[data-swipe-dir="1"]');
+          if (nextBtn) nextBtn.disabled = (nextIdx >= msg.variants.length - 1);
         }
+
+        // 3. Debounced background sync to SQL database (UI is never blocked)
+        queueVariantSync(session.id, msgId, nextIdx);
       });
     });
 
@@ -668,9 +699,14 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     if (lastModelIdx === -1) return;
 
     const targetModelMsg = messages[lastModelIdx];
-    const precedingUserMsg = lastModelIdx > 0 && messages[lastModelIdx - 1].role === 'user'
-      ? messages[lastModelIdx - 1].content
-      : 'Hello';
+    const isContinuation = lastModelIdx > 0 && messages[lastModelIdx - 1].role === 'model';
+    const precedingUserMsg = !isContinuation && lastModelIdx > 0 && messages[lastModelIdx - 1].role === 'user'
+      ? ((messages[lastModelIdx - 1].variants && messages[lastModelIdx - 1].variants[messages[lastModelIdx - 1].selectedVariantIndex]?.text) || messages[lastModelIdx - 1].content)
+      : '';
+
+    const targetAnchorMsg = isContinuation
+      ? ((messages[lastModelIdx - 1].variants && messages[lastModelIdx - 1].variants[messages[lastModelIdx - 1].selectedVariantIndex]?.text) || messages[lastModelIdx - 1].content)
+      : '';
 
     isSending = true;
     if (btnElement) {
@@ -678,13 +714,17 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     }
 
     try {
+      const activeVariantText = (targetModelMsg.variants && targetModelMsg.variants[targetModelMsg.selectedVariantIndex]?.text) || targetModelMsg.content;
       const result = await api.sendChatMessage({
         charId: character.id,
         sessionId: session.id,
         provider: aiProviderSelect?.value || 'gemini',
         message: precedingUserMsg,
         regenerate: true,
-        previousResponse: targetModelMsg.content,
+        isContinuation,
+        continueFromAssistant: isContinuation,
+        lastMessage: targetAnchorMsg,
+        previousResponse: activeVariantText,
         excludeVariants: (targetModelMsg.variants || []).map(v => v.text)
       });
 
@@ -724,6 +764,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     scrollToBottom();
 
     try {
+      const lastContent = (lastMsg.variants && lastMsg.variants[lastMsg.selectedVariantIndex]?.text) || lastMsg.content;
       const result = await api.sendChatMessage({
         charId: character.id,
         sessionId: session.id,
@@ -731,8 +772,11 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         message: '',
         continue: true,
         continueFromAssistant: true,
-        lastMessage: lastMsg.content,
-        memory: messages.slice(-20).map(m => ({ role: m.role, content: m.content }))
+        lastMessage: lastContent,
+        memory: messages.slice(-20).map(m => ({
+          role: m.role,
+          content: (m.variants && m.variants[m.selectedVariantIndex]?.text) || m.content
+        }))
       });
 
       const updatedSession = await api.getChatSession(result.sessionId || session.id);
