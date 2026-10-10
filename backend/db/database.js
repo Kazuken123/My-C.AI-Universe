@@ -197,72 +197,8 @@ export class DatabaseConnection {
         }
         console.log(`[SQL DB] Initialized schema and seeded ${rowsRes.rows.length} characters into database`);
       }
-
-      await this.#ensurePrimaryUserAndPersona();
     } catch (err) {
       console.warn('[SQL DB] Migration/seed notice:', err.message);
-    }
-  }
-
-  async #ensurePrimaryUserAndPersona() {
-    const raw = this.#rawClient;
-    if (!raw) return;
-
-    try {
-      const userRes = await raw.execute({
-        sql: 'SELECT * FROM users WHERE username = ? COLLATE NOCASE OR username = ? COLLATE NOCASE OR email = ? COLLATE NOCASE LIMIT 1',
-        args: ['kazuken', 'giuaguy1234', 'giuaguy1234@gmail.com']
-      });
-
-      const user = userRes.rows[0] || null;
-      const userId = user ? user.id : 'user_1791563262379_b6rd8';
-
-      if (!user) {
-        await raw.execute({
-          sql: `
-            INSERT INTO users (id, username, email, display_name, avatar, password_hash, auth_provider, provider_id, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `,
-          args: [
-            userId,
-            'kazuken',
-            'giuaguy1234@gmail.com',
-            'Tony',
-            '👤',
-            '36c618578acafae55d72c9464d0cd337:caf4d11f74f992e98f2592326f8ba436fff02b2cf1f8f5212eed3ba640ed783e8d37525784268b8b2b5a857e9263ae7a94d55b1e3431fccdb493366e807c8173',
-            'google',
-            'real_google_sub_999',
-            '2026-10-09T16:27:42.379Z',
-            '2026-10-09T16:29:25.213Z'
-          ]
-        });
-      }
-
-      const personaRes = await raw.execute({
-        sql: 'SELECT * FROM user_personas WHERE user_id = ? LIMIT 1',
-        args: [userId]
-      });
-
-      const persona = personaRes.rows[0] || null;
-      if (!persona) {
-        await raw.execute({
-          sql: `
-            INSERT INTO user_personas (id, name, avatar, description, is_default, created_at, updated_at, user_id)
-            VALUES (?, ?, ?, ?, 1, ?, ?, ?)
-          `,
-          args: [
-            'persona_1791563262405',
-            'Tony',
-            '🌟',
-            'feeling tired and down most of the time\nself esteem is kinda low\nmy favorite drink is sweet tea or any type of sweet drink\nim good with all foods as long as it is edible',
-            '2026-10-09T16:27:42.405Z',
-            '2026-10-09T16:27:42.405Z',
-            userId
-          ]
-        });
-      }
-    } catch (err) {
-      console.warn('[SQL DB] Primary user initialization notice:', err.message);
     }
   }
 
