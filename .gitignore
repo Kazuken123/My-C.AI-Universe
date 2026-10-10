@@ -40,4 +40,6 @@ graphify-out/
 # Avatar media files (Persisted directly in Turso Cloud media_assets table)
 frontend/assets/avatars/*
 !frontend/assets/avatars/.gitkeep
+.git_backup/
+
 
