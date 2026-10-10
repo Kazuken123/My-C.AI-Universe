@@ -2,6 +2,10 @@
 
 A full-stack **Character.AI (`c.ai`)** roleplay platform built with an **Object-Oriented Programming (OOP)** architecture and a **6-table Relational SQL Database (`Turso Cloud` / `libSQL`)**, powered by Google Gemini.
 
+> [!NOTE]
+> **Non-Affiliation & Trademark Disclaimer:**  
+> *My C.AI Universe* is an independent, educational, non-commercial open-source project created for technical portfolio and learning purposes. It is **not** affiliated with, endorsed by, sponsored by, or associated in any way with Character Technologies, Inc. or Character.AI. "Character.AI" and "c.ai" are trademarks of Character Technologies, Inc. All fictional characters, likenesses, and franchises belong to their respective copyright owners.
+
 > 📈 **Living Progress & Architecture Log:** Check [PROGRESS.md](PROGRESS.md) for version history, recent bug fixes, Turso database patterns, and active roadmap.
 
 ---
@@ -131,3 +135,9 @@ My C.AI Universe/
    ```bash
    npm test
    ```
+
+---
+
+## 📄 License
+
+This project is licensed under the **Apache License 2.0** — see the [LICENSE](LICENSE) file for full details.

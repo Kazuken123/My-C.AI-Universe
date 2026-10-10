@@ -23,8 +23,9 @@ This document serves as the **single source of truth** for project history, rece
 - **Authentication & Secret Hardening**:
   - Wired `JWT_SECRET` through central `config` and added strict validation in `validateEnvironment()` to warn against insecure fallbacks in production (`NODE_ENV === 'production'`).
   - Updated `.env.example` with clear `JWT_SECRET` instructions for cloners and self-hosters.
-- **Open-Source Licensing**:
+- **Open-Source Licensing & Compliance**:
   - Adopted official `LICENSE` file under **Apache License 2.0** (Copyright 2026 Kazuken), providing trademark reservation, explicit patent protection, and modification tracking.
+  - Added Non-Affiliation and Trademark Disclaimer in `README.md` clarifying independent, non-commercial status regarding Character Technologies, Inc.
 - **Git History & Deployment Audit**:
   - Audited commit diffs and verified zero leaks of live `GEMINI_API_KEY` or `TURSO_AUTH_TOKEN`.
   - Passing 21/21 E2E automated test suite.
