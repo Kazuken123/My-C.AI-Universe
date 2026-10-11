@@ -73,9 +73,14 @@ export class AIOrchestrator {
     const userName = options.persona?.name || 'friend';
     const styleHint = character.tagline ? `(${character.tagline})` : '';
 
-    const isDirective = !userMsg || userMsg.includes('Directive') || userMsg.includes('[Scene Continuation') || userMsg.trim().startsWith('[');
+    const isDirective = !userMsg || userMsg.includes('Directive') || userMsg.includes('Continue the scene') || userMsg.includes('[Scene Continuation') || userMsg.trim().startsWith('[');
     if (isDirective) {
-      return `*${name} ${styleHint ? styleHint + ' ' : ''}stays close and observes in the quiet moment, keeping watch over ${userName}.*\n\n${name}: "I'm right here with you. Just take your time and rest, ${userName}."`;
+      const beats = [
+        `*${name} ${styleHint ? styleHint + ' ' : ''}stays close and observes in the quiet moment, keeping watch over ${userName}.*\n\n${name}: "I'm right here with you. Just take your time and rest, ${userName}."`,
+        `*${name} ${styleHint ? styleHint + ' ' : ''}glances softly at ${userName}, letting the quiet air linger for a beat.*\n\n${name}: "No rush at all. We have plenty of time, ${userName}."`,
+        `*${name} ${styleHint ? styleHint + ' ' : ''}gently shifts position in the quiet room, keeping a warm presence beside ${userName}.*\n\n${name}: "I'm not going anywhere. Take as much time as you need."`
+      ];
+      return beats[Math.floor(Math.random() * beats.length)];
     }
 
     const cleanInput = (userMsg || '').replace(/^Relevant memories:[\s\S]*?User message:\s*/i, '').trim();

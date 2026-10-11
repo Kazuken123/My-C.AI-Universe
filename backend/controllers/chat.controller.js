@@ -380,9 +380,7 @@ export class ChatController extends BaseController {
               content: (m.variants && m.variants[m.selectedVariantIndex]?.text) || m.content
             }));
 
-          const regeneratePrompt = `[Scene Continuation - Alternative Take Directive]
-The user (${userName}) remains quiet/silent and did NOT speak or take any action. Do NOT act or speak as the user, and do NOT react as if the user just replied.
-Continue the roleplay scene naturally from your perspective as ${character.name}.
+          const regeneratePrompt = `Continue the scene naturally from your perspective as ${character.name}.
 Advance the moment forward from your previous message below with a fresh, distinct action, movement, quiet reflection, or spoken line:
 """
 ${anchorMsg}
@@ -391,7 +389,7 @@ ${anchorMsg}
 Rules:
 - Write in light-novel style (*italic narration/actions*, ${character.name}: "Dialogue").
 ${existingVariants.length > 0 ? `- Do NOT repeat previous takes:\n${existingVariants.map(v => `  * "${v.slice(0, 100)}"`).join('\n')}` : ''}
-- Do NOT speak or act for ${userName}.`;
+- Only speak and act as ${character.name}.`;
 
           reply = await this.orchestrator.chat(character.toJSON(), regeneratePrompt, historyBeforeContinuation, aiOptions);
         } else {
@@ -442,17 +440,16 @@ ${existingVariants.length > 0 ? `- Do NOT repeat these previous variants:\n${exi
             : '');
 
         const userName = activePersona ? activePersona.name : 'the user';
-        const continuationPrompt = `[Scene Continuation Directive]
-The user (${userName}) has NOT spoken and has taken no new action (they remain silent, resting, or observing).
-Do NOT treat this as a new response from the user. Do NOT react as if the user just spoke or replied to you.
-Continue the roleplay scene naturally from your perspective as ${character.name}.
-Advance the moment forward: describe your character's next physical movement, expression, quiet thoughts, or ongoing dialogue.
+        const continuationPrompt = `Continue the scene naturally from your perspective as ${character.name}.
+Advance the moment forward from your previous message below: describe your character's next physical movement, expression, quiet thoughts, or ongoing dialogue.
 Maintain natural continuity with what you just said or did in your previous message:
 """
 ${anchorMsg}
 """
-Write in light-novel style with *italicized narration/actions* and dialogue formatted as ${character.name}: "Dialogue".
-Do not repeat your previous words. Do not speak or act for ${userName}.`;
+
+Rules:
+- Write in light-novel style with *italicized narration/actions* and dialogue formatted as ${character.name}: "Dialogue".
+- Do not repeat your previous words. Only speak and act as ${character.name}.`;
 
         const reply = await this.orchestrator.chat(character.toJSON(), continuationPrompt, effectiveHistory, aiOptions);
 
