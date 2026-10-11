@@ -29,6 +29,8 @@ This document serves as the **single source of truth** for project history, rece
   - Added explicit diagnostic logging for `response.promptFeedback.blockReason` and candidate finish reasons.
 - **Dynamic In-Character Fallback Pool**:
   - Upgraded [`AIOrchestrator.#buildInCharacterFallback()`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/index.js) to pick from randomized roleplay beats, eliminating static single-line repetition even under provider outages.
+- **Character Lore & Age Alignment (Kana Arima)**:
+  - Updated Kana Arima across Turso Cloud database, compiled `system_prompt`, and [`backend/db/seed.sql`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/db/seed.sql) to explicitly establish her as a **17-year-old high school student** and B-Komachi idol center who was famously a child prodigy actress in the past, keeping canonical lore accurate while eliminating false-positive policy triggers.
 - **Verification**:
   - Tested against full conversation context in Turso Cloud. All 21 automated suite tests passing (`npm test`).
 
