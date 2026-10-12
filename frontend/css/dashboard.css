@@ -825,22 +825,27 @@
   padding-top: 12px;
   border-top: 1px solid var(--border-hairline);
   margin-top: auto;
+  gap: 8px;
 }
 
+.cai-card-stats,
 .card-stats {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   font-family: var(--font-mono);
   font-size: 0.74rem;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .stat-item {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  white-space: nowrap;
 }
 
 .like-btn {
@@ -855,6 +860,8 @@
   font-size: 0.74rem;
   font-variant-numeric: tabular-nums;
   transition: color 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .like-btn i {
@@ -879,10 +886,17 @@
   transition-duration: 0.1s;
 }
 
+.cai-card-actions,
 .card-actions {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
+}
+
+.cai-card-actions .btn-secondary,
+.card-actions .btn-secondary {
+  white-space: nowrap;
 }
 
 /* ============================================================================
@@ -1207,10 +1221,23 @@
 
 [data-theme="editorial"] .hero-display-title {
   font-family: var(--font-serif);
-  font-size: clamp(2.3rem, 3.8vw, 3.6rem);
-  font-weight: 400;
+  font-style: normal !important;
+  font-size: clamp(2.1rem, 3.4vw, 3.1rem);
+  font-weight: 500;
   letter-spacing: -0.015em;
-  line-height: 1.05;
+  line-height: 1.1;
+}
+
+[data-theme="editorial"] .topbar-heading {
+  font-family: var(--font-serif);
+  font-style: normal !important;
+  font-weight: 600;
+}
+
+[data-theme="editorial"] .dossier-name {
+  font-family: var(--font-serif);
+  font-style: normal !important;
+  font-weight: 600;
 }
 
 [data-theme="editorial"] .hero-subtext {
@@ -1300,6 +1327,7 @@
 
 [data-theme="editorial"] .cai-card-name {
   font-family: var(--font-serif);
+  font-style: normal !important;
   font-size: 1.35rem;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -1317,10 +1345,10 @@
 
 /* ----------------------------------------------------------------------------
    3. TELEMETRY (Tactical Military Avionics & Industrial Brutalism)
-   - 4-Column High-Density Tactical Matrix
-   - Mission Briefing Chassis with Hazard Diagonal Striping & Avionics Telemetry
+   - 4-Column Uniform Tactical Matrix (No uneven wrapping)
+   - Clean Tactical Header Chassis
    - Square Military Key Selector Filter Array
-   - 0px Hard Chassis Spec-Sheet Cards with Crimson Bounding Seams
+   - Two-tier Full-Width Tactical Spec-Sheet Cards (No clipped chat counts)
    ---------------------------------------------------------------------------- */
 @media (min-width: 1200px) {
   [data-theme="telemetry"] .bento-character-grid {
@@ -1328,16 +1356,10 @@
     gap: 14px;
   }
 
-  [data-theme="telemetry"] .bento-cell {
-    grid-column: span 1;
-  }
-
-  [data-theme="telemetry"] .bento-cell.bento-wide {
-    grid-column: span 2;
-  }
-
+  [data-theme="telemetry"] .bento-cell,
+  [data-theme="telemetry"] .bento-cell.bento-wide,
   [data-theme="telemetry"] .bento-cell.bento-half {
-    grid-column: span 1;
+    grid-column: span 1 !important;
   }
 }
 
@@ -1350,7 +1372,7 @@
   [data-theme="telemetry"] .bento-cell,
   [data-theme="telemetry"] .bento-cell.bento-wide,
   [data-theme="telemetry"] .bento-cell.bento-half {
-    grid-column: span 1;
+    grid-column: span 1 !important;
   }
 }
 
@@ -1360,18 +1382,6 @@
   box-shadow: 0 0 20px rgba(230, 25, 25, 0.12), inset 0 0 0 1px rgba(230, 25, 25, 0.2);
   position: relative;
   padding: 0;
-}
-
-[data-theme="telemetry"] .hero-shell::before {
-  content: '// TAC_CONSOLE_01 // SEC_LEVEL: ALPHA // SYSTEM: ACTIVE';
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 0.64rem;
-  letter-spacing: 0.12em;
-  color: #ff4d4d;
-  background: rgba(230, 25, 25, 0.14);
-  padding: 4px 12px;
-  border-bottom: 1px solid rgba(230, 25, 25, 0.35);
 }
 
 [data-theme="telemetry"] .hero-split-grid {
@@ -1459,7 +1469,7 @@
   border: none;
   background: #0c080a;
   padding: 16px 14px;
-  gap: 10px;
+  gap: 12px;
 }
 
 [data-theme="telemetry"] .cai-avatar-wrap {
@@ -1493,6 +1503,78 @@
   color: #ff6666;
   font-size: 0.62rem;
   padding: 2px 6px;
+}
+
+/* Two-tier structured card footer in Telemetry mode — guarantees zero text clipping */
+[data-theme="telemetry"] .cai-card-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+  padding-top: 10px;
+  border-top: 1px solid rgba(230, 25, 25, 0.25);
+  margin-top: auto;
+}
+
+[data-theme="telemetry"] .cai-card-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 0.68rem;
+  color: #ff6666;
+  white-space: nowrap;
+}
+
+[data-theme="telemetry"] .cai-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+[data-theme="telemetry"] .cai-card-actions .icon-btn {
+  border-radius: 0;
+  border: 1px solid rgba(230, 25, 25, 0.4);
+  background: rgba(230, 25, 25, 0.08);
+  color: #ff4d4d;
+  height: 28px;
+  width: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+[data-theme="telemetry"] .cai-card-actions .icon-btn:hover {
+  background: #e61919;
+  color: #000000;
+}
+
+[data-theme="telemetry"] .cai-card-actions .btn-secondary {
+  flex: 1;
+  border-radius: 0;
+  border: 1px solid rgba(230, 25, 25, 0.5);
+  background: rgba(230, 25, 25, 0.12);
+  color: #ff4d4d;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 5px 8px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  text-decoration: none;
+}
+
+[data-theme="telemetry"] .cai-card-actions .btn-secondary:hover {
+  background: #e61919;
+  color: #000000;
+  border-color: #ff3333;
+  box-shadow: 0 0 10px rgba(230, 25, 25, 0.5);
 }
 
 

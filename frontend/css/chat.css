@@ -405,21 +405,26 @@
   width: 36px;
   height: 36px;
   border-radius: var(--radius-md);
-  border: none;
-  background: var(--accent);
-  color: var(--text-on-accent);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-core-elevated, #161822);
+  color: var(--accent);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
+  font-size: 1.05rem;
   flex-shrink: 0;
-  transition: transform 0.2s var(--ease-spring), background-color 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s var(--ease-spring),
+              background-color 0.2s ease,
+              border-color 0.2s ease,
+              color 0.2s ease,
+              box-shadow 0.2s ease;
 }
 
 .composer-send-btn:hover {
-  background: var(--accent-hover);
-  filter: brightness(1.12);
+  background: var(--accent);
+  color: var(--text-on-accent, #ffffff);
+  border-color: var(--accent);
   box-shadow: 0 0 16px var(--accent-soft), 0 4px 12px rgba(0, 0, 0, 0.3);
   transform: translateY(-1px);
 }
@@ -427,6 +432,48 @@
 .composer-send-btn:active {
   transform: scale(0.95);
   filter: brightness(0.95);
+}
+
+/* Editorial Mode Composer Send Button: Quiet Luxury Dark Slab */
+[data-theme="editorial"] .composer-send-btn {
+  background: #181820;
+  color: #f4f4f5;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+}
+[data-theme="editorial"] .composer-send-btn:hover {
+  background: #f4f4f5;
+  color: #0b0b0f;
+  border-color: #ffffff;
+  box-shadow: none;
+}
+
+/* Telemetry Mode Composer Send Button: Tactical Military Trigger */
+[data-theme="telemetry"] .composer-send-btn {
+  background: rgba(230, 25, 25, 0.12);
+  color: #ff4d4d;
+  border: 1px solid rgba(230, 25, 25, 0.5);
+  border-radius: 0;
+}
+[data-theme="telemetry"] .composer-send-btn:hover {
+  background: #e61919;
+  color: #000000;
+  border-color: #ff3333;
+  box-shadow: 0 0 14px rgba(230, 25, 25, 0.5);
+}
+
+/* Vanguard Mode Composer Send Button: Electric Cyberpunk Trigger */
+[data-theme="vanguard"] .composer-send-btn {
+  background: rgba(6, 182, 212, 0.12);
+  color: #22d3ee;
+  border: 1px solid rgba(6, 182, 212, 0.4);
+  border-radius: 6px;
+}
+[data-theme="vanguard"] .composer-send-btn:hover {
+  background: #06b6d4;
+  color: #050811;
+  border-color: #22d3ee;
+  box-shadow: 0 0 16px rgba(6, 182, 212, 0.5);
 }
 
 .composer-hint-bar {
