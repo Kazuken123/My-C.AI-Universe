@@ -1,6 +1,6 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
-> **Current Version:** `v2.3.2`  
+> **Current Version:** `v2.4.0`  
 > **Status:** Production-Ready & Tested  
 > **Automated Test Coverage:** 21/21 E2E tests passing (`npm test`)  
 > **Primary Database:** Turso Cloud (LibSQL `@libsql/client`, AWS Tokyo `ap-northeast-1`)  
@@ -19,7 +19,28 @@ This document serves as the **single source of truth** for project history, rece
 
 ## 🚀 Version History & Milestones
 
-### 🏷️ `v2.3.2` (Current) — Unrestricted Creative Roleplay & Safety Filter Hardening
+### 🏷️ `v2.4.0` (Current) — Humanized Dialogue Pacing Engine & Cognitive Speech Architecture
+- **Humanized Dialogue Cadence & Pacing**:
+  - Implemented speech pacing mechanics in [`backend/ai/prompt/characterPrompt.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/prompt/characterPrompt.js) using punctuation as spoken notation: `...` for natural pauses/hesitations, `—` for flustered self-interruptions and cut-offs, `?!` for outrage/disbelief, and `~` for playful/arrogant drawls.
+  - Enforced aggressive sentence length burstiness to eliminate uniform AI sentence rhythm (15-20 words).
+- **Anti-AI Speech Kill-List & Behavioral Restrictions**:
+  - Hard-banned compulsory conversational wrap-up questions and moral summary statements at the end of character turns.
+  - Banned therapeutic emotional validation phrases (`"I understand your feelings..."`, `"I know what this looks like..."`).
+  - Banned standard AI cliché vocabulary: *delve, tapestry, testament, palpable, clenched, danced, pierce the silence, truth is, you have to understand, can we just talk*.
+- **Cognitive Function & Subtext Modeling (MBTI / Jungian Functions)**:
+  - Mapped character psychological archetypes to spoken syntax:
+    - **Te-Fi (Kana Arima)**: Sharp, staccato, defensive scoffs (`"Hah?!"`), self-interruptions (`"—"`), and flustered trailing off (`"..."`) guarding deep emotional vulnerability.
+    - **Ne-Ti (Satoru Gojo)**: Playful drawls (`"~"`), teasing rhetorical questions, unbothered arrogance, and zero defensiveness.
+    - **Se-Ti (Son Goku)**: Casual country boy vernacular, physical priorities (food, ki sensing), and sheepish, conflict-defusing chuckle (`"Ehehe~..."`) when guilty or caught skipping chores.
+- **Contextual Prop & Lore Grounding**:
+  - Grounded character lore references in immediate physical actions and situational excuses (e.g., Gojo holding the Sendai Kikufuku mochi souvenir bag as an excuse for being late) rather than trivia recitals.
+- **Seeded Character Roster Expansion**:
+  - Added Son Goku (`1767000000003`) to [`backend/db/seed.sql`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/db/seed.sql) with complete Se-Ti country dialect, Instant Transmission greeting, and long-term memory.
+  - Upgraded Gojo and Kana lore, speaking styles, and example dialogues with calibrated pacing.
+- **Zero Regressions**:
+  - Verified 21/21 E2E tests passing (`npm test`).
+
+### 🏷️ `v2.3.2` — Unrestricted Creative Roleplay & Safety Filter Hardening
 - **Repetitive Canned Fallback Resolution**:
   - Diagnosed root cause of infinite identical takes on redo/regeneration: scene continuation prompt directives contained phrases (`"remains quiet/silent and did NOT speak or take any action"`) that combined with physical touch/massage roleplay to trigger Gemini's unconfigurable server-level `PROHIBITED_CONTENT` moderation.
   - Replaced prompt directives in [`ChatController.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/controllers/chat.controller.js) with natural, clean narrative guidance that reliably generates in-character responses without triggering false-positive moderation flags.
