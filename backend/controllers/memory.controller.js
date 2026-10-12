@@ -18,9 +18,13 @@ export class MemoryController extends BaseController {
 
   async getMemories(req, res) {
     try {
-      const { characterId } = req.query;
+      const { characterId, sessionId } = req.query;
       const memories = await this.service.getMemories(characterId || null);
-      return this.sendJson(res, { memories, count: memories.length });
+      let storySummary = '';
+      if (sessionId) {
+        storySummary = await this.service.getSessionStorySummary(sessionId);
+      }
+      return this.sendJson(res, { memories, count: memories.length, storySummary });
     } catch (error) {
       return this.handleError(res, error, 'Failed to load memories');
     }

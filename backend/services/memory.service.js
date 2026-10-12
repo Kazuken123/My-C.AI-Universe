@@ -185,6 +185,79 @@ export class SemanticMemoryService {
       console.warn('[MEMORY SERVICE] Auto-detection warning:', error.message);
     }
   }
+
+  /**
+   * Retrieve rolling narrative story summary for a session
+   */
+  async getSessionStorySummary(sessionId) {
+    if (!sessionId) return '';
+    try {
+      const rows = await this.repository.findAll();
+      const summaryMem = rows.find(m => m.sessionId === sessionId && m.source === 'story_summary');
+      return summaryMem ? summaryMem.content : '';
+    } catch {
+      return '';
+    }
+  }
+
+  /**
+   * Automatically generate a rolling story checkpoint summarizing earlier conversation turns
+   */
+  async updateRollingStorySummary(session, character, apiKey = process.env.GEMINI_API_KEY) {
+    try {
+      if (!session || !session.messages || session.messages.length < 24) return null;
+
+      const totalMsgs = session.messages.length;
+      // Trigger update roughly every 12 messages
+      if (totalMsgs % 12 !== 0 && totalMsgs !== 24) return null;
+
+      const existingSummary = await this.getSessionStorySummary(session.id);
+      const olderMsgs = session.messages.slice(0, totalMsgs - 10);
+      if (olderMsgs.length < 8) return null;
+
+      const conversationSnippet = olderMsgs.map(m => {
+        const text = (m.variants && m.variants[m.selectedVariantIndex]?.text) || m.content;
+        const speaker = m.role === 'user' ? 'User' : character.name;
+        return `${speaker}: ${text.slice(0, 300)}`;
+      }).join('\n');
+
+      if (!apiKey) return null;
+      const { GoogleGenAI } = await import('@google/genai');
+      const ai = new GoogleGenAI({ apiKey });
+
+      const summaryPrompt = `You are a story chronicler for an ongoing roleplay narrative. Summarize the following earlier events between User and ${character.name} into a cohesive narrative recap (3-5 sentences).
+Preserve:
+1. Key places visited and battles/events that occurred
+2. Promises, confessions, shared secrets, and agreements
+3. The current dynamic and emotional bond between the characters
+
+Earlier Conversation:
+${conversationSnippet.slice(0, 15000)}
+
+${existingSummary ? `Previous Story Arc Summary:\n${existingSummary}\n` : ''}
+
+Output ONLY the distilled narrative summary text:`;
+
+      const res = await ai.models.generateContent({
+        model: 'gemini-3.5-flash-lite',
+        contents: summaryPrompt
+      });
+
+      const summaryText = (res.text || '').trim();
+      if (!summaryText) return null;
+
+      const allMemories = await this.repository.findAll();
+      const oldSummary = allMemories.find(m => m.sessionId === session.id && m.source === 'story_summary');
+      if (oldSummary) {
+        await this.repository.deleteById(oldSummary.id);
+      }
+
+      return await this.addMemory(summaryText, character.id, 'story_summary', session.id);
+    } catch (err) {
+      console.warn('[MEMORY SERVICE] Rolling summary warning:', err.message);
+      return null;
+    }
+  }
 }
 
 export const memoryService = new SemanticMemoryService();

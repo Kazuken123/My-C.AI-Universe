@@ -1,8 +1,8 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
-> **Current Version:** `v2.4.0`  
+> **Current Version:** `v2.5.0`  
 > **Status:** Production-Ready & Tested  
-> **Automated Test Coverage:** 21/21 E2E tests passing (`npm test`)  
+> **Automated Test Coverage:** 22/22 E2E tests passing (`npm test`)  
 > **Primary Database:** Turso Cloud (LibSQL `@libsql/client`, AWS Tokyo `ap-northeast-1`)  
 > **Primary AI Engine:** Google Gemini (`gemini-3.5-flash-lite`) with `BLOCK_NONE` creative roleplay configuration  
 > **Last Updated:** October 2026
@@ -19,7 +19,25 @@ This document serves as the **single source of truth** for project history, rece
 
 ## 🚀 Version History & Milestones
 
-### 🏷️ `v2.4.0` (Current) — Humanized Dialogue Pacing Engine & Cognitive Speech Architecture
+### 🏷️ `v2.5.0` (Current) — Real-Time SSE Token Streaming & Multi-Tier Story Chronicle Memory Architecture
+- **Real-Time Token Streaming via Server-Sent Events (SSE)**:
+  - Implemented `generateReplyStream()` in [`backend/ai/providers/gemini.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/providers/gemini.js) using `@google/genai` `generateContentStream()`.
+  - Added `chatStream()` generator method to [`AIOrchestrator`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/index.js) yielding real-time chunks.
+  - Added full SSE streaming support to [`POST /api/chat?stream=true`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/controllers/chat.controller.js) with graceful standard JSON fallback.
+  - Built frontend typewriter effect in [`frontend/js/chat.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/js/chat.js) and [`frontend/js/api.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/js/api.js) via `ReadableStream` & `TextDecoder`, rendering pulsing typewriter cursor `▌` and progressive roleplay text formatting.
+- **Two-Tier Extended Memory Architecture (C.AI+ Grade)**:
+  - **Tier 1 (Sliding Context Window)**: Expanded history from 20 turns to 60 turns across backend [`backend/config/index.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/config/index.js) and frontend payloads, utilizing Gemini's 1M token context window while eliminating mid-scene amnesia.
+  - **Tier 2 (Rolling Story Chronicle)**: Built `updateRollingStorySummary` in [`backend/services/memory.service.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/services/memory.service.js). Automatically summarizes prior narrative arcs beyond the sliding window every 12 turns (once past turn 24), storing immutable plot milestones under `source: 'story_summary'` in Turso Cloud.
+  - Injected `[STORYLINE CHRONICLE / PREVIOUS STORY ARCS - IMMUTABLE PLOT MEMORY]` into [`backend/ai/prompt/characterPrompt.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/prompt/characterPrompt.js) before active history turns.
+- **In-Chat Memory Inspector & Notebook UI**:
+  - Added dedicated Memory button (`#btnMemoryNotebook`) to [`frontend/chat.html`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/chat.html) toolbar for 1-click access to the character's memory dossier.
+  - Added **Active Narrative Arc** chronicle card in the drawer displaying the ongoing rolling summary.
+  - Upgraded semantic memory list to clearly distinguish canonical custom user notes from auto-detected turns, with instant addition and removal.
+- **Automated Verification**:
+  - Expanded E2E test suite in [`tests/api.test.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/tests/api.test.js) with Test 22, verifying live SSE token streaming.
+  - 22/22 tests verified passing against Turso Cloud.
+
+### 🏷️ `v2.4.0` — Humanized Dialogue Pacing Engine & Cognitive Speech Architecture
 - **Humanized Dialogue Cadence & Pacing**:
   - Implemented speech pacing mechanics in [`backend/ai/prompt/characterPrompt.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/prompt/characterPrompt.js) using punctuation as spoken notation: `...` for natural pauses/hesitations, `—` for flustered self-interruptions and cut-offs, `?!` for outrage/disbelief, and `~` for playful/arrogant drawls.
   - Enforced aggressive sentence length burstiness to eliminate uniform AI sentence rhythm (15-20 words).

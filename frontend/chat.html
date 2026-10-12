@@ -185,6 +185,10 @@
                 <i class="ph-light ph-plus"></i>
                 <span>New Thread</span>
               </button>
+              <button class="btn-secondary btn-sm" id="btnMemoryNotebook" type="button" title="Open Character Memory Notebook">
+                <i class="ph-light ph-brain"></i>
+                <span>Memory</span>
+              </button>
               <button class="btn-secondary btn-sm" id="btnToggleDrawer" type="button" title="Toggle Lore &amp; Memory Vault">
                 <i class="ph-light ph-sidebar-simple"></i>
                 <span>Dossier</span>
@@ -254,14 +258,20 @@
             <!-- Pane 2: Pinned Context & Semantic Memories -->
             <div class="drawer-pane" id="pane-memories">
               <div class="drawer-section-label">
+                <i class="ph-light ph-book-open"></i>
+                <span>Storyline Chronicle (Long-Term Arc)</span>
+              </div>
+              <div id="drawer-story-chronicle"></div>
+
+              <div class="drawer-section-label" style="margin-top: 16px;">
                 <i class="ph-light ph-push-pin"></i>
-                <span>Pinned Context</span>
+                <span>Pinned Dialogue Context</span>
               </div>
               <div id="drawer-pins-list"></div>
 
-              <div class="drawer-section-label" style="margin-top: 20px;">
+              <div class="drawer-section-label" style="margin-top: 16px;">
                 <i class="ph-light ph-database"></i>
-                <span>Semantic Vector Vault</span>
+                <span>Character Memory Notebook</span>
               </div>
               <form id="add-memory-form" class="memory-add-form">
                 <input type="text" class="form-input" id="newMemoryInput" placeholder="Store a canonical fact..." />

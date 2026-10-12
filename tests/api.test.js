@@ -506,7 +506,33 @@ async function runTests() {
 
   console.log(`✅ 21. Avatar Upload & Static Storage verified (${uploadData.url})`);
 
-  // 22. Clean up automated test users and cascaded sessions
+  // 22. Server-Sent Events (SSE) Real-Time Token Streaming
+  const streamRes = await fetch(`${BASE_URL}/api/chat?stream=true`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'text/event-stream',
+      'Authorization': `Bearer ${pilotAuth.token}`
+    },
+    body: JSON.stringify({
+      charId: '1767000000001',
+      message: 'Hello Kana, are you ready for rehearsal?'
+    })
+  });
+  if (streamRes.status !== 200) {
+    throw new Error(`SSE streaming failed with status ${streamRes.status}`);
+  }
+  const contentType = streamRes.headers.get('content-type') || '';
+  if (!contentType.includes('text/event-stream')) {
+    throw new Error(`Expected text/event-stream content-type, got: ${contentType}`);
+  }
+  const streamBody = await streamRes.text();
+  if (!streamBody.includes('data:') || !streamBody.includes('"done":true')) {
+    throw new Error(`Streaming body did not contain valid SSE format: ${streamBody.slice(0, 200)}`);
+  }
+  console.log(`✅ 22. Server-Sent Events (SSE) real-time token streaming verified (received ${streamBody.length} bytes of stream chunks)`);
+
+  // 23. Clean up automated test users and cascaded sessions
   try {
     const dbMod = await import('../backend/db/database.js');
     const db = dbMod.getDatabase();

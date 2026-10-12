@@ -34,6 +34,22 @@ export class AIOrchestrator {
     });
   }
 
+  /**
+   * Stream roleplay tokens directly in real time
+   */
+  async *chatStream(character, userMsg, memory = null, options = {}) {
+    const preferredName = (options?.provider || config.AI_PROVIDER || 'gemini').toLowerCase();
+    const primaryProvider = this.providers.get(preferredName) || geminiProvider;
+    if (typeof primaryProvider.generateReplyStream === 'function') {
+      for await (const token of primaryProvider.generateReplyStream(character, userMsg, memory, options)) {
+        yield token;
+      }
+    } else {
+      const fullReply = await this.chat(character, userMsg, memory, options);
+      yield fullReply;
+    }
+  }
+
   async #processQueue() {
     if (this.isProcessing || this.requestQueue.length === 0) return;
     this.isProcessing = true;

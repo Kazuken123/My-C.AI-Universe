@@ -43,7 +43,7 @@ export const config = {
 
   // Limits
   MAX_MESSAGE_LENGTH: 4000,
-  MAX_MEMORY_MESSAGES: 20,
+  MAX_MEMORY_MESSAGES: 60,
   WIKI_TIMEOUT: 15000, // 15 seconds
   AI_TIMEOUT: 30000,   // 30 seconds
 

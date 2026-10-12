@@ -332,12 +332,14 @@ export class ChatController extends BaseController {
 
       const queryForMemory = message || lastMessage || character.name;
       const relevantMemories = await this.memoryService.retrieveRelevantMemories(queryForMemory, charId, 4);
+      const storySummary = session ? await this.memoryService.getSessionStorySummary(session.id) : '';
 
       const aiOptions = {
         provider: provider || session.provider || config.AI_PROVIDER,
         persona: activePersona ? activePersona.toJSON() : null,
         pinnedMessages,
-        memories: relevantMemories
+        memories: relevantMemories,
+        storySummary
       };
 
       // Case 1: Regenerate Swipe Variant
@@ -471,6 +473,59 @@ Rules:
       }
 
       // Case 3: Standard User Chat Turn
+      const isStreaming = req.query.stream === 'true' || req.headers.accept === 'text/event-stream';
+
+      if (isStreaming) {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.flushHeaders?.();
+
+        const userMsgObj = session.addMessage({
+          role: 'user',
+          content: message.trim()
+        });
+
+        let fullReply = '';
+        try {
+          for await (const chunk of this.orchestrator.chatStream(character.toJSON(), message.trim(), effectiveHistory, aiOptions)) {
+            fullReply += chunk;
+            res.write(`data: ${JSON.stringify({ token: chunk })}\n\n`);
+          }
+        } catch (streamErr) {
+          console.warn('[CHAT CONTROLLER] Streaming fallback:', streamErr.message);
+          if (!fullReply) {
+            fullReply = await this.orchestrator.chat(character.toJSON(), message.trim(), effectiveHistory, aiOptions);
+            res.write(`data: ${JSON.stringify({ token: fullReply })}\n\n`);
+          }
+        }
+
+        const aiMsgObj = session.addMessage({
+          role: 'model',
+          content: fullReply || '...'
+        });
+
+        await this.sessionsRepo.save(session);
+        character.incrementInteractions();
+        await this.charsRepo.save(character);
+
+        if (fullReply) {
+          this.memoryService.detectAndStoreFromTurn(message, fullReply, charId, session.id);
+        }
+        if (session.messages.length >= 24) {
+          this.memoryService.updateRollingStorySummary(session, character).catch(() => {});
+        }
+
+        res.write(`data: ${JSON.stringify({
+          done: true,
+          sessionId: session.id,
+          userMessage: userMsgObj.toJSON(),
+          aiMessage: aiMsgObj.toJSON(),
+          response: fullReply
+        })}\n\n`);
+        return res.end();
+      }
+
       const userMsgObj = session.addMessage({
         role: 'user',
         content: message.trim()
@@ -490,6 +545,9 @@ Rules:
 
       if (reply) {
         this.memoryService.detectAndStoreFromTurn(message, reply, charId, session.id);
+      }
+      if (session.messages.length >= 24) {
+        this.memoryService.updateRollingStorySummary(session, character).catch(() => {});
       }
 
       return this.sendJson(res, {

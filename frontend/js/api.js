@@ -220,6 +220,56 @@ export class ApiClient {
     });
   }
 
+  async sendChatMessageStream(payload, onToken, onDone) {
+    const token = this.getToken();
+    const headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'text/event-stream',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+
+    const response = await fetch(`${this.baseUrl}/api/chat?stream=true`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data?.error?.message || `HTTP ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split('\n\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+        const jsonStr = trimmed.slice(5).trim();
+        try {
+          const parsed = JSON.parse(jsonStr);
+          if (parsed.token && typeof onToken === 'function') {
+            onToken(parsed.token);
+          }
+          if (parsed.done && typeof onDone === 'function') {
+            onDone(parsed);
+          }
+        } catch {
+          // ignore chunk parse error
+        }
+      }
+    }
+  }
+
   updateChatMessage(sessionId, messageId, payload) {
     return this.request(`/api/chats/${encodeURIComponent(sessionId)}/messages/${encodeURIComponent(messageId)}`, {
       method: 'PUT',
@@ -264,9 +314,12 @@ export class ApiClient {
   }
 
   // Long-Term Memories
-  getMemories(characterId) {
-    const qs = characterId ? `?characterId=${encodeURIComponent(characterId)}` : '';
-    return this.request(`/api/memories${qs}`);
+  getMemories(characterId, sessionId = null) {
+    const qs = new URLSearchParams();
+    if (characterId) qs.set('characterId', characterId);
+    if (sessionId) qs.set('sessionId', sessionId);
+    const query = qs.toString();
+    return this.request(`/api/memories${query ? `?${query}` : ''}`);
   }
 
   addMemory(characterId, content) {

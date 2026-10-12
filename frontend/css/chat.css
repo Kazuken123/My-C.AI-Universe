@@ -802,4 +802,53 @@ kbd {
   }
 }
 
+/* ============================================================================
+   REAL-TIME STREAMING TYPEWRITER EFFECT & STORY CHRONICLE
+   ============================================================================ */
+.streaming-bubble {
+  position: relative;
+}
+
+.stream-cursor {
+  display: inline-block;
+  margin-left: 2px;
+  color: var(--accent);
+  font-weight: 700;
+  animation: blinkCursor 0.8s infinite;
+  vertical-align: baseline;
+}
+
+@keyframes blinkCursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.story-chronicle-box {
+  background: var(--bg-surface-elevated, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-glow, rgba(167, 139, 250, 0.25));
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.story-chronicle-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.story-chronicle-text {
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
 

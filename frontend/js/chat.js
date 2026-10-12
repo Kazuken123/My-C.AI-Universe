@@ -36,6 +36,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
   const updateCmdBtn = document.getElementById('updateCmdBtn');
   const newSessionBtn = document.getElementById('btnNewChatSession');
   const toggleDrawerBtn = document.getElementById('btnToggleDrawer');
+  const memoryNotebookBtn = document.getElementById('btnMemoryNotebook');
   const ttsAutoBtn = document.getElementById('btnToggleTTS');
   const aiProviderSelect = document.getElementById('aiProvider');
   const chatPersonaSelect = document.getElementById('chatPersonaSelect');
@@ -156,6 +157,14 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       } else {
         rightDrawer.classList.toggle('collapsed');
       }
+    });
+  }
+
+  if (memoryNotebookBtn && rightDrawer) {
+    memoryNotebookBtn.addEventListener('click', () => {
+      openRightDrawer();
+      const memTab = document.querySelector('.drawer-tab[data-pane="pane-memories"]');
+      if (memTab) memTab.click();
     });
   }
 
@@ -633,57 +642,144 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     const session = appState.activeSession;
     if (!character || !session) return;
 
+    if (text.startsWith('/update ')) {
+      isSending = true;
+      chatInput.value = '';
+      chatInput.style.height = 'auto';
+      try {
+        const result = await api.sendChatMessage({
+          charId: character.id,
+          sessionId: session.id,
+          message: text
+        });
+        if (result.characterUpdated) {
+          appState.activeCharacter = result.characterUpdated;
+          renderChatHeader(result.characterUpdated, session);
+          showToast(result.response.replace(/✅|\*\*/g, ''));
+        }
+        await refreshRightDrawer(appState.activeCharacter, session);
+      } catch (err) {
+        showToast(err.message);
+      } finally {
+        isSending = false;
+      }
+      return;
+    }
+
     isSending = true;
     chatInput.value = '';
     chatInput.style.height = 'auto';
 
-    const tempIndicator = document.createElement('div');
-    tempIndicator.className = 'msg-row model';
-    tempIndicator.innerHTML = `
-      <img class="msg-avatar" src="${escapeHtml(character.avatar || '')}" alt="" />
+    const userPersona = appState.personas?.find(p => p.id === session.personaId) || appState.activePersona || { name: 'Traveler' };
+    const userMonogram = getInitials(userPersona.name, 'TR');
+    const avatarUrl = character.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(character.name)}`;
+
+    // 1. Instantly display user bubble
+    const userRow = document.createElement('div');
+    userRow.className = 'msg-row user';
+    userRow.innerHTML = `
+      <div class="msg-avatar">${escapeHtml(userMonogram)}</div>
       <div class="msg-body">
-        <div class="msg-sender-line"><span class="msg-sender-name">${escapeHtml(character.name)}</span><span class="char-badge">CHARACTER</span></div>
-        <div class="msg-bubble"><em>*${escapeHtml(character.name)} is composing response...*</em></div>
+        <div class="msg-sender-line"><span class="msg-sender-name">${escapeHtml(userPersona.name)}</span></div>
+        <div class="msg-bubble">${formatRoleplayText(text)}</div>
       </div>
     `;
-    streamInner.appendChild(tempIndicator);
+    streamInner.appendChild(userRow);
+
+    // 2. Display model bubble with typewriter cursor
+    const modelRow = document.createElement('div');
+    modelRow.className = 'msg-row model';
+    modelRow.innerHTML = `
+      <img class="msg-avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(character.name)}" />
+      <div class="msg-body">
+        <div class="msg-sender-line">
+          <span class="msg-sender-name">${escapeHtml(character.name)}</span>
+          <span class="soul-id-badge" style="font-size: 0.6rem; padding: 1px 6px;"><span class="soul-dot"></span>SOUL-ID</span>
+        </div>
+        <div class="msg-bubble streaming-bubble">
+          <span class="stream-text"></span><span class="stream-cursor">▌</span>
+        </div>
+      </div>
+    `;
+    streamInner.appendChild(modelRow);
     scrollToBottom();
+
+    const streamTextEl = modelRow.querySelector('.stream-text');
+    let accumulatedText = '';
+    let isFinished = false;
 
     try {
       const provider = aiProviderSelect?.value || 'gemini';
       const personaId = chatPersonaSelect?.value || appState.activePersona?.id;
-      const historyPayload = (session.messages || []).slice(-20).map(m => ({
+      const historyPayload = (session.messages || []).slice(-60).map(m => ({
         role: m.role,
-        content: m.content
+        content: (m.variants && m.variants[m.selectedVariantIndex]?.text) || m.content
       }));
 
-      const result = await api.sendChatMessage({
-        charId: character.id,
-        sessionId: session.id,
-        personaId,
-        provider,
-        message: text,
-        memory: historyPayload
-      });
+      await api.sendChatMessageStream(
+        {
+          charId: character.id,
+          sessionId: session.id,
+          personaId,
+          provider,
+          message: text,
+          memory: historyPayload
+        },
+        // onToken: update typewriter effect in real-time
+        (token) => {
+          accumulatedText += token;
+          if (streamTextEl) {
+            streamTextEl.innerHTML = formatRoleplayText(accumulatedText);
+          }
+          scrollToBottom();
+        },
+        // onDone: stream finished and recorded in DB
+        async (donePayload) => {
+          isFinished = true;
+          const updatedSession = await api.getChatSession(donePayload.sessionId || session.id);
+          appState.activeSession = updatedSession;
+          renderChatStream(appState.activeCharacter, updatedSession);
+          await refreshRightDrawer(appState.activeCharacter, updatedSession);
+          await loadAllSessions();
 
-      if (result.characterUpdated) {
-        appState.activeCharacter = result.characterUpdated;
-        renderChatHeader(result.characterUpdated, session);
-        showToast(result.response.replace(/✅|\*\*/g, ''));
+          if (autoSpeakTTS && donePayload.response) {
+            speakText(donePayload.response);
+          }
+        }
+      );
+
+      if (!isFinished) {
+        const updatedSession = await api.getChatSession(session.id);
+        appState.activeSession = updatedSession;
+        renderChatStream(appState.activeCharacter, updatedSession);
+        await refreshRightDrawer(appState.activeCharacter, updatedSession);
+        await loadAllSessions();
       }
+    } catch (streamError) {
+      console.warn('[CHAT] Stream fallback:', streamError.message);
+      try {
+        const fallbackRes = await api.sendChatMessage({
+          charId: character.id,
+          sessionId: session.id,
+          personaId: chatPersonaSelect?.value || appState.activePersona?.id,
+          provider: aiProviderSelect?.value || 'gemini',
+          message: text,
+          memory: (session.messages || []).slice(-60).map(m => ({ role: m.role, content: m.content }))
+        });
 
-      const updatedSession = await api.getChatSession(result.sessionId || session.id);
-      appState.activeSession = updatedSession;
-      renderChatStream(appState.activeCharacter, updatedSession);
-      await refreshRightDrawer(appState.activeCharacter, updatedSession);
-      await loadAllSessions();
+        const updatedSession = await api.getChatSession(fallbackRes.sessionId || session.id);
+        appState.activeSession = updatedSession;
+        renderChatStream(appState.activeCharacter, updatedSession);
+        await refreshRightDrawer(appState.activeCharacter, updatedSession);
+        await loadAllSessions();
 
-      if (autoSpeakTTS && result.response && !result.characterUpdated) {
-        speakText(result.response);
+        if (autoSpeakTTS && fallbackRes.response) {
+          speakText(fallbackRes.response);
+        }
+      } catch (fallbackErr) {
+        modelRow.remove();
+        showToast('Chat error: ' + fallbackErr.message);
       }
-    } catch (error) {
-      tempIndicator.remove();
-      showToast('Chat error: ' + error.message);
     } finally {
       isSending = false;
     }
@@ -773,7 +869,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         continue: true,
         continueFromAssistant: true,
         lastMessage: lastContent,
-        memory: messages.slice(-20).map(m => ({
+        memory: messages.slice(-60).map(m => ({
           role: m.role,
           content: (m.variants && m.variants[m.selectedVariantIndex]?.text) || m.content
         }))
@@ -836,6 +932,24 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       }
     }
 
+    const drawerStoryChronicle = document.getElementById('drawer-story-chronicle');
+    if (drawerStoryChronicle && character) {
+      try {
+        const memData = await api.getMemories(character.id, session?.id);
+        const storySummary = memData.storySummary || '';
+        drawerStoryChronicle.innerHTML = storySummary
+          ? `<div class="story-chronicle-box">
+               <div class="story-chronicle-title"><i class="ph-fill ph-book-bookmark"></i> Active Narrative Arc</div>
+               <div class="story-chronicle-text">${escapeHtml(storySummary)}</div>
+             </div>`
+          : `<p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px; font-style: italic;">
+               Chronicle active. Narrative milestones are summarized automatically every 12 turns once the scene passes turn 24.
+             </p>`;
+      } catch (err) {
+        console.warn('Story summary load error:', err);
+      }
+    }
+
     if (drawerPinsList && session) {
       const pins = (session.messages || []).filter(m => m.isPinned);
       drawerPinsList.innerHTML = pins.length === 0
@@ -849,10 +963,10 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
     if (drawerMemoriesList) {
       try {
-        const memData = await api.getMemories(character.id);
-        const memories = memData.memories || [];
+        const memData = await api.getMemories(character.id, session?.id);
+        const memories = (memData.memories || []).filter(m => m.source !== 'story_summary');
         drawerMemoriesList.innerHTML = memories.length === 0
-          ? `<p style="font-size: 0.78rem; color: var(--text-muted);">No vector memories indexed yet.</p>`
+          ? `<p style="font-size: 0.78rem; color: var(--text-muted);">No custom memories indexed yet.</p>`
           : memories.map(m => `
               <div class="memory-item">
                 <div>

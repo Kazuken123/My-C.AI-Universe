@@ -1,6 +1,6 @@
 {
   "name": "my-c.ai-universe",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "Full-featured OOP + Relational SQL Character.AI web application with Wiki ingestion, swipeable response variants, user personas, and hybrid long-term semantic memory.",
   "main": "server.js",
   "type": "module",

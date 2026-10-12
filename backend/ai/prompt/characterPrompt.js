@@ -60,7 +60,7 @@ export function generateDefaultGreeting(char) {
  * @returns {string} Formatted system prompt
  */
 export function generateCharacterPrompt(character, options = {}) {
-  const { persona = null, pinnedMessages = [], memories = [] } = options;
+  const { persona = null, pinnedMessages = [], memories = [], storySummary = '' } = options;
   const baseSystemPrompt = character.systemPrompt || compileCharacterSystemPrompt(character);
 
   let contextBlocks = '';
@@ -70,6 +70,10 @@ export function generateCharacterPrompt(character, options = {}) {
     if (persona.description) {
       contextBlocks += `\nAbout ${persona.name}: ${persona.description}`;
     }
+  }
+
+  if (storySummary && storySummary.trim()) {
+    contextBlocks += `\n\n[STORYLINE CHRONICLE / PREVIOUS STORY ARCS - IMMUTABLE PLOT MEMORY]\n${storySummary.trim()}\nMaintain continuity with these earlier story events and established relationship dynamics.`;
   }
 
   if (pinnedMessages && pinnedMessages.length > 0) {

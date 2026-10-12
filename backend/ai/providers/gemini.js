@@ -158,6 +158,73 @@ export class GeminiProvider extends BaseAIProvider {
   }
 
   /**
+   * Real-time token streaming implementation using Google Gemini SDK
+   */
+  async *generateReplyStream(character, userMsg, memory = null, options = {}) {
+    const ai = this.#getClient();
+    const systemPrompt = this.buildSystemPrompt(character, options);
+    const contents = [];
+
+    contents.push({
+      role: 'user',
+      parts: [{ text: sanitizePromptForGemini(systemPrompt) }]
+    });
+
+    contents.push({
+      role: 'model',
+      parts: [{
+        text: `*${character.name} nods in acknowledgment, stepping fully into character.*\n\n${character.name}: "Understood. I am ${character.name} and will respond naturally in character."`
+      }]
+    });
+
+    if (Array.isArray(memory) && memory.length > 0) {
+      for (const msg of memory) {
+        if (!msg || !msg.content || !msg.content.trim()) continue;
+        contents.push({
+          role: msg.role === 'user' ? 'user' : 'model',
+          parts: [{ text: sanitizePromptForGemini(msg.content) }]
+        });
+      }
+    }
+
+    contents.push({
+      role: 'user',
+      parts: [{ text: sanitizePromptForGemini(userMsg) }]
+    });
+
+    const modelsToTry = this.#getModelsToTry();
+    let lastError = null;
+
+    for (let i = 0; i < modelsToTry.length; i++) {
+      const currentModel = modelsToTry[i];
+      try {
+        const stream = await ai.models.generateContentStream({
+          model: currentModel,
+          contents,
+          config: {
+            safetySettings: PERMISSIVE_SAFETY_SETTINGS
+          }
+        });
+
+        for await (const chunk of stream) {
+          const text = chunk.text;
+          if (text) {
+            yield text;
+          }
+        }
+        return;
+      } catch (err) {
+        lastError = err;
+        console.warn(`[GEMINI PROVIDER:STREAM] ${currentModel} stream failed:`, err.message);
+      }
+    }
+
+    if (lastError) {
+      throw new AIError(lastError.message || 'Gemini streaming failed', 503, lastError);
+    }
+  }
+
+  /**
    * Generate a complete Character.AI profile from a brief user concept
    */
   async generateCharacterProfile(concept) {
