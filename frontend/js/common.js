@@ -1,5 +1,6 @@
 import { api } from './api.js';
 export { loadingBar } from './loading-bar.js';
+export { ambientCanvas } from './ambient-canvas.js';
 
 export const SKILL_THEMES = [
   { id: 'higgsfield', label: 'Higgsfield Cinema' },
