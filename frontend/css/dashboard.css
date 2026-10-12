@@ -727,26 +727,95 @@
   box-shadow: 0 0 20px var(--accent-soft);
 }
 
-/* Muted Pastel Tags in Editorial Minimal Mode (minimalist-skill Section 4) */
-[data-theme="editorial"] .tag-badge:nth-child(4n+1) {
+/* ============================================================================
+   MUTED PASTEL TAGS IN EDITORIAL MINIMAL MODE (minimalist-skill Section 4)
+   Explicit high-contrast styling & hover safeguards: prevents text turning white
+   ============================================================================ */
+[data-theme="editorial"] .tag-badge,
+[data-theme="editorial"] .dossier-pill-tag {
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  border-width: 1px;
+  border-style: solid;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+[data-theme="editorial"] .tag-badge:nth-child(4n+1),
+[data-theme="editorial"] .dossier-pill-tag:nth-child(4n+1) {
   background: #E1F3FE;
   color: #1F6C9F;
-  border-color: transparent;
+  border-color: rgba(31, 108, 159, 0.25);
 }
-[data-theme="editorial"] .tag-badge:nth-child(4n+2) {
+[data-theme="editorial"] .tag-badge:nth-child(4n+2),
+[data-theme="editorial"] .dossier-pill-tag:nth-child(4n+2) {
   background: #EDF3EC;
   color: #346538;
-  border-color: transparent;
+  border-color: rgba(52, 101, 56, 0.25);
 }
-[data-theme="editorial"] .tag-badge:nth-child(4n+3) {
+[data-theme="editorial"] .tag-badge:nth-child(4n+3),
+[data-theme="editorial"] .dossier-pill-tag:nth-child(4n+3) {
   background: #FBF3DB;
   color: #956400;
-  border-color: transparent;
+  border-color: rgba(149, 100, 0, 0.25);
 }
-[data-theme="editorial"] .tag-badge:nth-child(4n+4) {
+[data-theme="editorial"] .tag-badge:nth-child(4n+4),
+[data-theme="editorial"] .dossier-pill-tag:nth-child(4n+4) {
   background: #FDEBEC;
   color: #9F2F2D;
-  border-color: transparent;
+  border-color: rgba(159, 47, 45, 0.25);
+}
+
+/* CARD & DOSSIER HOVER OVERRIDES — PREVENTS WHITE-ON-PASTEL CONTRAST BUG */
+[data-theme="editorial"] .card-shell:hover .tag-badge,
+[data-theme="editorial"] .hero-spotlight-dossier:hover .dossier-pill-tag {
+  color: inherit;
+}
+
+[data-theme="editorial"] .card-shell:hover .tag-badge:nth-child(4n+1),
+[data-theme="editorial"] .hero-spotlight-dossier:hover .dossier-pill-tag:nth-child(4n+1),
+[data-theme="editorial"] .tag-badge:nth-child(4n+1):hover,
+[data-theme="editorial"] .dossier-pill-tag:nth-child(4n+1):hover {
+  background: #cce7fc !important;
+  color: #124d73 !important;
+  border-color: rgba(18, 77, 115, 0.45) !important;
+}
+
+[data-theme="editorial"] .card-shell:hover .tag-badge:nth-child(4n+2),
+[data-theme="editorial"] .hero-spotlight-dossier:hover .dossier-pill-tag:nth-child(4n+2),
+[data-theme="editorial"] .tag-badge:nth-child(4n+2):hover,
+[data-theme="editorial"] .dossier-pill-tag:nth-child(4n+2):hover {
+  background: #dbe8d2 !important;
+  color: #244927 !important;
+  border-color: rgba(36, 73, 39, 0.45) !important;
+}
+
+[data-theme="editorial"] .card-shell:hover .tag-badge:nth-child(4n+3),
+[data-theme="editorial"] .hero-spotlight-dossier:hover .dossier-pill-tag:nth-child(4n+3),
+[data-theme="editorial"] .tag-badge:nth-child(4n+3):hover,
+[data-theme="editorial"] .dossier-pill-tag:nth-child(4n+3):hover {
+  background: #f7e8c3 !important;
+  color: #6e4800 !important;
+  border-color: rgba(110, 72, 0, 0.45) !important;
+}
+
+[data-theme="editorial"] .card-shell:hover .tag-badge:nth-child(4n+4),
+[data-theme="editorial"] .hero-spotlight-dossier:hover .dossier-pill-tag:nth-child(4n+4),
+[data-theme="editorial"] .tag-badge:nth-child(4n+4):hover,
+[data-theme="editorial"] .dossier-pill-tag:nth-child(4n+4):hover {
+  background: #fad5d8 !important;
+  color: #721c1b !important;
+  border-color: rgba(114, 28, 27, 0.45) !important;
+}
+
+/* Also safeguard mono-tag and dialogue preview in Editorial mode */
+[data-theme="editorial"] .mono-tag {
+  background: rgba(255, 255, 255, 0.05);
+  color: #c4c4cb;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+[data-theme="editorial"] .card-shell:hover .mono-tag {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .cai-card-footer {
@@ -969,6 +1038,461 @@
   .bento-cell.bento-half {
     grid-column: span 1 !important;
   }
+}
+
+/* ============================================================================
+   MULTI-MODE DASHBOARD LAYOUT ARCHITECTURES
+   Distinct Bento Layouts, Hero Arrangements & Filter Decks for Each Mode
+   ============================================================================ */
+
+/* ----------------------------------------------------------------------------
+   1. VANGUARD (Electric Cyberpunk Cockpit)
+   - 3-Column Structured Cyber Matrix
+   - Command Deck Panoramic Hero with Center Tech Divider
+   - Monospace Cyber Key Filter Deck
+   - Sharp Cyan Seams & Tech Module Cards
+   ---------------------------------------------------------------------------- */
+@media (min-width: 1025px) {
+  [data-theme="vanguard"] .bento-character-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  [data-theme="vanguard"] .bento-cell {
+    grid-column: span 1;
+  }
+
+  [data-theme="vanguard"] .bento-cell.bento-wide {
+    grid-column: span 2;
+  }
+
+  [data-theme="vanguard"] .bento-cell.bento-half {
+    grid-column: span 1;
+  }
+}
+
+[data-theme="vanguard"] .hero-shell {
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  box-shadow: 0 0 28px rgba(6, 182, 212, 0.12), inset 0 1px 0 rgba(6, 182, 212, 0.25);
+  border-radius: 12px;
+}
+
+[data-theme="vanguard"] .hero-split-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 36px;
+  background:
+    radial-gradient(750px circle at 15% 15%, rgba(6, 182, 212, 0.12), transparent 70%),
+    linear-gradient(180deg, rgba(9, 17, 34, 0.95) 0%, rgba(5, 8, 17, 0.98) 100%);
+  position: relative;
+}
+
+[data-theme="vanguard"] .hero-copy-col .eyebrow-pill {
+  border-radius: 4px;
+  background: rgba(6, 182, 212, 0.12);
+  border-color: rgba(6, 182, 212, 0.4);
+  color: #22d3ee;
+  letter-spacing: 0.18em;
+}
+
+[data-theme="vanguard"] .hero-display-title {
+  text-shadow: 0 0 24px rgba(6, 182, 212, 0.25);
+}
+
+[data-theme="vanguard"] .category-pills {
+  gap: 6px;
+  padding: 4px;
+  background: rgba(6, 182, 212, 0.04);
+  border: 1px solid rgba(6, 182, 212, 0.16);
+  border-radius: 8px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+[data-theme="vanguard"] .category-pill {
+  border-radius: 4px;
+  border-color: transparent;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+[data-theme="vanguard"] .category-pill:hover {
+  background: rgba(6, 182, 212, 0.12);
+  color: #22d3ee;
+  border-color: rgba(6, 182, 212, 0.35);
+}
+
+[data-theme="vanguard"] .category-pill.active {
+  background: #06b6d4;
+  color: #050811;
+  font-weight: 700;
+  box-shadow: 0 0 16px rgba(6, 182, 212, 0.45);
+}
+
+[data-theme="vanguard"] .cai-card {
+  position: relative;
+  border-top: 2px solid #06b6d4;
+  background: linear-gradient(180deg, rgba(14, 27, 51, 0.6) 0%, rgba(9, 17, 34, 0.95) 100%);
+  border-radius: 8px;
+}
+
+[data-theme="vanguard"] .cai-avatar-wrap {
+  border-radius: 8px;
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.18);
+}
+
+[data-theme="vanguard"] .cai-avatar {
+  border-radius: 6px;
+}
+
+/* ----------------------------------------------------------------------------
+   2. EDITORIAL (Literary Swiss Publication & Utilitarian Broadsheet)
+   - 2-Column Authoritative Broadsheet Catalog
+   - Classical Serif Masthead Hero with Hairline Bookbinder Rules
+   - Typographic Flat Underline Index Filter Bar
+   - Curated Museum Plaque Character Cards with Serif Headlines
+   ---------------------------------------------------------------------------- */
+@media (min-width: 1025px) {
+  [data-theme="editorial"] .bento-character-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px;
+  }
+
+  [data-theme="editorial"] .bento-cell {
+    grid-column: span 1;
+  }
+
+  [data-theme="editorial"] .bento-cell.bento-wide {
+    grid-column: span 2;
+  }
+
+  [data-theme="editorial"] .bento-cell.bento-half {
+    grid-column: span 1;
+  }
+}
+
+[data-theme="editorial"] .hero-shell {
+  border: none;
+  border-top: 2px solid var(--text-primary);
+  border-bottom: 1px solid var(--border-hairline);
+  border-radius: 2px;
+  background: var(--bg-core);
+  box-shadow: none;
+  padding: 0;
+}
+
+[data-theme="editorial"] .hero-split-grid {
+  grid-template-columns: 1.25fr 0.75fr;
+  gap: 40px;
+  background: var(--bg-core);
+  padding: 32px 36px;
+  border: none;
+}
+
+[data-theme="editorial"] .hero-copy-col .eyebrow-pill {
+  border-radius: 2px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+[data-theme="editorial"] .hero-display-title {
+  font-family: var(--font-serif);
+  font-size: clamp(2.3rem, 3.8vw, 3.6rem);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+}
+
+[data-theme="editorial"] .hero-subtext {
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+[data-theme="editorial"] .hero-spotlight-dossier {
+  background: var(--bg-core-elevated);
+  border: 1px solid var(--border-hairline);
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+[data-theme="editorial"] .roster-filter-bar {
+  border-bottom: 1px solid var(--border-hairline);
+  margin-bottom: 24px;
+}
+
+[data-theme="editorial"] .category-pills {
+  gap: 16px;
+  padding: 0;
+}
+
+[data-theme="editorial"] .category-pill {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  padding: 8px 4px 10px;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+[data-theme="editorial"] .category-pill:hover {
+  background: transparent;
+  color: var(--text-primary);
+  transform: none;
+  filter: none;
+}
+
+[data-theme="editorial"] .category-pill.active {
+  background: transparent;
+  border-bottom-color: var(--text-primary);
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+[data-theme="editorial"] .double-bezel-shell.card-shell {
+  border-radius: 3px;
+  background: var(--bg-core);
+  border: 1px solid var(--border-hairline);
+  box-shadow: none;
+  padding: 0;
+}
+
+[data-theme="editorial"] .double-bezel-shell.card-shell:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="editorial"] .double-bezel-core.cai-card {
+  border-radius: 2px;
+  background: var(--bg-core);
+  border: none;
+  box-shadow: none;
+  padding: 24px 22px;
+}
+
+[data-theme="editorial"] .cai-avatar-wrap {
+  border-radius: 2px;
+  border: 1px solid var(--border-hairline);
+  padding: 2px;
+  background: var(--bg-core-elevated);
+}
+
+[data-theme="editorial"] .cai-avatar {
+  border-radius: 2px;
+}
+
+[data-theme="editorial"] .cai-card-name {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+[data-theme="editorial"] .bento-wide .cai-card-name {
+  font-size: 1.55rem;
+}
+
+[data-theme="editorial"] .cai-card-tagline {
+  font-style: italic;
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+/* ----------------------------------------------------------------------------
+   3. TELEMETRY (Tactical Military Avionics & Industrial Brutalism)
+   - 4-Column High-Density Tactical Matrix
+   - Mission Briefing Chassis with Hazard Diagonal Striping & Avionics Telemetry
+   - Square Military Key Selector Filter Array
+   - 0px Hard Chassis Spec-Sheet Cards with Crimson Bounding Seams
+   ---------------------------------------------------------------------------- */
+@media (min-width: 1200px) {
+  [data-theme="telemetry"] .bento-character-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+
+  [data-theme="telemetry"] .bento-cell {
+    grid-column: span 1;
+  }
+
+  [data-theme="telemetry"] .bento-cell.bento-wide {
+    grid-column: span 2;
+  }
+
+  [data-theme="telemetry"] .bento-cell.bento-half {
+    grid-column: span 1;
+  }
+}
+
+@media (min-width: 860px) and (max-width: 1199px) {
+  [data-theme="telemetry"] .bento-character-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  [data-theme="telemetry"] .bento-cell,
+  [data-theme="telemetry"] .bento-cell.bento-wide,
+  [data-theme="telemetry"] .bento-cell.bento-half {
+    grid-column: span 1;
+  }
+}
+
+[data-theme="telemetry"] .hero-shell {
+  border-radius: 0;
+  border: 1px solid rgba(230, 25, 25, 0.45);
+  box-shadow: 0 0 20px rgba(230, 25, 25, 0.12), inset 0 0 0 1px rgba(230, 25, 25, 0.2);
+  position: relative;
+  padding: 0;
+}
+
+[data-theme="telemetry"] .hero-shell::before {
+  content: '// TAC_CONSOLE_01 // SEC_LEVEL: ALPHA // SYSTEM: ACTIVE';
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  color: #ff4d4d;
+  background: rgba(230, 25, 25, 0.14);
+  padding: 4px 12px;
+  border-bottom: 1px solid rgba(230, 25, 25, 0.35);
+}
+
+[data-theme="telemetry"] .hero-split-grid {
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 28px;
+  background: #0a0608;
+  border-radius: 0;
+  border: none;
+  padding: 28px 30px;
+}
+
+[data-theme="telemetry"] .hero-copy-col .eyebrow-pill {
+  border-radius: 0;
+  border: 1px solid #e61919;
+  background: rgba(230, 25, 25, 0.16);
+  color: #ff3333;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+}
+
+[data-theme="telemetry"] .hero-display-title {
+  font-family: var(--font-mono);
+  font-size: clamp(1.8rem, 2.7vw, 2.6rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+[data-theme="telemetry"] .hero-spotlight-dossier {
+  border-radius: 0;
+  border: 1px solid rgba(230, 25, 25, 0.4);
+  background: #0f090c;
+  box-shadow: inset 0 0 12px rgba(230, 25, 25, 0.08);
+}
+
+[data-theme="telemetry"] .category-pills {
+  gap: 4px;
+}
+
+[data-theme="telemetry"] .category-pill {
+  border-radius: 0;
+  border: 1px solid rgba(230, 25, 25, 0.35);
+  background: #0c0809;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a1a1aa;
+  padding: 6px 12px;
+}
+
+[data-theme="telemetry"] .category-pill:hover {
+  background: rgba(230, 25, 25, 0.15);
+  color: #ff4d4d;
+  border-color: #ff3333;
+  transform: none;
+  filter: none;
+}
+
+[data-theme="telemetry"] .category-pill.active {
+  background: #e61919;
+  color: #000000;
+  font-weight: 800;
+  border-color: #ff3333;
+  box-shadow: 0 0 14px rgba(230, 25, 25, 0.5);
+}
+
+[data-theme="telemetry"] .double-bezel-shell.card-shell {
+  border-radius: 0;
+  border: 1px solid rgba(230, 25, 25, 0.32);
+  background: #0c080a;
+  box-shadow: 0 0 0 1px rgba(230, 25, 25, 0.15);
+  padding: 0;
+}
+
+[data-theme="telemetry"] .double-bezel-shell.card-shell:hover {
+  border-color: #ff3333;
+  box-shadow: 0 0 18px rgba(230, 25, 25, 0.35), 0 0 0 1px #e61919;
+  transform: translateY(-2px);
+}
+
+[data-theme="telemetry"] .double-bezel-core.cai-card {
+  border-radius: 0;
+  border: none;
+  background: #0c080a;
+  padding: 16px 14px;
+  gap: 10px;
+}
+
+[data-theme="telemetry"] .cai-avatar-wrap {
+  border-radius: 0;
+  border: 1px solid rgba(230, 25, 25, 0.4);
+  width: 50px;
+  height: 50px;
+}
+
+[data-theme="telemetry"] .cai-avatar {
+  border-radius: 0;
+}
+
+[data-theme="telemetry"] .cai-card-name {
+  font-family: var(--font-mono);
+  font-size: 0.98rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+[data-theme="telemetry"] .cai-card-tagline {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+[data-theme="telemetry"] .tag-badge {
+  border-radius: 0;
+  background: #15090b;
+  border: 1px solid rgba(230, 25, 25, 0.35);
+  color: #ff6666;
+  font-size: 0.62rem;
+  padding: 2px 6px;
 }
 
 
