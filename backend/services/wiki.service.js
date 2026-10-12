@@ -271,6 +271,33 @@ export class WikiScraperService {
 
       const domFallback = this.extractSectionsFromDOM($);
 
+      // Extract raw canonical quotes and dialogue lines from HTML before stripping elements
+      const quotes = [];
+      $('blockquote, .quote, .dialogue, .speech, dl dd i, p i').each((_, el) => {
+        const t = $(el).text().replace(/\[\d+\]/g, '').trim();
+        if (t.length > 15 && t.length < 500 && quotes.length < 20) {
+          if (t.startsWith('"') || t.startsWith('“') || t.includes(':') || t.includes('!')) {
+            quotes.push(t);
+          }
+        }
+      });
+
+      $('h2, h3').each((_, heading) => {
+        const title = $(heading).text().toLowerCase();
+        if (title.includes('quote') || title.includes('trích dẫn') || title.includes('catchphrase') || title.includes('dialogue')) {
+          let next = $(heading).next();
+          while (next.length && !next.is('h2') && quotes.length < 25) {
+            const line = next.text().replace(/\[\d+\]/g, '').trim();
+            if (line.length > 10 && line.length < 500) {
+              quotes.push(line);
+            }
+            next = next.next();
+          }
+        }
+      });
+
+      const quotesSample = quotes.slice(0, 15).join('\n---\n');
+
       $('script, style, nav, footer, .navbox, .catlinks, .wds-global-navigation, .wds-community-header, .page-header__bottom, .page-footer, .reference').remove();
 
       const contentText = $('#mw-content-text, .mw-parser-output, main, article')
@@ -279,7 +306,7 @@ export class WikiScraperService {
         .replace(/\s+/g, ' ')
         .trim();
 
-      const wikiText = contentText.slice(0, 40000);
+      const wikiText = contentText.slice(0, 38000);
       if (!wikiText || wikiText.length < 50) {
         throw new ValidationError('Insufficient content extracted from wiki page', 'wiki');
       }
@@ -288,22 +315,39 @@ export class WikiScraperService {
       if (apiKey) {
         try {
           const ai = new GoogleGenAI({ apiKey });
-          const prompt = `You are extracting comprehensive character information from a wiki article for a Character.AI roleplay character.
+          const prompt = `You are an expert anime, gaming, and fiction character analyst extracting lore from a wiki page to create a deeply immersive Character.AI roleplay bot.
 
-From the text below, extract the following fields into STRICT JSON:
-- name: Character's full name
-- tagline: Short catchy roleplay subtitle (under 70 chars)
-- greeting: An engaging opening roleplay message in light-novel format (*italic action* on line 1, Name: "Dialogue" on line 2)
-- appearance: Physical description and attire
-- personality: Character traits, behavior, and psychological profile
-- abilities: Special powers, skills, and capabilities
-- background: History, origin story, and significant life events
-- speaking_style: How the character speaks (tone, mannerisms, catchphrases)
-- initial_memory: 3-5 key canonical memories or facts (format as a clear string with bullet points or newlines)
-- categories: Array of 2-3 category tags from ["Anime", "Roleplay", "Action", "Fantasy", "Helper", "Mystery", "Slice of Life", "Game"]
+CANONICAL SPEECH SAMPLES & QUOTES FROM WIKI:
+${quotesSample || 'No separate quotes section found; extract dialogue habits and verbal mannerisms from the article text below.'}
 
-Text:
-${wikiText}`;
+WIKI ARTICLE TEXT:
+${wikiText}
+
+CRITICAL LINGUISTIC & COGNITIVE ANALYSIS:
+1. Examine the character's Personality section AND their canonical Quotes/Speech above.
+2. Judge and determine their cognitive & psychological profile (Jungian cognitive functions, e.g. Te-Fi tsundere, Ne-Ti playful jester, Se-Ti kinetic brawler, Ni-Te quiet schemer, Fe-Ni charismatic guide).
+3. Determine their exact Speaking Style & Pacing Rules:
+   - Cognitive speech style and cadence (staccato vs drawl vs blunt vs formal)
+   - Punctuation pacing rules: when to use '...' (hesitation/silence), '—' (cut-offs/flustered), '?!' (outrage/indignation), and '~' (playful drawl)
+   - Signature laugh and vocal tics (e.g., 'Ehehe~...', 'Fufu~', 'Tch', 'Heh.', 'Hahaha!')
+   - Conflict defense: how they react when accused vs how they react when praised/loved
+4. Provide an Action-Grounded Greeting: opening scene with *italic action* anchored to a physical prop, chore, or situational excuse rather than standing in a void, followed by Character Name: "Dialogue".
+5. Provide 2-3 Authentic Example Dialogues modeled directly on their real speech patterns and quotes from the wiki in Light-Novel format (*Action* on line 1, Character: "Dialogue" on line 2).
+
+Extract into STRICT JSON with these keys:
+{
+  "name": "Character's full name",
+  "tagline": "Short catchy roleplay subtitle (under 70 chars)",
+  "greeting": "Opening roleplay scene in light-novel format with prop/excuse grounding",
+  "appearance": "Physical description and attire",
+  "personality": "Comprehensive psychological traits, flaws, and cognitive archetype",
+  "abilities": "Special powers, skills, and capabilities",
+  "background": "History, origin story, and significant life events",
+  "speaking_style": "Detailed speaking guide with cognitive profile, punctuation pacing ('...', '—', '?!', '~'), signature laugh, and conflict defense",
+  "example_dialogues": "2-3 sample exchanges in light-novel format demonstrating calibrated pacing and real quotes",
+  "initial_memory": "3-5 key canonical memories or facts (format as a clear string with bullet points or newlines)",
+  "categories": ["Anime", "Roleplay"]
+}`;
 
           const geminiResponse = await ai.models.generateContent({
             model: config.GEMINI_MODEL,
@@ -325,7 +369,7 @@ ${wikiText}`;
 
           const fields = [
             'name', 'tagline', 'greeting', 'appearance', 'personality',
-            'abilities', 'background', 'speaking_style', 'initial_memory'
+            'abilities', 'background', 'speaking_style', 'example_dialogues', 'initial_memory'
           ];
           for (const f of fields) {
             if (typeof extractedData[f] !== 'string') {

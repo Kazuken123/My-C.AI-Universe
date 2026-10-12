@@ -210,7 +210,7 @@ class StudioPageApp {
               this.categoriesInput.value = Array.isArray(c.categories) ? c.categories.join(', ') : c.categories;
             }
             this.updatePreview();
-            showToast(`Ingested canon lore for ${c.name || 'character'}!`);
+            showToast(`Ingested canon lore & analyzed speech patterns for ${c.name || 'character'}!`);
           } else {
             showToast('No canon lore could be extracted from this URL.');
           }
@@ -244,12 +244,20 @@ class StudioPageApp {
             if (this.appearanceInput && c.appearance) this.appearanceInput.value = c.appearance;
             if (this.abilitiesInput && c.abilities) this.abilitiesInput.value = c.abilities;
             if (this.backgroundInput && c.background) this.backgroundInput.value = c.background;
-            if (this.speakingStyleInput && c.speakingStyle) this.speakingStyleInput.value = c.speakingStyle;
+            if (this.speakingStyleInput && (c.speaking_style || c.speakingStyle)) {
+              this.speakingStyleInput.value = c.speaking_style || c.speakingStyle;
+            }
+            if (this.exampleDialoguesInput && (c.example_dialogues || c.exampleDialogues)) {
+              this.exampleDialoguesInput.value = c.example_dialogues || c.exampleDialogues;
+            }
+            if (this.initialMemoryInput && (c.initial_memory || c.initialMemory)) {
+              this.initialMemoryInput.value = c.initial_memory || c.initialMemory;
+            }
             if (this.categoriesInput && c.categories) {
               this.categoriesInput.value = Array.isArray(c.categories) ? c.categories.join(', ') : c.categories;
             }
             this.updatePreview();
-            showToast(`Synthesized ${c.name}!`);
+            showToast(`Synthesized ${c.name} with cognitive speech profile!`);
           }
         } catch (err) {
           showToast('AI synthesis failed: ' + err.message);

@@ -37,6 +37,12 @@ This document serves as the **single source of truth** for project history, rece
 - **Seeded Character Roster Expansion**:
   - Added Son Goku (`1767000000003`) to [`backend/db/seed.sql`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/db/seed.sql) with complete Se-Ti country dialect, Instant Transmission greeting, and long-term memory.
   - Upgraded Gojo and Kana lore, speaking styles, and example dialogues with calibrated pacing.
+- **Automated Studio Lore Extraction & Speech Judging Pipeline**:
+  - Upgraded [`backend/services/wiki.service.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/services/wiki.service.js) to isolate raw dialogue quotes and quotes sections (`blockquote`, `.quote`, `dl dd`, `Quotes` headings) before HTML stripping.
+  - Configured Gemini to analyze canon quotes and personality sections to evaluate the character's Jungian cognitive archetype, pacing punctuation rules (`...`, `—`, `?!`, `~`), signature laugh, and conflict defense.
+  - Automatically synthesizes Light-Novel formatted `example_dialogues` with calibrated pacing and action grounding directly into character records.
+  - Synchronized AI Character Generation (`generateCharacterProfile` in [`backend/ai/providers/gemini.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/providers/gemini.js)) with the same cognitive profiling standards.
+  - Upgraded Character Studio UI in [`frontend/create.html`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/create.html) and [`frontend/js/studio-page.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/js/studio-page.js) with instant field population, informative status toasts, and clear pacing placeholders.
 - **Zero Regressions**:
   - Verified 21/21 E2E tests passing (`npm test`).
 

@@ -162,21 +162,31 @@ export class GeminiProvider extends BaseAIProvider {
    */
   async generateCharacterProfile(concept) {
     const ai = this.#getClient();
-    const prompt = `You are an expert Character.AI character designer.
+    const prompt = `You are an expert anime, gaming, and fiction character architect.
 Create a rich, immersive roleplay character profile based on the following concept:
 "${concept}"
+
+CRITICAL LINGUISTIC & COGNITIVE ANALYSIS:
+1. Judge and determine their cognitive & psychological profile (Jungian cognitive functions, e.g. Te-Fi tsundere, Ne-Ti playful jester, Se-Ti kinetic brawler, Ni-Te quiet schemer, Fe-Ni charismatic guide).
+2. Formulate their exact Speaking Style & Pacing Rules:
+   - Cognitive speech style and cadence (staccato vs drawl vs blunt vs formal)
+   - Punctuation pacing rules: define when to use '...' (hesitation/silence), '—' (cut-offs/flustered), '?!' (outrage/indignation), and '~' (playful drawl)
+   - Signature laugh and vocal tics (e.g., 'Ehehe~...', 'Fufu~', 'Tch', 'Heh.', 'Hahaha!')
+   - Conflict defense: how they react when accused vs how they react when praised/loved
+3. Craft an Action-Grounded Greeting: opening scene with *italic action* anchored to a physical prop, chore, or situational excuse rather than standing in a void, followed by Character Name: "Dialogue".
+4. Provide 2-3 Authentic Example Dialogues in Light-Novel format (*Action* on line 1, Character: "Dialogue" on line 2) demonstrating calibrated punctuation pacing ('...', '—', '?!', '~').
 
 Return STRICT JSON with the following keys:
 {
   "name": "Character's full name",
   "tagline": "Short catchy subtitle (under 70 characters)",
-  "greeting": "Opening roleplay scene with *italicized action* on one line and Character Name: \\"Dialogue\\" on a new line",
-  "personality": "Detailed personality traits, temperament, flaws, and motivations",
+  "greeting": "Opening roleplay scene with prop/excuse grounding in light-novel format",
+  "personality": "Detailed personality traits, temperament, flaws, motivations, and cognitive archetype",
   "appearance": "Detailed physical appearance, clothing, and signature visual traits",
   "abilities": "Skills, powers, talents, or expertise",
   "background": "Compelling backstory and origin",
-  "speaking_style": "Tone of voice, speech patterns, and mannerisms",
-  "example_dialogues": "1-2 sample exchanges in light-novel format",
+  "speaking_style": "Detailed speaking guide with cognitive profile, punctuation pacing ('...', '—', '?!', '~'), signature laugh, and conflict defense",
+  "example_dialogues": "2-3 sample exchanges in light-novel format demonstrating calibrated pacing",
   "initial_memory": "3-5 core facts or memories this character always remembers",
   "categories": ["Roleplay", "Original"]
 }`;
