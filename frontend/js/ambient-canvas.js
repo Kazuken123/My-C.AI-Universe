@@ -1,11 +1,11 @@
 /**
  * AmbientMotionCanvas Singleton
  * High-Performance 60fps HTML5 Canvas Kinetic Motion Engine
- * Generates living, moving thematic backdrops for each design system mode:
- * - Higgsfield: 3D traveling deep space cosmic starfield & drifting aurora nebula
- * - Vanguard: 3D perspective cyber grid warp & streaming data vectors
- * - Telemetry: 360° tactical avionics radar PPI sweep with phosphor target blips
- * - Editorial: Floating archival paper dust motes & subtle ambient architectural light
+ * Delivers living, kinetic thematic backdrops for all design modes:
+ * - Higgsfield: Dynamic traveling starfield, undulating chromatic aurora waves & shooting stars
+ * - Vanguard: 3D perspective cyber grid warp, streaming data packets & pulse ripples
+ * - Telemetry: 360° tactical avionics radar PPI beam sweep with phosphor blip echoes & scanline
+ * - Editorial: Volumetric ambient architectural light ray & drifting archival dust motes
  */
 
 export class AmbientMotionCanvas {
@@ -22,11 +22,18 @@ export class AmbientMotionCanvas {
 
     // Simulation states
     this.stars = [];
-    this.nebulae = [];
-    this.cyberGridLines = [];
+    this.shootingStars = [];
+    this.shootingStarCooldown = 2.5;
+    this.auroraPhase = 0;
+
+    this.cyberGridProgress = 0;
     this.cyberStreams = [];
+    this.cyberRipples = [];
+
     this.radarAngle = 0;
     this.radarBlips = [];
+    this.radarScanY = 0;
+
     this.editorialMotes = [];
 
     if (typeof window !== 'undefined' && typeof document !== 'undefined') {
@@ -35,7 +42,6 @@ export class AmbientMotionCanvas {
   }
 
   #init() {
-    // Check reduced motion preference
     this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', (e) => {
       this.reducedMotion = e.matches;
@@ -51,8 +57,10 @@ export class AmbientMotionCanvas {
     this.#resize();
     this.#initParticles();
 
-    // Event listeners
-    window.addEventListener('resize', () => this.#resize(), { passive: true });
+    window.addEventListener('resize', () => {
+      this.#resize();
+      this.#initParticles();
+    }, { passive: true });
 
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
@@ -62,7 +70,6 @@ export class AmbientMotionCanvas {
       }
     });
 
-    // Theme mutation observer
     const themeObserver = new MutationObserver(() => {
       this.#updateTheme();
     });
@@ -83,7 +90,7 @@ export class AmbientMotionCanvas {
       el.id = 'ambient-canvas';
       el.className = 'ambient-motion-canvas';
       el.setAttribute('aria-hidden', 'true');
-      el.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:0;opacity:0.95;transition:opacity 0.6s ease;';
+      el.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:0;display:block;';
 
       if (document.body) {
         document.body.prepend(el);
@@ -92,9 +99,13 @@ export class AmbientMotionCanvas {
           if (!document.getElementById('ambient-canvas')) {
             document.body.prepend(el);
           }
+          this.#resize();
         }, { once: true });
       }
+    } else {
+      el.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:0;display:block;';
     }
+
     this.canvas = el;
     this.ctx = el.getContext('2d', { alpha: true });
   }
@@ -110,8 +121,8 @@ export class AmbientMotionCanvas {
   #resize() {
     if (!this.canvas) return;
     this.dpr = Math.min(window.devicePixelRatio || 1, 2);
-    this.width = window.innerWidth;
-    this.height = window.innerHeight;
+    this.width = window.innerWidth || 1200;
+    this.height = window.innerHeight || 800;
 
     this.canvas.width = Math.round(this.width * this.dpr);
     this.canvas.height = Math.round(this.height * this.dpr);
@@ -125,78 +136,75 @@ export class AmbientMotionCanvas {
     const w = this.width || 1200;
     const h = this.height || 800;
 
-    // 1. Higgsfield Particles
+    // 1. HIGGSFIELD
     if (this.currentTheme === 'higgsfield') {
       this.stars = [];
-      const starCount = 85;
+      const starCount = 135;
       for (let i = 0; i < starCount; i++) {
         this.stars.push({
-          x: (Math.random() - 0.5) * w * 1.5,
-          y: (Math.random() - 0.5) * h * 1.5,
-          z: Math.random() * w,
-          prevZ: 0,
-          colorType: Math.random(),
-          size: Math.random() * 1.4 + 0.6,
-          twinkleSpeed: Math.random() * 0.04 + 0.01,
-          twinkleOffset: Math.random() * Math.PI * 2
+          x: Math.random() * w,
+          y: Math.random() * h,
+          vx: (Math.random() - 0.5) * 0.4 + 0.25, // Gentle rightward drift
+          vy: (Math.random() - 0.5) * 0.3 - 0.2, // Gentle upward drift
+          size: Math.random() * 1.8 + 0.8,
+          baseAlpha: Math.random() * 0.45 + 0.4,
+          twinkleSpeed: Math.random() * 0.03 + 0.015,
+          twinkleOffset: Math.random() * Math.PI * 2,
+          colorType: Math.random()
         });
       }
-
-      this.nebulae = [
-        { x: w * 0.25, y: h * 0.3, radius: w * 0.35, vx: 0.15, vy: 0.08, color: 'rgba(139, 92, 246, 0.05)' },
-        { x: w * 0.75, y: h * 0.6, radius: w * 0.4, vx: -0.12, vy: -0.1, color: 'rgba(6, 182, 212, 0.04)' }
-      ];
+      this.shootingStars = [];
+      this.shootingStarCooldown = 1.5;
     }
 
-    // 2. Vanguard Particles
+    // 2. VANGUARD
     if (this.currentTheme === 'vanguard') {
-      this.cyberGridLines = [];
-      const lineCount = 14;
-      for (let i = 0; i < lineCount; i++) {
-        this.cyberGridLines.push({
-          progress: i / lineCount
-        });
-      }
-
       this.cyberStreams = [];
-      const streamCount = 28;
+      const streamCount = 34;
       for (let i = 0; i < streamCount; i++) {
         this.cyberStreams.push({
-          lane: (Math.random() - 0.5) * 1.2,
+          lane: (Math.random() - 0.5) * 1.4,
           progress: Math.random(),
-          speed: Math.random() * 0.006 + 0.003,
-          length: Math.random() * 0.15 + 0.05,
-          color: Math.random() > 0.4 ? 'rgba(6, 182, 212,' : 'rgba(139, 92, 246,'
+          speed: Math.random() * 0.007 + 0.004,
+          length: Math.random() * 0.18 + 0.06,
+          color: Math.random() > 0.35 ? '#06b6d4' : '#8b5cf6'
         });
       }
-    }
-
-    // 3. Telemetry Radar Blips
-    if (this.currentTheme === 'telemetry') {
-      this.radarAngle = 0;
-      this.radarBlips = [
-        { distRatio: 0.28, angle: 0.4, label: 'TRG-01', intensity: 0.2 },
-        { distRatio: 0.52, angle: 1.8, label: 'EVA-09', intensity: 0.2 },
-        { distRatio: 0.74, angle: 3.2, label: 'SAT-CANON', intensity: 0.2 },
-        { distRatio: 0.38, angle: 4.5, label: 'NODE-X', intensity: 0.2 },
-        { distRatio: 0.82, angle: 5.6, label: 'TAC-44', intensity: 0.2 }
+      this.cyberRipples = [
+        { progress: 0.1, maxRadius: Math.max(w, h) * 0.7, speed: 0.12 },
+        { progress: 0.6, maxRadius: Math.max(w, h) * 0.7, speed: 0.12 }
       ];
     }
 
-    // 4. Editorial Archival Motes
+    // 3. TELEMETRY
+    if (this.currentTheme === 'telemetry') {
+      this.radarAngle = 0;
+      this.radarScanY = 0;
+      this.radarBlips = [
+        { xRatio: 0.18, yRatio: 0.22, label: 'TRG-01', intensity: 0.8 },
+        { xRatio: 0.84, yRatio: 0.28, label: 'SAT-CANON', intensity: 0.3 },
+        { xRatio: 0.92, yRatio: 0.68, label: 'NODE-X', intensity: 0.5 },
+        { xRatio: 0.14, yRatio: 0.78, label: 'EVA-09', intensity: 0.2 },
+        { xRatio: 0.78, yRatio: 0.88, label: 'TAC-44', intensity: 0.7 },
+        { xRatio: 0.28, yRatio: 0.48, label: 'ALPHA-9', intensity: 0.4 }
+      ];
+    }
+
+    // 4. EDITORIAL
     if (this.currentTheme === 'editorial') {
       this.editorialMotes = [];
-      const moteCount = 38;
+      const moteCount = 75;
       for (let i = 0; i < moteCount; i++) {
         this.editorialMotes.push({
           x: Math.random() * w,
           y: Math.random() * h,
-          radius: Math.random() * 1.5 + 0.5,
-          vx: (Math.random() - 0.5) * 0.2,
-          vy: -(Math.random() * 0.25 + 0.08),
-          alpha: Math.random() * 0.18 + 0.05,
-          pulseSpeed: Math.random() * 0.02 + 0.005,
-          pulseOffset: Math.random() * Math.PI * 2
+          radius: Math.random() * 1.6 + 0.7,
+          vx: (Math.random() - 0.5) * 0.35,
+          vy: -(Math.random() * 0.5 + 0.2), // Distinct upward drift
+          alpha: Math.random() * 0.35 + 0.25,
+          pulseSpeed: Math.random() * 0.025 + 0.01,
+          pulseOffset: Math.random() * Math.PI * 2,
+          isWarm: Math.random() > 0.6
         });
       }
     }
@@ -251,163 +259,283 @@ export class AmbientMotionCanvas {
   }
 
   // --------------------------------------------------------------------------
-  // 1. HIGGSFIELD: Traveling Cosmic Starfield & Ambient Aurora Nebula
+  // 1. HIGGSFIELD: Dynamic Traveling Starfield, Undulating Aurora Plasma & Streamers
   // --------------------------------------------------------------------------
   #renderHiggsfield(ctx, now, dt, w, h) {
-    const cx = w * 0.5;
-    const cy = h * 0.5;
+    this.auroraPhase += 0.45 * dt;
 
-    // Drifting soft nebula clouds
-    for (const neb of this.nebulae) {
-      neb.x += neb.vx;
-      neb.y += neb.vy;
-      if (neb.x < 0 || neb.x > w) neb.vx *= -1;
-      if (neb.y < 0 || neb.y > h) neb.vy *= -1;
+    // A. Undulating Chromatic Aurora Plasma Bands
+    const bandCount = 3;
+    for (let b = 0; b < bandCount; b++) {
+      const yOffset = h * (0.15 + b * 0.35);
+      const wavePhase = this.auroraPhase * (0.8 + b * 0.4);
+      const amplitude = 45 + b * 25;
 
-      const grad = ctx.createRadialGradient(neb.x, neb.y, 0, neb.x, neb.y, neb.radius);
-      grad.addColorStop(0, neb.color);
-      grad.addColorStop(1, 'transparent');
-      ctx.fillStyle = grad;
+      ctx.save();
       ctx.beginPath();
-      ctx.arc(neb.x, neb.y, neb.radius, 0, Math.PI * 2);
-      ctx.fill();
-    }
+      ctx.moveTo(0, h);
+      ctx.lineTo(0, yOffset);
 
-    // 3D Traveling starfield
-    const speed = 65 * dt;
-    for (const star of this.stars) {
-      star.prevZ = star.z;
-      star.z -= speed;
-
-      if (star.z <= 0) {
-        star.z = w;
-        star.prevZ = w;
-        star.x = (Math.random() - 0.5) * w * 1.5;
-        star.y = (Math.random() - 0.5) * h * 1.5;
+      for (let x = 0; x <= w; x += 40) {
+        const wave = Math.sin(x * 0.003 + wavePhase) * amplitude +
+                     Math.cos(x * 0.006 - wavePhase * 0.8) * (amplitude * 0.4);
+        ctx.lineTo(x, yOffset + wave);
       }
 
-      const k = 250 / star.z;
-      const px = cx + star.x * k;
-      const py = cy + star.y * k;
+      ctx.lineTo(w, h);
+      ctx.closePath();
 
-      if (px < -10 || px > w + 10 || py < -10 || py > h + 10) {
-        star.z = w;
-        star.prevZ = w;
+      const grad = ctx.createLinearGradient(0, yOffset - 40, 0, yOffset + 240);
+      if (b === 0) {
+        grad.addColorStop(0, 'rgba(139, 92, 246, 0.16)');
+        grad.addColorStop(0.5, 'rgba(99, 102, 241, 0.08)');
+        grad.addColorStop(1, 'transparent');
+      } else if (b === 1) {
+        grad.addColorStop(0, 'rgba(6, 182, 212, 0.13)');
+        grad.addColorStop(0.6, 'rgba(139, 92, 246, 0.06)');
+        grad.addColorStop(1, 'transparent');
+      } else {
+        grad.addColorStop(0, 'rgba(168, 85, 247, 0.1)');
+        grad.addColorStop(1, 'transparent');
+      }
+
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // B. Viewport Traveling Starfield with Constellation Links
+    const speedMultiplier = 60 * dt;
+    const len = this.stars.length;
+
+    // Draw constellation links when stars are close
+    ctx.lineWidth = 0.8;
+    for (let i = 0; i < len; i += 2) {
+      for (let j = i + 1; j < Math.min(i + 5, len); j++) {
+        const dx = this.stars[i].x - this.stars[j].x;
+        const dy = this.stars[i].y - this.stars[j].y;
+        const distSq = dx * dx + dy * dy;
+        if (distSq < 5625) { // < 75px
+          const linkAlpha = (1 - Math.sqrt(distSq) / 75) * 0.18;
+          ctx.strokeStyle = `rgba(167, 139, 250, ${linkAlpha})`;
+          ctx.beginPath();
+          ctx.moveTo(this.stars[i].x, this.stars[i].y);
+          ctx.lineTo(this.stars[j].x, this.stars[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Move & draw stars
+    for (const star of this.stars) {
+      star.x += star.vx * speedMultiplier;
+      star.y += star.vy * speedMultiplier;
+
+      // Wrap around edges seamlessly
+      if (star.x < 0) star.x = w;
+      if (star.x > w) star.x = 0;
+      if (star.y < 0) star.y = h;
+      if (star.y > h) star.y = 0;
+
+      const twinkle = 0.65 + 0.35 * Math.sin(now * star.twinkleSpeed + star.twinkleOffset);
+      const alpha = star.baseAlpha * twinkle;
+
+      let color;
+      if (star.colorType < 0.25) {
+        color = `rgba(167, 139, 250, ${alpha})`; // Violet
+      } else if (star.colorType < 0.5) {
+        color = `rgba(56, 189, 248, ${alpha})`; // Cyan
+      } else {
+        color = `rgba(255, 255, 255, ${alpha})`; // Pure starlight
+      }
+
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Subtle halo for larger stars
+      if (star.size > 1.8) {
+        ctx.fillStyle = `rgba(139, 92, 246, ${alpha * 0.25})`;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.size * 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // C. Cosmic Shooting Stars / Streamers
+    this.shootingStarCooldown -= dt;
+    if (this.shootingStarCooldown <= 0) {
+      this.shootingStarCooldown = Math.random() * 3 + 2.5; // Spawn every 2.5 - 5.5s
+      const startX = Math.random() * w * 0.9;
+      const startY = Math.random() * h * 0.4;
+      const angle = Math.PI / 4 + (Math.random() - 0.5) * 0.3; // ~45 degrees diagonal
+      this.shootingStars.push({
+        x: startX,
+        y: startY,
+        vx: Math.cos(angle) * (w * 0.45 + 300),
+        vy: Math.sin(angle) * (w * 0.45 + 300),
+        length: Math.random() * 120 + 80,
+        life: 0,
+        maxLife: Math.random() * 0.6 + 0.6
+      });
+    }
+
+    for (let i = this.shootingStars.length - 1; i >= 0; i--) {
+      const s = this.shootingStars[i];
+      s.life += dt;
+      s.x += (s.vx / s.maxLife) * dt;
+      s.y += (s.vy / s.maxLife) * dt;
+
+      const progress = s.life / s.maxLife;
+      if (progress >= 1) {
+        this.shootingStars.splice(i, 1);
         continue;
       }
 
-      const prevK = 250 / star.prevZ;
-      const prevPx = cx + star.x * prevK;
-      const prevPy = cy + star.y * prevK;
+      const alpha = Math.sin(progress * Math.PI) * 0.85;
+      const headX = s.x;
+      const headY = s.y;
+      const tailX = s.x - (s.vx / s.maxLife) * (s.length / (w * 0.5));
+      const tailY = s.y - (s.vy / s.maxLife) * (s.length / (w * 0.5));
 
-      const depthRatio = Math.max(0, 1 - star.z / w);
-      const twinkle = 0.5 + 0.5 * Math.sin(now * star.twinkleSpeed + star.twinkleOffset);
-      const alpha = Math.min(1, depthRatio * 1.2 * twinkle);
+      const grad = ctx.createLinearGradient(headX, headY, tailX, tailY);
+      grad.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+      grad.addColorStop(0.3, `rgba(167, 139, 250, ${alpha * 0.8})`);
+      grad.addColorStop(1, 'transparent');
 
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = grad;
       ctx.beginPath();
-      ctx.moveTo(prevPx, prevPy);
-      ctx.lineTo(px, py);
-
-      if (star.colorType < 0.25) {
-        ctx.strokeStyle = `rgba(167, 139, 250, ${alpha * 0.9})`; // Violet
-      } else if (star.colorType < 0.45) {
-        ctx.strokeStyle = `rgba(56, 189, 248, ${alpha * 0.85})`; // Cyan
-      } else {
-        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.95})`; // Starlight White
-      }
-
-      ctx.lineWidth = star.size * (0.8 + depthRatio * 1.2);
+      ctx.moveTo(tailX, tailY);
+      ctx.lineTo(headX, headY);
       ctx.stroke();
+
+      // Glowing star head
+      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(headX, headY, 2.5, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
 
   // --------------------------------------------------------------------------
-  // 2. VANGUARD: 3D Perspective Cyber Grid Warp & Digital Stream Vectors
+  // 2. VANGUARD: 3D Perspective Cyber-Grid Warp, High-Speed Streams & Sonar Rings
   // --------------------------------------------------------------------------
   #renderVanguard(ctx, now, dt, w, h) {
-    const horizon = h * 0.38;
+    const horizon = h * 0.35;
     const vpX = w * 0.5;
 
-    // Moving horizontal grid lines
-    const lineSpeed = 0.18 * dt;
-    ctx.strokeStyle = 'rgba(6, 182, 212, 0.16)';
-    ctx.lineWidth = 1;
+    // A. Perspective Cyber Grid Floor
+    this.cyberGridProgress = (this.cyberGridProgress + 0.28 * dt) % 1;
+    const gridLineCount = 18;
 
-    for (const line of this.cyberGridLines) {
-      line.progress += lineSpeed;
-      if (line.progress >= 1) line.progress -= 1;
-
-      // Exponential perspective curve
-      const y = horizon + Math.pow(line.progress, 2.8) * (h - horizon);
-      const alpha = Math.sin(line.progress * Math.PI) * 0.35;
+    for (let i = 0; i < gridLineCount; i++) {
+      const prog = (i / gridLineCount + this.cyberGridProgress) % 1;
+      const y = horizon + Math.pow(prog, 2.6) * (h - horizon);
+      const alpha = Math.sin(prog * Math.PI) * 0.32;
 
       ctx.strokeStyle = `rgba(6, 182, 212, ${alpha})`;
+      ctx.lineWidth = 1 + prog * 1.5;
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(w, y);
       ctx.stroke();
     }
 
-    // Perspective ray lines radiating from horizon
-    const rayCount = 18;
+    // Perspective ray lines radiating outward
+    const rayCount = 22;
     for (let i = -rayCount / 2; i <= rayCount / 2; i++) {
-      const spreadX = vpX + (i / (rayCount / 2)) * w * 0.9;
-      ctx.strokeStyle = 'rgba(6, 182, 212, 0.08)';
+      const spreadX = vpX + (i / (rayCount / 2)) * w * 1.1;
+      ctx.strokeStyle = 'rgba(6, 182, 212, 0.12)';
+      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(vpX, horizon);
       ctx.lineTo(spreadX, h);
       ctx.stroke();
     }
 
-    // Streaming cyber data packets
+    // B. High-Speed Digital Data Packets
     for (const stream of this.cyberStreams) {
       stream.progress += stream.speed * 60 * dt;
       if (stream.progress >= 1) {
         stream.progress = 0;
-        stream.lane = (Math.random() - 0.5) * 1.3;
+        stream.lane = (Math.random() - 0.5) * 1.4;
       }
 
       const p1 = stream.progress;
       const p2 = Math.min(1, stream.progress + stream.length);
 
-      const y1 = horizon + Math.pow(p1, 2.8) * (h - horizon);
-      const x1 = vpX + stream.lane * (w * 0.6) * Math.pow(p1, 1.8);
+      const y1 = horizon + Math.pow(p1, 2.6) * (h - horizon);
+      const x1 = vpX + stream.lane * (w * 0.65) * Math.pow(p1, 1.6);
 
-      const y2 = horizon + Math.pow(p2, 2.8) * (h - horizon);
-      const x2 = vpX + stream.lane * (w * 0.6) * Math.pow(p2, 1.8);
+      const y2 = horizon + Math.pow(p2, 2.6) * (h - horizon);
+      const x2 = vpX + stream.lane * (w * 0.65) * Math.pow(p2, 1.6);
 
-      const alpha = Math.sin(stream.progress * Math.PI) * 0.7;
-      ctx.strokeStyle = `${stream.color} ${alpha})`;
-      ctx.lineWidth = 1.8;
+      const alpha = Math.sin(stream.progress * Math.PI) * 0.85;
+      ctx.strokeStyle = stream.color === '#06b6d4'
+        ? `rgba(6, 182, 212, ${alpha})`
+        : `rgba(168, 85, 247, ${alpha})`;
+
+      ctx.lineWidth = 2.4;
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      // Glowing data head
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(x2, y2, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // C. Concentric Cybernetic Sonar Rings
+    for (const ripple of this.cyberRipples) {
+      ripple.progress = (ripple.progress + ripple.speed * dt) % 1;
+      const radius = ripple.progress * ripple.maxRadius;
+      const alpha = Math.sin((1 - ripple.progress) * Math.PI * 0.5) * 0.22;
+
+      ctx.strokeStyle = `rgba(6, 182, 212, ${alpha})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(vpX, horizon + 50, radius, 0, Math.PI * 2);
       ctx.stroke();
     }
   }
 
   // --------------------------------------------------------------------------
-  // 3. TELEMETRY: 360° Tactical Radar Sweep PPI & Phosphor Blips
+  // 3. TELEMETRY: 360° Tactical Military PPI Radar Sweep & Phosphor Blips
   // --------------------------------------------------------------------------
   #renderTelemetry(ctx, now, dt, w, h) {
     const rx = w * 0.5;
     const ry = h * 0.45;
-    const maxRadius = Math.max(w, h) * 0.65;
+    const maxRadius = Math.max(w, h) * 0.72;
 
-    // Rotate sweep
-    const sweepSpeed = 0.95 * dt; // Full 360 turn in ~6.6 seconds
+    // Rotate sweep: 1 full turn every 4 seconds
+    const sweepSpeed = (Math.PI * 2 / 4) * dt;
     this.radarAngle = (this.radarAngle + sweepSpeed) % (Math.PI * 2);
 
-    // Faint concentric range rings
-    ctx.strokeStyle = 'rgba(230, 25, 25, 0.07)';
+    // CRT Scanline bar
+    this.radarScanY = (this.radarScanY + 140 * dt) % (h + 100);
+    const scanBarY = this.radarScanY - 50;
+    const scanGrad = ctx.createLinearGradient(0, scanBarY - 40, 0, scanBarY + 40);
+    scanGrad.addColorStop(0, 'transparent');
+    scanGrad.addColorStop(0.5, 'rgba(230, 25, 25, 0.08)');
+    scanGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = scanGrad;
+    ctx.fillRect(0, scanBarY - 40, w, 80);
+
+    // Range rings
+    ctx.strokeStyle = 'rgba(230, 25, 25, 0.12)';
     ctx.lineWidth = 1;
-    for (let r = 0.25; r <= 1; r += 0.25) {
+    for (let r = 0.2; r <= 1; r += 0.2) {
       ctx.beginPath();
       ctx.arc(rx, ry, maxRadius * r, 0, Math.PI * 2);
       ctx.stroke();
     }
 
-    // Radar coordinate crosshairs
+    // Crosshairs
     ctx.beginPath();
     ctx.moveTo(rx - maxRadius, ry);
     ctx.lineTo(rx + maxRadius, ry);
@@ -415,13 +543,13 @@ export class AmbientMotionCanvas {
     ctx.lineTo(rx, ry + maxRadius);
     ctx.stroke();
 
-    // Radar sweep phosphor trail
-    const tailAngle = 0.55; // ~31 degrees tail
-    const steps = 18;
+    // Phosphor sweep fan
+    const tailAngle = 0.65; // ~37 degrees
+    const steps = 24;
     for (let i = 0; i < steps; i++) {
       const a1 = this.radarAngle - (i / steps) * tailAngle;
       const a2 = this.radarAngle - ((i + 1) / steps) * tailAngle;
-      const alpha = (1 - i / steps) * 0.14;
+      const alpha = Math.pow(1 - i / steps, 1.8) * 0.25;
 
       ctx.fillStyle = `rgba(230, 25, 25, ${alpha})`;
       ctx.beginPath();
@@ -431,86 +559,84 @@ export class AmbientMotionCanvas {
       ctx.fill();
     }
 
-    // High-visibility leading sweep beam
-    ctx.strokeStyle = 'rgba(255, 70, 70, 0.55)';
-    ctx.lineWidth = 1.5;
+    // Leading sweep beam
+    ctx.strokeStyle = 'rgba(255, 120, 120, 0.85)';
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(rx, ry);
     ctx.lineTo(rx + Math.cos(this.radarAngle) * maxRadius, ry + Math.sin(this.radarAngle) * maxRadius);
     ctx.stroke();
 
-    // Tactical target blips
+    // Tactical Target Blips
     for (const blip of this.radarBlips) {
-      const bx = rx + Math.cos(blip.angle) * (maxRadius * blip.distRatio);
-      const by = ry + Math.sin(blip.angle) * (maxRadius * blip.distRatio);
+      const bx = blip.xRatio * w;
+      const by = blip.yRatio * h;
 
-      // Check angular proximity to sweep line to trigger flash
-      let diff = Math.abs(this.radarAngle - blip.angle);
-      if (diff > Math.PI) diff = Math.PI * 2 - diff;
+      const blipAngle = Math.atan2(by - ry, bx - rx);
+      let angleDiff = (this.radarAngle - blipAngle) % (Math.PI * 2);
+      if (angleDiff < 0) angleDiff += Math.PI * 2;
 
-      if (diff < 0.08) {
+      // Ping when swept
+      if (angleDiff < 0.1) {
         blip.intensity = 1.0;
       } else {
-        blip.intensity = Math.max(0.18, blip.intensity - 0.45 * dt);
+        blip.intensity = Math.max(0.12, blip.intensity - 0.45 * dt);
       }
 
-      const blipAlpha = blip.intensity;
-      ctx.fillStyle = `rgba(255, 60, 60, ${blipAlpha})`;
-      ctx.strokeStyle = `rgba(255, 60, 60, ${blipAlpha * 0.8})`;
+      const alpha = blip.intensity;
 
-      // Crosshair marker
-      const s = 4;
-      ctx.beginPath();
-      ctx.moveTo(bx - s, by);
-      ctx.lineTo(bx + s, by);
-      ctx.moveTo(bx, by - s);
-      ctx.lineTo(bx, by + s);
-      ctx.stroke();
-
-      // Echo ping ring if recently triggered
-      if (blip.intensity > 0.6) {
-        const ringR = (1 - blip.intensity) * 28;
-        ctx.strokeStyle = `rgba(255, 80, 80, ${blip.intensity * 0.5})`;
+      // Outer ping echo ring
+      if (alpha > 0.4) {
+        ctx.strokeStyle = `rgba(230, 25, 25, ${(alpha - 0.4) * 0.6})`;
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(bx, by, ringR, 0, Math.PI * 2);
+        ctx.arc(bx, by, 14 * (1.5 - alpha * 0.5), 0, Math.PI * 2);
         ctx.stroke();
       }
 
-      // Small tactical label
-      ctx.font = '8px "JetBrains Mono", monospace';
-      ctx.fillStyle = `rgba(255, 100, 100, ${blipAlpha * 0.85})`;
-      ctx.fillText(blip.label, bx + 6, by - 4);
+      // Blip square
+      ctx.fillStyle = `rgba(255, 60, 60, ${alpha})`;
+      ctx.fillRect(bx - 3, by - 3, 6, 6);
+
+      // Blip tag
+      ctx.font = '10px "JetBrains Mono", monospace';
+      ctx.fillStyle = `rgba(230, 25, 25, ${alpha * 0.85})`;
+      ctx.fillText(blip.label, bx + 10, by + 3);
     }
   }
 
   // --------------------------------------------------------------------------
-  // 4. EDITORIAL: Subtle Floating Archival Dust Motes & Ambient Light Shift
+  // 4. EDITORIAL: Volumetric Ambient Architectural Light & Archival Dust Motes
   // --------------------------------------------------------------------------
   #renderEditorial(ctx, now, dt, w, h) {
-    // Subtle architectural light ray
-    const lightAngle = Math.sin(now * 0.0002) * 0.04;
-    const grad = ctx.createLinearGradient(0, 0, w * (0.8 + lightAngle), h);
-    grad.addColorStop(0, 'rgba(255, 255, 255, 0.025)');
-    grad.addColorStop(0.5, 'rgba(255, 255, 255, 0.008)');
+    // A. Volumetric Architectural Light Ray
+    const lightSway = Math.sin(now * 0.0006) * 0.08;
+    const grad = ctx.createLinearGradient(0, 0, w * (0.85 + lightSway), h);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 0.045)');
+    grad.addColorStop(0.4, 'rgba(255, 255, 255, 0.018)');
     grad.addColorStop(1, 'transparent');
 
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
 
-    // Archival paper dust motes drifting upward with gentle brownian motion
+    // B. Floating Archival Dust Motes
+    const speedMultiplier = 60 * dt;
     for (const mote of this.editorialMotes) {
-      mote.x += (mote.vx + Math.sin(now * 0.001 + mote.pulseOffset) * 0.25) * 60 * dt;
-      mote.y += mote.vy * 60 * dt;
+      mote.x += (mote.vx + Math.sin(now * 0.001 + mote.pulseOffset) * 0.3) * speedMultiplier;
+      mote.y += mote.vy * speedMultiplier;
 
-      // Wrap around edges seamlessly
-      if (mote.y < -10) mote.y = h + 10;
-      if (mote.x < -10) mote.x = w + 10;
-      if (mote.x > w + 10) mote.x = -10;
+      // Wrap around seamlessly
+      if (mote.y < -15) mote.y = h + 15;
+      if (mote.x < -15) mote.x = w + 15;
+      if (mote.x > w + 15) mote.x = -15;
 
-      const pulse = 0.6 + 0.4 * Math.sin(now * mote.pulseSpeed + mote.pulseOffset);
+      const pulse = 0.65 + 0.35 * Math.sin(now * mote.pulseSpeed + mote.pulseOffset);
       const alpha = mote.alpha * pulse;
 
-      ctx.fillStyle = `rgba(244, 244, 245, ${alpha})`;
+      ctx.fillStyle = mote.isWarm
+        ? `rgba(251, 191, 36, ${alpha})` // Warm archival parchment gold
+        : `rgba(244, 244, 245, ${alpha})`; // Crisp museum ivory
+
       ctx.beginPath();
       ctx.arc(mote.x, mote.y, mote.radius, 0, Math.PI * 2);
       ctx.fill();

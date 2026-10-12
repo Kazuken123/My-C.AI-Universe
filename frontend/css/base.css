@@ -259,188 +259,65 @@ html, body {
 }
 
 /* ============================================================================
-   MULTI-THEME DYNAMIC ANIMATED BACKGROUNDS
-   (Celestial Aurora, Perspective Cyber-Grid, CRT Radar Scan, Tactile Paper)
+   MULTI-THEME DYNAMIC ANIMATED CANVAS BACKDROP & ATMOSPHERIC BASE
+   (60fps HTML5 Canvas Engine + Deep Atmospheric Backlight at z-index: -1)
    ============================================================================ */
-body::before,
-body::after {
+#ambient-canvas,
+.ambient-motion-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+  display: block;
+}
+
+body::before {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 0;
+  z-index: -1;
   transition: opacity 0.6s var(--ease-glow);
 }
 
-/* 1. HIGGSFIELD: Organic Celestial Aurora & Starlight Drift */
+body::after {
+  display: none !important;
+}
+
+/* 1. HIGGSFIELD: Deep Organic Cosmic Backlight */
 [data-theme="higgsfield"] body::before {
   background:
-    radial-gradient(ellipse 70% 55% at 20% 15%, rgba(139, 92, 246, 0.16), transparent 65%),
-    radial-gradient(ellipse 65% 50% at 85% 25%, rgba(6, 182, 212, 0.13), transparent 60%),
-    radial-gradient(circle 520px at 50% 85%, rgba(168, 85, 247, 0.08), transparent 70%);
-  filter: blur(36px);
-  animation: higgsfieldAuroraFloat 20s ease-in-out infinite alternate;
-  will-change: transform, opacity;
+    radial-gradient(ellipse 70% 55% at 20% 15%, rgba(139, 92, 246, 0.14), transparent 65%),
+    radial-gradient(ellipse 65% 50% at 85% 25%, rgba(6, 182, 212, 0.11), transparent 60%),
+    radial-gradient(circle 520px at 50% 85%, rgba(168, 85, 247, 0.07), transparent 70%);
   opacity: 0.95;
 }
 
-[data-theme="higgsfield"] body::after {
-  background-image:
-    radial-gradient(circle at 15% 35%, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-  background-size: 80px 80px, 120px 120px;
-  animation: higgsfieldStarlightDrift 28s linear infinite;
-  opacity: 0.65;
-}
-
-@keyframes higgsfieldAuroraFloat {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-    opacity: 0.85;
-  }
-  50% {
-    transform: translate3d(-3%, 2%, 0) scale(1.06);
-    opacity: 1;
-  }
-  100% {
-    transform: translate3d(2%, -3%, 0) scale(0.96);
-    opacity: 0.9;
-  }
-}
-
-@keyframes higgsfieldStarlightDrift {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-120px); }
-}
-
-/* 2. VANGUARD: Continuous Perspective Cyber-Grid & Neon Plasma Flares */
+/* 2. VANGUARD: Deep Cockpit Ambient Glow */
 [data-theme="vanguard"] body::before {
-  background-image:
-    linear-gradient(rgba(6, 182, 212, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(6, 182, 212, 0.08) 1px, transparent 1px);
-  background-size: 40px 40px;
-  animation: vanguardGridDrift 3.2s linear infinite;
-  opacity: 0.85;
-  mask-image: radial-gradient(ellipse 95% 85% at 50% 35%, black 40%, transparent 95%);
-  -webkit-mask-image: radial-gradient(ellipse 95% 85% at 50% 35%, black 40%, transparent 95%);
-}
-
-[data-theme="vanguard"] body::after {
   background:
-    radial-gradient(circle at 92% 12%, rgba(6, 182, 212, 0.2), transparent 45%),
-    radial-gradient(circle at 10% 88%, rgba(139, 92, 246, 0.16), transparent 50%);
-  animation: vanguardNeonPulse 6s ease-in-out infinite alternate;
-  will-change: opacity, filter;
+    radial-gradient(circle at 90% 15%, rgba(6, 182, 212, 0.15), transparent 50%),
+    radial-gradient(circle at 10% 85%, rgba(139, 92, 246, 0.12), transparent 50%);
+  opacity: 0.9;
 }
 
-@keyframes vanguardGridDrift {
-  0% {
-    background-position: 0 0;
-  }
-  100% {
-    background-position: 0 40px;
-  }
-}
-
-@keyframes vanguardNeonPulse {
-  0% {
-    opacity: 0.45;
-    filter: drop-shadow(0 0 15px rgba(6, 182, 212, 0.2));
-  }
-  50% {
-    opacity: 0.85;
-    filter: drop-shadow(0 0 32px rgba(6, 182, 212, 0.4));
-  }
-  100% {
-    opacity: 0.45;
-    filter: drop-shadow(0 0 15px rgba(6, 182, 212, 0.2));
-  }
-}
-
-/* 3. TELEMETRY: Tactical CRT Radar Scanline Sweep & Phosphor Coordinate Grid */
+/* 3. TELEMETRY: Tactical Red Radar Horizon Glow */
 [data-theme="telemetry"] body::before {
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgba(230, 25, 25, 0.02) 40%,
-    rgba(230, 25, 25, 0.1) 88%,
-    rgba(255, 60, 60, 0.26) 100%
-  );
-  height: 140px;
-  top: -140px;
-  bottom: auto;
-  animation: telemetryScanBeam 6.5s linear infinite;
-  box-shadow: 0 4px 16px rgba(230, 25, 25, 0.22);
+  background:
+    radial-gradient(circle at 50% 45%, rgba(230, 25, 25, 0.07), transparent 70%),
+    linear-gradient(rgba(230, 25, 25, 0.02) 1px, transparent 1px);
+  background-size: 100% 100%, 32px 32px;
+  opacity: 0.85;
 }
 
-[data-theme="telemetry"] body::after {
-  background-image:
-    linear-gradient(rgba(230, 25, 25, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(230, 25, 25, 0.045) 1px, transparent 1px);
-  background-size: 24px 24px;
-  animation: telemetryGridPulse 7.5s steps(60) infinite;
-  opacity: 0.75;
-}
-
-@keyframes telemetryScanBeam {
-  0% {
-    transform: translateY(0);
-  }
-  100% {
-    transform: translateY(calc(100vh + 160px));
-  }
-}
-
-@keyframes telemetryGridPulse {
-  0%, 100% { opacity: 0.65; }
-  32% { opacity: 0.8; }
-  34% { opacity: 0.52; }
-  68% { opacity: 0.85; }
-  70% { opacity: 0.58; }
-}
-
-/* 4. EDITORIAL: Subtle Matte Tactile Paper Illumination Shift */
+/* 4. EDITORIAL: Subtle Matte Architectural Parchment Glow */
 [data-theme="editorial"] body::before {
   background:
-    radial-gradient(circle at 25% 15%, rgba(255, 255, 255, 0.03), transparent 55%),
-    radial-gradient(circle at 75% 85%, rgba(255, 255, 255, 0.02), transparent 50%);
-  animation: editorialPaperShift 26s ease-in-out infinite alternate;
-  opacity: 0.7;
-}
-
-[data-theme="editorial"] body::after {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-  background-size: 18px 18px;
-  opacity: 0.25;
-}
-
-@keyframes editorialPaperShift {
-  0% {
-    opacity: 0.45;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.02);
-  }
-  100% {
-    opacity: 0.45;
-    transform: scale(1);
-  }
-}
-
-/* Reduced Motion Override for Accessibility */
-@media (prefers-reduced-motion: reduce) {
-  [data-theme="higgsfield"] body::before,
-  [data-theme="higgsfield"] body::after,
-  [data-theme="vanguard"] body::before,
-  [data-theme="vanguard"] body::after,
-  [data-theme="telemetry"] body::before,
-  [data-theme="telemetry"] body::after,
-  [data-theme="editorial"] body::before,
-  [data-theme="editorial"] body::after {
-    animation: none !important;
-  }
+    radial-gradient(circle at 30% 15%, rgba(255, 255, 255, 0.025), transparent 60%),
+    radial-gradient(circle at 70% 85%, rgba(255, 255, 255, 0.015), transparent 50%);
+  opacity: 0.75;
 }
 
 /* Ambient Film Grain Overlay */
