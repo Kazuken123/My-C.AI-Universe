@@ -193,13 +193,13 @@
   position: relative;
   background: linear-gradient(145deg, rgba(23, 21, 35, 0.94) 0%, rgba(13, 12, 22, 0.98) 100%);
   border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 18px;
+  border-radius: var(--radius-shell);
   padding: 22px;
   display: flex;
   flex-direction: column;
   gap: 15px;
   cursor: pointer;
-  box-shadow: 0 20px 48px -12px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
               border-color 0.28s ease,
               box-shadow 0.35s ease,
@@ -216,16 +216,16 @@
   right: -25%;
   width: 240px;
   height: 240px;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.16) 0%, transparent 70%);
+  background: radial-gradient(circle, var(--accent-soft) 0%, transparent 70%);
   pointer-events: none;
   border-radius: 50%;
   transition: opacity 0.35s ease;
 }
 
 .hero-spotlight-dossier:hover {
-  border-color: rgba(139, 92, 246, 0.5);
-  box-shadow: 0 24px 50px -10px rgba(139, 92, 246, 0.25),
-              0 0 0 1px rgba(139, 92, 246, 0.3),
+  border-color: var(--accent-border);
+  box-shadow: var(--shadow-card-hover),
+              0 0 0 1px var(--accent-border),
               inset 0 1px 0 rgba(255, 255, 255, 0.15);
   transform: translateY(-3px);
   filter: brightness(1.03);

@@ -38,7 +38,11 @@
 
   --font-display: 'Cabinet Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-sans: 'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-serif: 'Instrument Serif', Georgia, serif;
   --font-mono: 'JetBrains Mono', monospace;
+  --font-heading: var(--font-display);
+  --font-body: var(--font-sans);
+  --sidebar-backdrop: blur(24px);
 
   /* Concentric radii for Double-Bezel */
   --radius-shell: 22px;
@@ -75,69 +79,154 @@
   --safe-right: env(safe-area-inset-right, 0px);
 }
 
-/* Theme: Editorial */
-[data-theme="editorial"] {
-  --bg-canvas: #09090c;
-  --bg-canvas-mesh: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.05), transparent 60%), #09090c;
-  --bg-shell: rgba(255, 255, 255, 0.02);
-  --bg-core: #121216;
-  --bg-core-elevated: #18181e;
-  --bg-input: #0f0f13;
-  --bg-input-focus: #16161c;
-  --bg-rail: #121216;
-  --accent: #e4e4e7;
-  --accent-hover: #ffffff;
-  --accent-soft: rgba(255, 255, 255, 0.12);
-  --accent-border: rgba(255, 255, 255, 0.35);
-  --accent-glow: 0 0 24px rgba(255, 255, 255, 0.2);
-  --user-bubble: #18181e;
-  --user-bubble-border: rgba(255, 255, 255, 0.15);
-  --ai-bubble: #121216;
-  --ai-bubble-border: rgba(255, 255, 255, 0.08);
-}
+/* ============================================================================
+   DESIGN SYSTEM MODES (4 DISTINCT ARCHITECTURES)
+   ============================================================================ */
 
-/* Theme: Telemetry */
-[data-theme="telemetry"] {
-  --bg-canvas: #060608;
-  --bg-canvas-mesh: radial-gradient(circle at 50% 0%, rgba(230, 25, 25, 0.1), transparent 50%), #060608;
-  --bg-shell: rgba(230, 25, 25, 0.03);
-  --bg-core: #100b0b;
-  --bg-core-elevated: #180e0e;
-  --bg-input: #0d0707;
-  --bg-input-focus: #170c0c;
-  --bg-rail: #0d0d0d;
-  --accent: #e61919;
-  --accent-hover: #ff3333;
-  --accent-soft: rgba(230, 25, 25, 0.18);
-  --accent-border: rgba(230, 25, 25, 0.45);
-  --accent-glow: 0 0 24px rgba(230, 25, 25, 0.25);
-  --user-bubble: #121212;
-  --user-bubble-border: #e61919;
-  --ai-bubble: #0c0c0c;
-  --ai-bubble-border: #2a2a2a;
-}
-
-/* Theme: Higgsfield */
+/* 1. Higgsfield Cinema (OLED Glassmorphism & Aurora Radiance) */
 [data-theme="higgsfield"] {
   --bg-canvas: #06070a;
-  --bg-canvas-mesh: radial-gradient(circle at 50% -10%, rgba(139, 92, 246, 0.16), transparent 55%),
-                    radial-gradient(circle at 85% 20%, rgba(6, 182, 212, 0.1), transparent 45%),
+  --bg-canvas-mesh: radial-gradient(circle at 50% -10%, rgba(139, 92, 246, 0.18), transparent 55%),
+                    radial-gradient(circle at 85% 20%, rgba(6, 182, 212, 0.12), transparent 45%),
                     #06070a;
   --bg-shell: rgba(255, 255, 255, 0.03);
   --bg-core: #0d0e17;
   --bg-core-elevated: #131522;
   --bg-input: rgba(13, 14, 23, 0.85);
   --bg-input-focus: rgba(20, 22, 36, 0.95);
-  --bg-rail: #090b10;
+  --bg-rail: rgba(9, 10, 16, 0.82);
   --accent: #8b5cf6;
   --accent-hover: #a78bfa;
   --accent-soft: rgba(139, 92, 246, 0.18);
   --accent-border: rgba(139, 92, 246, 0.5);
   --accent-glow: 0 0 30px rgba(139, 92, 246, 0.3);
+  --radius-shell: 22px;
+  --radius-core: 16px;
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 9999px;
+  --font-heading: var(--font-display);
+  --font-body: var(--font-sans);
+  --shadow-card: 0 16px 40px -10px rgba(0, 0, 0, 0.6);
+  --shadow-card-hover: 0 24px 60px -12px rgba(139, 92, 246, 0.22);
+  --sidebar-backdrop: blur(28px);
+  --border-hairline: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.14);
   --user-bubble: #161224;
   --user-bubble-border: rgba(139, 92, 246, 0.35);
   --ai-bubble: #0d1017;
   --ai-bubble-border: rgba(255, 255, 255, 0.09);
+}
+
+/* 2. Vanguard (Electric Cyberpunk Cockpit) */
+[data-theme="vanguard"] {
+  --bg-canvas: #050811;
+  --bg-canvas-mesh: radial-gradient(circle at 50% -10%, rgba(6, 182, 212, 0.18), transparent 55%),
+                    radial-gradient(circle at 85% 25%, rgba(139, 92, 246, 0.14), transparent 45%),
+                    radial-gradient(circle at 10% 70%, rgba(6, 182, 212, 0.08), transparent 50%),
+                    #050811;
+  --bg-shell: rgba(6, 182, 212, 0.035);
+  --bg-core: #091122;
+  --bg-core-elevated: #0e1b33;
+  --bg-input: rgba(9, 17, 34, 0.85);
+  --bg-input-focus: rgba(14, 27, 51, 0.95);
+  --bg-rail: rgba(7, 13, 24, 0.9);
+  --accent: #06b6d4;
+  --accent-hover: #22d3ee;
+  --accent-soft: rgba(6, 182, 212, 0.16);
+  --accent-border: rgba(6, 182, 212, 0.45);
+  --accent-glow: 0 0 28px rgba(6, 182, 212, 0.35);
+  --radius-shell: 14px;
+  --radius-core: 10px;
+  --radius-lg: 10px;
+  --radius-md: 8px;
+  --radius-sm: 6px;
+  --radius-pill: 9999px;
+  --font-heading: var(--font-display);
+  --font-body: var(--font-sans);
+  --shadow-card: 0 16px 40px -10px rgba(0, 0, 0, 0.75);
+  --shadow-card-hover: 0 0 28px rgba(6, 182, 212, 0.28), 0 0 0 1px rgba(6, 182, 212, 0.5);
+  --sidebar-backdrop: blur(22px);
+  --border-hairline: rgba(6, 182, 212, 0.15);
+  --border-subtle: rgba(6, 182, 212, 0.3);
+  --user-bubble: #0c1c38;
+  --user-bubble-border: rgba(6, 182, 212, 0.4);
+  --ai-bubble: #081122;
+  --ai-bubble-border: rgba(255, 255, 255, 0.1);
+}
+
+/* 3. Editorial (Literary Swiss Publication & Utilitarian Document) */
+[data-theme="editorial"] {
+  --bg-canvas: #0b0b0f;
+  --bg-canvas-mesh: none;
+  --bg-shell: rgba(255, 255, 255, 0.02);
+  --bg-core: #121217;
+  --bg-core-elevated: #181820;
+  --bg-input: #101015;
+  --bg-input-focus: #16161d;
+  --bg-rail: #0e0e13;
+  --accent: #f4f4f5;
+  --accent-hover: #ffffff;
+  --accent-soft: rgba(255, 255, 255, 0.1);
+  --accent-border: rgba(255, 255, 255, 0.28);
+  --accent-glow: none;
+  --radius-shell: 4px;
+  --radius-core: 4px;
+  --radius-lg: 4px;
+  --radius-md: 3px;
+  --radius-sm: 2px;
+  --radius-pill: 3px;
+  --font-heading: var(--font-serif);
+  --font-body: var(--font-sans);
+  --border-hairline: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.14);
+  --border-strong: rgba(255, 255, 255, 0.28);
+  --shadow-ambient: none;
+  --shadow-card: none;
+  --shadow-card-hover: none;
+  --sidebar-backdrop: none;
+  --user-bubble: #171720;
+  --user-bubble-border: rgba(255, 255, 255, 0.18);
+  --ai-bubble: #111116;
+  --ai-bubble-border: rgba(255, 255, 255, 0.1);
+}
+
+/* 4. Telemetry (Tactical Military Avionics & Industrial Brutalism) */
+[data-theme="telemetry"] {
+  --bg-canvas: #060608;
+  --bg-canvas-mesh: linear-gradient(rgba(230, 25, 25, 0.035) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(230, 25, 25, 0.035) 1px, transparent 1px);
+  --bg-shell: rgba(230, 25, 25, 0.03);
+  --bg-core: #0e090b;
+  --bg-core-elevated: #160d10;
+  --bg-input: #0a0607;
+  --bg-input-focus: #140b0e;
+  --bg-rail: #07070a;
+  --accent: #e61919;
+  --accent-hover: #ff3333;
+  --accent-soft: rgba(230, 25, 25, 0.16);
+  --accent-border: rgba(230, 25, 25, 0.5);
+  --accent-glow: 0 0 18px rgba(230, 25, 25, 0.35);
+  --radius-shell: 0px;
+  --radius-core: 0px;
+  --radius-lg: 0px;
+  --radius-md: 0px;
+  --radius-sm: 0px;
+  --radius-pill: 0px;
+  --font-heading: var(--font-mono);
+  --font-body: var(--font-mono);
+  --border-hairline: rgba(230, 25, 25, 0.2);
+  --border-subtle: rgba(230, 25, 25, 0.38);
+  --border-strong: rgba(230, 25, 25, 0.7);
+  --shadow-ambient: 0 0 0 1px rgba(230, 25, 25, 0.2);
+  --shadow-card: 0 0 0 1px rgba(230, 25, 25, 0.25);
+  --shadow-card-hover: 0 0 24px rgba(230, 25, 25, 0.3), 0 0 0 1px #e61919;
+  --sidebar-backdrop: none;
+  --user-bubble: #12090c;
+  --user-bubble-border: rgba(230, 25, 25, 0.5);
+  --ai-bubble: #090608;
+  --ai-bubble-border: rgba(230, 25, 25, 0.25);
 }
 
 /* ============================================================================
@@ -931,16 +1020,17 @@ html, body {
   flex-shrink: 0;
   position: sticky;
   top: 0;
-  background: rgba(10, 9, 15, 0.85);
+  background: var(--bg-rail);
   border-right: 1px solid var(--border-hairline);
   display: flex;
   flex-direction: column;
   padding: 18px 16px;
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: var(--sidebar-backdrop, blur(24px));
+  -webkit-backdrop-filter: var(--sidebar-backdrop, blur(24px));
   z-index: 20;
   overflow-y: auto;
   overflow-x: hidden;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
 .sidebar-header,
@@ -1056,9 +1146,9 @@ html, body {
 }
 
 .nav-item.active {
-  color: #ffffff;
-  background: rgba(139, 92, 246, 0.12);
-  border-color: rgba(139, 92, 246, 0.35);
+  color: var(--text-primary);
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
@@ -1228,8 +1318,8 @@ html, body {
 }
 
 .auth-launch-btn:hover {
-  border-color: rgba(255, 255, 255, 0.3);
-  background: #201f2f;
+  border-color: var(--accent-border);
+  background: var(--bg-core-elevated);
   filter: brightness(1.15);
 }
 
@@ -1337,8 +1427,8 @@ html, body {
 }
 
 .persona-pill:hover {
-  border-color: rgba(255, 255, 255, 0.25);
-  background: #1d1c2a;
+  border-color: var(--accent-border);
+  background: var(--bg-core-elevated);
 }
 
 .persona-monogram {
@@ -1817,5 +1907,744 @@ body.mobile-drawer-locked {
   .btn-island-icon {
     width: 30px;
     height: 30px;
+  }
+}
+
+/* ============================================================================
+   MULTI-MODE ARCHITECTURAL & PERSONALITY DIFFERENTIATION
+   Provides profound structural, typographic, geometric, and tactile differences
+   across the 4 design systems (Higgsfield Cinema, Vanguard Cyber, Editorial Minimalist, Telemetry Brutalist)
+   ============================================================================ */
+
+/* --------------------------------------------------------------------------
+   1. EDITORIAL MODE (Swiss Publication, Bookmaking & Utilitarian Minimalism)
+   -------------------------------------------------------------------------- */
+[data-theme="editorial"] {
+  font-family: var(--font-sans);
+  background-image: none !important;
+}
+
+[data-theme="editorial"] h1,
+[data-theme="editorial"] h2,
+[data-theme="editorial"] h3,
+[data-theme="editorial"] .hero-title,
+[data-theme="editorial"] .cai-card-name,
+[data-theme="editorial"] .page-title,
+[data-theme="editorial"] .panel-title,
+[data-theme="editorial"] .chat-char-name,
+[data-theme="editorial"] .brand-title,
+[data-theme="editorial"] .section-title {
+  font-family: var(--font-serif) !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* Editorial: Clean, Non-Bubbly Geometric Radii */
+[data-theme="editorial"] .double-bezel-shell,
+[data-theme="editorial"] .cai-card,
+[data-theme="editorial"] .cai-card-wrap,
+[data-theme="editorial"] .studio-card,
+[data-theme="editorial"] .persona-card,
+[data-theme="editorial"] .chats-thread-card,
+[data-theme="editorial"] .auth-box,
+[data-theme="editorial"] .profile-setup-box,
+[data-theme="editorial"] .form-input,
+[data-theme="editorial"] .form-textarea,
+[data-theme="editorial"] .select-control,
+[data-theme="editorial"] .custom-select-trigger,
+[data-theme="editorial"] .custom-select-dropdown,
+[data-theme="editorial"] .cai-avatar-wrap,
+[data-theme="editorial"] .cai-avatar {
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  background-color: #121217 !important;
+}
+
+[data-theme="editorial"] .double-bezel-core {
+  border-radius: 2px !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  background-color: #16161e !important;
+  box-shadow: none !important;
+}
+
+[data-theme="editorial"] .double-bezel-shell:hover,
+[data-theme="editorial"] .cai-card:hover {
+  box-shadow: none !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Editorial Buttons: Sharp Rectangular Slabs (No Pills per minimalist-skill) */
+[data-theme="editorial"] .btn-island,
+[data-theme="editorial"] .btn-primary,
+[data-theme="editorial"] .btn-cta,
+[data-theme="editorial"] .btn-secondary,
+[data-theme="editorial"] .category-pill {
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+}
+
+[data-theme="editorial"] .btn-island {
+  background: #f4f4f5 !important;
+  color: #0c0c11 !important;
+  border: 1px solid #ffffff !important;
+}
+
+[data-theme="editorial"] .btn-island .btn-island-icon {
+  background: #0c0c11 !important;
+  color: #f4f4f5 !important;
+  border-radius: 3px !important;
+}
+
+[data-theme="editorial"] .category-pill.active {
+  background: #ffffff !important;
+  color: #0c0c11 !important;
+  border-color: #ffffff !important;
+}
+
+/* Editorial Sidebar Rail */
+[data-theme="editorial"] .sidebar {
+  background: #0d0d12 !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+[data-theme="editorial"] .sidebar .brand-title {
+  font-family: var(--font-serif) !important;
+  font-style: italic !important;
+  font-size: 1.25rem !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.01em !important;
+}
+
+[data-theme="editorial"] .sidebar .brand-version {
+  font-family: var(--font-mono) !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: #a1a1aa !important;
+}
+
+[data-theme="editorial"] .sidebar .brand-mark {
+  border-radius: 3px !important;
+  background: #181820 !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="editorial"] .sidebar .sidebar-section-header {
+  font-family: var(--font-serif) !important;
+  font-style: italic !important;
+  font-size: 0.95rem !important;
+  font-weight: 400 !important;
+  text-transform: none !important;
+  letter-spacing: 0.01em !important;
+  color: #d4d4d8 !important;
+}
+
+[data-theme="editorial"] .sidebar .nav-item {
+  border-radius: 3px !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.86rem !important;
+  font-weight: 500 !important;
+  color: #a1a1aa !important;
+  border: 1px solid transparent !important;
+  transition: background 0.15s ease, color 0.15s ease !important;
+}
+
+[data-theme="editorial"] .sidebar .nav-item:hover {
+  background: #181822 !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  transform: none !important;
+}
+
+[data-theme="editorial"] .sidebar .nav-item.active {
+  background: #161620 !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-left: 3px solid #ffffff !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+[data-theme="editorial"] .sidebar .nav-kbd {
+  border-radius: 3px !important;
+  background: #1c1c24 !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: #a1a1aa !important;
+}
+
+[data-theme="editorial"] .sidebar .recent-chat-avatar-wrap,
+[data-theme="editorial"] .sidebar .recent-chat-avatar {
+  border-radius: 4px !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="editorial"] .sidebar .recent-chat-item {
+  border-radius: 3px !important;
+}
+
+[data-theme="editorial"] .sidebar .auth-launch-btn,
+[data-theme="editorial"] .sidebar .persona-pill,
+[data-theme="editorial"] .sidebar .auth-user-view {
+  border-radius: 4px !important;
+  background: #14141a !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="editorial"] .sidebar .persona-monogram {
+  border-radius: 3px !important;
+}
+
+[data-theme="editorial"] .sidebar .theme-toggle-btn {
+  border-radius: 4px !important;
+  background: #181820 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: none !important;
+}
+
+/* Editorial Mobile Dock & App Bar */
+[data-theme="editorial"] .mobile-header,
+[data-theme="editorial"] .mobile-bottom-nav {
+  background: #0d0d12 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: none !important;
+}
+
+[data-theme="editorial"] .mobile-brand .brand-title {
+  font-family: var(--font-serif) !important;
+  font-style: italic !important;
+}
+
+[data-theme="editorial"] .mobile-nav-tab {
+  border-radius: 3px !important;
+}
+
+[data-theme="editorial"] .mobile-nav-tab.active {
+  color: #ffffff !important;
+  border-bottom: 2px solid #ffffff !important;
+}
+
+
+/* --------------------------------------------------------------------------
+   2. TELEMETRY MODE (Tactical Military HUD, Terminal & Industrial Brutalism)
+   -------------------------------------------------------------------------- */
+[data-theme="telemetry"] {
+  font-family: var(--font-mono) !important;
+  letter-spacing: 0.02em;
+}
+
+[data-theme="telemetry"] h1,
+[data-theme="telemetry"] h2,
+[data-theme="telemetry"] h3,
+[data-theme="telemetry"] .hero-title,
+[data-theme="telemetry"] .cai-card-name,
+[data-theme="telemetry"] .page-title,
+[data-theme="telemetry"] .panel-title,
+[data-theme="telemetry"] .chat-char-name,
+[data-theme="telemetry"] .brand-title,
+[data-theme="telemetry"] .section-title {
+  font-family: var(--font-mono) !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  color: #ff3333 !important;
+}
+
+/* Telemetry: Hard 0px Industrial Geometry & Technical Borders */
+[data-theme="telemetry"] .double-bezel-shell,
+[data-theme="telemetry"] .cai-card,
+[data-theme="telemetry"] .cai-card-wrap,
+[data-theme="telemetry"] .studio-card,
+[data-theme="telemetry"] .persona-card,
+[data-theme="telemetry"] .chats-thread-card,
+[data-theme="telemetry"] .auth-box,
+[data-theme="telemetry"] .profile-setup-box,
+[data-theme="telemetry"] .form-input,
+[data-theme="telemetry"] .form-textarea,
+[data-theme="telemetry"] .select-control,
+[data-theme="telemetry"] .custom-select-trigger,
+[data-theme="telemetry"] .custom-select-dropdown,
+[data-theme="telemetry"] .cai-avatar-wrap,
+[data-theme="telemetry"] .cai-avatar,
+[data-theme="telemetry"] .hero-spotlight-dossier,
+[data-theme="telemetry"] .dossier-avatar {
+  border-radius: 0px !important;
+  border-color: rgba(230, 25, 25, 0.35) !important;
+  background-color: #0c080a !important;
+  box-shadow: 0 0 0 1px rgba(230, 25, 25, 0.15) !important;
+}
+
+[data-theme="telemetry"] .double-bezel-core {
+  border-radius: 0px !important;
+  border-color: rgba(230, 25, 25, 0.25) !important;
+  background-color: #110a0d !important;
+  box-shadow: none !important;
+}
+
+[data-theme="telemetry"] .double-bezel-shell:hover,
+[data-theme="telemetry"] .cai-card:hover {
+  border-color: #ff3333 !important;
+  box-shadow: 0 0 20px rgba(230, 25, 25, 0.3), 0 0 0 1px #e61919 !important;
+  transform: none !important;
+}
+
+/* Telemetry Buttons: 0px Utilitarian Mechanical Blocks */
+[data-theme="telemetry"] .btn-island,
+[data-theme="telemetry"] .btn-primary,
+[data-theme="telemetry"] .btn-cta,
+[data-theme="telemetry"] .btn-secondary,
+[data-theme="telemetry"] .icon-btn,
+[data-theme="telemetry"] .category-pill {
+  border-radius: 0px !important;
+  font-family: var(--font-mono) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  border: 1px solid #e61919 !important;
+  background: rgba(230, 25, 25, 0.14) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+[data-theme="telemetry"] .btn-island:hover,
+[data-theme="telemetry"] .btn-primary:hover {
+  background: #e61919 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 18px rgba(230, 25, 25, 0.5) !important;
+}
+
+[data-theme="telemetry"] .btn-island .btn-island-icon {
+  border-radius: 0px !important;
+  background: #e61919 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="telemetry"] .category-pill.active {
+  background: #e61919 !important;
+  color: #ffffff !important;
+  border-color: #ff3333 !important;
+  box-shadow: 0 0 10px rgba(230, 25, 25, 0.4) !important;
+}
+
+/* Telemetry Tactical Sidebar Rail */
+[data-theme="telemetry"] .sidebar {
+  background: #07070a !important;
+  border-right: 1px solid rgba(230, 25, 25, 0.45) !important;
+  background-image: linear-gradient(rgba(230, 25, 25, 0.035) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(230, 25, 25, 0.035) 1px, transparent 1px) !important;
+  background-size: 20px 20px !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-theme="telemetry"] .sidebar .brand-title {
+  font-family: var(--font-mono) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.12em !important;
+  color: #ff3333 !important;
+  font-size: 0.88rem !important;
+  text-transform: uppercase !important;
+}
+
+[data-theme="telemetry"] .sidebar .brand-version {
+  font-family: var(--font-mono) !important;
+  color: #e61919 !important;
+  letter-spacing: 0.15em !important;
+  font-size: 0.6rem !important;
+  text-transform: uppercase !important;
+}
+
+[data-theme="telemetry"] .sidebar .brand-mark {
+  border-radius: 0px !important;
+  background: rgba(230, 25, 25, 0.12) !important;
+  border: 1px solid #e61919 !important;
+  box-shadow: 0 0 10px rgba(230, 25, 25, 0.3) !important;
+}
+
+[data-theme="telemetry"] .sidebar .sidebar-section-header {
+  font-family: var(--font-mono) !important;
+  font-size: 0.68rem !important;
+  letter-spacing: 0.14em !important;
+  color: #ff4d4d !important;
+  text-transform: uppercase !important;
+}
+
+[data-theme="telemetry"] .sidebar .nav-item {
+  border-radius: 0px !important;
+  font-family: var(--font-mono) !important;
+  font-size: 0.78rem !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  border: 1px solid transparent !important;
+}
+
+[data-theme="telemetry"] .sidebar .nav-item:hover {
+  background: rgba(230, 25, 25, 0.08) !important;
+  border-color: rgba(230, 25, 25, 0.4) !important;
+  color: #ff5555 !important;
+  transform: none !important;
+}
+
+[data-theme="telemetry"] .sidebar .nav-item.active {
+  background: rgba(230, 25, 25, 0.18) !important;
+  border: 1px solid #e61919 !important;
+  border-left: 4px solid #ff2222 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 16px rgba(230, 25, 25, 0.35) !important;
+}
+
+[data-theme="telemetry"] .sidebar .nav-kbd,
+[data-theme="telemetry"] .sidebar .mono-counter {
+  border-radius: 0px !important;
+  border: 1px solid rgba(230, 25, 25, 0.45) !important;
+  background: rgba(230, 25, 25, 0.1) !important;
+  color: #ff4d4d !important;
+}
+
+[data-theme="telemetry"] .sidebar .recent-chat-avatar-wrap,
+[data-theme="telemetry"] .sidebar .recent-chat-avatar {
+  border-radius: 0px !important;
+  border: 1px solid rgba(230, 25, 25, 0.4) !important;
+  background: #0e090b !important;
+}
+
+[data-theme="telemetry"] .sidebar .recent-chat-item {
+  border-radius: 0px !important;
+}
+
+[data-theme="telemetry"] .sidebar .recent-chat-name {
+  font-family: var(--font-mono) !important;
+  font-size: 0.78rem !important;
+  letter-spacing: 0.04em !important;
+}
+
+[data-theme="telemetry"] .sidebar .auth-launch-btn,
+[data-theme="telemetry"] .sidebar .persona-pill,
+[data-theme="telemetry"] .sidebar .auth-user-view {
+  border-radius: 0px !important;
+  background: #0f0a0d !important;
+  border: 1px solid rgba(230, 25, 25, 0.45) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="telemetry"] .sidebar .persona-monogram {
+  border-radius: 0px !important;
+  border-color: rgba(230, 25, 25, 0.4) !important;
+}
+
+[data-theme="telemetry"] .sidebar .theme-toggle-btn {
+  border-radius: 0px !important;
+  border-color: #e61919 !important;
+  background: rgba(230, 25, 25, 0.12) !important;
+  color: #ff3333 !important;
+}
+
+/* Telemetry Mobile Header & Dock */
+[data-theme="telemetry"] .mobile-header,
+[data-theme="telemetry"] .mobile-bottom-nav {
+  background: #07070a !important;
+  border-color: rgba(230, 25, 25, 0.45) !important;
+  backdrop-filter: none !important;
+}
+
+[data-theme="telemetry"] .mobile-brand .brand-title {
+  font-family: var(--font-mono) !important;
+  text-transform: uppercase !important;
+  color: #ff3333 !important;
+}
+
+[data-theme="telemetry"] .mobile-nav-tab {
+  border-radius: 0px !important;
+  font-family: var(--font-mono) !important;
+  text-transform: uppercase !important;
+}
+
+[data-theme="telemetry"] .mobile-nav-tab.active {
+  color: #ff3333 !important;
+  background: rgba(230, 25, 25, 0.15) !important;
+  border-top: 2px solid #e61919 !important;
+}
+
+
+/* --------------------------------------------------------------------------
+   3. VANGUARD MODE (Electric Cyberpunk / High-Tech Neon Cockpit)
+   -------------------------------------------------------------------------- */
+[data-theme="vanguard"] {
+  font-family: var(--font-sans);
+}
+
+[data-theme="vanguard"] h1,
+[data-theme="vanguard"] h2,
+[data-theme="vanguard"] h3,
+[data-theme="vanguard"] .hero-title,
+[data-theme="vanguard"] .cai-card-name,
+[data-theme="vanguard"] .brand-title,
+[data-theme="vanguard"] .section-title {
+  font-family: 'Cabinet Grotesk', sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.04em !important;
+  color: #ffffff !important;
+}
+
+/* Vanguard Cyber Sidebar */
+[data-theme="vanguard"] .sidebar {
+  background: rgba(7, 13, 24, 0.9) !important;
+  border-right: 1px solid rgba(6, 182, 212, 0.3) !important;
+  backdrop-filter: blur(22px) !important;
+  -webkit-backdrop-filter: blur(22px) !important;
+}
+
+[data-theme="vanguard"] .sidebar .brand-mark {
+  border-radius: 8px !important;
+  border-color: rgba(6, 182, 212, 0.5) !important;
+  background: rgba(6, 182, 212, 0.1) !important;
+  box-shadow: 0 0 16px rgba(6, 182, 212, 0.35) !important;
+}
+
+[data-theme="vanguard"] .sidebar .sidebar-section-header {
+  color: #22d3ee !important;
+  letter-spacing: 0.1em !important;
+  font-size: 0.72rem !important;
+}
+
+[data-theme="vanguard"] .sidebar .nav-item {
+  border-radius: 6px !important;
+  font-weight: 600 !important;
+  color: #a5f3fc !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="vanguard"] .sidebar .nav-item:hover {
+  background: rgba(6, 182, 212, 0.1) !important;
+  border-color: rgba(6, 182, 212, 0.35) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="vanguard"] .sidebar .nav-item.active {
+  background: rgba(6, 182, 212, 0.16) !important;
+  border: 1px solid rgba(6, 182, 212, 0.5) !important;
+  border-left: 3px solid #06b6d4 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 18px rgba(6, 182, 212, 0.25) !important;
+}
+
+[data-theme="vanguard"] .sidebar .recent-chat-avatar-wrap,
+[data-theme="vanguard"] .sidebar .recent-chat-avatar {
+  border-radius: 8px !important;
+  border-color: rgba(6, 182, 212, 0.35) !important;
+}
+
+[data-theme="vanguard"] .sidebar .auth-launch-btn,
+[data-theme="vanguard"] .sidebar .persona-pill,
+[data-theme="vanguard"] .sidebar .auth-user-view {
+  border-radius: 8px !important;
+  background: #091325 !important;
+  border: 1px solid rgba(6, 182, 212, 0.3) !important;
+}
+
+[data-theme="vanguard"] .sidebar .persona-monogram {
+  border-radius: 6px !important;
+  border-color: rgba(6, 182, 212, 0.4) !important;
+}
+
+[data-theme="vanguard"] .sidebar .theme-toggle-btn {
+  border-radius: 8px !important;
+  border-color: rgba(6, 182, 212, 0.4) !important;
+  color: #22d3ee !important;
+}
+
+/* Vanguard Cyber Cards */
+[data-theme="vanguard"] .double-bezel-shell,
+[data-theme="vanguard"] .cai-card,
+[data-theme="vanguard"] .studio-card,
+[data-theme="vanguard"] .persona-card,
+[data-theme="vanguard"] .chats-thread-card {
+  border-radius: 10px !important;
+  border: 1px solid rgba(6, 182, 212, 0.3) !important;
+  background: #091325 !important;
+}
+
+[data-theme="vanguard"] .double-bezel-shell:hover,
+[data-theme="vanguard"] .cai-card:hover {
+  border-color: #22d3ee !important;
+  box-shadow: 0 0 24px rgba(6, 182, 212, 0.3), 0 0 0 1px rgba(6, 182, 212, 0.5) !important;
+}
+
+/* Vanguard Cyber Buttons */
+[data-theme="vanguard"] .btn-island,
+[data-theme="vanguard"] .btn-primary,
+[data-theme="vanguard"] .btn-cta {
+  border-radius: 8px !important;
+  background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%) !important;
+  border: 1px solid rgba(6, 182, 212, 0.6) !important;
+  box-shadow: 0 0 18px rgba(6, 182, 212, 0.35) !important;
+}
+
+[data-theme="vanguard"] .category-pill.active {
+  background: #06b6d4 !important;
+  color: #050811 !important;
+  border-color: #22d3ee !important;
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.4) !important;
+}
+
+/* Vanguard Mobile Header & Dock */
+[data-theme="vanguard"] .mobile-header,
+[data-theme="vanguard"] .mobile-bottom-nav {
+  background: rgba(7, 13, 24, 0.95) !important;
+  border-color: rgba(6, 182, 212, 0.3) !important;
+  backdrop-filter: blur(20px) !important;
+}
+
+[data-theme="vanguard"] .mobile-nav-tab.active {
+  color: #22d3ee !important;
+  border-bottom: 2px solid #06b6d4 !important;
+}
+
+
+/* --------------------------------------------------------------------------
+   4. HIGGSFIELD MODE (Cinematic Violet & Cyan OLED Glass Luxury)
+   -------------------------------------------------------------------------- */
+[data-theme="higgsfield"] {
+  font-family: var(--font-sans);
+}
+
+[data-theme="higgsfield"] .sidebar {
+  background: rgba(9, 10, 16, 0.82) !important;
+  border-right: 1px solid rgba(139, 92, 246, 0.2) !important;
+  backdrop-filter: blur(28px) !important;
+  -webkit-backdrop-filter: blur(28px) !important;
+}
+
+[data-theme="higgsfield"] .sidebar .brand-mark {
+  border-radius: 10px !important;
+  border-color: rgba(139, 92, 246, 0.45) !important;
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.28) !important;
+}
+
+[data-theme="higgsfield"] .sidebar .nav-item {
+  border-radius: 10px !important;
+}
+
+[data-theme="higgsfield"] .sidebar .nav-item.active {
+  background: rgba(139, 92, 246, 0.16) !important;
+  border-color: rgba(139, 92, 246, 0.45) !important;
+  box-shadow: 0 0 18px rgba(139, 92, 246, 0.22) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="higgsfield"] .sidebar .recent-chat-avatar-wrap,
+[data-theme="higgsfield"] .sidebar .recent-chat-avatar {
+  border-radius: 10px !important;
+}
+
+[data-theme="higgsfield"] .sidebar .auth-launch-btn,
+[data-theme="higgsfield"] .sidebar .persona-pill,
+[data-theme="higgsfield"] .sidebar .auth-user-view {
+  border-radius: 12px !important;
+}
+
+/* ============================================================================
+   TOP PAGE LOADING BAR (YouTube / GitHub / Next.js Style)
+   Engineered with emil-design-eng micro-interactions & tactile glow
+   ============================================================================ */
+
+.top-loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 3px;
+  z-index: 1000000;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 220ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+              visibility 220ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+}
+
+.top-loading-bar.is-active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.top-loading-bar.is-finishing {
+  opacity: 0;
+  transition: opacity 260ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)) 120ms,
+              visibility 260ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)) 120ms;
+}
+
+.top-loading-bar-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--accent, #8b5cf6) 0%,
+    var(--accent-hover, #a78bfa) 65%,
+    #38bdf8 100%
+  );
+  box-shadow: 0 0 10px var(--accent, #8b5cf6), 0 0 4px rgba(56, 189, 248, 0.7);
+  transition: width 240ms cubic-bezier(0.23, 1, 0.32, 1);
+  will-change: width;
+  overflow: visible;
+}
+
+/* Tactile shimmer beam across the progress line */
+.top-loading-bar.is-active .top-loading-bar-progress::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 100%
+  );
+  animation: topLoadingBarShimmer 1.8s infinite linear;
+}
+
+@keyframes topLoadingBarShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Glowing leading edge peg (tactile flare) */
+.top-loading-bar-peg {
+  display: block;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 100px;
+  height: 100%;
+  box-shadow: 0 0 14px var(--accent, #8b5cf6), 0 0 6px #38bdf8;
+  opacity: 1;
+  transform: rotate(3deg) translateY(-4px);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .top-loading-bar-progress {
+    transition: none !important;
+  }
+  .top-loading-bar.is-active .top-loading-bar-progress::after {
+    animation: none !important;
   }
 }

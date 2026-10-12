@@ -1,3 +1,5 @@
+import { loadingBar } from './loading-bar.js';
+
 /**
  * ApiClient Class (Frontend OOP REST Client)
  * Encapsulates all HTTP requests to the My C.AI Universe backend API.
@@ -20,24 +22,34 @@ export class ApiClient {
   }
 
   async request(url, options = {}) {
-    const token = this.getToken();
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-      ...(options.headers || {})
-    };
-
-    const response = await fetch(`${this.baseUrl}${url}`, {
-      headers,
-      ...options
-    });
-
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      const message = data?.error?.message || `HTTP Error ${response.status}`;
-      throw new Error(message);
+    const silent = options.silent === true;
+    if (!silent) {
+      loadingBar.start();
     }
-    return data;
+    try {
+      const token = this.getToken();
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        ...(options.headers || {})
+      };
+
+      const response = await fetch(`${this.baseUrl}${url}`, {
+        headers,
+        ...options
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message = data?.error?.message || `HTTP Error ${response.status}`;
+        throw new Error(message);
+      }
+      return data;
+    } finally {
+      if (!silent) {
+        loadingBar.done();
+      }
+    }
   }
 
   // Authentication
@@ -221,52 +233,57 @@ export class ApiClient {
   }
 
   async sendChatMessageStream(payload, onToken, onDone) {
-    const token = this.getToken();
-    const headers = {
-      'Content-Type': 'application/json',
-      'Accept': 'text/event-stream',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-    };
+    loadingBar.start();
+    try {
+      const token = this.getToken();
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      };
 
-    const response = await fetch(`${this.baseUrl}/api/chat?stream=true`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload)
-    });
+      const response = await fetch(`${this.baseUrl}/api/chat?stream=true`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      });
 
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({}));
-      throw new Error(data?.error?.message || `HTTP ${response.status}`);
-    }
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data?.error?.message || `HTTP ${response.status}`);
+      }
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder('utf-8');
-    let buffer = '';
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
 
-      const lines = buffer.split('\n\n');
-      buffer = lines.pop() || '';
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
 
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith('data:')) continue;
-        const jsonStr = trimmed.slice(5).trim();
-        try {
-          const parsed = JSON.parse(jsonStr);
-          if (parsed.token && typeof onToken === 'function') {
-            onToken(parsed.token);
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith('data:')) continue;
+          const jsonStr = trimmed.slice(5).trim();
+          try {
+            const parsed = JSON.parse(jsonStr);
+            if (parsed.token && typeof onToken === 'function') {
+              onToken(parsed.token);
+            }
+            if (parsed.done && typeof onDone === 'function') {
+              onDone(parsed);
+            }
+          } catch {
+            // ignore chunk parse error
           }
-          if (parsed.done && typeof onDone === 'function') {
-            onDone(parsed);
-          }
-        } catch {
-          // ignore chunk parse error
         }
       }
+    } finally {
+      loadingBar.done();
     }
   }
 
@@ -337,3 +354,4 @@ export class ApiClient {
 }
 
 export const api = new ApiClient();
+export { loadingBar };

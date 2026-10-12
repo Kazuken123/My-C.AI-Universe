@@ -1,4 +1,5 @@
 import { api } from './api.js';
+export { loadingBar } from './loading-bar.js';
 
 export const SKILL_THEMES = [
   { id: 'higgsfield', label: 'Higgsfield Cinema' },

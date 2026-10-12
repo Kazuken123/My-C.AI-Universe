@@ -1,6 +1,6 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
-> **Current Version:** `v2.5.0`  
+> **Current Version:** `v2.5.1`  
 > **Status:** Production-Ready & Tested  
 > **Automated Test Coverage:** 22/22 E2E tests passing (`npm test`)  
 > **Primary Database:** Turso Cloud (LibSQL `@libsql/client`, AWS Tokyo `ap-northeast-1`)  
@@ -19,7 +19,24 @@ This document serves as the **single source of truth** for project history, rece
 
 ## 🚀 Version History & Milestones
 
-### 🏷️ `v2.5.0` (Current) — Real-Time SSE Token Streaming & Multi-Tier Story Chronicle Memory Architecture
+### 🏷️ `v2.5.1` (Current) — Top Loading Page Bar & Multi-Mode Architectural Personality Engine
+- **YouTube / GitHub / Next.js Style Top Loading Page Bar**:
+  - Engineered zero-dependency [`frontend/js/loading-bar.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/js/loading-bar.js) singleton with initial spring jump (`22%`), diminishing auto-trickle algorithm (`22% -> 90%`), 180ms snap-to-finish, and 240ms smooth fade-out.
+  - Implemented dynamic accent gradient lighting (`var(--accent)` to `var(--accent-hover)`), a glowing 100px leading edge peg, and a continuous shimmer beam during network latency.
+  - Automatically hooked into all internal navigation `<a>` link clicks, `beforeunload`, `pageshow` (bfcache restore), window `load`, and `ApiClient.request()` / `sendChatMessageStream()`.
+  - Added pre-rendered markup to all 8 HTML views and enabled early theme hydration in `<head>` to prevent theme flashing on first render.
+- **Deep Multi-Mode Architectural & Personality Differentiation**:
+  - Fixed sidebar style disconnect by replacing hardcoded background and active item values with dynamic CSS tokens (`var(--bg-rail)`, `var(--accent-soft)`, `var(--accent-border)`).
+  - Engineered distinct structural, typographic, geometric, and tactile personalities across all 4 design systems:
+    - **Editorial (Swiss Publication & Utilitarian Minimalism)**: *Instrument Serif* italic typography for titles, crisp 4px / 2px sharp rectangular geometry (banned round pills), pure flat matte carbon substrate (`#0b0b0f`, zero glowing drop shadows), and a book rail sidebar with left white highlight stripe and typewriter `<kbd>` keys.
+    - **Telemetry (Tactical Military HUD & Industrial Brutalism)**: Strict uppercase *JetBrains Mono* dominance, 0px hard industrial corners, 20px tactical HUD coordinate grid substrate, avionics command rail with hazard-red outline (`#e61919`), and mechanical bracket buttons `[EXECUTE]`.
+    - **Vanguard (Electric Cyberpunk Cockpit)**: Heavy bold grotesk typography, 10px cyber radius, electric cyan (`#06b6d4`) & ultraviolet neon outlines, and dual-tone cyber badges.
+    - **Higgsfield (OLED Glassmorphism & Aurora Luxury)**: Deep OLED black with violet/cyan nebulae, concentric double-bezel curves (`22px`), and floating pill capsules.
+- **Automated Verification**:
+  - Verified with 22/22 end-to-end integration and security tests passing.
+  - Updated graphify knowledge graph.
+
+### 🏷️ `v2.5.0` — Real-Time SSE Token Streaming & Multi-Tier Story Chronicle Memory Architecture
 - **Real-Time Token Streaming via Server-Sent Events (SSE)**:
   - Implemented `generateReplyStream()` in [`backend/ai/providers/gemini.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/providers/gemini.js) using `@google/genai` `generateContentStream()`.
   - Added `chatStream()` generator method to [`AIOrchestrator`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/index.js) yielding real-time chunks.
