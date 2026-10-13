@@ -75,9 +75,14 @@
             <span class="brand-version">SQL STUDIO v2.3</span>
           </div>
         </a>
-        <button class="icon-btn mobile-sidebar-close" id="mobileSidebarClose" type="button" aria-label="Close Navigation Menu">
-          <i class="ph-light ph-x"></i>
-        </button>
+        <div class="sidebar-header-actions">
+          <button class="icon-btn sidebar-collapse-btn" id="sidebarCollapseBtn" type="button" aria-label="Toggle Sidebar Rail" title="Collapse Sidebar ([)">
+            <i class="ph-light ph-sidebar-simple"></i>
+          </button>
+          <button class="icon-btn mobile-sidebar-close" id="mobileSidebarClose" type="button" aria-label="Close Navigation Menu">
+            <i class="ph-light ph-x"></i>
+          </button>
+        </div>
         <span class="engine-telemetry" id="ai-status-badge" title="AI Engine Status">
           <span class="status-dot"></span>
           <span class="status-label">Online</span>
@@ -216,15 +221,6 @@
             <!-- Right Column: Featured Character Spotlight Card -->
             <div class="hero-Featured-col" id="hero-spotlight-card"></div>
           </div>
-        </div>
-
-        <!-- Resume Active Scenes Strip -->
-        <div id="continue-chatting-section" class="section-block" style="display: none;">
-          <div class="section-header">
-            <h2 class="section-title">Resume Active Scenes</h2>
-            <a href="/chats.html" class="section-meta-link">View all threads <i class="ph-light ph-arrow-right"></i></a>
-          </div>
-          <div class="continue-bento-row" id="continue-chatting-row"></div>
         </div>
 
         <!-- Category Filter Pills & Bento Character Roster -->

@@ -1092,13 +1092,148 @@ body::after {
   border-right: 1px solid var(--border-hairline);
   display: flex;
   flex-direction: column;
-  padding: 18px 16px;
+  padding: 16px 14px;
   backdrop-filter: var(--sidebar-backdrop, blur(24px));
   -webkit-backdrop-filter: var(--sidebar-backdrop, blur(24px));
   z-index: 20;
   overflow-y: auto;
   overflow-x: hidden;
-  transition: background-color 0.25s ease, border-color 0.25s ease;
+  transition: width 0.28s var(--ease-spring), padding 0.28s var(--ease-spring), background-color 0.25s ease, border-color 0.25s ease;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Collapsible Slim Rail Mode (Linear / Discord Architecture) */
+.sidebar.collapsed {
+  width: 68px;
+  padding: 16px 8px;
+}
+
+.sidebar.collapsed .brand-text-wrap,
+.sidebar.collapsed .engine-telemetry,
+.sidebar.collapsed .sidebar-section-header,
+.sidebar.collapsed .nav-item span,
+.sidebar.collapsed .nav-kbd,
+.sidebar.collapsed .recent-chat-meta,
+.sidebar.collapsed .btn-island-full span:not(.btn-island-icon),
+.sidebar.collapsed .auth-user-text,
+.sidebar.collapsed .persona-info,
+.sidebar.collapsed .persona-caret,
+.sidebar.collapsed .auth-launch-btn span:not(.btn-island-icon) {
+  display: none !important;
+}
+
+.sidebar.collapsed .sidebar-header {
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  padding: 0;
+  margin-bottom: 14px;
+}
+
+.sidebar.collapsed .brand-logo {
+  justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-cta-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.sidebar.collapsed .sidebar-cta-wrap .btn-island {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  justify-content: center;
+  border-radius: var(--radius-md);
+}
+
+.sidebar.collapsed .sidebar-cta-wrap .btn-island-icon {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 10px 0;
+  gap: 0;
+}
+
+.sidebar.collapsed .recent-chat-item {
+  justify-content: center;
+  padding: 6px 0;
+  gap: 0;
+}
+
+.sidebar.collapsed .sidebar-empty-threads {
+  display: none !important;
+}
+
+.sidebar.collapsed .sidebar-footer {
+  gap: 8px;
+  padding-top: 10px;
+}
+
+.sidebar.collapsed .sidebar-footer-row {
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar.collapsed .persona-pill {
+  padding: 4px;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+}
+
+.sidebar.collapsed .auth-launch-btn {
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.sidebar.collapsed .auth-user-view {
+  justify-content: center;
+  padding: 4px;
+}
+
+.sidebar-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sidebar-collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--ease-spring);
+}
+
+.sidebar-collapse-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  border-color: var(--border-hairline);
+  transform: scale(1.05);
+}
+
+@media (max-width: 900px) {
+  .sidebar-collapse-btn {
+    display: none !important;
+  }
 }
 
 .sidebar-header,
@@ -1113,7 +1248,7 @@ body::after {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   padding: 0 4px;
 }
 

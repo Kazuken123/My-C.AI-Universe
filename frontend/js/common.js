@@ -104,6 +104,50 @@ export async function initSidebar(activePage = 'discover') {
   initTheme();
   bindSpotlightHover(document.body);
 
+  // Collapsible Sidebar Rail (Linear / Discord UX)
+  const sidebar = document.querySelector('.sidebar');
+  const collapseBtn = document.getElementById('sidebarCollapseBtn');
+  const isCollapsed = localStorage.getItem('cai_sidebar_collapsed') === 'true';
+
+  const setSidebarCollapsed = (collapsed) => {
+    if (!sidebar) return;
+    sidebar.classList.toggle('collapsed', collapsed);
+    document.body.classList.toggle('sidebar-collapsed', collapsed);
+    if (collapseBtn) {
+      collapseBtn.title = collapsed ? 'Expand Sidebar ([)' : 'Collapse Sidebar ([)';
+      collapseBtn.setAttribute('aria-expanded', String(!collapsed));
+    }
+    try {
+      localStorage.setItem('cai_sidebar_collapsed', String(collapsed));
+    } catch {}
+  };
+
+  if (isCollapsed) {
+    setSidebarCollapsed(true);
+  }
+
+  if (collapseBtn && !collapseBtn.__collapseBound) {
+    collapseBtn.__collapseBound = true;
+    collapseBtn.addEventListener('click', () => {
+      const currentlyCollapsed = sidebar?.classList.contains('collapsed') || false;
+      setSidebarCollapsed(!currentlyCollapsed);
+    });
+  }
+
+  // Keyboard shortcut: '[' to toggle sidebar rail
+  if (!window.__sidebarKeyBound) {
+    window.__sidebarKeyBound = true;
+    window.addEventListener('keydown', (e) => {
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (e.key === '[' || (e.ctrlKey && e.key.toLowerCase() === 'b')) {
+        e.preventDefault();
+        const currentlyCollapsed = sidebar?.classList.contains('collapsed') || false;
+        setSidebarCollapsed(!currentlyCollapsed);
+      }
+    });
+  }
+
   // Set active nav link
   document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
     const page = item.dataset.page || item.dataset.view;
