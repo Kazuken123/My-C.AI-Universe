@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { getDatabase } from '../backend/db/database.js';
 import { userRepository } from '../backend/repositories/index.js';
 
