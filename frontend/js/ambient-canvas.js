@@ -42,9 +42,13 @@ export class AmbientMotionCanvas {
   }
 
   #init() {
-    this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const osReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const forceMotion = typeof localStorage !== 'undefined' && localStorage.getItem('force_ambient_motion') === 'true';
+    this.reducedMotion = osReduced && !forceMotion;
+
     window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', (e) => {
-      this.reducedMotion = e.matches;
+      const force = typeof localStorage !== 'undefined' && localStorage.getItem('force_ambient_motion') === 'true';
+      this.reducedMotion = e.matches && !force;
       if (this.reducedMotion) {
         this.pause();
       } else {
@@ -80,7 +84,20 @@ export class AmbientMotionCanvas {
 
     if (!this.reducedMotion) {
       this.resume();
+      console.log(`%c[AmbientCanvas] 🌌 60fps kinetic motion running (${this.currentTheme})`, 'color: #8b5cf6; font-weight: bold;');
+    } else {
+      console.warn(
+        '[AmbientCanvas] ⚠️ Motion paused because your Windows/OS has "Animation effects / prefers-reduced-motion" turned off.\n' +
+        '👉 To force-enable motion: Run `window.ambientCanvas.forceStart()` in this console, or enable "Animation effects" in Windows Settings > Accessibility > Visual effects.'
+      );
     }
+  }
+
+  forceStart() {
+    this.reducedMotion = false;
+    try { localStorage.setItem('force_ambient_motion', 'true'); } catch {}
+    this.resume();
+    console.log('%c[AmbientCanvas] 🚀 Force-started motion! Saved preference in localStorage.', 'color: #10b981; font-weight: bold;');
   }
 
   #initDom() {
@@ -646,3 +663,6 @@ export class AmbientMotionCanvas {
 
 // Auto-initialize browser singleton
 export const ambientCanvas = new AmbientMotionCanvas();
+if (typeof window !== 'undefined') {
+  window.ambientCanvas = ambientCanvas;
+}
