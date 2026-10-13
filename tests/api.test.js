@@ -673,6 +673,40 @@ async function runTests() {
   await assertResponse(unblockRes, 'Admin Unblock Rate Limit');
   console.log('✅ 15d. Admin RBAC & SOC Telemetry verified (403 non-admin rejection, 200 admin telemetry, role update, last admin protected, unblock sentinel)');
 
+  // 15e. Admin Webpage & Asset Access Control Check (Server-Side Gatekeeper)
+  // 1. Unauthenticated visitor requesting /admin.html -> Redirected (302) to login or 401
+  const anonAdminPageRes = await fetch(`${BASE_URL}/admin.html`, {
+    redirect: 'manual'
+  });
+  if (anonAdminPageRes.status !== 302 && anonAdminPageRes.status !== 401) {
+    throw new Error(`Admin page gatekeeper failed: Unauthenticated /admin.html returned ${anonAdminPageRes.status}, expected 302 redirect or 401`);
+  }
+
+  // 2. Regular user (User A) requesting /admin.html -> 403 Forbidden
+  const userAdminPageRes = await fetch(`${BASE_URL}/admin.html`, {
+    headers: { 'Cookie': `cai_auth_token=${encodeURIComponent(authA.token)}` }
+  });
+  if (userAdminPageRes.status !== 403) {
+    throw new Error(`Admin page gatekeeper failed: Regular user accessing /admin.html returned ${userAdminPageRes.status}, expected 403`);
+  }
+
+  // 3. Regular user requesting /js/admin-page.js -> 403 Forbidden
+  const userAdminJsRes = await fetch(`${BASE_URL}/js/admin-page.js`, {
+    headers: { 'Cookie': `cai_auth_token=${encodeURIComponent(authA.token)}` }
+  });
+  if (userAdminJsRes.status !== 403) {
+    throw new Error(`Admin JS gatekeeper failed: Regular user accessing /js/admin-page.js returned ${userAdminJsRes.status}, expected 403`);
+  }
+
+  // 4. Admin requesting /admin.html -> 200 OK
+  const adminPageRes = await fetch(`${BASE_URL}/admin.html`, {
+    headers: { 'Cookie': `cai_auth_token=${encodeURIComponent(pilotAuth.token)}` }
+  });
+  if (adminPageRes.status !== 200) {
+    throw new Error(`Admin page gatekeeper failed: Admin user accessing /admin.html returned ${adminPageRes.status}, expected 200`);
+  }
+  console.log('✅ 15e. Admin Webpage & Asset Gatekeeper verified (302 on anon, 403 on regular client, 200 on admin)');
+
   // 16. System Telemetry Ping API
   const pingRes = await fetch(`${BASE_URL}/api/system/ping`);
   const pingData = await assertResponse(pingRes, 'System Ping');

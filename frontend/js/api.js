@@ -16,8 +16,14 @@ export class ApiClient {
   setToken(token) {
     if (token) {
       localStorage.setItem('cai_auth_token', token);
+      if (typeof document !== 'undefined') {
+        document.cookie = `cai_auth_token=${encodeURIComponent(token)}; path=/; max-age=604800; SameSite=Lax`;
+      }
     } else {
       localStorage.removeItem('cai_auth_token');
+      if (typeof document !== 'undefined') {
+        document.cookie = 'cai_auth_token=; path=/; max-age=0; SameSite=Lax';
+      }
     }
   }
 
@@ -398,3 +404,13 @@ export class ApiClient {
 
 export const api = new ApiClient();
 export { loadingBar };
+
+// Synchronize existing localStorage session token to cookie for server-side HTML route protection
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  try {
+    const existingToken = localStorage.getItem('cai_auth_token');
+    if (existingToken && !document.cookie.includes('cai_auth_token=')) {
+      document.cookie = `cai_auth_token=${encodeURIComponent(existingToken)}; path=/; max-age=604800; SameSite=Lax`;
+    }
+  } catch {}
+}

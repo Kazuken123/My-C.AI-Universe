@@ -46,6 +46,9 @@ class AdminPageController {
   showAccessDenied() {
     if (this.accessDeniedEl) this.accessDeniedEl.classList.remove('hidden');
     if (this.workspaceEl) this.workspaceEl.classList.add('hidden');
+    setTimeout(() => {
+      window.location.replace('/');
+    }, 1500);
   }
 
   showWorkspace() {

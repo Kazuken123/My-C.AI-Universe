@@ -11,7 +11,14 @@ function extractToken(req) {
       return parts[1];
     }
   }
-  return req.headers['x-auth-token'] || null;
+  if (req.headers['x-auth-token']) return req.headers['x-auth-token'];
+  if (req.headers.cookie && typeof req.headers.cookie === 'string') {
+    const match = req.headers.cookie.match(/(?:^|;\s*)cai_auth_token=([^;]+)/);
+    if (match) {
+      return decodeURIComponent(match[1]);
+    }
+  }
+  return null;
 }
 
 /**
