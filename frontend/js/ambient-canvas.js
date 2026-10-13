@@ -42,19 +42,10 @@ export class AmbientMotionCanvas {
   }
 
   #init() {
-    const osReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const forceMotion = typeof localStorage !== 'undefined' && localStorage.getItem('force_ambient_motion') === 'true';
-    this.reducedMotion = osReduced && !forceMotion;
-
-    window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', (e) => {
-      const force = typeof localStorage !== 'undefined' && localStorage.getItem('force_ambient_motion') === 'true';
-      this.reducedMotion = e.matches && !force;
-      if (this.reducedMotion) {
-        this.pause();
-      } else {
-        this.resume();
-      }
-    });
+    // Keep ambient motion active in browser even when laptop/OS animations are turned off.
+    // Controlled independently via in-app preference (localStorage: 'ambient_motion_disabled').
+    const inAppDisabled = typeof localStorage !== 'undefined' && localStorage.getItem('ambient_motion_disabled') === 'true';
+    this.reducedMotion = inAppDisabled;
 
     this.#initDom();
     this.#updateTheme();
@@ -86,18 +77,30 @@ export class AmbientMotionCanvas {
       this.resume();
       console.log(`%c[AmbientCanvas] 🌌 60fps kinetic motion running (${this.currentTheme})`, 'color: #8b5cf6; font-weight: bold;');
     } else {
-      console.warn(
-        '[AmbientCanvas] ⚠️ Motion paused because your Windows/OS has "Animation effects / prefers-reduced-motion" turned off.\n' +
-        '👉 To force-enable motion: Run `window.ambientCanvas.forceStart()` in this console, or enable "Animation effects" in Windows Settings > Accessibility > Visual effects.'
-      );
+      console.log('[AmbientCanvas] ⏸️ Motion paused by in-app preference. Call window.ambientCanvas.toggleMotion() to re-enable.');
     }
+  }
+
+  toggleMotion() {
+    this.reducedMotion = !this.reducedMotion;
+    try {
+      localStorage.setItem('ambient_motion_disabled', String(this.reducedMotion));
+    } catch {}
+    if (this.reducedMotion) {
+      this.pause();
+      console.log('[AmbientCanvas] ⏸️ Motion paused.');
+    } else {
+      this.resume();
+      console.log('[AmbientCanvas] ▶️ Motion resumed at 60fps.');
+    }
+    return !this.reducedMotion;
   }
 
   forceStart() {
     this.reducedMotion = false;
-    try { localStorage.setItem('force_ambient_motion', 'true'); } catch {}
+    try { localStorage.removeItem('ambient_motion_disabled'); } catch {}
     this.resume();
-    console.log('%c[AmbientCanvas] 🚀 Force-started motion! Saved preference in localStorage.', 'color: #10b981; font-weight: bold;');
+    console.log('%c[AmbientCanvas] 🚀 Motion enabled.', 'color: #10b981; font-weight: bold;');
   }
 
   #initDom() {
