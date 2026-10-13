@@ -131,7 +131,7 @@ export class ApplicationServer {
           } catch {}
 
           res.setHeader('Content-Type', asset.mime_type || 'image/jpeg');
-          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          res.setHeader('Cache-Control', 'public, max-age=86400');
           return res.send(buffer);
         }
       } catch (err) {

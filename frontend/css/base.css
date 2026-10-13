@@ -932,9 +932,10 @@ body::after {
    UNIVERSAL SHARED CARD & AVATAR PRIMITIVES
    ============================================================ */
 .cai-avatar-wrap {
-  width: 56px;
-  height: 56px;
-  border-radius: var(--radius-md);
+  width: 76px;
+  height: 76px;
+  min-width: 76px;
+  border-radius: 18px;
   overflow: hidden;
   flex-shrink: 0;
   border: 1px solid var(--border-subtle);
@@ -942,6 +943,8 @@ body::after {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
   position: relative;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  mask-image: radial-gradient(white, black);
 }
 
 .cai-avatar-wrap .cai-avatar,
@@ -954,9 +957,9 @@ body::after {
   display: block;
   flex-shrink: 0;
   transition: filter 0.3s ease, transform 0.3s ease;
-  image-rendering: -webkit-optimize-contrast;
   image-rendering: auto;
-  transform: translateZ(0);
+  image-rendering: smooth;
+  transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
 }
 

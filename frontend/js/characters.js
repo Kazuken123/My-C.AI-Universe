@@ -123,7 +123,8 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
     }
 
     if (heroSpotlightCard) {
-      const avatarUrl = featured.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(featured.name)}`;
+      const rawAvatar = featured.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(featured.name)}`;
+      const avatarUrl = rawAvatar.startsWith('/assets/avatars/') ? `${rawAvatar}?v=4` : rawAvatar;
       const tags = Array.isArray(featured.categories) ? featured.categories : (featured.categories || '').split(',').map(s => s.trim()).filter(Boolean);
       const creator = (featured.creator && featured.creator !== '@you') ? featured.creator : '@community';
       heroSpotlightCard.innerHTML = `
@@ -184,7 +185,8 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
   }
 
   function buildCharacterCardHtml(char, index, total, showManageActions = false) {
-    const avatarUrl = char.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(char.name)}`;
+    const rawAvatar = char.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(char.name)}`;
+    const avatarUrl = rawAvatar.startsWith('/assets/avatars/') ? `${rawAvatar}?v=4` : rawAvatar;
     const tags = Array.isArray(char.categories) ? char.categories : ['Roleplay'];
     const summary = char.tagline || (char.personality ? char.personality.slice(0, 95) : 'Interactive Character');
     const spanClass = getBentoSpanClass(index, total);

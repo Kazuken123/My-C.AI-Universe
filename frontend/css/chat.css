@@ -67,9 +67,9 @@
   object-position: center top;
   border: none;
   display: block;
-  image-rendering: -webkit-optimize-contrast;
   image-rendering: auto;
-  transform: translateZ(0);
+  image-rendering: smooth;
+  transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
 }
 
@@ -133,9 +133,9 @@
   object-position: center top;
   margin-bottom: 12px;
   border: 1px solid var(--border-strong);
-  image-rendering: -webkit-optimize-contrast;
   image-rendering: auto;
-  transform: translateZ(0);
+  image-rendering: smooth;
+  transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
 }
 
@@ -193,9 +193,9 @@
   font-size: 0.76rem;
   font-weight: 600;
   color: var(--accent);
-  image-rendering: -webkit-optimize-contrast;
   image-rendering: auto;
-  transform: translateZ(0);
+  image-rendering: smooth;
+  transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
 }
 

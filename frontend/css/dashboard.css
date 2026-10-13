@@ -194,10 +194,10 @@
   background: linear-gradient(145deg, rgba(23, 21, 35, 0.94) 0%, rgba(13, 12, 22, 0.98) 100%);
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: var(--radius-shell);
-  padding: 18px 20px;
+  padding: 22px 24px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   cursor: pointer;
   box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
@@ -234,7 +234,7 @@
 .dossier-header-strip {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
   position: relative;
   z-index: 1;
 }
@@ -242,14 +242,17 @@
 .dossier-avatar-wrap {
   position: relative;
   flex-shrink: 0;
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
+  width: 108px;
+  height: 108px;
+  min-width: 108px;
+  border-radius: 20px;
   overflow: hidden;
   isolation: isolate;
-  background: radial-gradient(circle at 50% 30%, rgba(139, 92, 246, 0.22) 0%, rgba(18, 16, 28, 0.95) 100%);
-  border: 1.5px solid rgba(139, 92, 246, 0.4);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  mask-image: radial-gradient(white, black);
+  background: radial-gradient(circle at 50% 30%, rgba(139, 92, 246, 0.25) 0%, rgba(18, 16, 28, 0.98) 100%);
+  border: 1.5px solid rgba(139, 92, 246, 0.45);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -262,10 +265,10 @@
   object-fit: cover;
   object-position: center top;
   display: block;
-  transition: transform 0.25s ease, filter 0.25s ease;
-  image-rendering: -webkit-optimize-contrast;
+  transition: transform 0.3s ease, filter 0.3s ease;
   image-rendering: auto;
-  transform: translateZ(0);
+  image-rendering: smooth;
+  transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
 }
 
@@ -275,15 +278,16 @@
 
 .dossier-live-dot {
   position: absolute;
-  bottom: -2px;
-  right: -2px;
-  width: 13px;
-  height: 13px;
+  bottom: 4px;
+  right: 4px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: #10b981;
   border: 2.5px solid #0d0c16;
   box-shadow: 0 0 10px #10b981;
   animation: pulseLiveDot 2.2s infinite ease-in-out;
+  z-index: 2;
 }
 
 @keyframes pulseLiveDot {
@@ -610,20 +614,23 @@
 }
 
 .cai-avatar-wrap {
-  width: 58px;
-  height: 58px;
-  border-radius: 14px;
+  width: 76px;
+  height: 76px;
+  min-width: 76px;
+  border-radius: 18px;
   overflow: hidden;
   position: relative;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 50% 30%, rgba(139, 92, 246, 0.16) 0%, rgba(18, 16, 28, 0.95) 100%);
+  background: radial-gradient(circle at 50% 30%, rgba(139, 92, 246, 0.2) 0%, rgba(18, 16, 28, 0.95) 100%);
   border: 1px solid var(--border-hairline);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
   transition: border-color 0.35s var(--ease-glow), box-shadow 0.4s var(--ease-glow), filter 0.35s var(--ease-glow);
   isolation: isolate;
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  mask-image: radial-gradient(white, black);
 }
 
 .cai-avatar-wrap .cai-avatar,
@@ -635,9 +642,9 @@
   object-position: center top;
   display: block;
   transition: transform 0.3s ease;
-  image-rendering: -webkit-optimize-contrast;
   image-rendering: auto;
-  transform: translateZ(0);
+  image-rendering: smooth;
+  transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
 }
 
@@ -652,9 +659,10 @@
 }
 
 .bento-wide .cai-avatar-wrap {
-  width: 80px;
-  height: 80px;
-  border-radius: 18px;
+  width: 96px;
+  height: 96px;
+  min-width: 96px;
+  border-radius: 20px;
 }
 
 .cai-card-info {

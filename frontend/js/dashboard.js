@@ -35,8 +35,8 @@ class DashboardApp {
 
   buildCardHtml(char, index, total) {
     const spanClass = this.getBentoSpanClass(index, total);
-    const tags = Array.isArray(char.categories) ? char.categories : (char.categories || '').split(',').map(s => s.trim()).filter(Boolean);
-    const avatarUrl = char.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(char.name)}`;
+    const rawAvatar = char.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(char.name)}`;
+    const avatarUrl = rawAvatar.startsWith('/assets/avatars/') ? `${rawAvatar}?v=4` : rawAvatar;
 
     return `
       <div class="${spanClass}">
@@ -101,7 +101,8 @@ class DashboardApp {
   renderHeroSpotlight(topChar) {
     if (!this.heroSpotlightCard || !topChar) return;
     const tags = Array.isArray(topChar.categories) ? topChar.categories : (topChar.categories || '').split(',').map(s => s.trim()).filter(Boolean);
-    const avatarUrl = topChar.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(topChar.name)}`;
+    const rawAvatar = topChar.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(topChar.name)}`;
+    const avatarUrl = rawAvatar.startsWith('/assets/avatars/') ? `${rawAvatar}?v=4` : rawAvatar;
     const creator = (topChar.creator && topChar.creator !== '@you') ? topChar.creator : '@community';
 
     if (this.heroStartChatBtn) {
