@@ -142,8 +142,8 @@ export class ApiClient {
   }
 
   // Health
-  getHealth() {
-    return this.request('/api/health');
+  getHealth(options = {}) {
+    return this.request('/api/health', { silent: true, ...options });
   }
 
   // Characters
@@ -359,8 +359,8 @@ export class ApiClient {
   }
 
   // Administrative Operations & SOC Monitoring
-  getAdminOverview() {
-    return this.request('/api/admin/overview');
+  getAdminOverview(options = {}) {
+    return this.request('/api/admin/overview', options);
   }
 
   getAdminUsers() {
@@ -390,8 +390,8 @@ export class ApiClient {
     });
   }
 
-  getAdminRateLimits() {
-    return this.request('/api/admin/rate-limits');
+  getAdminRateLimits(options = {}) {
+    return this.request('/api/admin/rate-limits', options);
   }
 
   unblockClient(key, limiter = 'all') {

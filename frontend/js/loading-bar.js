@@ -83,11 +83,11 @@ export class TopLoadingBar {
 
     this.activeRequests++;
 
-    // Refresh safety timeout (auto-cleanup after 15s to prevent stuck bar)
+    // Refresh safety timeout (auto-cleanup after 5s to prevent stuck bar)
     clearTimeout(this.safetyTimeout);
     this.safetyTimeout = setTimeout(() => {
       this.done(true);
-    }, 15000);
+    }, 5000);
 
     if (this.status !== null) {
       // Already running: gently advance if in early stages
@@ -248,8 +248,8 @@ export class TopLoadingBar {
         // Ignore cross-origin navigations
         if (url.origin !== window.location.origin) return;
 
-        // Ignore in-page hash anchors (e.g. skip link #main-workspace)
-        if (url.pathname === window.location.pathname && url.search === window.location.search && url.hash) {
+        // Ignore links pointing to the current page (with or without hash)
+        if (url.pathname === window.location.pathname && url.search === window.location.search) {
           return;
         }
 
@@ -269,14 +269,22 @@ export class TopLoadingBar {
       }
     });
 
-    // 3. Browser beforeunload (page transition initiation)
-    window.addEventListener('beforeunload', () => {
-      this.start();
-    });
-
-    // 4. Browser pageshow (handles back/forward cache navigation restore)
+    // 3. Browser pageshow (handles back/forward cache navigation restore)
     window.addEventListener('pageshow', (e) => {
       if (e.persisted) {
+        this.done(true);
+      }
+    });
+
+    // 4. Dismiss any orphaned or lingering bar when returning to tab
+    window.addEventListener('focus', () => {
+      if (this.activeRequests <= 0) {
+        this.done(true);
+      }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && this.activeRequests <= 0) {
         this.done(true);
       }
     });

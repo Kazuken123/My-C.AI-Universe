@@ -32,12 +32,12 @@ class AdminPageController {
       this.bindEvents();
       await this.loadAll();
 
-      // Auto-poll live rate limits and telemetry every 10 seconds
+      // Auto-poll live rate limits and telemetry every 30 seconds silently
       this.autoRefreshInterval = setInterval(() => {
         if (this.activeTab === 'security') {
           this.loadOverview(true);
         }
-      }, 10000);
+      }, 30000);
     } catch {
       this.showAccessDenied();
     }
@@ -118,7 +118,7 @@ class AdminPageController {
 
   async loadOverview(silent = false) {
     try {
-      const data = await api.getAdminOverview();
+      const data = await api.getAdminOverview({ silent });
       this.overviewData = data;
       this.renderOverview(data);
     } catch (err) {
