@@ -351,6 +351,49 @@ export class ApiClient {
       method: 'DELETE'
     });
   }
+
+  // Administrative Operations & SOC Monitoring
+  getAdminOverview() {
+    return this.request('/api/admin/overview');
+  }
+
+  getAdminUsers() {
+    return this.request('/api/admin/users');
+  }
+
+  updateUserRole(userId, role) {
+    return this.request(`/api/admin/users/${encodeURIComponent(userId)}/role`, {
+      method: 'PUT',
+      body: JSON.stringify({ role })
+    });
+  }
+
+  deleteAdminUser(userId) {
+    return this.request(`/api/admin/users/${encodeURIComponent(userId)}`, {
+      method: 'DELETE'
+    });
+  }
+
+  getAdminCharacters() {
+    return this.request('/api/admin/characters');
+  }
+
+  deleteAdminCharacter(characterId) {
+    return this.request(`/api/admin/characters/${encodeURIComponent(characterId)}`, {
+      method: 'DELETE'
+    });
+  }
+
+  getAdminRateLimits() {
+    return this.request('/api/admin/rate-limits');
+  }
+
+  unblockClient(key, limiter = 'all') {
+    return this.request('/api/admin/rate-limits/unblock', {
+      method: 'POST',
+      body: JSON.stringify({ key, limiter })
+    });
+  }
 }
 
 export const api = new ApiClient();

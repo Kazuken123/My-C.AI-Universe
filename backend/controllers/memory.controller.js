@@ -1,5 +1,6 @@
 import { BaseController } from './BaseController.js';
 import { memoryService } from '../services/memory.service.js';
+import { characterRepository, chatSessionRepository } from '../repositories/index.js';
 import { ValidationError, NotFoundError } from '../ai/errors.js';
 
 /**
@@ -7,9 +8,11 @@ import { ValidationError, NotFoundError } from '../ai/errors.js';
  * Handles HTTP requests for CharacterMemory retrieval, creation, and deletion.
  */
 export class MemoryController extends BaseController {
-  constructor(service = memoryService) {
+  constructor(service = memoryService, charRepo = characterRepository, sessionRepo = chatSessionRepository) {
     super();
     this.service = service;
+    this.charRepo = charRepo;
+    this.sessionRepo = sessionRepo;
 
     this.getMemories = this.getMemories.bind(this);
     this.addMemory = this.addMemory.bind(this);
@@ -19,10 +22,23 @@ export class MemoryController extends BaseController {
   async getMemories(req, res) {
     try {
       const { characterId, sessionId } = req.query;
-      const memories = await this.service.getMemories(characterId || null);
+      if (!characterId && !sessionId && (!req.user || !req.user.isAdmin())) {
+        throw new ValidationError('characterId or sessionId parameter is required to retrieve memories', 'characterId');
+      }
+
+      const memories = characterId
+        ? await this.service.getMemories(characterId)
+        : (req.user && req.user.isAdmin() ? await this.service.getMemories(null) : []);
+
       let storySummary = '';
       if (sessionId) {
-        storySummary = await this.service.getSessionStorySummary(sessionId);
+        // Enforce session privacy: story summary only accessible to session owner or admin
+        if (req.user) {
+          const session = await this.sessionRepo.findById(sessionId, req.user.id);
+          if (session || req.user.isAdmin()) {
+            storySummary = await this.service.getSessionStorySummary(sessionId);
+          }
+        }
       }
       return this.sendJson(res, { memories, count: memories.length, storySummary });
     } catch (error) {
@@ -39,8 +55,26 @@ export class MemoryController extends BaseController {
       if (!content || !content.trim()) {
         throw new ValidationError('Memory content is required', 'content');
       }
+      if (content.length > 2000) {
+        throw new ValidationError('Memory content exceeds max length (2000 characters)', 'content');
+      }
 
-      const memory = await this.service.addMemory(content.trim(), characterId, source || 'manual');
+      const character = await this.charRepo.findById(characterId);
+      if (!character) {
+        throw new NotFoundError('Character not found');
+      }
+
+      // Check centralized domain authorization rule
+      if (!character.canModify(req.user)) {
+        return this.sendError(res, 'You do not have permission to add memories to this character', 403);
+      }
+
+      const ALLOWED_SOURCES = new Set(['conversation', 'manual', 'lore', 'wiki', 'system']);
+      const cleanSource = source && ALLOWED_SOURCES.has(String(source).toLowerCase())
+        ? String(source).toLowerCase()
+        : 'manual';
+
+      const memory = await this.service.addMemory(content.trim(), characterId, cleanSource);
       if (!memory) {
         return this.sendJson(res, { message: 'Memory already exists', duplicate: true }, 200);
       }
@@ -53,6 +87,17 @@ export class MemoryController extends BaseController {
 
   async deleteMemory(req, res) {
     try {
+      const memory = await this.service.repository.findById(req.params.id);
+      if (!memory) {
+        throw new NotFoundError('Memory not found');
+      }
+
+      // Check centralized domain authorization rule
+      const character = await this.charRepo.findById(memory.characterId);
+      if (character && !character.canModify(req.user)) {
+        return this.sendError(res, 'You do not have permission to delete this memory', 403);
+      }
+
       const deleted = await this.service.deleteMemory(req.params.id);
       if (!deleted) {
         throw new NotFoundError('Memory not found');

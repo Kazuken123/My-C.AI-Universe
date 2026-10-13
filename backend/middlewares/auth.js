@@ -47,3 +47,21 @@ export function requireAuth(req, res, next) {
     return next();
   });
 }
+
+/**
+ * Required Admin Authentication Middleware
+ * Enforces admin role, returning 401 if unauthenticated and 403 if not admin
+ */
+export function requireAdmin(req, res, next) {
+  requireAuth(req, res, () => {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({
+        error: {
+          message: 'Admin access required. You do not have permission to access this resource.',
+          code: 403
+        }
+      });
+    }
+    return next();
+  });
+}

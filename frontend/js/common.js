@@ -449,6 +449,20 @@ export async function initAccountState() {
       if (userHandleEl) userHandleEl.textContent = `@${currentUser.username}`;
       if (userAvatarEl) renderUserAvatar(userAvatarEl, currentUser.avatar);
 
+      if (currentUser.role === 'admin') {
+        const sidebarNav = document.querySelector('.sidebar-nav');
+        if (sidebarNav && !document.getElementById('sidebarAdminLink')) {
+          const adminLink = document.createElement('a');
+          adminLink.id = 'sidebarAdminLink';
+          adminLink.href = '/admin.html';
+          adminLink.className = 'nav-item';
+          adminLink.style.borderColor = 'rgba(168, 85, 247, 0.4)';
+          adminLink.style.background = 'rgba(168, 85, 247, 0.08)';
+          adminLink.innerHTML = '<i class="ph-light ph-shield-check" style="color: #c084fc;"></i> <span>Admin SOC</span>';
+          sidebarNav.appendChild(adminLink);
+        }
+      }
+
       if (signOutBtn && !signOutBtn.__bound) {
         signOutBtn.__bound = true;
         signOutBtn.addEventListener('click', async () => {

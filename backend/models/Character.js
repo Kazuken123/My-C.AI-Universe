@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { BaseEntity } from './BaseEntity.js';
 import { ValidationError } from '../ai/errors.js';
 import { compileCharacterSystemPrompt, generateDefaultGreeting } from '../ai/prompt/characterPrompt.js';
@@ -14,7 +15,7 @@ export class Character extends BaseEntity {
 
   constructor(props = {}) {
     super({
-      id: props.id || Date.now().toString(),
+      id: props.id || crypto.randomUUID(),
       createdAt: props.createdAt || props.created_at,
       updatedAt: props.updatedAt || props.updated_at
     });
@@ -36,6 +37,7 @@ export class Character extends BaseEntity {
       ? props.categories
       : ['Roleplay', 'Original'];
     this.creator = props.creator || '@community';
+    this.ownerUserId = props.ownerUserId || props.owner_user_id || null;
     this.interactions = Number(props.interactions) || 0;
     this.likes = props.likes !== undefined ? Number(props.likes) : 0;
     this.isLiked = Boolean(props.isLiked ?? props.is_liked ?? false);
@@ -43,6 +45,22 @@ export class Character extends BaseEntity {
     // Ensure greeting and systemPrompt are always compiled
     this.greeting = generateDefaultGreeting(this);
     this.systemPrompt = props.systemPrompt || props.system_prompt || compileCharacterSystemPrompt(this);
+  }
+
+  /**
+   * Domain authorization rule: checks if a given user has permission to modify/delete this character
+   * @param {Object} user
+   * @returns {boolean}
+   */
+  canModify(user) {
+    if (!user) return false;
+    if (typeof user.isAdmin === 'function' && user.isAdmin()) return true;
+    if (user.role === 'admin') return true;
+    if (this.ownerUserId && user.id && this.ownerUserId === user.id) return true;
+    if (this.creator && user.username && this.creator.toLowerCase() === `@${user.username.toLowerCase()}`) {
+      return true;
+    }
+    return false;
   }
 
   static buildDefaultAvatar(name) {
@@ -161,6 +179,7 @@ export class Character extends BaseEntity {
       wikiUrl: row.wiki_url,
       categories,
       creator: row.creator,
+      ownerUserId: row.owner_user_id,
       interactions: row.interactions,
       likes: row.likes,
       isLiked: Boolean(row.is_liked),
@@ -188,6 +207,7 @@ export class Character extends BaseEntity {
       wikiUrl: this.wikiUrl,
       categories: this.categories,
       creator: this.creator,
+      ownerUserId: this.ownerUserId,
       interactions: this.interactions,
       likes: this.likes,
       isLiked: this.isLiked,

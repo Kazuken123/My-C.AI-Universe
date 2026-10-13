@@ -10,7 +10,7 @@ import {
   generateCharacterAI
 } from '../controllers/character.controller.js';
 
-import { optionalAuth } from '../middlewares/auth.js';
+import { optionalAuth, requireAuth } from '../middlewares/auth.js';
 
 const router = express.Router();
 
@@ -24,10 +24,10 @@ router.post('/characters', optionalAuth, createCharacter);
 router.get('/characters', getCharacters);
 router.get('/character/:id', getCharacter);
 router.get('/characters/:id', getCharacter);
-router.put('/character/:id', optionalAuth, updateCharacter);
-router.put('/characters/:id', optionalAuth, updateCharacter);
-router.delete('/character/:id', optionalAuth, deleteCharacter);
-router.delete('/characters/:id', optionalAuth, deleteCharacter);
+router.put('/character/:id', requireAuth, updateCharacter);
+router.put('/characters/:id', requireAuth, updateCharacter);
+router.delete('/character/:id', requireAuth, deleteCharacter);
+router.delete('/characters/:id', requireAuth, deleteCharacter);
 router.post('/character/:id/like', toggleLikeCharacter);
 
 export default router;

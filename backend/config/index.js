@@ -47,8 +47,22 @@ export const config = {
   WIKI_TIMEOUT: 15000, // 15 seconds
   AI_TIMEOUT: 30000,   // 30 seconds
 
-  // Authentication & Security
-  JWT_SECRET: process.env.JWT_SECRET || 'cai-universe-secret-jwt-key-autumn-2026',
+  // Administrator Configuration (configured strictly via environment variables)
+  ADMIN_USERNAMES: (process.env.ADMIN_USERNAMES || '')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean),
+  ADMIN_EMAILS: (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean),
+
+  // Authentication & Security (Fail-closed: dev key allowed ONLY if explicitly development or test)
+  JWT_SECRET: process.env.JWT_SECRET || (
+    (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test')
+      ? 'cai-universe-local-dev-jwt-key-never-use-in-production'
+      : (() => { throw new Error('FATAL: JWT_SECRET environment variable is required unless NODE_ENV is explicitly set to development or test.'); })()
+  ),
 
   // CORS
   CORS_ORIGINS: [
@@ -57,6 +71,15 @@ export const config = {
     'http://127.0.0.1:3000'
   ]
 };
+
+export function isAdminIdentity(username = '', email = '') {
+  const cleanUser = String(username || '').trim().toLowerCase();
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  return (
+    (cleanUser && config.ADMIN_USERNAMES.includes(cleanUser)) ||
+    (cleanEmail && config.ADMIN_EMAILS.includes(cleanEmail))
+  );
+}
 
 /**
  * Validate required environment variables

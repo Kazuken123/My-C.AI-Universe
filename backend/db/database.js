@@ -174,9 +174,37 @@ export class DatabaseConnection {
     if (!raw) return;
 
     try {
+      try {
+        await raw.execute('PRAGMA foreign_keys = ON;');
+      } catch {
+        // Ignored if cloud provider does not support pragma
+      }
+
       if (fs.existsSync(SCHEMA_SQL_PATH)) {
         const schemaSql = fs.readFileSync(SCHEMA_SQL_PATH, 'utf8');
         await raw.executeMultiple(schemaSql);
+      }
+
+      // Ensure 'role' column exists in users table (migration for existing databases)
+      try {
+        const usersColsRes = await raw.execute('PRAGMA table_info(users)');
+        const hasRoleCol = (usersColsRes.rows || []).some(r => r.name === 'role');
+        if (!hasRoleCol) {
+          await raw.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
+        }
+      } catch (colErr) {
+        console.warn('[SQL DB] Users role column migration notice:', colErr.message);
+      }
+
+      // Ensure 'owner_user_id' column exists in characters table
+      try {
+        const charsColsRes = await raw.execute('PRAGMA table_info(characters)');
+        const hasOwnerCol = (charsColsRes.rows || []).some(r => r.name === 'owner_user_id');
+        if (!hasOwnerCol) {
+          await raw.execute('ALTER TABLE characters ADD COLUMN owner_user_id TEXT REFERENCES users(id) ON DELETE SET NULL');
+        }
+      } catch (charColErr) {
+        console.warn('[SQL DB] Characters owner_user_id column migration notice:', charColErr.message);
       }
 
       // Check if characters table is empty

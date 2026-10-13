@@ -54,9 +54,18 @@ export class PersonaController extends BaseController {
   async updatePersona(req, res) {
     try {
       const userId = req.user ? req.user.id : null;
-      const persona = await this.repository.findById(req.params.id, userId);
+      if (!userId) {
+        return res.status(401).json({ error: { message: 'Authentication required to update persona.', code: 401 } });
+      }
+      const persona = await this.repository.findById(req.params.id);
       if (!persona) {
         throw new NotFoundError('Persona not found');
+      }
+
+      if (persona.userId !== userId && !req.user?.isAdmin()) {
+        return res.status(403).json({
+          error: { message: 'You do not have permission to edit this persona.', code: 403 }
+        });
       }
 
       const { name, avatar, description, isDefault } = req.body;
@@ -66,7 +75,7 @@ export class PersonaController extends BaseController {
       if (isDefault) persona.activate();
       else persona.touch();
 
-      await this.repository.save(persona, userId);
+      await this.repository.save(persona, persona.userId);
       return this.sendJson(res, persona.toJSON());
     } catch (error) {
       return this.handleError(res, error, 'Failed to update persona');
@@ -76,22 +85,35 @@ export class PersonaController extends BaseController {
   async deletePersona(req, res) {
     try {
       const userId = req.user ? req.user.id : null;
-      const personas = await this.repository.findAll(userId);
-      if (personas.length <= 1) {
-        throw new ValidationError('Cannot delete the last remaining persona');
+      if (!userId) {
+        return res.status(401).json({ error: { message: 'Authentication required to delete persona.', code: 401 } });
       }
+
       const target = await this.repository.findById(req.params.id);
       if (!target) {
         throw new NotFoundError('Persona not found');
       }
 
+      // Enforce ownership check (owner or admin)
+      if (target.userId !== userId && !req.user?.isAdmin()) {
+        return res.status(403).json({
+          error: { message: 'You do not have permission to delete this persona.', code: 403 }
+        });
+      }
+
+      const ownerUserId = target.userId;
+      const personas = await this.repository.findAll(ownerUserId);
+      if (personas.length <= 1) {
+        throw new ValidationError('Cannot delete the last remaining persona of this user');
+      }
+
       await this.repository.deleteById(req.params.id);
 
       if (target.isDefault) {
-        const remaining = await this.repository.findAll();
+        const remaining = await this.repository.findAll(ownerUserId);
         if (remaining.length > 0) {
           remaining[0].activate();
-          await this.repository.save(remaining[0]);
+          await this.repository.save(remaining[0], ownerUserId);
         }
       }
 

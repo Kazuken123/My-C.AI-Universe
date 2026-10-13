@@ -74,14 +74,22 @@ export class ChatSessionRepository extends BaseRepository {
    * @returns {Promise<ChatSession|null>}
    */
   async findById(sessionId, userId = null, targetDb = null) {
+    if (!sessionId || !userId) return null;
+    const conn = targetDb || this.db;
+    const row = await conn.prepare('SELECT * FROM chat_sessions WHERE id = ? AND user_id = ?').get(sessionId, userId);
+    return await this._hydrateSession(row, conn);
+  }
+
+  /**
+   * Find a single chat session by ID without user ownership scoping (Admin privileged only)
+   * @param {string} sessionId
+   * @param {Object} [targetDb]
+   * @returns {Promise<ChatSession|null>}
+   */
+  async findByIdAdmin(sessionId, targetDb = null) {
     if (!sessionId) return null;
     const conn = targetDb || this.db;
-    const query = userId
-      ? 'SELECT * FROM chat_sessions WHERE id = ? AND (user_id = ? OR user_id IS NULL)'
-      : 'SELECT * FROM chat_sessions WHERE id = ?';
-    const row = userId
-      ? await conn.prepare(query).get(sessionId, userId)
-      : await conn.prepare(query).get(sessionId);
+    const row = await conn.prepare('SELECT * FROM chat_sessions WHERE id = ?').get(sessionId);
     return await this._hydrateSession(row, conn);
   }
 

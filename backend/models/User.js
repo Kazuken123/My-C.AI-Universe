@@ -12,6 +12,7 @@ export class User {
     passwordHash = '',
     displayName = '',
     avatar = '👤',
+    role = 'user',
     authProvider = 'local',
     providerId = null,
     createdAt = new Date().toISOString(),
@@ -23,10 +24,15 @@ export class User {
     this.passwordHash = String(passwordHash);
     this.displayName = String(displayName).trim() || this.username;
     this.avatar = String(avatar).trim() || '👤';
+    this.role = String(role || 'user').trim().toLowerCase();
     this.authProvider = String(authProvider || 'local');
     this.providerId = providerId ? String(providerId) : null;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
+  }
+
+  isAdmin() {
+    return this.role === 'admin';
   }
 
   /**
@@ -94,6 +100,7 @@ export class User {
       email: this.email,
       displayName: this.displayName,
       avatar: this.avatar,
+      role: this.role,
       authProvider: this.authProvider,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt
@@ -112,6 +119,7 @@ export class User {
       passwordHash: row.password_hash,
       displayName: row.display_name,
       avatar: row.avatar,
+      role: row.role || 'user',
       authProvider: row.auth_provider,
       providerId: row.provider_id,
       createdAt: row.created_at,

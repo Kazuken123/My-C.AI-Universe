@@ -22,8 +22,8 @@ export class UserRepository extends BaseRepository {
     user.validate();
 
     const stmt = conn.prepare(`
-      INSERT INTO users (id, username, email, password_hash, display_name, avatar, auth_provider, provider_id, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO users (id, username, email, password_hash, display_name, avatar, role, auth_provider, provider_id, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     await stmt.run(
@@ -33,6 +33,7 @@ export class UserRepository extends BaseRepository {
       user.passwordHash,
       user.displayName,
       user.avatar,
+      user.role || 'user',
       user.authProvider,
       user.providerId || null,
       user.createdAt,
@@ -104,6 +105,17 @@ export class UserRepository extends BaseRepository {
   }
 
   /**
+   * Find all users ordered by creation date
+   * @param {Object} [targetDb]
+   * @returns {Promise<User[]>}
+   */
+  async findAll(targetDb = null) {
+    const conn = targetDb || this.db;
+    const rows = await conn.prepare('SELECT * FROM users ORDER BY created_at DESC').all();
+    return rows.map(r => User.fromDatabaseRow(r));
+  }
+
+  /**
    * Update user details
    * @param {User} user
    * @param {Object} [targetDb]
@@ -137,6 +149,32 @@ export class UserRepository extends BaseRepository {
       user.id
     );
     return user;
+  }
+
+  /**
+   * Update user role specifically (Admin privileged operation)
+   * @param {string} userId
+   * @param {'admin'|'user'} newRole
+   * @param {Object} [targetDb]
+   */
+  async updateRole(userId, newRole, targetDb = null) {
+    if (!['user', 'admin'].includes(newRole)) {
+      throw new Error(`Invalid user role: ${newRole}`);
+    }
+    const conn = targetDb || this.db;
+    const updatedAt = new Date().toISOString();
+    await conn.prepare('UPDATE users SET role = ?, updated_at = ? WHERE id = ?').run(newRole, updatedAt, userId);
+  }
+
+  /**
+   * Count total administrator accounts in the system
+   * @param {Object} [targetDb]
+   * @returns {Promise<number>}
+   */
+  async countAdmins(targetDb = null) {
+    const conn = targetDb || this.db;
+    const row = await conn.prepare("SELECT COUNT(*) AS count FROM users WHERE role = 'admin'").get();
+    return Number(row?.count) || 0;
   }
 
   /**

@@ -7,7 +7,7 @@ import { userRepository, personaRepository } from '../repositories/index.js';
 import { getDatabase } from '../db/database.js';
 import { emailService } from './email.service.js';
 import { AuthenticationError, ConflictError, ValidationError, NotFoundError } from '../ai/errors.js';
-import { config } from '../config/index.js';
+import { config, isAdminIdentity } from '../config/index.js';
 
 const JWT_SECRET = config.JWT_SECRET;
 const TOKEN_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
@@ -49,6 +49,7 @@ export class AuthService {
       sub: user.id,
       username: user.username,
       displayName: user.displayName,
+      role: user.role || 'user',
       exp: Date.now() + TOKEN_TTL_MS
     };
 
@@ -121,12 +122,20 @@ export class AuthService {
     }
 
     const cleanUsername = String(username).trim().toLowerCase();
+    const cleanEmail = email ? String(email).trim().toLowerCase() : '';
+
+    const RESERVED_USERNAMES = new Set([
+      'community', 'system', 'admin', 'administrator', 'moderator',
+      'root', 'support', 'universe', 'kazuken', 'guest'
+    ]);
+    if (RESERVED_USERNAMES.has(cleanUsername)) {
+      throw new ValidationError(`Username "${cleanUsername}" is reserved and cannot be registered`, 'username');
+    }
     const existing = await this.userRepo.findByUsername(cleanUsername);
     if (existing) {
       throw new ConflictError(`Username "${cleanUsername}" is already taken`);
     }
 
-    const cleanEmail = email ? String(email).trim().toLowerCase() : '';
     if (cleanEmail) {
       const existingEmail = await this.userRepo.findByEmail(cleanEmail);
       if (existingEmail) {
@@ -140,7 +149,8 @@ export class AuthService {
       email: cleanEmail || null,
       passwordHash,
       displayName: displayName || cleanUsername,
-      avatar
+      avatar,
+      role: 'user'
     });
 
     const savedUser = await this.userRepo.create(user);
@@ -209,6 +219,10 @@ export class AuthService {
       const cleanUsername = String(username).trim().toLowerCase();
       if (!/^[a-zA-Z0-9_]{3,25}$/.test(cleanUsername)) {
         throw new ValidationError('Username must be 3 to 25 characters and contain only letters, numbers, and underscores', 'username');
+      }
+      const RESERVED_USERNAMES = new Set(['community', 'system', 'admin', 'administrator', 'moderator', 'root', 'support', 'universe']);
+      if (RESERVED_USERNAMES.has(cleanUsername) && !user.isAdmin()) {
+        throw new ValidationError(`Username "${cleanUsername}" is reserved and cannot be claimed`, 'username');
       }
       const existing = await this.userRepo.findByUsername(cleanUsername);
       if (existing && existing.id !== user.id) {
@@ -354,6 +368,7 @@ export class AuthService {
       passwordHash: dummyPasswordHash,
       displayName: profileName || finalUsername,
       avatar: profileAvatar,
+      role: 'user',
       authProvider: cleanProvider,
       providerId: profileId || null
     });

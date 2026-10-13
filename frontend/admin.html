@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="higgsfield">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <title>Admin Operations Center &amp; Security Posture — My C.AI Universe</title>
+  <meta name="description" content="Administrative control center, live rate-limit monitoring, user RBAC, and content moderation suite." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Favicon & Icons -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/dashboard.css" />
+  <link rel="stylesheet" href="/css/admin.css" />
+
+  <script type="module" src="/js/loading-bar.js"></script>
+  <script type="module" src="/js/ambient-canvas.js"></script>
+</head>
+<body>
+  <!-- Ambient Kinetic Motion Canvas Engine -->
+  <canvas id="ambient-canvas" class="ambient-motion-canvas" aria-hidden="true"></canvas>
+
+  <!-- Top Loading Bar -->
+  <div id="top-loading-bar" class="top-loading-bar" aria-hidden="true">
+    <div class="top-loading-bar-progress">
+      <div class="top-loading-bar-peg"></div>
+    </div>
+  </div>
+
+  <div class="ambient-grain" aria-hidden="true"></div>
+
+  <!-- Main Container -->
+  <div class="admin-layout">
+    <div class="admin-container" id="adminContainer">
+      
+      <!-- Access Denied State (Hidden by default, shown if non-admin) -->
+      <div id="adminAccessDenied" class="admin-denied-card hidden">
+        <i class="ph-light ph-shield-warning admin-denied-icon"></i>
+        <h2 class="admin-denied-title">Restricted Admin Area</h2>
+        <p class="admin-denied-text">
+          Access to the Security Operations Center &amp; Management Dashboard requires an authenticated administrator account.
+        </p>
+        <div style="display: flex; gap: 0.75rem; justify-content: center;">
+          <a href="/auth.html?return=/admin.html" class="btn btn-primary">
+            <i class="ph-light ph-sign-in"></i> Sign In as Administrator
+          </a>
+          <a href="/" class="btn btn-secondary">
+            <i class="ph-light ph-arrow-left"></i> Return Home
+          </a>
+        </div>
+      </div>
+
+      <!-- Main Authenticated Admin Workspace -->
+      <div id="adminWorkspace" class="hidden">
+        
+        <!-- Header -->
+        <header class="admin-header">
+          <div class="admin-header-left">
+            <div class="admin-shield-icon">
+              <i class="ph-light ph-shield-check"></i>
+            </div>
+            <div class="admin-title-wrap">
+              <h1>Admin Operations &amp; Security Posture</h1>
+              <p class="admin-subtitle">
+                <span>My C.AI Universe Security Operations Center (SOC)</span>
+                <span class="admin-status-badge">
+                  <span class="admin-status-dot"></span>
+                  Active Sentinel
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div class="admin-header-actions">
+            <button id="btnRefreshAdmin" class="btn-admin-action" title="Refresh Telemetry">
+              <i class="ph-light ph-arrows-clockwise"></i> Refresh
+            </button>
+            <a href="/" class="btn-admin-action" title="Back to App">
+              <i class="ph-light ph-house"></i> Universe Home
+            </a>
+          </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="admin-tabs" role="tablist">
+          <button class="admin-tab-btn active" data-tab="security" role="tab" aria-selected="true">
+            <i class="ph-light ph-shield-check"></i> Security &amp; Rate Limits
+          </button>
+          <button class="admin-tab-btn" data-tab="users" role="tab" aria-selected="false">
+            <i class="ph-light ph-users"></i> Users &amp; Roles
+          </button>
+          <button class="admin-tab-btn" data-tab="characters" role="tab" aria-selected="false">
+            <i class="ph-light ph-mask-happy"></i> Character Moderation
+          </button>
+          <button class="admin-tab-btn" data-tab="system" role="tab" aria-selected="false">
+            <i class="ph-light ph-cpu"></i> System Telemetry
+          </button>
+        </div>
+
+        <!-- TAB 1: SECURITY & RATE LIMITS -->
+        <section id="tabContent-security" class="admin-tab-content">
+          <!-- KPI Stats -->
+          <div class="admin-kpi-grid">
+            <div class="kpi-card">
+              <span class="kpi-label">Total Users</span>
+              <span class="kpi-value" id="kpiTotalUsers">--</span>
+              <span class="kpi-sub" id="kpiAdminCount">-- Admins</span>
+            </div>
+            <div class="kpi-card">
+              <span class="kpi-label">Active Characters</span>
+              <span class="kpi-value" id="kpiTotalCharacters">--</span>
+              <span class="kpi-sub">Roleplay entities</span>
+            </div>
+            <div class="kpi-card">
+              <span class="kpi-label">Storyline Sessions</span>
+              <span class="kpi-value" id="kpiTotalSessions">--</span>
+              <span class="kpi-sub" id="kpiTotalMessages">-- Total messages</span>
+            </div>
+            <div class="kpi-card">
+              <span class="kpi-label">Database Engine</span>
+              <span class="kpi-value" style="font-size: 1.1rem; line-height: 1.6;" id="kpiDbEngine">--</span>
+              <span class="kpi-sub">Relational persistence</span>
+            </div>
+          </div>
+
+          <!-- 7 Security Rules Posture Checklist -->
+          <h2 style="font-size: 1.15rem; font-weight: 600; margin: 0 0 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="ph-light ph-check-circle" style="color: #34d399;"></i> 7 Web Security Defensive Rules Status
+          </h2>
+          <div class="security-grid" id="securityChecklistContainer">
+            <!-- Dynamically populated -->
+          </div>
+
+          <!-- Rate Limiter Sentinel & Throttled Clients -->
+          <div class="admin-section">
+            <div class="admin-section-header">
+              <h3 class="admin-section-title">
+                <i class="ph-light ph-gauge"></i> Live Rate Limiter Sentinels &amp; Throttled Clients
+              </h3>
+              <button id="btnUnblockAll" class="btn-admin-action btn-admin-danger" style="display: none;">
+                <i class="ph-light ph-trash"></i> Reset All Limits
+              </button>
+            </div>
+
+            <!-- Rate Limiter Status Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+              <div class="kpi-card" style="padding: 1rem;">
+                <span class="kpi-label">Global API Limiter</span>
+                <span style="font-size: 1.2rem; font-weight: 700; color: #fff;" id="limitGlobalCount">120 req / min</span>
+                <span class="kpi-sub" id="limitGlobalTracked">0 tracked keys</span>
+              </div>
+              <div class="kpi-card" style="padding: 1rem;">
+                <span class="kpi-label">Auth Route Brute-Force Shield</span>
+                <span style="font-size: 1.2rem; font-weight: 700; color: #fff;" id="limitAuthCount">15 req / min</span>
+                <span class="kpi-sub" id="limitAuthTracked">0 tracked keys</span>
+              </div>
+              <div class="kpi-card" style="padding: 1rem;">
+                <span class="kpi-label">Paid AI Compute Limiter</span>
+                <span style="font-size: 1.2rem; font-weight: 700; color: #fff;" id="limitAiCount">30 req / min</span>
+                <span class="kpi-sub" id="limitAiTracked">0 tracked keys</span>
+              </div>
+            </div>
+
+            <!-- Throttled Clients Table -->
+            <h4 style="font-size: 0.95rem; font-weight: 600; margin: 0 0 0.75rem; color: rgba(255, 255, 255, 0.8);">
+              Currently Throttled Clients (HTTP 429)
+            </h4>
+            <div class="admin-table-container">
+              <table class="admin-table" id="throttledTable">
+                <thead>
+                  <tr>
+                    <th>Target Key (IP / User)</th>
+                    <th>Sentinel</th>
+                    <th>Hit Count</th>
+                    <th>Max Allowed</th>
+                    <th>Cooldown</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="throttledTableBody">
+                  <tr>
+                    <td colspan="6" class="admin-empty-state">
+                      <i class="ph-light ph-check-circle" style="color: #34d399;"></i>
+                      No clients currently throttled. All traffic operating within safe limits.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 2: USERS & ROLES -->
+        <section id="tabContent-users" class="admin-tab-content hidden">
+          <div class="admin-section">
+            <div class="admin-section-header">
+              <h3 class="admin-section-title">
+                <i class="ph-light ph-users"></i> Registered Users Directory &amp; Role-Based Access Control
+              </h3>
+              <input type="text" id="userSearchInput" class="admin-search-input" placeholder="Search by username or email..." />
+            </div>
+
+            <div class="admin-table-container">
+              <table class="admin-table" id="usersTable">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Provider</th>
+                    <th>Storylines</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 3: CHARACTER MODERATION -->
+        <section id="tabContent-characters" class="admin-tab-content hidden">
+          <div class="admin-section">
+            <div class="admin-section-header">
+              <h3 class="admin-section-title">
+                <i class="ph-light ph-mask-happy"></i> Character Moderation &amp; Engagement Inspector
+              </h3>
+              <input type="text" id="characterSearchInput" class="admin-search-input" placeholder="Search characters..." />
+            </div>
+
+            <div class="admin-table-container">
+              <table class="admin-table" id="charactersTable">
+                <thead>
+                  <tr>
+                    <th>Character</th>
+                    <th>Tagline</th>
+                    <th>Creator</th>
+                    <th>Interactions</th>
+                    <th>Likes</th>
+                    <th>Categories</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="charactersTableBody">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 4: SYSTEM TELEMETRY -->
+        <section id="tabContent-system" class="admin-tab-content hidden">
+          <div class="admin-section">
+            <h3 class="admin-section-title" style="margin-bottom: 1.5rem;">
+              <i class="ph-light ph-cpu"></i> Server Environment &amp; Runtime Metrics
+            </h3>
+            
+            <div class="admin-kpi-grid">
+              <div class="kpi-card">
+                <span class="kpi-label">Uptime</span>
+                <span class="kpi-value" id="sysUptime">--</span>
+                <span class="kpi-sub">Continuous operation</span>
+              </div>
+              <div class="kpi-card">
+                <span class="kpi-label">Node Runtime</span>
+                <span class="kpi-value" id="sysNode">--</span>
+                <span class="kpi-sub" id="sysPlatform">--</span>
+              </div>
+              <div class="kpi-card">
+                <span class="kpi-label">Heap Memory Used</span>
+                <span class="kpi-value" id="sysHeapUsed">--</span>
+                <span class="kpi-sub" id="sysRss">RSS: --</span>
+              </div>
+              <div class="kpi-card">
+                <span class="kpi-label">AI Provider</span>
+                <span class="kpi-value" style="font-size: 1.2rem;" id="sysAi">--</span>
+                <span class="kpi-sub" id="sysAiModel">--</span>
+              </div>
+            </div>
+
+            <div style="margin-top: 1.5rem;">
+              <h4 style="font-size: 0.95rem; font-weight: 600; margin: 0 0 0.5rem; color: #fff;">
+                Raw Telemetry Diagnostics Snapshot
+              </h4>
+              <pre id="rawDiagnosticsJson" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 1rem; font-size: 0.78rem; font-family: monospace; color: #34d399; overflow-x: auto; max-height: 300px;"></pre>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/js/admin-page.js"></script>
+</body>
+</html>

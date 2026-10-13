@@ -11,8 +11,10 @@ import { DatabaseConnection } from './backend/db/database.js';
 import {
   securityHeadersMiddleware,
   globalRateLimiter,
+  authRateLimiter,
   sensitiveEndpointLimiter
 } from './backend/middlewares/security.js';
+import { optionalAuth } from './backend/middlewares/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,6 +51,12 @@ export class ApplicationServer {
   }
 
   #configureMiddleware() {
+    if (process.env.TRUST_PROXY) {
+      const tpVal = process.env.TRUST_PROXY.trim();
+      this.app.set('trust proxy', tpVal === 'true' ? true : (!isNaN(Number(tpVal)) ? Number(tpVal) : tpVal));
+    } else {
+      this.app.set('trust proxy', false);
+    }
     this.app.disable('x-powered-by');
     this.app.use(securityHeadersMiddleware());
 
@@ -58,12 +66,24 @@ export class ApplicationServer {
       allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
     }));
 
-    this.app.use(express.json({ limit: '10mb' }));
-    this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+    // Attach optional auth to populate req.user before per-user rate limiters
+    this.app.use('/api', optionalAuth);
+
+    // Apply strict rate limiting to auth endpoints
+    this.app.use([
+      '/api/auth/login',
+      '/api/auth/register',
+      '/api/auth/forgot-password',
+      '/api/auth/reset-password',
+      '/api/auth/verify-code'
+    ], authRateLimiter.middleware());
 
     // Apply global rate limiting to all /api routes
     this.app.use('/api', globalRateLimiter.middleware());
-    this.app.use(['/api/chat', '/api/character/generate', '/api/character/parse-wiki'], sensitiveEndpointLimiter.middleware());
+    this.app.use(['/api/chat', '/api/chats', '/api/character/generate', '/api/character/parse-wiki'], sensitiveEndpointLimiter.middleware());
+
+    this.app.use(express.json({ limit: '10mb' }));
+    this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
   }
 
   #configureRoutes() {
@@ -156,6 +176,10 @@ export class ApplicationServer {
 
     this.app.get(['/characters', '/characters.html'], (_req, res) => {
       res.sendFile(path.join(frontendDir, 'index.html'));
+    });
+
+    this.app.get(['/admin', '/admin.html'], (_req, res) => {
+      res.sendFile(path.join(frontendDir, 'admin.html'));
     });
   }
 

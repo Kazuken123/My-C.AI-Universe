@@ -280,6 +280,10 @@ export class ChatController extends BaseController {
 
       // Handle in-chat /update command via Character OOP domain method
       if (message && message.trim().startsWith('/update ')) {
+        if (!character.canModify(req.user)) {
+          return this.sendError(res, 'Only the character creator or an admin can modify this character via /update', 403);
+        }
+
         const updateCmd = message.trim().substring(8).trim();
         const colonIdx = updateCmd.indexOf(':');
         if (!updateCmd || colonIdx === -1) {

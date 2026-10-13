@@ -1,13 +1,25 @@
+export function extractClientIp(req) {
+  return req.ip || req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1';
+}
+
 /**
  * Security Middleware Suite for My C.AI Universe
  * Provides in-memory Rate Limiting and HTTP Security Headers without external dependencies.
  */
 
 export class MemoryRateLimiter {
-  constructor({ windowMs = 60 * 1000, maxRequests = 100, message = 'Too many requests, please try again later.' } = {}) {
+  constructor({
+    name = 'rate-limiter',
+    windowMs = 60 * 1000,
+    maxRequests = 100,
+    message = 'Too many requests, please try again later.',
+    keyGenerator = null
+  } = {}) {
+    this.name = name;
     this.windowMs = windowMs;
     this.maxRequests = maxRequests;
     this.message = message;
+    this.keyGenerator = keyGenerator;
     this.hits = new Map();
 
     // Periodic sweep to prevent memory leaks from stale IP keys
@@ -28,16 +40,24 @@ export class MemoryRateLimiter {
 
   middleware() {
     return (req, res, next) => {
-      const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+      let key;
+      if (typeof this.keyGenerator === 'function') {
+        key = this.keyGenerator(req);
+      } else if (req.user && req.user.id) {
+        key = `user:${req.user.id}`;
+      } else {
+        key = `ip:${extractClientIp(req)}`;
+      }
+
       const now = Date.now();
 
-      let record = this.hits.get(clientIp);
+      let record = this.hits.get(key);
       if (!record || now > record.resetTime) {
         record = {
           count: 1,
           resetTime: now + this.windowMs
         };
-        this.hits.set(clientIp, record);
+        this.hits.set(key, record);
       } else {
         record.count += 1;
       }
@@ -60,6 +80,37 @@ export class MemoryRateLimiter {
       next();
     };
   }
+
+  getStats() {
+    const now = Date.now();
+    const throttled = [];
+    for (const [key, record] of this.hits.entries()) {
+      if (record.count > this.maxRequests && record.resetTime > now) {
+        throttled.push({
+          key,
+          count: record.count,
+          maxRequests: this.maxRequests,
+          retryAfterSeconds: Math.ceil((record.resetTime - now) / 1000)
+        });
+      }
+    }
+    return {
+      name: this.name,
+      windowMs: this.windowMs,
+      maxRequests: this.maxRequests,
+      activeKeysCount: this.hits.size,
+      throttledCount: throttled.length,
+      throttled
+    };
+  }
+
+  resetKey(key) {
+    return this.hits.delete(key);
+  }
+
+  resetAll() {
+    this.hits.clear();
+  }
 }
 
 /**
@@ -79,15 +130,30 @@ export function securityHeadersMiddleware() {
   };
 }
 
+// IP extractor helper
+const getClientIp = (req) => `ip:${extractClientIp(req)}`;
+
 // Global API rate limiter (120 req / minute)
 export const globalRateLimiter = new MemoryRateLimiter({
+  name: 'global-api',
   windowMs: 60 * 1000,
   maxRequests: 120,
-  message: 'API rate limit exceeded. Please wait a moment before sending more requests.'
+  message: 'API rate limit exceeded. Please wait a moment before sending more requests.',
+  keyGenerator: getClientIp
 });
 
-// Strict rate limiter for compute/AI-heavy endpoints (30 req / minute)
+// Strict rate limiter for authentication routes (login, register, reset password)
+export const authRateLimiter = new MemoryRateLimiter({
+  name: 'auth-endpoints',
+  windowMs: 60 * 1000,
+  maxRequests: process.env.NODE_ENV === 'test' ? 40 : 15,
+  message: 'Too many authentication attempts. Please wait a minute before trying again.',
+  keyGenerator: getClientIp
+});
+
+// Strict rate limiter for compute/AI-heavy endpoints (30 req / minute per user/IP)
 export const sensitiveEndpointLimiter = new MemoryRateLimiter({
+  name: 'sensitive-ai',
   windowMs: 60 * 1000,
   maxRequests: 30,
   message: 'High-frequency request limit reached for AI / external scraping services. Please slow down.'

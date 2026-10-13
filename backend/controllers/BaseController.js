@@ -22,6 +22,18 @@ export class BaseController {
   }
 
   /**
+   * Send standardized error response
+   */
+  sendError(res, message, statusCode = 400) {
+    return res.status(statusCode).json({
+      error: {
+        message,
+        code: statusCode
+      }
+    });
+  }
+
+  /**
    * Handle domain, validation, and runtime errors consistently
    */
   handleError(res, error, defaultMessage = 'Internal server error') {

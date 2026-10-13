@@ -87,9 +87,9 @@ export class CharacterRepository extends BaseRepository {
       INSERT INTO characters (
         id, name, tagline, avatar, greeting, personality, appearance, abilities,
         background, speaking_style, example_dialogues, initial_memory, system_prompt,
-        wiki, wiki_url, categories_json, creator, interactions, likes, is_liked,
+        wiki, wiki_url, categories_json, creator, owner_user_id, interactions, likes, is_liked,
         created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         name = excluded.name,
         tagline = excluded.tagline,
@@ -107,6 +107,7 @@ export class CharacterRepository extends BaseRepository {
         wiki_url = excluded.wiki_url,
         categories_json = excluded.categories_json,
         creator = excluded.creator,
+        owner_user_id = COALESCE(characters.owner_user_id, excluded.owner_user_id),
         interactions = excluded.interactions,
         likes = excluded.likes,
         is_liked = excluded.is_liked,
@@ -131,6 +132,7 @@ export class CharacterRepository extends BaseRepository {
       char.wikiUrl,
       JSON.stringify(char.categories),
       char.creator,
+      char.ownerUserId || null,
       char.interactions,
       char.likes,
       char.isLiked ? 1 : 0,

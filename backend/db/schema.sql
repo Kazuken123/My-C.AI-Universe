@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT NOT NULL,
     display_name TEXT NOT NULL,
     avatar TEXT NOT NULL DEFAULT '👤',
+    role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('user', 'admin')),
     auth_provider TEXT NOT NULL DEFAULT 'local',
     provider_id TEXT,
     created_at TEXT NOT NULL,
@@ -68,11 +69,13 @@ CREATE TABLE IF NOT EXISTS characters (
     wiki_url TEXT NOT NULL DEFAULT '',
     categories_json TEXT NOT NULL DEFAULT '["Roleplay"]',
     creator TEXT NOT NULL DEFAULT '@you',
+    owner_user_id TEXT,
     interactions INTEGER NOT NULL DEFAULT 0,
     likes INTEGER NOT NULL DEFAULT 0,
     is_liked INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- 3. CHAT_SESSION Table

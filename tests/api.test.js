@@ -1,6 +1,7 @@
 /**
  * Automated end-to-end API verification suite for My C.AI Universe
  */
+process.env.NODE_ENV = process.env.NODE_ENV || 'test';
 const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000';
 
 async function assertResponse(res, stepName) {
@@ -44,10 +45,26 @@ async function runTests() {
   const chars = await assertResponse(charsRes, 'List Characters');
   console.log(`✅ 2. Listed ${chars.length} seeded characters from SQL`);
 
+  // Register Pilot User for authenticated test flows
+  const pilotUser = `spec_pilot_${Date.now()}`;
+  const pilotRegRes = await fetch(`${BASE_URL}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: pilotUser,
+      password: 'pilotPassword123',
+      displayName: 'Spec Pilot'
+    })
+  });
+  const pilotAuth = await assertResponse(pilotRegRes, 'Register Pilot User');
+
   // 3. Create Character (verifies SQL INSERT, systemPrompt compilation & greeting generation)
   const createRes = await fetch(`${BASE_URL}/api/character`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${pilotAuth.token}`
+    },
     body: JSON.stringify({
       name: 'Test Spec Character',
       tagline: 'Automated Verification Hero',
@@ -65,20 +82,28 @@ async function runTests() {
   const liked = await assertResponse(likeRes, 'Like Character');
   console.log(`✅ 4. Toggled character like in SQL -> likes: ${liked.likes}, isLiked: ${liked.isLiked}`);
 
-  // 5. Personas CRUD
-  const personasRes = await fetch(`${BASE_URL}/api/personas`);
-  const personas = await assertResponse(personasRes, 'Get Personas');
-  if (personas.length > 0) {
-    const targetPersona = personas[0];
-    const updateRes = await fetch(`${BASE_URL}/api/personas/${targetPersona.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isDefault: true })
-    });
-    const updated = await assertResponse(updateRes, 'Update Persona to Default');
-    if (!updated.isDefault) throw new Error('Expected updated persona to be default');
+  // 5. Personas CRUD (Positive Verification on Authenticated Owner's Persona)
+  const myPersonasRes = await fetch(`${BASE_URL}/api/personas`, {
+    headers: { 'Authorization': `Bearer ${pilotAuth.token}` }
+  });
+  const myPersonas = await assertResponse(myPersonasRes, 'Get My Personas');
+  if (myPersonas.length === 0) {
+    throw new Error('Expected registered pilot user to have starter persona');
   }
-  console.log(`✅ 5. Loaded & verified default user persona update in SQL (${personas.length} available)`);
+  const targetPersona = myPersonas[0];
+  const updateRes = await fetch(`${BASE_URL}/api/personas/${targetPersona.id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${pilotAuth.token}`
+    },
+    body: JSON.stringify({ isDefault: true, name: 'Pilot Custom Hero' })
+  });
+  const updatedPersona = await assertResponse(updateRes, 'Update Own Persona');
+  if (updatedPersona.name !== 'Pilot Custom Hero') {
+    throw new Error(`Expected updated persona name "Pilot Custom Hero", got "${updatedPersona.name}"`);
+  }
+  console.log(`✅ 5. Updated own persona verified (ID: ${updatedPersona.id}, name: "${updatedPersona.name}")`);
 
   // 6. Chat Route Protection & Authenticated Chat Session Creation
   const unauthSessionRes = await fetch(`${BASE_URL}/api/chats`, {
@@ -92,18 +117,6 @@ async function runTests() {
   if (unauthSessionRes.status !== 401) {
     throw new Error(`Expected HTTP 401 for unauthenticated chat session creation, got ${unauthSessionRes.status}`);
   }
-
-  const pilotUser = `spec_pilot_${Date.now()}`;
-  const pilotRegRes = await fetch(`${BASE_URL}/api/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      username: pilotUser,
-      password: 'pilotPassword123',
-      displayName: 'Spec Pilot'
-    })
-  });
-  const pilotAuth = await assertResponse(pilotRegRes, 'Register Pilot User');
 
   const sessionRes = await fetch(`${BASE_URL}/api/chats`, {
     method: 'POST',
@@ -172,7 +185,10 @@ async function runTests() {
   // 8. Long-Term Memory CRUD (inserts into character_memories)
   const addMemRes = await fetch(`${BASE_URL}/api/memories`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${pilotAuth.token}`
+    },
     body: JSON.stringify({
       characterId: createdChar.id,
       content: 'Test Spec Character always drinks Earl Grey tea before a mission.'
@@ -181,10 +197,19 @@ async function runTests() {
   const addedMem = await assertResponse(addMemRes, 'Add Memory');
   console.log(`✅ 8. Added long-term character memory in SQL (${addedMem.id})`);
 
-  // 9. Clean up test character (verifies ON DELETE CASCADE across sessions, messages, variants, memories)
-  const delRes = await fetch(`${BASE_URL}/api/character/${createdChar.id}`, { method: 'DELETE' });
+  // 9. Negative Test: Unauthenticated deletion of character should return 401
+  const unauthDelRes = await fetch(`${BASE_URL}/api/character/${createdChar.id}`, { method: 'DELETE' });
+  if (unauthDelRes.status !== 401) {
+    throw new Error(`Expected HTTP 401 for unauthenticated character deletion, got ${unauthDelRes.status}`);
+  }
+
+  // Clean up test character with owner credentials (verifies ON DELETE CASCADE across sessions, messages, variants, memories)
+  const delRes = await fetch(`${BASE_URL}/api/character/${createdChar.id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${pilotAuth.token}` }
+  });
   await assertResponse(delRes, 'Delete Test Character');
-  console.log(`✅ 9. Deleted test character and verified SQL ON DELETE CASCADE (${createdChar.id})`);
+  console.log(`✅ 9. Verified unauthenticated delete blocked with 401; deleted test character with owner credentials (${createdChar.id})`);
 
   // 10. Security Headers & Rate Limiting Check
   const secRes = await fetch(`${BASE_URL}/api/health`);
@@ -343,6 +368,311 @@ async function runTests() {
 
   console.log(`✅ 15. Multi-tenant user isolation verified (isolated chat history & custom personas per user)`);
 
+  // 15b. Negative Security Boundary Tests (Cross-User IDOR / BOLA Prevention)
+  // Negative Test 1: User B tries to delete User A's persona -> Expected 403 Forbidden
+  const hackDelPersonaRes = await fetch(`${BASE_URL}/api/personas/${personasA[0].id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${authB.token}` }
+  });
+  if (hackDelPersonaRes.status !== 403) {
+    throw new Error(`IDOR check failed: User B deleting User A's persona returned ${hackDelPersonaRes.status}, expected 403`);
+  }
+
+  // Negative Test 2: User B tries to update User A's persona -> Expected 403 Forbidden
+  const hackPutPersonaRes = await fetch(`${BASE_URL}/api/personas/${personasA[0].id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authB.token}`
+    },
+    body: JSON.stringify({ name: 'Hacked Name' })
+  });
+  if (hackPutPersonaRes.status !== 403) {
+    throw new Error(`IDOR check failed: User B updating User A's persona returned ${hackPutPersonaRes.status}, expected 403`);
+  }
+
+  // Negative Test 3: User B tries to fetch User A's private chat session -> Expected 404 Not Found
+  const hackGetChatRes = await fetch(`${BASE_URL}/api/chats/${chatA.id}`, {
+    headers: { 'Authorization': `Bearer ${authB.token}` }
+  });
+  if (hackGetChatRes.status !== 404) {
+    throw new Error(`Chat session isolation failed: User B fetching User A's chat returned ${hackGetChatRes.status}, expected 404`);
+  }
+
+  // Negative Test 4: User A creates a character; User B attempts to edit User A's character -> Expected 403
+  const charARes = await fetch(`${BASE_URL}/api/character`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authA.token}`
+    },
+    body: JSON.stringify({
+      name: 'Owner A Character',
+      tagline: 'Owned by User A',
+      personality: 'Honest and strict'
+    })
+  });
+  const charA = await assertResponse(charARes, 'Create Char A');
+
+  const hackPutCharRes = await fetch(`${BASE_URL}/api/character/${charA.id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authB.token}`
+    },
+    body: JSON.stringify({ name: 'Hacked by B' })
+  });
+  if (hackPutCharRes.status !== 403) {
+    throw new Error(`Character ownership failed: User B updating User A's character returned ${hackPutCharRes.status}, expected 403`);
+  }
+
+  // Negative Test 5: User B attempts to delete User A's character -> Expected 403
+  const hackDelCharRes = await fetch(`${BASE_URL}/api/character/${charA.id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${authB.token}` }
+  });
+  if (hackDelCharRes.status !== 403) {
+    throw new Error(`Character delete ownership failed: User B deleting User A's character returned ${hackDelCharRes.status}, expected 403`);
+  }
+
+  // Negative Test 6: User B attempts in-chat /update defacement on User A's character -> Expected 403
+  const hackInChatUpdateRes = await fetch(`${BASE_URL}/api/chat`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authB.token}`
+    },
+    body: JSON.stringify({
+      charId: charA.id,
+      message: '/update name: Defaced Character'
+    })
+  });
+  if (hackInChatUpdateRes.status !== 403) {
+    throw new Error(`In-chat /update authorization failed: User B defacing User A's character returned ${hackInChatUpdateRes.status}, expected 403`);
+  }
+
+  // Negative Test 7: User B attempts to inject memory into User A's character -> Expected 403
+  const hackAddMemRes = await fetch(`${BASE_URL}/api/memories`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authB.token}`
+    },
+    body: JSON.stringify({
+      characterId: charA.id,
+      content: 'Injected false memory by B'
+    })
+  });
+  if (hackAddMemRes.status !== 403) {
+    throw new Error(`Memory inject authorization failed: User B adding memory to User A's character returned ${hackAddMemRes.status}, expected 403`);
+  }
+
+  // Negative Test 8: Registering reserved username "community" -> Expected 400
+  const reservedRegRes = await fetch(`${BASE_URL}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: 'community',
+      password: 'StrongPassword123!',
+      displayName: 'Community Hijacker'
+    })
+  });
+  if (reservedRegRes.status !== 400) {
+    throw new Error(`Reserved handle protection failed: Registering "community" returned ${reservedRegRes.status}, expected 400`);
+  }
+
+  // Negative Test 9: Registering with username "admin" -> Expected 400
+  const reservedAdminReg = await fetch(`${BASE_URL}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: 'admin',
+      password: 'StrongPassword123!',
+      displayName: 'Fake Admin'
+    })
+  });
+  if (reservedAdminReg.status !== 400) {
+    throw new Error(`Reserved admin handle protection failed: Registering "admin" returned ${reservedAdminReg.status}, expected 400`);
+  }
+
+  // Negative Test 10: Injected role: 'admin' during registration -> Server assigns role: 'user'
+  const injectedRoleReg = await fetch(`${BASE_URL}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: `normal_user_${Date.now()}`,
+      password: 'StrongPassword123!',
+      role: 'admin'
+    })
+  });
+  const injectedRoleData = await assertResponse(injectedRoleReg, 'Register with Injected Admin Role');
+  if (injectedRoleData.user.role !== 'user') {
+    throw new Error(`Privilege escalation detected: User registered with role "${injectedRoleData.user.role}", expected "user"`);
+  }
+
+  // Negative Test 11: Forged / Tampered JWT Bearer Token -> Expected 401
+  const forgedTokenRes = await fetch(`${BASE_URL}/api/chats`, {
+    headers: { 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.tampered_signature_payload' }
+  });
+  if (forgedTokenRes.status !== 401) {
+    throw new Error(`Forged JWT check failed: Tampered token returned ${forgedTokenRes.status}, expected 401`);
+  }
+
+  // Negative Test 12: Chat subroutes IDOR (User B updating message or rewinding User A's chat) -> Expected 404
+  const hackMsgUpdateRes = await fetch(`${BASE_URL}/api/chats/${chatA.id}/messages/fake_msg_id`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authB.token}`
+    },
+    body: JSON.stringify({ content: 'Hacked message' })
+  });
+  if (hackMsgUpdateRes.status !== 404) {
+    throw new Error(`Chat message IDOR failed: User B updating User A's message returned ${hackMsgUpdateRes.status}, expected 404`);
+  }
+
+  const hackRewindRes = await fetch(`${BASE_URL}/api/chats/${chatA.id}/rewind`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authB.token}`
+    },
+    body: JSON.stringify({ messageId: 'fake_msg_id' })
+  });
+  if (hackRewindRes.status !== 404) {
+    throw new Error(`Chat rewind IDOR failed: User B rewinding User A's chat returned ${hackRewindRes.status}, expected 404`);
+  }
+
+  // Clean up charA by owner A
+  await fetch(`${BASE_URL}/api/character/${charA.id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${authA.token}` }
+  });
+
+  console.log('✅ 15b. Negative cross-user boundary tests passed (403 on foreign persona/char/memory mutate, 403 on /update deface, 400 on reserved handle, 401 on forged JWT, 404 on chat subroutes)');
+
+  // 15c. Mass Assignment Defense Check
+  const massAssignRes = await fetch(`${BASE_URL}/api/character`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authA.token}`
+    },
+    body: JSON.stringify({
+      name: 'Anti-Mass Hero',
+      tagline: 'Defensive Integrity Spec',
+      id: 'hacked_id_override_999',
+      likes: 888888,
+      interactions: 999999,
+      categories: ['Roleplay']
+    })
+  });
+  const massChar = await assertResponse(massAssignRes, 'Create Character with Injected Fields');
+  if (massChar.id === 'hacked_id_override_999') {
+    throw new Error('Mass assignment failed: Server accepted client-injected ID');
+  }
+  if (massChar.likes !== 0 || massChar.interactions !== 0) {
+    throw new Error(`Mass assignment failed: Server accepted client-injected stats (likes: ${massChar.likes})`);
+  }
+  // Clean up
+  await fetch(`${BASE_URL}/api/character/${massChar.id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${authA.token}` }
+  });
+  console.log('✅ 15c. Mass assignment defense verified (injected id and stats stripped/ignored, server generated clean entity)');
+
+  // 15d. Admin RBAC & Security Operations Center (SOC) Telemetry Check
+  // 1. Non-admin User A attempts to access admin endpoints -> Expected 403 Forbidden
+  const unauthOverviewRes = await fetch(`${BASE_URL}/api/admin/overview`, {
+    headers: { 'Authorization': `Bearer ${authA.token}` }
+  });
+  if (unauthOverviewRes.status !== 403) {
+    throw new Error(`Admin RBAC failed: Non-admin calling /api/admin/overview returned ${unauthOverviewRes.status}, expected 403`);
+  }
+
+  const unauthMutateRoleRes = await fetch(`${BASE_URL}/api/admin/users/${authB.user.id}/role`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authA.token}`
+    },
+    body: JSON.stringify({ role: 'admin' })
+  });
+  if (unauthMutateRoleRes.status !== 403) {
+    throw new Error(`Admin RBAC failed: Non-admin updating role returned ${unauthMutateRoleRes.status}, expected 403`);
+  }
+
+  const unauthDelUserRes = await fetch(`${BASE_URL}/api/admin/users/${authB.user.id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${authA.token}` }
+  });
+  if (unauthDelUserRes.status !== 403) {
+    throw new Error(`Admin RBAC failed: Non-admin deleting user returned ${unauthDelUserRes.status}, expected 403`);
+  }
+
+  // 2. Promote pilot user to admin directly in SQL to verify admin capabilities
+  const dbModForAdmin = await import('../backend/db/database.js');
+  const adminDb = dbModForAdmin.getDatabase();
+  await adminDb.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(pilotAuth.user.id);
+
+  // 3. Admin calls /api/admin/overview -> Expected 200 OK
+  const adminOverviewRes = await fetch(`${BASE_URL}/api/admin/overview`, {
+    headers: { 'Authorization': `Bearer ${pilotAuth.token}` }
+  });
+  const adminOverview = await assertResponse(adminOverviewRes, 'Admin Overview Telemetry');
+  if (!adminOverview.telemetry || !adminOverview.securityChecklist || adminOverview.securityChecklist.length !== 7) {
+    throw new Error('Admin overview response missing telemetry or 7-rule security checklist');
+  }
+
+  // 4. Admin updates User B role to admin via admin API
+  const updateRoleRes = await fetch(`${BASE_URL}/api/admin/users/${authB.user.id}/role`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${pilotAuth.token}`
+    },
+    body: JSON.stringify({ role: 'admin' })
+  });
+  const updatedRoleData = await assertResponse(updateRoleRes, 'Admin Update User Role');
+  if (updatedRoleData.user.role !== 'admin') {
+    throw new Error('Admin role update failed to persist in response');
+  }
+
+  // 5. Admin demotes User B back to user
+  await fetch(`${BASE_URL}/api/admin/users/${authB.user.id}/role`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${pilotAuth.token}`
+    },
+    body: JSON.stringify({ role: 'user' })
+  });
+
+  // 6. Test Last Admin Protection: Attempting to demote self or the last remaining admin -> Expected 400
+  const demoteLastAdminRes = await fetch(`${BASE_URL}/api/admin/users/${pilotAuth.user.id}/role`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${pilotAuth.token}`
+    },
+    body: JSON.stringify({ role: 'user' })
+  });
+  if (demoteLastAdminRes.status !== 400) {
+    throw new Error(`Last admin demotion protection failed: Returned ${demoteLastAdminRes.status}, expected 400`);
+  }
+
+  // 7. Admin unblocks rate-limit test key
+  const unblockRes = await fetch(`${BASE_URL}/api/admin/rate-limits/unblock`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${pilotAuth.token}`
+    },
+    body: JSON.stringify({ key: 'ip:127.0.0.1' })
+  });
+  await assertResponse(unblockRes, 'Admin Unblock Rate Limit');
+  console.log('✅ 15d. Admin RBAC & SOC Telemetry verified (403 non-admin rejection, 200 admin telemetry, role update, last admin protected, unblock sentinel)');
+
   // 16. System Telemetry Ping API
   const pingRes = await fetch(`${BASE_URL}/api/system/ping`);
   const pingData = await assertResponse(pingRes, 'System Ping');
@@ -363,7 +693,7 @@ async function runTests() {
   }
 
   // 17b. Authenticated update for User A
-  const updateRes = await fetch(`${BASE_URL}/api/auth/profile`, {
+  const authUpdateRes = await fetch(`${BASE_URL}/api/auth/profile`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -374,7 +704,7 @@ async function runTests() {
       avatar: '🚀'
     })
   });
-  const updateData = await assertResponse(updateRes, 'Update User Profile');
+  const updateData = await assertResponse(authUpdateRes, 'Update User Profile');
   if (updateData.user.displayName !== 'Captain Alpha Prime' || updateData.user.avatar !== '🚀') {
     throw new Error(`Profile update did not save: ${JSON.stringify(updateData)}`);
   }

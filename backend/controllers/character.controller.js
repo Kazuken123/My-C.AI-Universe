@@ -46,21 +46,18 @@ export class CharacterController extends BaseController {
         wikiData = await this.wikiService.parse(wiki.trim());
       }
 
-      let creatorHandle = req.body.creator ? String(req.body.creator).trim() : '';
-      if (!creatorHandle) {
-        if (req.user && req.user.username) {
-          creatorHandle = `@${req.user.username}`;
-        } else {
-          creatorHandle = '@community';
-        }
-      } else if (!creatorHandle.startsWith('@')) {
-        creatorHandle = `@${creatorHandle}`;
+      let creatorHandle = '';
+      if (req.user && req.user.username) {
+        creatorHandle = `@${req.user.username}`;
+      } else {
+        creatorHandle = '@community';
       }
 
+      // Explicitly construct character without mass-assigning req.body
       const character = new Character({
-        ...wikiData,
-        ...req.body,
+        id: crypto.randomUUID(),
         creator: creatorHandle,
+        ownerUserId: req.user ? req.user.id : null,
         name: (name && name.trim()) || wikiData.name || 'Unnamed Character',
         tagline: (req.body.tagline && req.body.tagline.trim()) || wikiData.tagline || 'AI Roleplay Character',
         avatar: (req.body.avatar && req.body.avatar.trim()) || wikiData.avatar || '',
@@ -70,9 +67,14 @@ export class CharacterController extends BaseController {
         abilities: (req.body.abilities && req.body.abilities.trim()) || wikiData.abilities || '',
         background: (req.body.background && req.body.background.trim()) || wikiData.background || '',
         speaking_style: (req.body.speaking_style && req.body.speaking_style.trim()) || wikiData.speaking_style || '',
+        example_dialogues: (req.body.example_dialogues && req.body.example_dialogues.trim()) || '',
         initial_memory: (req.body.initial_memory && req.body.initial_memory.trim()) || wikiData.initial_memory || '',
+        categories: Array.isArray(req.body.categories) && req.body.categories.length > 0 ? req.body.categories : ['Roleplay', 'Original'],
         wiki: (wiki && wiki.trim()) || '',
-        wikiUrl: wikiData.wikiUrl || (wiki && wiki.trim()) || ''
+        wikiUrl: wikiData.wikiUrl || (wiki && wiki.trim()) || '',
+        interactions: 0,
+        likes: 0,
+        isLiked: false
       });
 
       character.recompilePrompt();
@@ -117,19 +119,23 @@ export class CharacterController extends BaseController {
         throw new NotFoundError('Character not found');
       }
 
+      // Enforce centralized domain authorization check
+      if (!character.canModify(req.user)) {
+        return this.sendError(res, 'You do not have permission to edit this character.', 403);
+      }
+
       const updatableFields = [
         'name', 'tagline', 'avatar', 'greeting', 'personality',
         'appearance', 'abilities', 'background', 'speaking_style',
-        'example_dialogues', 'initial_memory', 'wiki', 'categories', 'creator'
+        'example_dialogues', 'initial_memory', 'wiki', 'categories'
       ];
 
       for (const field of updatableFields) {
         if (req.body[field] !== undefined) {
-          if (field === 'creator' && req.body[field]) {
-            const raw = String(req.body[field]).trim();
-            character.creator = raw.startsWith('@') ? raw : `@${raw}`;
-          } else {
-            character[field] = req.body[field];
+          if (field === 'categories' && Array.isArray(req.body[field])) {
+            character.categories = req.body[field].map(c => String(c).slice(0, 50));
+          } else if (typeof req.body[field] === 'string') {
+            character[field] = req.body[field].trim();
           }
         }
       }
@@ -146,10 +152,17 @@ export class CharacterController extends BaseController {
 
   async deleteCharacter(req, res) {
     try {
-      const deleted = await this.repository.deleteById(req.params.id);
-      if (!deleted) {
+      const character = await this.repository.findById(req.params.id);
+      if (!character) {
         throw new NotFoundError('Character not found');
       }
+
+      // Enforce centralized domain authorization check
+      if (!character.canModify(req.user)) {
+        return this.sendError(res, 'You do not have permission to delete this character.', 403);
+      }
+
+      await this.repository.deleteById(req.params.id);
       return this.sendJson(res, { success: true, deletedId: req.params.id });
     } catch (error) {
       return this.handleError(res, error, 'Failed to delete character');

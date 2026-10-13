@@ -43,3 +43,6 @@ frontend/assets/avatars/*
 .git_backup/
 
 
+
+# Audit & temporary diff files
+*.diff
