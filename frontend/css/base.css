@@ -932,10 +932,11 @@ body::after {
    UNIVERSAL SHARED CARD & AVATAR PRIMITIVES
    ============================================================ */
 .cai-avatar-wrap {
-  width: 76px;
-  height: 76px;
-  min-width: 76px;
-  border-radius: 18px;
+  width: 86px;
+  height: 86px;
+  min-width: 86px;
+  aspect-ratio: 1 / 1;
+  border-radius: 20px;
   overflow: hidden;
   flex-shrink: 0;
   border: 1px solid var(--border-subtle);

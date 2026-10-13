@@ -242,10 +242,11 @@
 .dossier-avatar-wrap {
   position: relative;
   flex-shrink: 0;
-  width: 108px;
-  height: 108px;
-  min-width: 108px;
-  border-radius: 20px;
+  width: 124px;
+  height: 124px;
+  min-width: 124px;
+  aspect-ratio: 1 / 1;
+  border-radius: 22px;
   overflow: hidden;
   isolation: isolate;
   -webkit-mask-image: -webkit-radial-gradient(white, black);
@@ -614,10 +615,11 @@
 }
 
 .cai-avatar-wrap {
-  width: 76px;
-  height: 76px;
-  min-width: 76px;
-  border-radius: 18px;
+  width: 86px;
+  height: 86px;
+  min-width: 86px;
+  aspect-ratio: 1 / 1;
+  border-radius: 20px;
   overflow: hidden;
   position: relative;
   flex-shrink: 0;
@@ -659,10 +661,11 @@
 }
 
 .bento-wide .cai-avatar-wrap {
-  width: 96px;
-  height: 96px;
-  min-width: 96px;
-  border-radius: 20px;
+  width: 104px;
+  height: 104px;
+  min-width: 104px;
+  aspect-ratio: 1 / 1;
+  border-radius: 22px;
 }
 
 .cai-card-info {
@@ -1499,14 +1502,33 @@
   gap: 12px;
 }
 
-[data-theme="telemetry"] .cai-avatar-wrap {
+[data-theme="telemetry"] .dossier-avatar-wrap {
   border-radius: 0;
-  border: 1px solid rgba(230, 25, 25, 0.4);
-  width: 50px;
-  height: 50px;
+  border: 1px solid rgba(230, 25, 25, 0.5);
+  width: 124px;
+  height: 124px;
+  min-width: 124px;
+  aspect-ratio: 1 / 1;
 }
 
-[data-theme="telemetry"] .cai-avatar {
+[data-theme="telemetry"] .cai-avatar-wrap {
+  border-radius: 0;
+  border: 1px solid rgba(230, 25, 25, 0.45);
+  width: 86px;
+  height: 86px;
+  min-width: 86px;
+  aspect-ratio: 1 / 1;
+}
+
+[data-theme="telemetry"] .bento-wide .cai-avatar-wrap {
+  width: 104px;
+  height: 104px;
+  min-width: 104px;
+  aspect-ratio: 1 / 1;
+}
+
+[data-theme="telemetry"] .cai-avatar,
+[data-theme="telemetry"] .dossier-avatar {
   border-radius: 0;
 }
 
