@@ -143,31 +143,15 @@ export class ApplicationServer {
     // Admin Operations Center & Security Assets Gatekeeper
     // Strict server-side RBAC: prevents unauthenticated visitors and regular clients
     // from accessing admin.html, admin-page.js, or admin.css
+    // Smoothly redirects any unauthorized client back to the website homepage (/)
     const requireAdminWebAccess = (req, res, next) => {
       optionalAuth(req, res, () => {
-        if (!req.user) {
+        if (!req.user || req.user.role !== 'admin') {
+          // If browser is requesting HTML page (/admin or /admin.html), redirect directly home
           if (req.accepts('html') && !req.path.endsWith('.js') && !req.path.endsWith('.css')) {
-            return res.redirect(`/auth.html?mode=signin&return=${encodeURIComponent(req.originalUrl || '/admin.html')}`);
+            return res.redirect('/');
           }
-          return res.status(401).send('401 Unauthorized: Admin authentication required');
-        }
-
-        if (req.user.role !== 'admin') {
-          if (req.accepts('html') && !req.path.endsWith('.js') && !req.path.endsWith('.css')) {
-            return res.status(403).send(`
-              <!DOCTYPE html>
-              <html lang="en">
-              <head><meta charset="UTF-8"><title>403 Forbidden</title></head>
-              <body style="background:#090a0f;color:#e2e8f0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
-                <div style="text-align:center;max-width:480px;padding:2.5rem;background:#13151f;border:1px solid #27273a;border-radius:16px;">
-                  <h1 style="color:#ef4444;margin:0 0 0.75rem 0;">403 Forbidden</h1>
-                  <p style="color:#94a3b8;line-height:1.6;">Access Denied: Administrative privileges required. Your account (@${req.user.username}) does not have permission to access the Security Operations Center.</p>
-                  <a href="/" style="display:inline-block;margin-top:1rem;padding:0.6rem 1.2rem;background:#6366f1;color:#fff;border-radius:8px;text-decoration:none;">&larr; Return to Universe</a>
-                </div>
-              </body>
-              </html>
-            `);
-          }
+          // If requesting JS/CSS assets or API, reject with 403 Forbidden
           return res.status(403).json({ error: { message: 'Forbidden: Admin access required', code: 403 } });
         }
 

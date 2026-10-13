@@ -674,20 +674,21 @@ async function runTests() {
   console.log('✅ 15d. Admin RBAC & SOC Telemetry verified (403 non-admin rejection, 200 admin telemetry, role update, last admin protected, unblock sentinel)');
 
   // 15e. Admin Webpage & Asset Access Control Check (Server-Side Gatekeeper)
-  // 1. Unauthenticated visitor requesting /admin.html -> Redirected (302) to login or 401
+  // 1. Unauthenticated visitor requesting /admin.html -> Redirected (302) to "/"
   const anonAdminPageRes = await fetch(`${BASE_URL}/admin.html`, {
     redirect: 'manual'
   });
-  if (anonAdminPageRes.status !== 302 && anonAdminPageRes.status !== 401) {
-    throw new Error(`Admin page gatekeeper failed: Unauthenticated /admin.html returned ${anonAdminPageRes.status}, expected 302 redirect or 401`);
+  if (anonAdminPageRes.status !== 302 || anonAdminPageRes.headers.get('location') !== '/') {
+    throw new Error(`Admin page gatekeeper failed: Unauthenticated /admin.html returned ${anonAdminPageRes.status}, expected 302 redirect to /`);
   }
 
-  // 2. Regular user (User A) requesting /admin.html -> 403 Forbidden
+  // 2. Regular user (User A) requesting /admin.html -> Redirected (302) smoothly to "/"
   const userAdminPageRes = await fetch(`${BASE_URL}/admin.html`, {
-    headers: { 'Cookie': `cai_auth_token=${encodeURIComponent(authA.token)}` }
+    headers: { 'Cookie': `cai_auth_token=${encodeURIComponent(authA.token)}` },
+    redirect: 'manual'
   });
-  if (userAdminPageRes.status !== 403) {
-    throw new Error(`Admin page gatekeeper failed: Regular user accessing /admin.html returned ${userAdminPageRes.status}, expected 403`);
+  if (userAdminPageRes.status !== 302 || userAdminPageRes.headers.get('location') !== '/') {
+    throw new Error(`Admin page gatekeeper failed: Regular user accessing /admin.html returned ${userAdminPageRes.status}, expected 302 redirect to /`);
   }
 
   // 3. Regular user requesting /js/admin-page.js -> 403 Forbidden
