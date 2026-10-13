@@ -35,6 +35,7 @@ class DashboardApp {
 
   buildCardHtml(char, index, total) {
     const spanClass = this.getBentoSpanClass(index, total);
+    const tags = Array.isArray(char.categories) ? char.categories : (char.categories || '').split(',').map(s => s.trim()).filter(Boolean);
     const rawAvatar = char.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(char.name)}`;
     const avatarUrl = rawAvatar.startsWith('/assets/avatars/') ? `${rawAvatar}?v=4` : rawAvatar;
 
