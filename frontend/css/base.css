@@ -954,6 +954,10 @@ body::after {
   display: block;
   flex-shrink: 0;
   transition: filter 0.3s ease, transform 0.3s ease;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: auto;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .cai-card-top {

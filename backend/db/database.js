@@ -39,24 +39,43 @@ export class LibsqlStatementWrapper {
     return args;
   }
 
+  async #executeWithRetry(payload, maxRetries = 2) {
+    let lastError;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await this.executor.execute(payload);
+      } catch (err) {
+        lastError = err;
+        const msg = String(err?.message || '');
+        const isNetworkErr = msg.includes('fetch failed') || err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT';
+        if (isNetworkErr && attempt < maxRetries) {
+          await new Promise(r => setTimeout(r, 120 * (attempt + 1)));
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw lastError;
+  }
+
   async all(...args) {
     if (this.dbConnection) await this.dbConnection.ensureReady();
     const flat = this.#flattenArgs(args);
-    const res = await this.executor.execute({ sql: this.sql, args: flat });
+    const res = await this.#executeWithRetry({ sql: this.sql, args: flat });
     return res.rows || [];
   }
 
   async get(...args) {
     if (this.dbConnection) await this.dbConnection.ensureReady();
     const flat = this.#flattenArgs(args);
-    const res = await this.executor.execute({ sql: this.sql, args: flat });
+    const res = await this.#executeWithRetry({ sql: this.sql, args: flat });
     return (res.rows && res.rows.length > 0) ? res.rows[0] : null;
   }
 
   async run(...args) {
     if (this.dbConnection) await this.dbConnection.ensureReady();
     const flat = this.#flattenArgs(args);
-    const res = await this.executor.execute({ sql: this.sql, args: flat });
+    const res = await this.#executeWithRetry({ sql: this.sql, args: flat });
     return {
       changes: res.rowsAffected || 0,
       lastInsertRowid: res.lastInsertRowid

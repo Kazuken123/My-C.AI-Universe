@@ -114,14 +114,6 @@ class DashboardApp {
       };
     }
 
-    // Clean scene opening quote excerpt
-    const rawGreeting = (topChar.greeting || topChar.personality || 'Scene awaits your arrival...').trim();
-    const cleanExcerpt = rawGreeting
-      .replace(/\*/g, '')
-      .replace(/\n+/g, ' ')
-      .trim();
-    const excerpt = cleanExcerpt.length > 155 ? cleanExcerpt.slice(0, 152) + '...' : cleanExcerpt;
-
     this.heroSpotlightCard.innerHTML = `
       <div class="hero-spotlight-dossier" id="hero-spotlight-dossier-card" role="button" tabindex="0" title="Click to start scene with ${escapeHtml(topChar.name)}">
         <div class="dossier-header-strip">
@@ -137,10 +129,6 @@ class DashboardApp {
             <div class="dossier-name">${escapeHtml(topChar.name)}</div>
             <div class="dossier-tagline">${escapeHtml(topChar.tagline || 'AI Roleplay Model')}</div>
           </div>
-        </div>
-
-        <div class="dossier-bio">
-          <span class="dossier-quote-mark">“</span>${escapeHtml(excerpt)}
         </div>
 
         <div class="dossier-stats-grid">

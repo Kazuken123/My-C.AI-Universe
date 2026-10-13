@@ -194,10 +194,10 @@
   background: linear-gradient(145deg, rgba(23, 21, 35, 0.94) 0%, rgba(13, 12, 22, 0.98) 100%);
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: var(--radius-shell);
-  padding: 16px 18px;
+  padding: 18px 20px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
   cursor: pointer;
   box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
@@ -242,24 +242,35 @@
 .dossier-avatar-wrap {
   position: relative;
   flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  overflow: hidden;
+  isolation: isolate;
+  background: radial-gradient(circle at 50% 30%, rgba(139, 92, 246, 0.22) 0%, rgba(18, 16, 28, 0.95) 100%);
+  border: 1.5px solid rgba(139, 92, 246, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .dossier-avatar {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
   object-fit: cover;
   object-position: center top;
-  border: 1.5px solid rgba(139, 92, 246, 0.35);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  background: var(--bg-core);
   display: block;
-  transition: transform 0.25s ease, border-color 0.25s ease;
+  transition: transform 0.25s ease, filter 0.25s ease;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: auto;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .hero-spotlight-dossier:hover .dossier-avatar {
-  transform: scale(1.03);
-  border-color: var(--accent);
+  transform: scale(1.04);
 }
 
 .dossier-live-dot {
@@ -608,9 +619,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-surface);
+  background: radial-gradient(circle at 50% 30%, rgba(139, 92, 246, 0.16) 0%, rgba(18, 16, 28, 0.95) 100%);
   border: 1px solid var(--border-hairline);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
   transition: border-color 0.35s var(--ease-glow), box-shadow 0.4s var(--ease-glow), filter 0.35s var(--ease-glow);
+  isolation: isolate;
 }
 
 .cai-avatar-wrap .cai-avatar,
@@ -622,6 +635,10 @@
   object-position: center top;
   display: block;
   transition: transform 0.3s ease;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: auto;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .double-bezel-shell.card-shell:hover .cai-avatar-wrap {

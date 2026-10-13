@@ -126,12 +126,6 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
       const avatarUrl = featured.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(featured.name)}`;
       const tags = Array.isArray(featured.categories) ? featured.categories : (featured.categories || '').split(',').map(s => s.trim()).filter(Boolean);
       const creator = (featured.creator && featured.creator !== '@you') ? featured.creator : '@community';
-      const cleanGreeting = (featured.greeting || featured.personality || 'Step into the scene and begin your dialogue.')
-        .replace(/\*/g, '')
-        .replace(/\n+/g, ' ')
-        .trim();
-      const excerpt = cleanGreeting.length > 155 ? cleanGreeting.slice(0, 152) + '...' : cleanGreeting;
-
       heroSpotlightCard.innerHTML = `
         <article class="hero-spotlight-dossier" data-spotlight-char="${escapeHtml(featured.id)}" role="button" tabindex="0" title="Click to enter scene with ${escapeHtml(featured.name)}">
           <div class="dossier-header-strip">
@@ -147,10 +141,6 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
               <div class="dossier-name">${escapeHtml(featured.name)}</div>
               <div class="dossier-tagline">${escapeHtml(featured.tagline || 'Canonical Roleplay Character')}</div>
             </div>
-          </div>
-
-          <div class="dossier-bio">
-            <span class="dossier-quote-mark">“</span>${escapeHtml(excerpt)}
           </div>
 
           <div class="dossier-stats-grid">
