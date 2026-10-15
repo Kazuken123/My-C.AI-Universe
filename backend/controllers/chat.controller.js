@@ -367,7 +367,13 @@ export class ChatController extends BaseController {
               content: (m.variants && m.variants[m.selectedVariantIndex]?.text) || m.content
             }));
 
-      const queryForMemory = message || lastMessage || character.name;
+      const lastHistoryText = effectiveHistory.length > 0
+        ? effectiveHistory[effectiveHistory.length - 1].content || ''
+        : '';
+      const rawQueryText = (message || lastMessage || '').trim();
+      const queryForMemory = (rawQueryText.length > 0 && rawQueryText.length < 30 && lastHistoryText)
+        ? `${lastHistoryText.slice(-200)} ${rawQueryText}`
+        : (rawQueryText || lastHistoryText.slice(-200) || character.name);
       const [relevantMemories, storySummary] = await Promise.all([
         this.memoryService.retrieveRelevantMemories(
           queryForMemory,
@@ -468,15 +474,7 @@ ${existingVariants.length > 0 ? `- Do NOT repeat previous takes:\n${existingVari
               }))
             : effectiveHistory.slice(0, -1);
 
-          const regeneratePrompt = `Generate a fresh, distinct alternative reply to this user message:
-"${precedingUserMsg}"
-
-Rules:
-- Use different wording, actions, and angle while staying completely in character as ${character.name}
-- Keep the light-novel formatting (*italic actions* and ${character.name}: "Dialogue")
-${existingVariants.length > 0 ? `- Do NOT repeat these previous variants:\n${existingVariants.map(v => `  * "${v.slice(0, 140)}"`).join('\n')}` : ''}`;
-
-          reply = await this.orchestrator.chat(character.toJSON(), regeneratePrompt, historyBeforeLastModel, regenOptions);
+          reply = await this.orchestrator.chat(character.toJSON(), precedingUserMsg, historyBeforeLastModel, regenOptions);
         }
 
         let newVar = null;

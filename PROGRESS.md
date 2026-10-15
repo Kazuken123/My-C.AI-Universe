@@ -19,14 +19,26 @@ This document serves as the **single source of truth** for project history, rece
 
 ## 🚀 Version History & Milestones
 
-### 🏷️ `v2.5.5` (Current) — End-to-End Latency Elimination: Batch SQL, Lean Listing, Valid Model Fallback & Frontend Deduplication
+### 🏷️ `v2.5.5` (Current) — Dynamic Character Continuity, Strict Role-Alternation, Context-Aware Memory & Latency Elimination
+- **Strict Turn Alternation & Initial Scene Prepending in `GeminiProvider`**:
+  - Implemented automatic turn merging for consecutive identical roles in [`backend/ai/providers/gemini.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/providers/gemini.js) `#buildContents`, ensuring multi-turn inputs always alternate strictly between `user` and `model`.
+  - Prepended `{ role: 'user', parts: [{ text: '[Scene Start]' }] }` whenever conversation history begins with an opening character greeting (`role: 'model'`), preventing Gemini API multi-turn validation failures and attention degradation.
+- **Dynamic Character Evolution & Turn-to-Turn Logical Continuity**:
+  - Upgraded `generateCharacterPrompt` in [`backend/ai/prompt/characterPrompt.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/prompt/characterPrompt.js) with rules separating baseline traits from contextual adaptation. Characters evolve their tone, walls, and seriousness dynamically based on scene tension rather than robotically repeating initial tropes.
+  - Implemented the Anti-Contradiction Rule: explicitly anchors responses to the character's immediately preceding turn, preventing self-contradiction when users send short queries or confirmations.
+  - Expanded Anti-Melodrama & Grounded Realism prohibitions to ban hyperbolic buzzwords (`atomic`, `vaporized`, `short-circuits`, `unadulterated`, `shatters`, `writhing`, `mind-numbing`).
+  - Embedded `[ALTERNATIVE TAKE DIRECTIVE]` and excluded variants directly into `systemInstruction`, eliminating prompt contamination when regenerating responses.
+- **Context-Aware Semantic Memory Queries**:
+  - Enhanced `queryForMemory` in [`backend/controllers/chat.controller.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/controllers/chat.controller.js) `sendChatMessage` to combine the previous assistant turn snippet with user input when user prompts are shorter than 30 characters, ensuring relevant long-term memory retrieval during short responses.
+- **Cleaned Regenerate Flow**:
+  - Passed raw `precedingUserMsg` directly to `orchestrator.chat()` instead of injecting technical meta-instructions into the user message role.
 - **Eliminated N+1 Variant Loading in `ChatSessionRepository`**:
   - Replaced the $M$-query sequential loop in `_hydrateSession` in [`backend/repositories/ChatSessionRepository.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/repositories/ChatSessionRepository.js) with a single batched query using `WHERE message_id IN (...)`, grouping variants in-memory via `Map`. Reduces variant hydration from $M$ network roundtrips down to exactly 1 query ($O(1)$).
 - **Lightweight Lean Session Listing (`findAllLean`)**:
   - Added `findAllLean(characterId, userId)` in [`backend/repositories/ChatSessionRepository.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/repositories/ChatSessionRepository.js) using an aggregated SQL `LEFT JOIN` and correlated subquery to retrieve metadata, message counts, and last messages in a single query.
   - Updated `getChatSessions` in [`backend/controllers/chat.controller.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/controllers/chat.controller.js) to call `findAllLean()`, reducing sidebar listing from 200+ SQL roundtrips ($O(S \times M)$) down to 2 SQL queries total.
 - **High-Quota Gemini Flash Lite Alignment (500 RPD, 15 RPM)**:
-  - Verified and aligned primary and secondary models to high-quota endpoints (`gemini-3.5-flash-lite` and `gemini-3.1-flash-lite` offering 500 requests/day, 15 req/min) with `gemini-2.5-flash` as backup. Removed deprecated `gemini-2.0-flash` (which returned 404) from the fallback chain.
+  - Verified and aligned primary and secondary models to high-quota endpoints (`gemini-3.5-flash-lite` and `gemini-3.1-flash-lite` offering 500 requests/day, 15 req/min) with `gemini-2.5-flash` as backup. Removed deprecated `gemini-2.0-flash` from the fallback chain.
 - **Deduplicated Auth Middleware**:
   - Added fast guard `if (req.user !== undefined) return next();` in [`backend/middlewares/auth.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/middlewares/auth.js) `optionalAuth`, preventing duplicate `users` SQL lookups when `requireAuth` runs downstream of global `optionalAuth`.
 - **Parallelized Controller Lookups & Reduced AI Queue Delay**:
@@ -38,7 +50,7 @@ This document serves as the **single source of truth** for project history, rece
   - Added `updateLocalSessionPreview()` for instant ($0\text{ ms}$) in-memory sidebar updates upon stream finish, eliminating the redundant post-turn `loadAllSessions()` cascade.
   - Consolidated duplicate `getMemories()` calls into a single shared invocation in `refreshRightDrawer()`.
 - **Automated Verification**:
-  - 22/22 E2E integration, SQL security, and API tests verified passing against live Turso Cloud database.
+  - 27/27 automated unit, E2E integration, SQL security, and API tests verified passing against live Turso Cloud database.
 
 ### 🏷️ `v2.5.4` — O(1) Fast Message Append, Parallel Context Hydration & Non-Blocking Post-Turn Pipeline
 - **O(1) Incremental Chat Message & Variant SQL Persistence**:

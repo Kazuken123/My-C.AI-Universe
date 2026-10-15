@@ -60,21 +60,47 @@ export class GeminiProvider extends BaseAIProvider {
   }
 
   #buildContents(memory, userMsg) {
-    const contents = [];
+    const rawTurns = [];
+
     if (Array.isArray(memory) && memory.length > 0) {
       for (const msg of memory) {
         if (!msg || !msg.content || !msg.content.trim()) continue;
-        contents.push({
-          role: msg.role === 'user' ? 'user' : 'model',
-          parts: [{ text: sanitizePromptForGemini(msg.content) }]
-        });
+        const role = msg.role === 'user' ? 'user' : 'model';
+        const cleanText = sanitizePromptForGemini(msg.content.trim());
+        rawTurns.push({ role, text: cleanText });
       }
     }
-    contents.push({
-      role: 'user',
-      parts: [{ text: sanitizePromptForGemini(userMsg) }]
-    });
-    return contents;
+
+    if (userMsg && String(userMsg).trim()) {
+      rawTurns.push({
+        role: 'user',
+        text: sanitizePromptForGemini(String(userMsg).trim())
+      });
+    }
+
+    // Merge consecutive turns of the same role so Gemini strictly alternates user <-> model
+    const mergedTurns = [];
+    for (const turn of rawTurns) {
+      const prev = mergedTurns[mergedTurns.length - 1];
+      if (prev && prev.role === turn.role) {
+        prev.text = `${prev.text}\n\n${turn.text}`;
+      } else {
+        mergedTurns.push({ role: turn.role, text: turn.text });
+      }
+    }
+
+    // Ensure the conversation starts with a 'user' turn as required by Gemini multi-turn structure
+    if (mergedTurns.length > 0 && mergedTurns[0].role === 'model') {
+      mergedTurns.unshift({
+        role: 'user',
+        text: '[Scene Start]'
+      });
+    }
+
+    return mergedTurns.map(t => ({
+      role: t.role,
+      parts: [{ text: t.text }]
+    }));
   }
 
   /**

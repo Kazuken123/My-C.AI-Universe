@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "test": "node tests/api.test.js",
+    "test": "node tests/continuity-v2.5.5.test.js && node tests/api.test.js",
     "db:init": "node scripts/init-database.js",
     "db:turso:push": "node scripts/migrate-to-turso.js",
     "db:sync:stats": "node scripts/sync-real-stats.js",
