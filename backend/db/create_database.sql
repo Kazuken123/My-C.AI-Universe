@@ -1,21 +1,48 @@
 -- ============================================================================
 -- My C.AI Universe — Complete SQL Database Creation & Seed Script
--- Compatible with MySQL 8.0+ / MariaDB / SQLite
+-- Compatible with MySQL 8.0+ / MariaDB / SQLite / LibSQL
 -- ============================================================================
 
 -- Uncomment the following two lines when importing into MySQL / MariaDB:
 -- CREATE DATABASE IF NOT EXISTS my_cai_universe CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 -- USE my_cai_universe;
 
+-- 0. Table: users
+CREATE TABLE IF NOT EXISTS users (
+    id VARCHAR(64) PRIMARY KEY,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    display_name VARCHAR(100) NOT NULL,
+    avatar TEXT NOT NULL DEFAULT '👤',
+    role VARCHAR(20) NOT NULL DEFAULT 'user',
+    auth_provider VARCHAR(32) NOT NULL DEFAULT 'local',
+    provider_id VARCHAR(100) NULL,
+    created_at VARCHAR(40) NOT NULL,
+    updated_at VARCHAR(40) NOT NULL
+);
+
+-- 0.1 Table: password_resets
+CREATE TABLE IF NOT EXISTS password_resets (
+    id VARCHAR(64) PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    code VARCHAR(16) NOT NULL,
+    expires_at VARCHAR(40) NOT NULL,
+    used TINYINT(1) NOT NULL DEFAULT 0,
+    created_at VARCHAR(40) NOT NULL
+);
+
 -- 1. Table: user_personas
 CREATE TABLE IF NOT EXISTS user_personas (
     id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NULL,
     name VARCHAR(100) NOT NULL,
     avatar VARCHAR(255) NOT NULL DEFAULT '🌟',
-    description TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
     is_default TINYINT(1) NOT NULL DEFAULT 0,
     created_at VARCHAR(40) NOT NULL,
-    updated_at VARCHAR(40) NOT NULL
+    updated_at VARCHAR(40) NOT NULL,
+    CONSTRAINT fk_persona_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- 2. Table: characters
@@ -33,26 +60,38 @@ CREATE TABLE IF NOT EXISTS characters (
     example_dialogues TEXT NOT NULL,
     initial_memory TEXT NOT NULL,
     system_prompt TEXT NOT NULL,
-    wiki TEXT NOT NULL,
-    wiki_url TEXT NOT NULL,
-    categories_json TEXT NOT NULL,
+    wiki TEXT NOT NULL DEFAULT '',
+    wiki_url TEXT NOT NULL DEFAULT '',
+    categories_json TEXT NOT NULL DEFAULT '["Roleplay"]',
     creator VARCHAR(100) NOT NULL DEFAULT '@you',
+    owner_user_id VARCHAR(64) NULL,
     interactions INT NOT NULL DEFAULT 0,
     likes INT NOT NULL DEFAULT 0,
     is_liked TINYINT(1) NOT NULL DEFAULT 0,
+    initial_affinity INT NOT NULL DEFAULT 0,
+    initial_relationship_stage VARCHAR(100) NOT NULL DEFAULT 'Stranger / Neutral',
+    relationship_dynamic TEXT NOT NULL DEFAULT '',
     created_at VARCHAR(40) NOT NULL,
-    updated_at VARCHAR(40) NOT NULL
+    updated_at VARCHAR(40) NOT NULL,
+    CONSTRAINT fk_character_owner FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- 3. Table: chat_sessions
 CREATE TABLE IF NOT EXISTS chat_sessions (
     id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NULL,
     character_id VARCHAR(64) NOT NULL,
     persona_id VARCHAR(64) NULL,
     title VARCHAR(255) NOT NULL,
     provider VARCHAR(32) NOT NULL DEFAULT 'gemini',
+    affinity INT NOT NULL DEFAULT 0,
+    trust INT NOT NULL DEFAULT 0,
+    strain INT NOT NULL DEFAULT 0,
+    relationship_stage VARCHAR(100) NOT NULL DEFAULT 'Stranger / Neutral',
+    relationship_mood VARCHAR(50) NOT NULL DEFAULT 'Calm',
     created_at VARCHAR(40) NOT NULL,
     updated_at VARCHAR(40) NOT NULL,
+    CONSTRAINT fk_session_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_session_character FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     CONSTRAINT fk_session_persona FOREIGN KEY (persona_id) REFERENCES user_personas(id) ON DELETE SET NULL
 );

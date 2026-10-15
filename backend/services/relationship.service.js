@@ -79,6 +79,12 @@ export class RelationshipService {
     return 'Obsessed / Possessive';
   }
 
+  #stripNegatedPhrases(text = '') {
+    return String(text)
+      .replace(/\b(?:don't|do not|doesn't|did not|didn't|never|not|no longer|hardly)\s+(?:\w+\s+){0,2}(love|care|like|trust|forgive|hate|angry|mad|worthless|pathetic|stupid|disgusting|afraid|scared)\b/gi, ' [negated] ')
+      .replace(/\b(?:không|chẳng|chưa từng|đừng|đâu có|hết)\s+(?:còn\s+|hề\s+|bao giờ\s+|nghĩ mình\s+|tự thấy\s+)?(yêu|thương|nhớ|tin|thích|ghét|giận|vô dụng|đáng ghét|sợ)\b/gi, ' [negated] ');
+  }
+
   /**
    * Evaluate a conversation turn using Dual-Timescale Emotional Inertia
    * Returns updated { affinity, trust, strain, relationshipStage, relationshipMood }
@@ -89,15 +95,19 @@ export class RelationshipService {
     let strain = Number(session.strain ?? 0);
     let mood = session.relationshipMood || 'Calm';
 
-    const combinedUser = String(userText || '').toLowerCase();
+    const rawUser = String(userText || '').toLowerCase();
+    const combinedUser = this.#stripNegatedPhrases(rawUser);
     const combinedAi = String(aiText || '').toLowerCase();
 
-    // 1. Detect interaction signals in user & AI turn
+    // 1. Detect interaction signals with negation guards
+    const isColdRejection = /\b(?:don't love you|do not love you|never loved you|no longer care about you|we are done|hết yêu|không còn yêu|không thương)\b/i.test(rawUser);
+    const isReassurance = /\b(?:you are not worthless|you're not worthless|not your fault|don't blame yourself|đừng tự trách|không phải lỗi của em|không phải lỗi của bạn|không hề vô dụng)\b/i.test(rawUser);
+
     const isApologyOrRepair = /\b(sorry|apologize|forgive me|my fault|i didn't mean to|xin lỗi|thứ lỗi|lỗi của anh|lỗi của tôi|đừng giận)\b/i.test(combinedUser);
-    const isAffectionate = /\b(love you|care about you|treasure you|hug|kiss|hold your hand|missed you|proud of you|thank you|thương|yêu|nhớ|ôm|cảm ơn|trân trọng)\b/i.test(combinedUser);
-    const isSupportive = /\b(help you|here for you|listen to you|protect you|trust you|believe in you|bên cạnh|bảo vệ|tin tưởng)\b/i.test(combinedUser);
+    const isAffectionate = !isColdRejection && /\b(love you|care about you|treasure you|hug|kiss|hold your hand|missed you|proud of you|thank you|thương|yêu|nhớ|ôm|cảm ơn|trân trọng)\b/i.test(combinedUser);
+    const isSupportive = isReassurance || /\b(help you|here for you|listen to you|protect you|trust you|believe in you|bên cạnh|bảo vệ|tin tưởng)\b/i.test(combinedUser);
     const isArgumentOrFriction = /\b(annoying|shut up|whatever|stop it|ridiculous|stupid|angry|mad at you|argue|why did you|bực mình|vô lý|đáng ghét|im đi|cãi)\b/i.test(combinedUser);
-    const isToxicOrCruel = /\b(hate you|worthless|pathetic|disgusting|never want to see you|betray|kill|die|break up|get lost|trash|cút đi|ghét cay ghét đắng|phản bội|vô dụng|chia tay)\b/i.test(combinedUser);
+    const isToxicOrCruel = !isReassurance && (isColdRejection || /\b(hate you|worthless|pathetic|disgusting|never want to see you|betray|kill|die|break up|get lost|trash|cút đi|ghét cay ghét đắng|phản bội|vô dụng|chia tay)\b/i.test(combinedUser));
     const isIntimidatingOrDominant = /\b(obey|kneel|submit|you belong to me|do as i say|don't dare|afraid of me|nghe lời|phục tùng|sợ)\b/i.test(combinedUser);
 
     const aiShowsFear = /\b(trembles|shivers in fear|steps back in terror|afraid|terrified|scared|voice shaking|cowers)\b/i.test(combinedAi);
@@ -105,35 +115,47 @@ export class RelationshipService {
     const aiShowsWarmth = /\b(smiles warmly|blushes|laughs softly|leans closer|gentle smile|eyes soften)\b/i.test(combinedAi);
     const aiShowsHurtOrAnger = /\b(glares|scowls|tears well|voice cracks|turns away hurt|snaps back|crosses arms)\b/i.test(combinedAi);
 
-    // Emotional Inertia Damping Factor:
-    // Deep bonds (|affinity| >= 65) have high inertia against isolated arguments.
+    // Emotional Inertia Damping Factors:
+    // Deep positive bonds (affinity >= 65) buffer against isolated arguments.
+    // Deep negative states (affinity <= -40 or trust <= -40) resist sudden affection/apologies.
     const isDeepBond = affinity >= 65;
+    const isHostileOrDistrustful = affinity <= -40 || trust <= -40;
 
     let affinityDelta = 0;
     let trustDelta = 0;
     let strainDelta = 0;
 
     if (isToxicOrCruel) {
-      // Severe toxicity spikes strain rapidly
-      strainDelta += 22;
-      trustDelta -= 10;
-      if (isDeepBond && strain + strainDelta < 60) {
-        // First shock in a deep relationship: hurts deeply & raises strain, minor bond erosion
-        affinityDelta -= 3;
+      if (isColdRejection) {
+        strainDelta += 18;
+        trustDelta -= 6;
+        affinityDelta -= (isDeepBond && strain + strainDelta < 60 ? 2 : 7);
         mood = 'Hurt / Heartbroken';
       } else {
-        // Unbuffered or sustained toxicity: heavy structural bond erosion
-        affinityDelta -= 10;
-        mood = aiShowsFear ? 'Afraid' : 'Hostile / Bitter';
+        strainDelta += 22;
+        trustDelta -= 10;
+        if (isDeepBond && strain + strainDelta < 60) {
+          affinityDelta -= 3;
+          mood = 'Hurt / Heartbroken';
+        } else {
+          affinityDelta -= 10;
+          mood = aiShowsFear ? 'Afraid' : 'Hostile / Bitter';
+        }
       }
     } else if (isApologyOrRepair) {
-      // Making up after an argument repairs strain and strengthens the bond
-      // Sincere apologies take precedence over friction words (e.g. "I was angry/foolish")
-      const hadStrain = strain > 10;
-      strainDelta -= 28;
-      trustDelta += 5;
-      affinityDelta += hadStrain ? 4 : 2;
-      mood = (strain + strainDelta <= 20) ? (affinity >= 65 ? 'Warm' : 'Calm') : 'Softening / Reconciling';
+      if (isHostileOrDistrustful) {
+        // Apology to an active enemy softens friction slightly without instant forgiveness
+        strainDelta -= 8;
+        trustDelta += 2;
+        affinityDelta += 1;
+        mood = 'Suspicious / Guarded';
+      } else {
+        const hadStrain = strain > 10;
+        strainDelta -= 28;
+        trustDelta += 5;
+        affinityDelta += hadStrain ? 4 : 2;
+        mood = (strain + strainDelta <= 20) ? (affinity >= 65 ? 'Warm' : 'Calm') : 'Softening / Reconciling';
+      }
     } else if (isIntimidatingOrDominant) {
       strainDelta += 12;
       trustDelta -= 6;
@@ -148,15 +170,12 @@ export class RelationshipService {
         affinityDelta -= 4;
       }
     } else if (isArgumentOrFriction) {
-      // Normal argument / lovers' quarrel
       strainDelta += 12;
       if (isDeepBond && strain + strainDelta < 65) {
-        // KEY REALISM RULE: Arguing as a couple does NOT reduce love unless strain is already critical!
         affinityDelta = 0;
         trustDelta -= 1;
         mood = 'Quarreling / Heated';
       } else if (strain + strainDelta >= 65) {
-        // Chronic, unresolved fighting finally starts eroding the relationship
         affinityDelta -= 5;
         trustDelta -= 4;
         mood = 'Exhausted / Resentful';
@@ -166,23 +185,50 @@ export class RelationshipService {
         mood = 'Frustrated / Guarded';
       }
     } else if (isAffectionate) {
-      strainDelta -= 12;
-      trustDelta += 3;
-      // Diminishing returns near +100 so Obsessed takes real buildup
-      affinityDelta += affinity >= 85 ? 2 : 4;
-      mood = affinity >= 85 ? 'Possessive' : (aiShowsWarmth ? 'Warm' : 'Flustered');
+      if (isHostileOrDistrustful) {
+        // Sudden affection from an enemy/mistrusted person triggers suspicion rather than immediate warmth
+        strainDelta -= 6;
+        trustDelta += 2;
+        affinityDelta += 1;
+        mood = 'Suspicious / Guarded';
+      } else {
+        strainDelta -= 12;
+        trustDelta += 3;
+        affinityDelta += affinity >= 85 ? 2 : 4;
+        mood = affinity >= 85 ? 'Possessive' : (aiShowsWarmth ? 'Warm' : 'Flustered');
+      }
     } else if (isSupportive) {
-      strainDelta -= 10;
-      trustDelta += 4;
-      affinityDelta += 3;
-      mood = 'Warm';
+      if (isHostileOrDistrustful) {
+        strainDelta -= 8;
+        trustDelta += 3;
+        affinityDelta += 2;
+        mood = 'Guarded';
+      } else {
+        strainDelta -= 10;
+        trustDelta += 4;
+        affinityDelta += 3;
+        mood = 'Warm';
+      }
     } else {
-      // Natural neutral/everyday interaction gently cools down strain over time
-      strainDelta -= 4;
-      affinityDelta += affinity >= 0 && affinity < 50 ? 1 : 0;
-      if (aiShowsWarmth) mood = 'Warm';
-      else if (aiShowsHurtOrAnger && strain > 20) mood = 'Guarded';
-      else if (strain < 15) mood = 'Calm';
+      // Natural neutral or continuation turn: reflect AI character's immediate emotional reaction
+      if (aiShowsFear) {
+        strainDelta += 6;
+        trustDelta -= 3;
+        mood = 'Afraid';
+      } else if (aiShowsSubmission) {
+        mood = 'Submissive';
+      } else if (aiShowsHurtOrAnger) {
+        strainDelta += 6;
+        mood = strain + strainDelta >= 45 ? 'Hurt / Heartbroken' : 'Guarded';
+      } else if (aiShowsWarmth) {
+        strainDelta -= 6;
+        affinityDelta += affinity >= -10 && affinity < 60 ? 1 : 0;
+        mood = 'Warm';
+      } else {
+        strainDelta -= 4;
+        affinityDelta += affinity >= 0 && affinity < 50 ? 1 : 0;
+        if (strain + strainDelta < 15) mood = 'Calm';
+      }
     }
 
     // Clamp values

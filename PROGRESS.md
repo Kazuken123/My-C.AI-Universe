@@ -1,8 +1,8 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
-> **Current Version:** `v2.6.0`  
+> **Current Version:** `v2.6.1`  
 > **Status:** Production-Ready & Tested  
-> **Automated Test Coverage:** 31/31 E2E & unit tests passing (`npm test`)  
+> **Automated Test Coverage:** 34/34 E2E & unit tests passing (`npm test`)  
 > **Primary Database:** Turso Cloud (LibSQL `@libsql/client`, AWS Tokyo `ap-northeast-1`)  
 > **Primary AI Engine:** Google Gemini (`gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`, `gemini-2.5-flash`) with native `systemInstruction` & fallback chain  
 > **Last Updated:** October 2026
@@ -19,7 +19,26 @@ This document serves as the **single source of truth** for project history, rece
 
 ## 🚀 Version History & Milestones
 
-### 🏷️ `v2.6.0` (Current) — Psychological Relationship & Closeness Engine with Dual-Timescale Emotional Inertia
+### 🏷️ `v2.6.1` (Current) — Negation Guard, Bidirectional Negative Inertia, Regenerate Idempotency & Schema Sync
+- **Negation-Aware Signal Detection (`#stripNegatedPhrases`)**:
+  - Implemented `#stripNegatedPhrases` in [`backend/services/relationship.service.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/services/relationship.service.js) to strip negated sentiment words in English and Vietnamese (`don't love`, `not worthless`, `không còn yêu`, `đừng nghĩ mình vô dụng`) before regex evaluation.
+  - Added explicit cold rejection detection (`isColdRejection`) inflicting heartbreak penalties (`mood = 'Hurt / Heartbroken'`, `strain += 18`, `trust -= 6`, `affinity -= 2..7`) without misclassifying as affection.
+  - Added reassurance detection (`isReassurance`) ensuring comforting statements (`You are not worthless`) increase trust and calm strain instead of misfiring toxic cruelty penalties.
+- **Bidirectional Negative Inertia & AI-Driven Subtle Reactions**:
+  - Implemented negative emotional inertia (`isHostileOrDistrustful = affinity <= -40 || trust <= -40`): active enemies or distrusted characters react with `'Suspicious / Guarded'` to sudden flattery or apologies instead of immediately flipping to warm/friendly.
+  - Enriched the neutral/continuation fallback branch to dynamically adapt character mood to AI physical narration: `aiShowsFear` -> `'Afraid'`, `aiShowsSubmission` -> `'Submissive'`, `aiShowsHurtOrAnger` -> `'Guarded'` / `'Hurt'`, `aiShowsWarmth` -> `'Warm'`.
+- **Regenerate Idempotency & Director Override Race Condition Guard**:
+  - Preserved idempotency when reshooting takes (`regenerate: true`) in [`backend/controllers/chat.controller.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/controllers/chat.controller.js) by updating only the immediate mood of the chosen take without compounding user text strain or affinity.
+  - Added automatic stage re-resolution via `relationshipService.resolveStage` in `updateSessionRelationship` when users adjust bond score or mood in the Director Popover without an explicit preset.
+  - Guarded against in-flight network responses clobbering recent manual Director overrides via `lastDirectorOverrideTime` in [`frontend/js/chat.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/js/chat.js).
+- **Relational Schema Synchronization & Version Bump**:
+  - Synchronized character and chat session column lists in [`scripts/migrate-to-turso.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/scripts/migrate-to-turso.js) and [`backend/db/create_database.sql`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/db/create_database.sql).
+  - Aligned `/api/system/ping` in [`backend/routes/index.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/routes/index.js) and [`tests/api.test.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/tests/api.test.js) to version `2.6.1`.
+- **Automated Verification**:
+  - Added Tests 7, 8, and 9 to [`tests/relationship-v2.6.0.test.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/tests/relationship-v2.6.0.test.js).
+  - 34/34 unit, E2E integration, SQL security, and API tests verified passing (`npm test`).
+
+### 🏷️ `v2.6.0` — Psychological Relationship & Closeness Engine with Dual-Timescale Emotional Inertia
 - **Dual-Timescale Emotional Inertia Engine (`relationship.service.js`)**:
   - Implemented the 4-variable psychological model per session in [`backend/services/relationship.service.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/services/relationship.service.js):
     - `affinity` (-100 to +100): High emotional inertia. A couple's argument does not erode core love unless conflict strain reaches critical levels.

@@ -504,8 +504,24 @@ ${existingVariants.length > 0 ? `- Do NOT repeat previous takes:\n${existingVari
           newVar = targetModelMsg.addVariant(reply);
         }
         session.touch();
+
+        // Idempotency guard: alternative takes adapt immediate mood without compounding strain/affinity
+        const combinedAi = String(reply || '').toLowerCase();
+        if (/\b(trembles|shivers in fear|steps back in terror|afraid|terrified|scared|voice shaking|cowers)\b/i.test(combinedAi)) {
+          session.relationshipMood = 'Afraid';
+        } else if (/\b(lowers head|obeys quietly|submits|at your mercy|whispers obedien|nods meekly)\b/i.test(combinedAi)) {
+          session.relationshipMood = 'Submissive';
+        } else if (/\b(glares|scowls|tears well|voice cracks|turns away hurt|snaps back|crosses arms)\b/i.test(combinedAi)) {
+          session.relationshipMood = session.strain >= 45 ? 'Hurt / Heartbroken' : 'Guarded';
+        } else if (/\b(smiles warmly|blushes|laughs softly|leans closer|gentle smile|eyes soften)\b/i.test(combinedAi)) {
+          session.relationshipMood = 'Warm';
+        }
+
         if (targetModelMsg && newVar) {
-          await this.sessionsRepo.appendVariant(session, targetModelMsg, newVar);
+          await Promise.all([
+            this.sessionsRepo.appendVariant(session, targetModelMsg, newVar),
+            this.sessionsRepo.updateRelationshipState(session.id, { relationshipMood: session.relationshipMood })
+          ]);
         } else {
           await this.sessionsRepo.save(session);
         }
@@ -681,12 +697,30 @@ Rules:
         throw new NotFoundError('Chat session not found');
       }
 
+      const targetAffinity = typeof affinity === 'number' ? Math.max(-100, Math.min(100, affinity)) : session.affinity;
+      const targetTrust = typeof trust === 'number' ? Math.max(-100, Math.min(100, trust)) : session.trust;
+      const targetStrain = typeof strain === 'number' ? Math.max(0, Math.min(100, strain)) : session.strain;
+      const targetMood = typeof relationshipMood === 'string' && relationshipMood.trim() ? relationshipMood.trim() : session.relationshipMood;
+
+      let targetStage = typeof relationshipStage === 'string' && relationshipStage.trim() ? relationshipStage.trim() : null;
+      if (!targetStage) {
+        const character = await this.charsRepo.findById(session.characterId);
+        targetStage = this.relationshipService.resolveStage({
+          affinity: targetAffinity,
+          trust: targetTrust,
+          strain: targetStrain,
+          mood: targetMood,
+          character: character || {},
+          currentStage: session.relationshipStage
+        });
+      }
+
       const updatedState = {
-        affinity: typeof affinity === 'number' ? Math.max(-100, Math.min(100, affinity)) : session.affinity,
-        trust: typeof trust === 'number' ? Math.max(-100, Math.min(100, trust)) : session.trust,
-        strain: typeof strain === 'number' ? Math.max(0, Math.min(100, strain)) : session.strain,
-        relationshipStage: typeof relationshipStage === 'string' && relationshipStage.trim() ? relationshipStage.trim() : session.relationshipStage,
-        relationshipMood: typeof relationshipMood === 'string' && relationshipMood.trim() ? relationshipMood.trim() : session.relationshipMood
+        affinity: targetAffinity,
+        trust: targetTrust,
+        strain: targetStrain,
+        relationshipStage: targetStage,
+        relationshipMood: targetMood
       };
 
       Object.assign(session, updatedState);

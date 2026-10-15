@@ -167,4 +167,112 @@ assert.equal(yandereStage, 'Obsessed / Possessive', 'Affinity 95 with yandere tr
 assert.equal(nemesisStage, 'Hatred / Nemesis', 'Affinity -85 maps to Hatred / Nemesis');
 console.log('✅ 6. Persona Adaptation & Stage Resolution: Stages correctly adapt to affinity and traits');
 
-console.log('\n✨ All v2.6.0 Psychological Relationship Engine unit tests passed successfully!');
+// =========================================================================
+// Test 7: Negation-Aware Signal Detection (Anti-False-Positive Guard)
+// =========================================================================
+// Case 7a: Cold rejection with negation ("don't love you") must NOT trigger isAffectionate
+const devotedPair = new ChatSession({
+  id: 'sess_pair',
+  characterId: character.id,
+  affinity: 75,
+  trust: 70,
+  strain: 10,
+  relationshipStage: 'Deep Love / Devoted',
+  relationshipMood: 'Warm'
+});
+
+const rejectionResult = relationshipService.evaluateTurn({
+  userText: "I don't love you anymore. We are done.",
+  aiText: '*freezes in place, staring at you in utter disbelief as her breath catches* What... what did you just say?',
+  session: devotedPair,
+  character
+});
+
+assert.ok(rejectionResult.affinity < devotedPair.affinity, 'Affinity must decrease on cold rejection');
+assert.equal(rejectionResult.relationshipMood, 'Hurt / Heartbroken', 'Cold rejection must produce Hurt / Heartbroken mood, not Warm');
+assert.ok(rejectionResult.strain > devotedPair.strain, 'Cold rejection must increase conflict strain');
+
+// Case 7b: Reassurance ("You are not worthless") must NOT trigger isToxicOrCruel
+const insecureSession = new ChatSession({
+  id: 'sess_insecure',
+  characterId: character.id,
+  affinity: 50,
+  trust: 50,
+  strain: 30,
+  relationshipStage: 'Close Friend / Confidant',
+  relationshipMood: 'Guarded'
+});
+
+const reassuranceResult = relationshipService.evaluateTurn({
+  userText: "You are not worthless, Kana. Don't blame yourself for what happened.",
+  aiText: '*blinks back tears and looks away, her shoulders relaxing slightly* You... you really mean that?',
+  session: insecureSession,
+  character
+});
+
+assert.ok(reassuranceResult.strain < insecureSession.strain, 'Reassurance must decrease strain');
+assert.ok(reassuranceResult.trust > insecureSession.trust, 'Reassurance must increase trust');
+assert.ok(reassuranceResult.affinity >= insecureSession.affinity, 'Reassurance must not penalize affinity');
+assert.equal(reassuranceResult.relationshipMood, 'Warm', 'Reassurance should bring Warm mood');
+console.log('✅ 7. Negation Guard: Negated affection and negated toxicity correctly distinguished');
+
+// =========================================================================
+// Test 8: Bidirectional Negative Inertia (Nemesis Suspicion)
+// =========================================================================
+const nemesisSession = new ChatSession({
+  id: 'sess_nemesis',
+  characterId: character.id,
+  affinity: -85,
+  trust: -80,
+  strain: 40,
+  relationshipStage: 'Hatred / Nemesis',
+  relationshipMood: 'Hostile / Bitter'
+});
+
+const sweetWordsToNemesisResult = relationshipService.evaluateTurn({
+  userText: 'I love you so much, please forgive me!',
+  aiText: '*narrows her eyes with deep skepticism and grips her weapon tighter* What sick game are you playing now?',
+  session: nemesisSession,
+  character
+});
+
+assert.equal(sweetWordsToNemesisResult.relationshipMood, 'Suspicious / Guarded', 'Nemesis must react with Suspicious / Guarded to sudden flattery');
+assert.ok(sweetWordsToNemesisResult.affinity <= -80, 'Affinity must not jump dramatically from a single turn');
+assert.equal(sweetWordsToNemesisResult.relationshipStage, 'Hatred / Nemesis', 'Stage must remain Hatred / Nemesis');
+console.log('✅ 8. Negative Inertia: Enemies remain guarded against sudden flattery');
+
+// =========================================================================
+// Test 9: AI-Driven Reaction on Neutral & Continuation Turns
+// =========================================================================
+const neutralSession = new ChatSession({
+  id: 'sess_neutral',
+  characterId: character.id,
+  affinity: 10,
+  trust: 10,
+  strain: 10,
+  relationshipStage: 'Stranger / Neutral',
+  relationshipMood: 'Calm'
+});
+
+const fearReactionResult = relationshipService.evaluateTurn({
+  userText: '*steps forward in the dark hallway silently without speaking*',
+  aiText: '*steps back in terror, trembling violently as her voice shaking calls out into the shadows* Who is there?!',
+  session: neutralSession,
+  character
+});
+
+assert.equal(fearReactionResult.relationshipMood, 'Afraid', 'AI expressing terror must shift mood to Afraid');
+assert.ok(fearReactionResult.strain > neutralSession.strain, 'Terror reaction increases strain');
+
+const warmthReactionResult = relationshipService.evaluateTurn({
+  userText: '*hands her a hot can of coffee from the vending machine*',
+  aiText: '*smiles warmly as she takes the can, her eyes soften* Thank you... this helps a lot.',
+  session: neutralSession,
+  character
+});
+
+assert.equal(warmthReactionResult.relationshipMood, 'Warm', 'AI expressing gentle warmth shifts mood to Warm');
+assert.ok(warmthReactionResult.strain <= neutralSession.strain, 'Warmth cools down or maintains low strain');
+console.log('✅ 9. AI-Driven Subtle Reactions: Emotional weather responds accurately to AI body language');
+
+console.log('\n✨ All v2.6.1 Psychological Relationship Engine unit tests passed successfully!');

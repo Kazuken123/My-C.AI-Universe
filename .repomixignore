@@ -12,3 +12,14 @@ graphify-out/
 .agents/
 *.diff
 .env
+*.db
+*.sqlite
+*.sqlite3
+assets/avatars/
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.ico
+repomix-output.xml
+repomix-output_*.xml

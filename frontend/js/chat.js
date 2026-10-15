@@ -459,10 +459,13 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     });
   }
 
+  let lastDirectorOverrideTime = 0;
+
   if (btnResetStrain) {
     btnResetStrain.addEventListener('click', async () => {
       if (!appState.activeSession) return;
       try {
+        lastDirectorOverrideTime = Date.now();
         const updated = await api.updateSessionRelationship(appState.activeSession.id, {
           strain: 0,
           relationshipMood: 'Calm'
@@ -484,6 +487,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     btnApplyRelOverride.addEventListener('click', async () => {
       if (!appState.activeSession) return;
       try {
+        lastDirectorOverrideTime = Date.now();
         const affinityVal = parseInt(relAffinitySlider?.value ?? 0, 10);
         const moodVal = relMoodSelect?.value || 'Calm';
         const presetKey = relOverridePreset?.value;
@@ -1223,6 +1227,13 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         async (donePayload) => {
           isFinished = true;
           const updatedSession = await api.getChatSession(donePayload.sessionId || session.id);
+          if (Date.now() - lastDirectorOverrideTime < 4000 && appState.activeSession) {
+            updatedSession.affinity = appState.activeSession.affinity;
+            updatedSession.trust = appState.activeSession.trust;
+            updatedSession.strain = appState.activeSession.strain;
+            updatedSession.relationshipStage = appState.activeSession.relationshipStage;
+            updatedSession.relationshipMood = appState.activeSession.relationshipMood;
+          }
           appState.activeSession = updatedSession;
           renderChatStream(appState.activeCharacter, updatedSession);
           renderRelationshipBar(updatedSession, appState.activeCharacter);
@@ -1237,6 +1248,13 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
       if (!isFinished) {
         const updatedSession = await api.getChatSession(session.id);
+        if (Date.now() - lastDirectorOverrideTime < 4000 && appState.activeSession) {
+          updatedSession.affinity = appState.activeSession.affinity;
+          updatedSession.trust = appState.activeSession.trust;
+          updatedSession.strain = appState.activeSession.strain;
+          updatedSession.relationshipStage = appState.activeSession.relationshipStage;
+          updatedSession.relationshipMood = appState.activeSession.relationshipMood;
+        }
         appState.activeSession = updatedSession;
         renderChatStream(appState.activeCharacter, updatedSession);
         renderRelationshipBar(updatedSession, appState.activeCharacter);
@@ -1256,6 +1274,13 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         });
 
         const updatedSession = await api.getChatSession(fallbackRes.sessionId || session.id);
+        if (Date.now() - lastDirectorOverrideTime < 4000 && appState.activeSession) {
+          updatedSession.affinity = appState.activeSession.affinity;
+          updatedSession.trust = appState.activeSession.trust;
+          updatedSession.strain = appState.activeSession.strain;
+          updatedSession.relationshipStage = appState.activeSession.relationshipStage;
+          updatedSession.relationshipMood = appState.activeSession.relationshipMood;
+        }
         appState.activeSession = updatedSession;
         renderChatStream(appState.activeCharacter, updatedSession);
         renderRelationshipBar(updatedSession, appState.activeCharacter);

@@ -64,9 +64,10 @@ async function migrate() {
       name: 'characters',
       cols: [
         'id', 'name', 'tagline', 'avatar', 'greeting', 'personality', 'appearance', 'abilities',
-        'background', 'speaking_style', 'example_dialogues', 'initial_memory', 'system_prompt',
-        'wiki', 'wiki_url', 'categories_json', 'creator', 'interactions', 'likes', 'is_liked',
-        'created_at', 'updated_at'
+        'background', 'speaking_style', 'example_dialogues', 'initial_memory',
+        'initial_affinity', 'initial_relationship_stage', 'relationship_dynamic',
+        'system_prompt', 'wiki', 'wiki_url', 'categories_json', 'creator', 'owner_user_id',
+        'interactions', 'likes', 'is_liked', 'created_at', 'updated_at'
       ]
     },
     {
@@ -75,7 +76,11 @@ async function migrate() {
     },
     {
       name: 'chat_sessions',
-      cols: ['id', 'user_id', 'character_id', 'persona_id', 'title', 'provider', 'created_at', 'updated_at']
+      cols: [
+        'id', 'user_id', 'character_id', 'persona_id', 'title', 'provider',
+        'affinity', 'trust', 'strain', 'relationship_stage', 'relationship_mood',
+        'created_at', 'updated_at'
+      ]
     },
     {
       name: 'chat_messages',
