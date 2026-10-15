@@ -135,6 +135,9 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       rightDrawer.classList.add('collapsed');
       rightDrawer.classList.remove('open');
     }
+    if (toggleDrawerBtn) {
+      toggleDrawerBtn.classList.remove('active');
+    }
     if (drawerBackdrop) drawerBackdrop.classList.remove('active');
   };
 
@@ -143,19 +146,19 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       rightDrawer.classList.remove('collapsed');
       rightDrawer.classList.add('open');
     }
-    if (drawerBackdrop) drawerBackdrop.classList.add('active');
+    if (toggleDrawerBtn) {
+      toggleDrawerBtn.classList.add('active');
+    }
+    if (drawerBackdrop && window.innerWidth <= 768) drawerBackdrop.classList.add('active');
   };
 
   if (toggleDrawerBtn && rightDrawer) {
     toggleDrawerBtn.addEventListener('click', () => {
-      if (window.innerWidth <= 768) {
-        if (rightDrawer.classList.contains('open')) {
-          closeRightDrawer();
-        } else {
-          openRightDrawer();
-        }
+      const isCurrentlyOpen = rightDrawer.classList.contains('open') || (!rightDrawer.classList.contains('collapsed') && window.innerWidth > 768);
+      if (isCurrentlyOpen) {
+        closeRightDrawer();
       } else {
-        rightDrawer.classList.toggle('collapsed');
+        openRightDrawer();
       }
     });
   }
@@ -176,9 +179,13 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     drawerBackdrop.addEventListener('click', closeRightDrawer);
   }
 
-  // Initial state on mobile screens: start collapsed
-  if (window.innerWidth <= 768 && rightDrawer) {
+  // Initial state: start collapsed across all screen sizes (dossier only appears when clicked)
+  if (rightDrawer) {
     rightDrawer.classList.add('collapsed');
+    rightDrawer.classList.remove('open');
+  }
+  if (toggleDrawerBtn) {
+    toggleDrawerBtn.classList.remove('active');
   }
 
 

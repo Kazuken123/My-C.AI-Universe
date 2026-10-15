@@ -28,7 +28,13 @@ export class ApiClient {
   }
 
   async request(url, options = {}) {
-    const silent = options.silent === true;
+    // In-chat messaging operations have inline typing/streaming feedback; do not flash page loading bar
+    const isChatMessageEndpoint = typeof url === 'string' && (
+      url.startsWith('/api/chat') ||
+      url.includes('/messages') ||
+      url.includes('/rewind')
+    );
+    const silent = options.silent === true || isChatMessageEndpoint;
     if (!silent) {
       loadingBar.start();
     }
@@ -234,12 +240,12 @@ export class ApiClient {
   sendChatMessage(payload) {
     return this.request('/api/chat', {
       method: 'POST',
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      silent: true
     });
   }
 
   async sendChatMessageStream(payload, onToken, onDone) {
-    loadingBar.start();
     try {
       const token = this.getToken();
       const headers = {
@@ -289,21 +295,23 @@ export class ApiClient {
         }
       }
     } finally {
-      loadingBar.done();
+      // Stream completed cleanly without page-loader flicker
     }
   }
 
   updateChatMessage(sessionId, messageId, payload) {
     return this.request(`/api/chats/${encodeURIComponent(sessionId)}/messages/${encodeURIComponent(messageId)}`, {
       method: 'PUT',
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      silent: true
     });
   }
 
   rewindChatSession(sessionId, messageId) {
     return this.request(`/api/chats/${encodeURIComponent(sessionId)}/rewind`, {
       method: 'POST',
-      body: JSON.stringify({ messageId })
+      body: JSON.stringify({ messageId }),
+      silent: true
     });
   }
 

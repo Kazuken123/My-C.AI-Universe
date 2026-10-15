@@ -66,27 +66,31 @@
     <!-- Left Studio Rail -->
     <aside class="sidebar" aria-label="Primary Navigation">
       <div class="sidebar-header">
-        <a href="/" class="brand-logo" id="brand-home-link">
-          <span class="brand-mark" aria-hidden="true">
-            <img src="/favicon.svg" alt="C.AI Universe" class="brand-mark-img" width="24" height="24" />
-          </span>
-          <div class="brand-text-wrap">
-            <span class="brand-title">C.AI Universe</span>
-            <span class="brand-version">SQL STUDIO v2.2</span>
+        <div class="sidebar-header-top">
+          <a href="/" class="brand-logo" id="brand-home-link">
+            <span class="brand-mark" aria-hidden="true">
+              <img src="/favicon.svg" alt="C.AI Universe" class="brand-mark-img" width="24" height="24" />
+            </span>
+            <div class="brand-text-wrap">
+              <span class="brand-title">C.AI Universe</span>
+              <span class="brand-version">SQL STUDIO v2.2</span>
+            </div>
+          </a>
+          <div class="sidebar-header-actions">
+            <button class="icon-btn sidebar-collapse-btn" id="sidebarCollapseBtn" type="button" aria-label="Toggle Sidebar Rail" title="Collapse Sidebar ([)">
+              <i class="ph-light ph-sidebar-simple"></i>
+            </button>
+            <button class="icon-btn mobile-sidebar-close" id="mobileSidebarClose" type="button" aria-label="Close Navigation Menu">
+              <i class="ph-light ph-x"></i>
+            </button>
           </div>
-        </a>
-        <div class="sidebar-header-actions">
-          <button class="icon-btn sidebar-collapse-btn" id="sidebarCollapseBtn" type="button" aria-label="Toggle Sidebar Rail" title="Collapse Sidebar ([)">
-            <i class="ph-light ph-sidebar-simple"></i>
-          </button>
-          <button class="icon-btn mobile-sidebar-close" id="mobileSidebarClose" type="button" aria-label="Close Navigation Menu">
-            <i class="ph-light ph-x"></i>
-          </button>
         </div>
-        <span class="engine-telemetry" id="ai-status-badge" title="AI Engine Status">
-          <span class="status-dot"></span>
-          <span class="status-label">Online</span>
-        </span>
+        <div class="sidebar-header-sub">
+          <span class="engine-telemetry" id="ai-status-badge" title="AI Engine Status">
+            <span class="status-dot"></span>
+            <span class="status-label">Online</span>
+          </span>
+        </div>
       </div>
 
       <div class="sidebar-cta-wrap">

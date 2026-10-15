@@ -1066,6 +1066,8 @@ body::after {
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.08em;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .soul-dot {
@@ -1141,6 +1143,16 @@ body::after {
   align-items: center;
   padding: 0;
   margin-bottom: 14px;
+}
+
+.sidebar.collapsed .sidebar-header-top {
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar.collapsed .sidebar-header-sub {
+  display: none !important;
 }
 
 .sidebar.collapsed .brand-logo {
@@ -1254,10 +1266,27 @@ body::after {
 
 .sidebar-header {
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 0 4px;
+}
+
+.sidebar-header-top {
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
-  padding: 0 4px;
+  width: 100%;
+  min-width: 0;
+  gap: 8px;
+}
+
+.sidebar-header-sub {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  padding-left: 2px;
 }
 
 .brand-logo {
@@ -1266,6 +1295,8 @@ body::after {
   gap: 10px;
   text-decoration: none;
   color: var(--text-primary);
+  min-width: 0;
+  flex: 1;
 }
 
 .brand-mark {
@@ -1278,11 +1309,13 @@ body::after {
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
 }
 
 .brand-text-wrap {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .brand-title {
@@ -1290,6 +1323,7 @@ body::after {
   font-size: 0.98rem;
   font-weight: 800;
   letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
 .brand-version {
@@ -1297,6 +1331,7 @@ body::after {
   font-size: 0.62rem;
   color: var(--text-muted);
   letter-spacing: 0.05em;
+  white-space: nowrap;
 }
 
 .engine-telemetry {
