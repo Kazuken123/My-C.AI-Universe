@@ -41,19 +41,20 @@ export class GeminiProvider extends BaseAIProvider {
   }
 
   get modelName() {
-    return process.env.GEMINI_MODEL || config.GEMINI_MODEL || 'gemini-2.5-flash';
+    return process.env.GEMINI_MODEL || config.GEMINI_MODEL || 'gemini-3.5-flash-lite';
   }
 
   get fallbackModelName() {
-    return process.env.GEMINI_FALLBACK_MODEL || config.GEMINI_FALLBACK_MODEL || 'gemini-2.0-flash';
+    return process.env.GEMINI_FALLBACK_MODEL || config.GEMINI_FALLBACK_MODEL || 'gemini-3.1-flash-lite';
   }
 
   #getModelsToTry() {
     const candidates = [
       this.modelName,
       this.fallbackModelName,
-      'gemini-2.5-flash',
-      'gemini-2.0-flash'
+      'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite',
+      'gemini-2.5-flash'
     ].filter(Boolean);
     return [...new Set(candidates)];
   }

@@ -4,7 +4,7 @@
 > **Status:** Production-Ready & Tested  
 > **Automated Test Coverage:** 22/22 E2E tests passing (`npm test`)  
 > **Primary Database:** Turso Cloud (LibSQL `@libsql/client`, AWS Tokyo `ap-northeast-1`)  
-> **Primary AI Engine:** Google Gemini (`gemini-2.5-flash`, `gemini-2.0-flash`) with native `systemInstruction` & fallback chain  
+> **Primary AI Engine:** Google Gemini (`gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`, `gemini-2.5-flash`) with native `systemInstruction` & fallback chain  
 > **Last Updated:** October 2026
 
 ---
@@ -25,8 +25,8 @@ This document serves as the **single source of truth** for project history, rece
 - **Lightweight Lean Session Listing (`findAllLean`)**:
   - Added `findAllLean(characterId, userId)` in [`backend/repositories/ChatSessionRepository.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/repositories/ChatSessionRepository.js) using an aggregated SQL `LEFT JOIN` and correlated subquery to retrieve metadata, message counts, and last messages in a single query.
   - Updated `getChatSessions` in [`backend/controllers/chat.controller.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/controllers/chat.controller.js) to call `findAllLean()`, reducing sidebar listing from 200+ SQL roundtrips ($O(S \times M)$) down to 2 SQL queries total.
-- **Fixed Model 404 Roundtrip Penalties in Gemini Provider**:
-  - Replaced non-existent model defaults (`gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`) with valid Google GenAI models (`gemini-2.5-flash`, `gemini-2.0-flash`) across [`backend/config/index.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/config/index.js), [`backend/ai/providers/gemini.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/providers/gemini.js), and local `.env`. Eliminates two failed 404 requests (1.0–2.0s wasted latency) before the first token.
+- **High-Quota Gemini Flash Lite Alignment (500 RPD, 15 RPM)**:
+  - Verified and aligned primary and secondary models to high-quota endpoints (`gemini-3.5-flash-lite` and `gemini-3.1-flash-lite` offering 500 requests/day, 15 req/min) with `gemini-2.5-flash` as backup. Removed deprecated `gemini-2.0-flash` (which returned 404) from the fallback chain.
 - **Deduplicated Auth Middleware**:
   - Added fast guard `if (req.user !== undefined) return next();` in [`backend/middlewares/auth.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/middlewares/auth.js) `optionalAuth`, preventing duplicate `users` SQL lookups when `requireAuth` runs downstream of global `optionalAuth`.
 - **Parallelized Controller Lookups & Reduced AI Queue Delay**:
