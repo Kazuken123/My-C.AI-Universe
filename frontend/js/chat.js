@@ -951,7 +951,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     if (drawerLoreContent) {
       drawerLoreContent.innerHTML = `
         <div style="text-align: center; margin-bottom: 16px;">
-          <img src="${escapeHtml(character.avatar || '')}" alt="" style="width: 68px; height: 68px; border-radius: var(--radius-md); object-fit: cover; object-position: center top; border: 1px solid var(--border-strong);" />
+          <img src="${escapeHtml(character.avatar || '')}" alt="" style="width: 68px; height: 68px; aspect-ratio: 1 / 1; border-radius: var(--radius-md); object-fit: cover; object-position: center top; border: 1px solid var(--border-strong);" />
           <h3 style="margin-top: 8px; font-family: var(--font-display); font-size: 1.08rem;">${escapeHtml(character.name)}</h3>
           <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">${escapeHtml(character.tagline || '')}</p>
           <div style="display: flex; gap: 6px; justify-content: center; margin-top: 10px;">
