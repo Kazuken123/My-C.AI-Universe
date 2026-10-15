@@ -1,12 +1,12 @@
 {
   "name": "my-c.ai-universe",
-  "version": "2.5.6",
+  "version": "2.6.0",
   "description": "Full-featured OOP + Relational SQL Character.AI web application with Wiki ingestion, swipeable response variants, user personas, and hybrid long-term semantic memory.",
   "main": "server.js",
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "test": "node tests/continuity-v2.5.5.test.js && node tests/sidebar-history-v2.5.6.test.js && node tests/api.test.js",
+    "test": "node tests/continuity-v2.5.5.test.js && node tests/sidebar-history-v2.5.6.test.js && node tests/relationship-v2.6.0.test.js && node tests/api.test.js",
     "db:init": "node scripts/init-database.js",
     "db:turso:push": "node scripts/migrate-to-turso.js",
     "db:sync:stats": "node scripts/sync-real-stats.js",

@@ -20,6 +20,10 @@ class StudioPageApp {
     this.speakingStyleInput = document.getElementById('charSpeakingStyleInput');
     this.exampleDialoguesInput = document.getElementById('charExampleDialoguesInput');
     this.initialMemoryInput = document.getElementById('charInitialMemoryInput');
+    this.relationshipPresetSelect = document.getElementById('charRelationshipPreset');
+    this.initialAffinityInput = document.getElementById('charInitialAffinity');
+    this.initialAffinityBadge = document.getElementById('charInitialAffinityBadge');
+    this.relationshipDynamicInput = document.getElementById('charRelationshipDynamic');
 
     // Wiki & AI synthesis
     this.wikiUrlInput = document.getElementById('charWikiInput');
@@ -38,6 +42,7 @@ class StudioPageApp {
     this.previewTagline = document.getElementById('preview-tagline');
     this.previewTags = document.getElementById('preview-tags');
     this.previewGreeting = document.getElementById('preview-greeting');
+    this.previewRelationshipText = document.getElementById('preview-relationship-text');
   }
 
   updatePreview() {
@@ -63,13 +68,54 @@ class StudioPageApp {
         .map(t => `<span class="tag-badge">${escapeHtml(t)}</span>`)
         .join('');
     }
+
+    const affinityVal = Number(this.initialAffinityInput?.value ?? 0);
+    const selectedOpt = this.relationshipPresetSelect?.selectedOptions?.[0];
+    const stageName = selectedOpt?.dataset?.stage || selectedOpt?.text?.split('(')[0]?.trim() || 'Stranger / Neutral';
+    const dynText = this.relationshipDynamicInput?.value?.trim() || '';
+
+    if (this.previewRelationshipText) {
+      this.previewRelationshipText.textContent = `${stageName} (${affinityVal >= 0 ? '+' : ''}${affinityVal})${dynText ? ' • ' + dynText : ''}`;
+    }
   }
 
   bindLiveInputs() {
-    const inputs = [this.nameInput, this.taglineInput, this.creatorInput, this.avatarInput, this.greetingInput, this.categoriesInput];
+    const inputs = [
+      this.nameInput, this.taglineInput, this.creatorInput, this.avatarInput,
+      this.greetingInput, this.categoriesInput, this.relationshipDynamicInput
+    ];
     inputs.forEach(el => {
       if (el) el.addEventListener('input', () => this.updatePreview());
     });
+
+    if (this.relationshipPresetSelect) {
+      this.relationshipPresetSelect.addEventListener('change', () => {
+        const val = Number(this.relationshipPresetSelect.value);
+        if (this.initialAffinityInput) {
+          this.initialAffinityInput.value = val;
+        }
+        if (this.initialAffinityBadge) {
+          this.initialAffinityBadge.textContent = (val >= 0 ? '+' : '') + val;
+        }
+        this.updatePreview();
+      });
+    }
+
+    if (this.initialAffinityInput) {
+      this.initialAffinityInput.addEventListener('input', () => {
+        const val = Number(this.initialAffinityInput.value);
+        if (this.initialAffinityBadge) {
+          this.initialAffinityBadge.textContent = (val >= 0 ? '+' : '') + val;
+        }
+        if (this.relationshipPresetSelect) {
+          const match = Array.from(this.relationshipPresetSelect.options).find(o => Number(o.value) === val);
+          if (match) {
+            this.relationshipPresetSelect.value = match.value;
+          }
+        }
+        this.updatePreview();
+      });
+    }
   }
 
   launchPortraitCropper() {
@@ -124,6 +170,25 @@ class StudioPageApp {
       if (this.speakingStyleInput) this.speakingStyleInput.value = char.speakingStyle || '';
       if (this.exampleDialoguesInput) this.exampleDialoguesInput.value = char.exampleDialogues || '';
       if (this.initialMemoryInput) this.initialMemoryInput.value = char.initialMemory || '';
+
+      if (this.initialAffinityInput) {
+        const aff = Number(char.initialAffinity ?? 0);
+        this.initialAffinityInput.value = aff;
+        if (this.initialAffinityBadge) {
+          this.initialAffinityBadge.textContent = (aff >= 0 ? '+' : '') + aff;
+        }
+      }
+      if (this.relationshipPresetSelect) {
+        const targetStage = char.initialRelationshipStage || 'Stranger / Neutral';
+        const match = Array.from(this.relationshipPresetSelect.options).find(o =>
+          (o.dataset.stage && o.dataset.stage.toLowerCase() === targetStage.toLowerCase()) ||
+          o.text.toLowerCase().includes(targetStage.toLowerCase())
+        );
+        if (match) this.relationshipPresetSelect.value = match.value;
+      }
+      if (this.relationshipDynamicInput) {
+        this.relationshipDynamicInput.value = char.relationshipDynamic || '';
+      }
 
       this.updatePreview();
     } catch (err) {
@@ -294,6 +359,10 @@ class StudioPageApp {
           speakingStyle: this.speakingStyleInput?.value.trim(),
           exampleDialogues: this.exampleDialoguesInput?.value.trim(),
           initialMemory: this.initialMemoryInput?.value.trim(),
+          initialAffinity: Number(this.initialAffinityInput?.value || 0),
+          initialRelationshipStage: this.relationshipPresetSelect?.selectedOptions?.[0]?.dataset?.stage ||
+            this.relationshipPresetSelect?.selectedOptions?.[0]?.text?.split('(')[0]?.trim() || 'Stranger / Neutral',
+          relationshipDynamic: this.relationshipDynamicInput?.value?.trim() || '',
           creator: (api.getCurrentUser()?.username ? `@${api.getCurrentUser().username}` : undefined)
         };
 

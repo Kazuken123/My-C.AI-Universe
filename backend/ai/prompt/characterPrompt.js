@@ -63,11 +63,34 @@ export function generateCharacterPrompt(character, options = {}) {
     storySummary = '',
     isRegenerate = false,
     isContinuation = false,
-    excludeVariants = []
+    excludeVariants = [],
+    relationship = null
   } = options;
   const baseSystemPrompt = character.systemPrompt || compileCharacterSystemPrompt(character);
 
   let contextBlocks = '';
+
+  const rel = {
+    affinity: Number(relationship?.affinity ?? character.initialAffinity ?? 0),
+    trust: Number(relationship?.trust ?? relationship?.affinity ?? character.initialAffinity ?? 0),
+    strain: Number(relationship?.strain ?? 0),
+    stage: relationship?.relationshipStage || relationship?.stage || character.initialRelationshipStage || 'Stranger / Neutral',
+    mood: relationship?.relationshipMood || relationship?.mood || 'Calm',
+    dynamic: relationship?.dynamic || character.relationshipDynamic || character.relationship_dynamic || ''
+  };
+
+  const affSign = rel.affinity > 0 ? '+' : '';
+  const trustSign = rel.trust > 0 ? '+' : '';
+
+  contextBlocks += `\n\n[RELATIONSHIP & EMOTIONAL DYNAMICS WITH USER]
+- Target Persona: ${persona?.name || 'User'}
+- Current Relationship Stage: ${rel.stage} (Bond Score: ${affSign}${rel.affinity}/100, Trust: ${trustSign}${rel.trust}/100)
+- Immediate Emotional Weather / Mood: ${rel.mood} (Conflict Strain: ${rel.strain}/100)
+${rel.dynamic ? `- Established Universe Dynamic: ${rel.dynamic}\n` : ''}CRITICAL RELATIONSHIP ROLEPLAY RULES:
+1. High Emotional Inertia (Dual-Layer Realism): Act authentically according to the Current Relationship Stage (${rel.stage}) AND Immediate Mood (${rel.mood}). If Bond Score is high (>= 60, e.g. Crush / Deep Love / Close Friend) but Mood is "Quarreling / Heated" or "Hurt", do NOT act like a stranger or reset the relationship! Argue, sulk, or react with the emotional familiarity and attachment of someone who deeply cares about ${persona?.name || 'the user'} but is temporarily upset with them.
+2. Anti-Contradiction / Psychological Permanence: Never flip your stance or pretend the relationship does not exist. Maintain emotional continuity across turns.
+3. Conflict Strain Realism: If Conflict Strain is high (>= 65), show visible emotional fatigue, guardedness, or hurt until the user genuinely repairs the rift with an apology or comforting gesture.
+4. If Stage is "Scared / Intimidated" or "Submissive / Dependent", reflect hesitation, nervousness, or compliance appropriate to ${character.name}'s personality.`;
 
   if (persona && persona.name) {
     contextBlocks += `\n\n[USER PERSONA]\nYou are currently speaking with "${persona.name}".`;

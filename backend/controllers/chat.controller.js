@@ -7,6 +7,7 @@ import {
 } from '../repositories/index.js';
 import { aiOrchestrator } from '../ai/index.js';
 import { memoryService } from '../services/memory.service.js';
+import { relationshipService } from '../services/relationship.service.js';
 import { generateDefaultGreeting } from '../ai/prompt/characterPrompt.js';
 import { ValidationError, NotFoundError } from '../ai/errors.js';
 import { config } from '../config/index.js';
@@ -21,7 +22,8 @@ export class ChatController extends BaseController {
     charsRepo = characterRepository,
     personasRepo = personaRepository,
     memService = memoryService,
-    orchestrator = aiOrchestrator
+    orchestrator = aiOrchestrator,
+    relService = relationshipService
   ) {
     super();
     this.sessionsRepo = sessionsRepo;
@@ -29,6 +31,7 @@ export class ChatController extends BaseController {
     this.personasRepo = personasRepo;
     this.memoryService = memService;
     this.orchestrator = orchestrator;
+    this.relationshipService = relService;
 
     this.getChatSessions = this.getChatSessions.bind(this);
     this.createChatSession = this.createChatSession.bind(this);
@@ -37,6 +40,7 @@ export class ChatController extends BaseController {
     this.updateChatMessage = this.updateChatMessage.bind(this);
     this.rewindChatSession = this.rewindChatSession.bind(this);
     this.sendChatMessage = this.sendChatMessage.bind(this);
+    this.updateSessionRelationship = this.updateSessionRelationship.bind(this);
   }
 
   /**
@@ -49,7 +53,12 @@ export class ChatController extends BaseController {
       characterId: character.id,
       personaId: personaId || 'persona_default',
       title: title || `Chat with ${character.name}`,
-      provider: provider || config.AI_PROVIDER || 'gemini'
+      provider: provider || config.AI_PROVIDER || 'gemini',
+      affinity: character.initialAffinity ?? 0,
+      trust: character.initialAffinity ?? 0,
+      strain: 0,
+      relationshipStage: character.initialRelationshipStage || 'Stranger / Neutral',
+      relationshipMood: 'Calm'
     });
 
     session.addMessage(new ChatMessage({
@@ -109,6 +118,11 @@ export class ChatController extends BaseController {
           personaId: row.persona_id,
           title: row.title || (char ? `Chat with ${char.name}` : 'Chat'),
           provider: row.provider,
+          affinity: Number(row.affinity ?? 0),
+          trust: Number(row.trust ?? row.affinity ?? 0),
+          strain: Number(row.strain ?? 0),
+          relationshipStage: row.relationship_stage || 'Stranger / Neutral',
+          relationshipMood: row.relationship_mood || 'Calm',
           messageCount: Number(row.message_count) || 0,
           lastMessage: row.last_message || '',
           createdAt: row.created_at,
@@ -391,7 +405,15 @@ export class ChatController extends BaseController {
         persona: activePersona ? activePersona.toJSON() : null,
         pinnedMessages,
         memories: relevantMemories,
-        storySummary
+        storySummary,
+        relationship: {
+          affinity: session.affinity,
+          trust: session.trust,
+          strain: session.strain,
+          stage: session.relationshipStage,
+          mood: session.relationshipMood,
+          dynamic: character.relationshipDynamic
+        }
       };
 
       // Case 1: Regenerate Swipe Variant
@@ -492,7 +514,14 @@ ${existingVariants.length > 0 ? `- Do NOT repeat previous takes:\n${existingVari
           response: reply || 'AI did not respond',
           regenerated: true,
           sessionId: session.id,
-          message: targetModelMsg ? targetModelMsg.toJSON() : null
+          message: targetModelMsg ? targetModelMsg.toJSON() : null,
+          relationship: {
+            affinity: session.affinity,
+            trust: session.trust,
+            strain: session.strain,
+            relationshipStage: session.relationshipStage,
+            relationshipMood: session.relationshipMood
+          }
         });
       }
 
@@ -531,7 +560,14 @@ Rules:
           response: reply || 'AI did not respond',
           continuation: true,
           sessionId: session.id,
-          message: newAiMsg.toJSON()
+          message: newAiMsg.toJSON(),
+          relationship: {
+            affinity: session.affinity,
+            trust: session.trust,
+            strain: session.strain,
+            relationshipStage: session.relationshipStage,
+            relationshipMood: session.relationshipMood
+          }
         });
       }
 
@@ -563,6 +599,15 @@ Rules:
           }
         }
 
+        const newRelState = this.relationshipService.evaluateTurn({
+          userText: message,
+          aiText: fullReply,
+          session,
+          character
+        });
+        Object.assign(session, newRelState);
+        await this.sessionsRepo.updateRelationshipState(session.id, newRelState);
+
         const aiMsgObj = session.addMessage({
           role: 'model',
           content: fullReply || '...'
@@ -579,7 +624,8 @@ Rules:
           sessionId: session.id,
           userMessage: userMsgObj.toJSON(),
           aiMessage: aiMsgObj.toJSON(),
-          response: fullReply
+          response: fullReply,
+          relationship: newRelState
         })}\n\n`);
         return res.end();
       }
@@ -590,6 +636,15 @@ Rules:
       });
 
       const reply = await this.orchestrator.chat(character.toJSON(), message.trim(), effectiveHistory, aiOptions);
+
+      const newRelState = this.relationshipService.evaluateTurn({
+        userText: message,
+        aiText: reply,
+        session,
+        character
+      });
+      Object.assign(session, newRelState);
+      await this.sessionsRepo.updateRelationshipState(session.id, newRelState);
 
       const aiMsgObj = session.addMessage({
         role: 'model',
@@ -607,10 +662,43 @@ Rules:
         sessionId: session.id,
         userMessage: userMsgObj.toJSON(),
         aiMessage: aiMsgObj.toJSON(),
-        memoriesUsed: relevantMemories.length
+        memoriesUsed: relevantMemories.length,
+        relationship: newRelState
       });
     } catch (error) {
       return this.handleError(res, error, 'Chat service temporarily unavailable');
+    }
+  }
+
+  async updateSessionRelationship(req, res) {
+    try {
+      const { sessionId } = req.params;
+      const userId = req.user ? req.user.id : null;
+      const { affinity, trust, strain, relationshipStage, relationshipMood } = req.body;
+
+      const session = await this.sessionsRepo.findById(sessionId, userId);
+      if (!session) {
+        throw new NotFoundError('Chat session not found');
+      }
+
+      const updatedState = {
+        affinity: typeof affinity === 'number' ? Math.max(-100, Math.min(100, affinity)) : session.affinity,
+        trust: typeof trust === 'number' ? Math.max(-100, Math.min(100, trust)) : session.trust,
+        strain: typeof strain === 'number' ? Math.max(0, Math.min(100, strain)) : session.strain,
+        relationshipStage: typeof relationshipStage === 'string' && relationshipStage.trim() ? relationshipStage.trim() : session.relationshipStage,
+        relationshipMood: typeof relationshipMood === 'string' && relationshipMood.trim() ? relationshipMood.trim() : session.relationshipMood
+      };
+
+      Object.assign(session, updatedState);
+      await this.sessionsRepo.updateRelationshipState(sessionId, updatedState);
+
+      return this.sendJson(res, {
+        success: true,
+        relationship: updatedState,
+        session: session.toJSON()
+      });
+    } catch (error) {
+      return this.handleError(res, error, 'Failed to update relationship state');
     }
   }
 }
@@ -624,5 +712,6 @@ export const {
   deleteChatSession,
   updateChatMessage,
   rewindChatSession,
-  sendChatMessage
+  sendChatMessage,
+  updateSessionRelationship
 } = chatController;

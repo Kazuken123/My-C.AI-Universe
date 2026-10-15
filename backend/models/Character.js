@@ -10,7 +10,8 @@ import { compileCharacterSystemPrompt, generateDefaultGreeting } from '../ai/pro
 export class Character extends BaseEntity {
   static ALLOWED_UPDATE_FIELDS = [
     'name', 'tagline', 'greeting', 'personality', 'appearance',
-    'abilities', 'background', 'summary', 'speaking_style', 'initial_memory'
+    'abilities', 'background', 'summary', 'speaking_style', 'initial_memory',
+    'initial_affinity', 'initial_relationship_stage', 'relationship_dynamic'
   ];
 
   constructor(props = {}) {
@@ -31,6 +32,9 @@ export class Character extends BaseEntity {
     this.speaking_style = (props.speaking_style || props.speakingStyle || '').trim();
     this.example_dialogues = (props.example_dialogues || props.exampleDialogues || '').trim();
     this.initial_memory = (props.initial_memory || props.initialMemory || '').trim();
+    this.initialAffinity = Math.max(-100, Math.min(100, Number(props.initialAffinity ?? props.initial_affinity ?? 0)));
+    this.initialRelationshipStage = (props.initialRelationshipStage || props.initial_relationship_stage || 'Stranger / Neutral').trim();
+    this.relationshipDynamic = (props.relationshipDynamic || props.relationship_dynamic || '').trim();
     this.wiki = (props.wiki || '').trim();
     this.wikiUrl = (props.wikiUrl || props.wiki_url || this.wiki || '').trim();
     this.categories = Array.isArray(props.categories) && props.categories.length > 0
@@ -45,6 +49,27 @@ export class Character extends BaseEntity {
     // Ensure greeting and systemPrompt are always compiled
     this.greeting = generateDefaultGreeting(this);
     this.systemPrompt = props.systemPrompt || props.system_prompt || compileCharacterSystemPrompt(this);
+  }
+
+  get initial_affinity() {
+    return this.initialAffinity;
+  }
+  set initial_affinity(val) {
+    this.initialAffinity = Math.max(-100, Math.min(100, Number(val ?? 0)));
+  }
+
+  get initial_relationship_stage() {
+    return this.initialRelationshipStage;
+  }
+  set initial_relationship_stage(val) {
+    this.initialRelationshipStage = String(val || 'Stranger / Neutral').trim();
+  }
+
+  get relationship_dynamic() {
+    return this.relationshipDynamic;
+  }
+  set relationship_dynamic(val) {
+    this.relationshipDynamic = String(val || '').trim();
   }
 
   /**
@@ -174,6 +199,9 @@ export class Character extends BaseEntity {
       speaking_style: row.speaking_style,
       example_dialogues: row.example_dialogues,
       initial_memory: row.initial_memory,
+      initialAffinity: row.initial_affinity,
+      initialRelationshipStage: row.initial_relationship_stage,
+      relationshipDynamic: row.relationship_dynamic,
       systemPrompt: row.system_prompt,
       wiki: row.wiki,
       wikiUrl: row.wiki_url,
@@ -202,6 +230,12 @@ export class Character extends BaseEntity {
       speaking_style: this.speaking_style,
       example_dialogues: this.example_dialogues,
       initial_memory: this.initial_memory,
+      initialAffinity: this.initialAffinity,
+      initial_affinity: this.initialAffinity,
+      initialRelationshipStage: this.initialRelationshipStage,
+      initial_relationship_stage: this.initialRelationshipStage,
+      relationshipDynamic: this.relationshipDynamic,
+      relationship_dynamic: this.relationshipDynamic,
       systemPrompt: this.systemPrompt,
       wiki: this.wiki,
       wikiUrl: this.wikiUrl,

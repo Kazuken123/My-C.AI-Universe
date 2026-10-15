@@ -152,6 +152,11 @@ export class ChatSession extends BaseEntity {
     this.personaId = props.personaId || props.persona_id || 'persona_default';
     this.title = props.title || 'Chat';
     this.provider = props.provider || 'gemini';
+    this.affinity = Number(props.affinity ?? 0);
+    this.trust = Number(props.trust ?? this.affinity);
+    this.strain = Number(props.strain ?? 0);
+    this.relationshipStage = props.relationshipStage || props.relationship_stage || 'Stranger / Neutral';
+    this.relationshipMood = props.relationshipMood || props.relationship_mood || 'Calm';
     this.messages = Array.isArray(props.messages)
       ? props.messages.map((m, idx) =>
           m instanceof ChatMessage ? m : new ChatMessage({ ...m, sessionId: this.id, position: idx })
@@ -196,6 +201,11 @@ export class ChatSession extends BaseEntity {
       personaId: row.persona_id || 'persona_default',
       title: row.title,
       provider: row.provider || 'gemini',
+      affinity: row.affinity,
+      trust: row.trust,
+      strain: row.strain,
+      relationshipStage: row.relationship_stage,
+      relationshipMood: row.relationship_mood,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       messages
@@ -210,6 +220,11 @@ export class ChatSession extends BaseEntity {
       personaId: this.personaId,
       title: this.title,
       provider: this.provider,
+      affinity: this.affinity,
+      trust: this.trust,
+      strain: this.strain,
+      relationshipStage: this.relationshipStage,
+      relationshipMood: this.relationshipMood,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       messages: this.messages.map(m => m.toJSON())

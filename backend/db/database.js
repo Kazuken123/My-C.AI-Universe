@@ -215,15 +215,47 @@ export class DatabaseConnection {
         console.warn('[SQL DB] Users role column migration notice:', colErr.message);
       }
 
-      // Ensure 'owner_user_id' column exists in characters table
+      // Ensure 'owner_user_id' and relationship columns exist in characters table
       try {
         const charsColsRes = await raw.execute('PRAGMA table_info(characters)');
-        const hasOwnerCol = (charsColsRes.rows || []).some(r => r.name === 'owner_user_id');
-        if (!hasOwnerCol) {
+        const existingCharCols = new Set((charsColsRes.rows || []).map(r => r.name));
+        if (!existingCharCols.has('owner_user_id')) {
           await raw.execute('ALTER TABLE characters ADD COLUMN owner_user_id TEXT REFERENCES users(id) ON DELETE SET NULL');
         }
+        if (!existingCharCols.has('initial_affinity')) {
+          await raw.execute('ALTER TABLE characters ADD COLUMN initial_affinity INTEGER NOT NULL DEFAULT 0');
+        }
+        if (!existingCharCols.has('initial_relationship_stage')) {
+          await raw.execute("ALTER TABLE characters ADD COLUMN initial_relationship_stage TEXT NOT NULL DEFAULT 'Stranger / Neutral'");
+        }
+        if (!existingCharCols.has('relationship_dynamic')) {
+          await raw.execute("ALTER TABLE characters ADD COLUMN relationship_dynamic TEXT NOT NULL DEFAULT ''");
+        }
       } catch (charColErr) {
-        console.warn('[SQL DB] Characters owner_user_id column migration notice:', charColErr.message);
+        console.warn('[SQL DB] Characters column migration notice:', charColErr.message);
+      }
+
+      // Ensure relationship columns exist in chat_sessions table
+      try {
+        const sessionsColsRes = await raw.execute('PRAGMA table_info(chat_sessions)');
+        const existingSessionCols = new Set((sessionsColsRes.rows || []).map(r => r.name));
+        if (!existingSessionCols.has('affinity')) {
+          await raw.execute('ALTER TABLE chat_sessions ADD COLUMN affinity INTEGER NOT NULL DEFAULT 0');
+        }
+        if (!existingSessionCols.has('trust')) {
+          await raw.execute('ALTER TABLE chat_sessions ADD COLUMN trust INTEGER NOT NULL DEFAULT 0');
+        }
+        if (!existingSessionCols.has('strain')) {
+          await raw.execute('ALTER TABLE chat_sessions ADD COLUMN strain INTEGER NOT NULL DEFAULT 0');
+        }
+        if (!existingSessionCols.has('relationship_stage')) {
+          await raw.execute("ALTER TABLE chat_sessions ADD COLUMN relationship_stage TEXT NOT NULL DEFAULT 'Stranger / Neutral'");
+        }
+        if (!existingSessionCols.has('relationship_mood')) {
+          await raw.execute("ALTER TABLE chat_sessions ADD COLUMN relationship_mood TEXT NOT NULL DEFAULT 'Calm'");
+        }
+      } catch (sessColErr) {
+        console.warn('[SQL DB] Chat sessions column migration notice:', sessColErr.message);
       }
 
       // Check if characters table is empty

@@ -237,6 +237,13 @@ export class ApiClient {
     });
   }
 
+  updateSessionRelationship(sessionId, payload) {
+    return this.request(`/api/chats/${encodeURIComponent(sessionId)}/relationship`, {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    });
+  }
+
   sendChatMessage(payload) {
     return this.request('/api/chat', {
       method: 'POST',

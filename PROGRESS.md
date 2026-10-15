@@ -1,8 +1,8 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
-> **Current Version:** `v2.5.6`  
+> **Current Version:** `v2.6.0`  
 > **Status:** Production-Ready & Tested  
-> **Automated Test Coverage:** 25/25 E2E & unit tests passing (`npm test`)  
+> **Automated Test Coverage:** 31/31 E2E & unit tests passing (`npm test`)  
 > **Primary Database:** Turso Cloud (LibSQL `@libsql/client`, AWS Tokyo `ap-northeast-1`)  
 > **Primary AI Engine:** Google Gemini (`gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`, `gemini-2.5-flash`) with native `systemInstruction` & fallback chain  
 > **Last Updated:** October 2026
@@ -19,7 +19,33 @@ This document serves as the **single source of truth** for project history, rece
 
 ## 🚀 Version History & Milestones
 
-### 🏷️ `v2.5.6` (Current) — Character-Deduplicated Sidebar & C.AI-Style Thread History Drawer
+### 🏷️ `v2.6.0` (Current) — Psychological Relationship & Closeness Engine with Dual-Timescale Emotional Inertia
+- **Dual-Timescale Emotional Inertia Engine (`relationship.service.js`)**:
+  - Implemented the 4-variable psychological model per session in [`backend/services/relationship.service.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/services/relationship.service.js):
+    - `affinity` (-100 to +100): High emotional inertia. A couple's argument does not erode core love unless conflict strain reaches critical levels.
+    - `trust` (-100 to +100): Vulnerability, respect, safety.
+    - `strain` (0 to 100): Toxicity accumulator. Unresolved friction raises strain; apologies repair strain and reinforce attachment.
+    - `relationshipMood`: Dynamic turn-to-turn emotional weather (`Calm`, `Warm`, `Playful`, `Flustered`, `Quarreling / Heated`, `Hurt / Heartbroken`, `Guarded`, `Afraid`, `Submissive`, `Possessive`).
+    - `relationshipStage`: Persona-adapted dynamic stage (`Hatred / Nemesis`, `Hostile / Rival`, `Scared / Intimidated`, `Submissive / Dependent`, `Cold / Guarded`, `Stranger / Neutral`, `Acquaintance / Comrade`, `Close Friend / Confidant`, `Crush / Infatuated`, `Deep Love / Devoted`, `Obsessed / Possessive`).
+  - Implemented Persona Vulnerability Detection (`detectPersonaVulnerability`) adapting stages to character traits (e.g. tsundere, yandere, submissive).
+  - Implemented Breaking Point Realism: when `strain >= 65`, the emotional dam breaks, causing structural penalties to affinity and trust.
+- **Relational SQL Database Schema & Auto-Migrations**:
+  - Added `initial_affinity`, `initial_relationship_stage`, and `relationship_dynamic` columns to `characters` in [`backend/db/schema.sql`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/db/schema.sql).
+  - Added `affinity`, `trust`, `strain`, `relationship_stage`, and `relationship_mood` columns to `chat_sessions`.
+  - Added automated non-destructive schema migrations in [`backend/db/database.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/db/database.js) inspecting SQLite / Turso `table_info`.
+- **Character Creator & Studio Integration (`create.html`, `studio-page.js`)**:
+  - Added Starting Relationship & Universe Dynamic configuration card with preset dropdown, interactive bond slider (-100 to +100), custom dynamic textarea, and live dossier preview pill in [`frontend/create.html`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/create.html) and [`frontend/js/studio-page.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/js/studio-page.js).
+- **In-Chat Live Pill & Interactive Relationship Director Popover (`chat.html`, `chat.css`, `chat.js`)**:
+  - Built relationship bar pill (`#chatRelationshipBar`) in chat topbar sub-row with stage icon, label, score badge, mood pill, and progress fill bar.
+  - Built Relationship Director popover (`#chatRelationshipPopover`) displaying real-time metrics cards, author dynamic banner, quick stage presets, bond slider, mood selector, strain reset ("Repair Strain"), and "Apply to Scene" button.
+  - Implemented `PUT /api/chats/:sessionId/relationship` endpoint and `updateRelationshipState` in `ChatSessionRepository` for $O(1)$ updates without rewriting message history.
+- **System Prompt Psychological Injection**:
+  - Injected `[RELATIONSHIP & EMOTIONAL DYNAMICS WITH USER]` block into `generateCharacterPrompt` in [`backend/ai/prompt/characterPrompt.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/prompt/characterPrompt.js) enforcing Dual-Layer Realism and Turn-to-Turn Psychological Permanence.
+- **Automated Verification**:
+  - Created [`tests/relationship-v2.6.0.test.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/tests/relationship-v2.6.0.test.js) covering initial seeding, lovers' quarrel inertia, chronic toxicity breaking points, apology repair, prompt injection, and stage resolution.
+  - 31/31 unit, E2E integration, SQL security, and API tests verified passing (`npm test`).
+
+### 🏷️ `v2.5.6` — Character-Deduplicated Sidebar & C.AI-Style Thread History Drawer
 - **Sidebar Character Deduplication (`deduplicateSessionsByCharacter`)**:
   - Implemented `deduplicateSessionsByCharacter` in [`frontend/js/common.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/js/common.js) and integrated into `initSidebar()` and [`frontend/js/chat.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/js/chat.js) `renderSidebarRecentChats()`.
   - Aggregates multi-thread sessions per character so each character appears at most once in `ACTIVE STORYLINES`, retaining their most recently active thread while displaying the total thread count badge.

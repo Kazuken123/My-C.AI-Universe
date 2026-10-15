@@ -94,7 +94,9 @@ export class ChatSessionRepository extends BaseRepository {
     let query = `
       SELECT
         s.id, s.user_id, s.character_id, s.persona_id,
-        s.title, s.provider, s.created_at, s.updated_at,
+        s.title, s.provider, s.affinity, s.trust, s.strain,
+        s.relationship_stage, s.relationship_mood,
+        s.created_at, s.updated_at,
         COUNT(m.id) AS message_count,
         (
           SELECT cm.content FROM chat_messages cm
@@ -162,13 +164,22 @@ export class ChatSessionRepository extends BaseRepository {
 
     const persistInConn = async (db) => {
       await db.prepare(`
-        INSERT INTO chat_sessions (id, user_id, character_id, persona_id, title, provider, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO chat_sessions (
+          id, user_id, character_id, persona_id, title, provider,
+          affinity, trust, strain, relationship_stage, relationship_mood,
+          created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           user_id = COALESCE(excluded.user_id, chat_sessions.user_id),
           persona_id = excluded.persona_id,
           title = excluded.title,
           provider = excluded.provider,
+          affinity = excluded.affinity,
+          trust = excluded.trust,
+          strain = excluded.strain,
+          relationship_stage = excluded.relationship_stage,
+          relationship_mood = excluded.relationship_mood,
           updated_at = excluded.updated_at
       `).run(
         session.id,
@@ -177,6 +188,11 @@ export class ChatSessionRepository extends BaseRepository {
         session.personaId || null,
         session.title,
         session.provider,
+        Number(session.affinity ?? 0),
+        Number(session.trust ?? session.affinity ?? 0),
+        Number(session.strain ?? 0),
+        String(session.relationshipStage || 'Stranger / Neutral'),
+        String(session.relationshipMood || 'Calm'),
         session.createdAt,
         session.updatedAt
       );
@@ -263,13 +279,22 @@ export class ChatSessionRepository extends BaseRepository {
 
     await this.runInTransaction(async (db) => {
       await db.prepare(`
-        INSERT INTO chat_sessions (id, user_id, character_id, persona_id, title, provider, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO chat_sessions (
+          id, user_id, character_id, persona_id, title, provider,
+          affinity, trust, strain, relationship_stage, relationship_mood,
+          created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           user_id = COALESCE(excluded.user_id, chat_sessions.user_id),
           persona_id = excluded.persona_id,
           title = excluded.title,
           provider = excluded.provider,
+          affinity = excluded.affinity,
+          trust = excluded.trust,
+          strain = excluded.strain,
+          relationship_stage = excluded.relationship_stage,
+          relationship_mood = excluded.relationship_mood,
           updated_at = excluded.updated_at
       `).run(
         session.id,
@@ -278,6 +303,11 @@ export class ChatSessionRepository extends BaseRepository {
         session.personaId || null,
         session.title,
         session.provider,
+        Number(session.affinity ?? 0),
+        Number(session.trust ?? session.affinity ?? 0),
+        Number(session.strain ?? 0),
+        String(session.relationshipStage || 'Stranger / Neutral'),
+        String(session.relationshipMood || 'Calm'),
         session.createdAt,
         session.updatedAt
       );
@@ -404,6 +434,29 @@ export class ChatSessionRepository extends BaseRepository {
     params.push(messageId, sessionId);
     await this.db.prepare(`UPDATE chat_messages SET ${sets.join(', ')} WHERE id = ? AND session_id = ?`).run(...params);
     await this.db.prepare('UPDATE chat_sessions SET updated_at = ? WHERE id = ?').run(new Date().toISOString(), sessionId);
+    return true;
+  }
+
+  /**
+   * O(1) Fast update for session relationship state and metrics
+   * @param {string} sessionId
+   * @param {Object} state
+   */
+  async updateRelationshipState(sessionId, state = {}) {
+    if (!sessionId) return false;
+    await this.db.prepare(`
+      UPDATE chat_sessions
+      SET affinity = ?, trust = ?, strain = ?, relationship_stage = ?, relationship_mood = ?, updated_at = ?
+      WHERE id = ?
+    `).run(
+      Number(state.affinity ?? 0),
+      Number(state.trust ?? state.affinity ?? 0),
+      Number(state.strain ?? 0),
+      String(state.relationshipStage || 'Stranger / Neutral'),
+      String(state.relationshipMood || 'Calm'),
+      new Date().toISOString(),
+      sessionId
+    );
     return true;
   }
 

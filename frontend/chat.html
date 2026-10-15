@@ -182,7 +182,18 @@
                     <span class="voice-wave-bar"></span>
                   </div>
                 </div>
-                <div class="chat-header-sub" id="chat-header-sub">Cinema Studio &middot; 35mm Lens</div>
+                <div class="chat-header-sub-row">
+                  <div class="chat-header-sub" id="chat-header-sub">Cinema Studio &middot; 35mm Lens</div>
+                  <button class="chat-relationship-bar-pill" id="chatRelationshipBar" type="button" title="Psychological Relationship Dynamics (Click to Direct / Inspect)" aria-haspopup="dialog" aria-expanded="false">
+                    <span class="rel-stage-icon" id="chatRelStageIcon"><i class="ph-light ph-heart"></i></span>
+                    <span class="rel-stage-label" id="chatRelStageLabel">Stranger / Neutral</span>
+                    <span class="rel-score-badge" id="chatRelScoreBadge">0</span>
+                    <span class="rel-mood-pill" id="chatRelMoodPill">Calm</span>
+                    <div class="rel-progress-track" aria-hidden="true">
+                      <div class="rel-progress-fill" id="chatRelProgressFill" style="width: 50%;"></div>
+                    </div>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -218,6 +229,114 @@
                 <i class="ph-light ph-sidebar-simple"></i>
                 <span>Dossier</span>
               </button>
+            </div>
+
+            <!-- Sleek Relationship Director & Dynamics Popover -->
+            <div class="chat-relationship-popover hidden" id="chatRelationshipPopover" role="dialog" aria-label="Relationship Director &amp; Dynamics">
+              <div class="rel-popover-header">
+                <div class="rel-popover-title-wrap">
+                  <i class="ph-light ph-heart-half"></i>
+                  <span>Relationship Director</span>
+                </div>
+                <button class="icon-btn rel-popover-close-btn" id="btnCloseRelPopover" type="button" aria-label="Close Director Popover">
+                  <i class="ph-light ph-x"></i>
+                </button>
+              </div>
+              <div class="rel-popover-body">
+                <div class="rel-popover-dynamic-banner" id="relPopoverDynamicBanner" style="display: none;">
+                  <span class="rel-dynamic-icon"><i class="ph-light ph-sparkle"></i></span>
+                  <span class="rel-dynamic-text" id="relPopoverDynamicText"></span>
+                </div>
+
+                <div class="rel-metrics-grid">
+                  <div class="rel-metric-card">
+                    <div class="rel-metric-header">
+                      <span>Bond (Affinity)</span>
+                      <span class="rel-metric-val" id="relMetricAffinity">0</span>
+                    </div>
+                    <div class="rel-metric-sub">Long-term attachment</div>
+                  </div>
+                  <div class="rel-metric-card">
+                    <div class="rel-metric-header">
+                      <span>Trust &amp; Safety</span>
+                      <span class="rel-metric-val" id="relMetricTrust">0</span>
+                    </div>
+                    <div class="rel-metric-sub">Vulnerability &amp; respect</div>
+                  </div>
+                  <div class="rel-metric-card">
+                    <div class="rel-metric-header">
+                      <span>Conflict Strain</span>
+                      <span class="rel-metric-val" id="relMetricStrain">0</span>
+                    </div>
+                    <div class="rel-metric-sub">Accumulated tension</div>
+                  </div>
+                  <div class="rel-metric-card">
+                    <div class="rel-metric-header">
+                      <span>Immediate Mood</span>
+                      <span class="rel-metric-val" id="relMetricMood">Calm</span>
+                    </div>
+                    <div class="rel-metric-sub">Emotional weather</div>
+                  </div>
+                </div>
+
+                <div class="rel-director-controls">
+                  <div class="rel-control-group">
+                    <label for="relOverridePreset">Quick Stage Preset</label>
+                    <div class="select-wrap">
+                      <select class="form-input" id="relOverridePreset">
+                        <option value="" disabled selected>Select preset...</option>
+                        <option value="lover">Deep Love / Devoted (+80)</option>
+                        <option value="crush">Crush / Infatuated (+65)</option>
+                        <option value="friend">Close Friend / Confidant (+48)</option>
+                        <option value="acquaintance">Acquaintance / Comrade (+22)</option>
+                        <option value="stranger">Stranger / Neutral (0)</option>
+                        <option value="cold">Cold / Guarded (-20)</option>
+                        <option value="submissive">Submissive / Dependent (-20)</option>
+                        <option value="scared">Scared / Intimidated (-40)</option>
+                        <option value="hostile">Hostile / Rival (-45)</option>
+                        <option value="nemesis">Hatred / Nemesis (-85)</option>
+                        <option value="obsessed">Obsessed / Possessive (+95)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="rel-control-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <label for="relAffinitySlider" style="margin: 0;">Adjust Bond Score</label>
+                      <span class="mono-tag" id="relAffinitySliderBadge">0</span>
+                    </div>
+                    <input type="range" class="form-range" id="relAffinitySlider" min="-100" max="100" value="0" step="1" />
+                  </div>
+
+                  <div class="rel-control-group">
+                    <label for="relMoodSelect">Force Immediate Mood</label>
+                    <div class="select-wrap">
+                      <select class="form-input" id="relMoodSelect">
+                        <option value="Calm">Calm</option>
+                        <option value="Warm">Warm</option>
+                        <option value="Playful">Playful</option>
+                        <option value="Flustered">Flustered</option>
+                        <option value="Quarreling / Heated">Quarreling / Heated</option>
+                        <option value="Hurt / Heartbroken">Hurt / Heartbroken</option>
+                        <option value="Guarded">Guarded</option>
+                        <option value="Afraid">Afraid</option>
+                        <option value="Submissive">Submissive</option>
+                        <option value="Possessive">Possessive</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="rel-control-actions">
+                    <button type="button" class="btn-secondary btn-sm" id="btnResetStrain" title="Forgive and reset conflict strain to 0">
+                      <i class="ph-light ph-bandaids"></i>
+                      <span>Repair Strain (0)</span>
+                    </button>
+                    <button type="button" class="btn-island btn-sm" id="btnApplyRelOverride">
+                      <span>Apply to Scene</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </header>
 

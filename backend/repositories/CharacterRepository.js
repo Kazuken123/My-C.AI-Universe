@@ -86,10 +86,11 @@ export class CharacterRepository extends BaseRepository {
     const stmt = conn.prepare(`
       INSERT INTO characters (
         id, name, tagline, avatar, greeting, personality, appearance, abilities,
-        background, speaking_style, example_dialogues, initial_memory, system_prompt,
-        wiki, wiki_url, categories_json, creator, owner_user_id, interactions, likes, is_liked,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        background, speaking_style, example_dialogues, initial_memory,
+        initial_affinity, initial_relationship_stage, relationship_dynamic,
+        system_prompt, wiki, wiki_url, categories_json, creator, owner_user_id,
+        interactions, likes, is_liked, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         name = excluded.name,
         tagline = excluded.tagline,
@@ -102,6 +103,9 @@ export class CharacterRepository extends BaseRepository {
         speaking_style = excluded.speaking_style,
         example_dialogues = excluded.example_dialogues,
         initial_memory = excluded.initial_memory,
+        initial_affinity = excluded.initial_affinity,
+        initial_relationship_stage = excluded.initial_relationship_stage,
+        relationship_dynamic = excluded.relationship_dynamic,
         system_prompt = excluded.system_prompt,
         wiki = excluded.wiki,
         wiki_url = excluded.wiki_url,
@@ -127,6 +131,9 @@ export class CharacterRepository extends BaseRepository {
       char.speaking_style,
       char.example_dialogues,
       char.initial_memory,
+      char.initialAffinity,
+      char.initialRelationshipStage,
+      char.relationshipDynamic,
       char.systemPrompt,
       char.wiki,
       char.wikiUrl,

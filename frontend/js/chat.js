@@ -77,6 +77,28 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
   const btnHistoryNewThread = document.getElementById('btnHistoryNewThread');
   const chatHistoryList = document.getElementById('chatHistoryList');
 
+  // Relationship Director & Bar Elements
+  const chatRelationshipBar = document.getElementById('chatRelationshipBar');
+  const chatRelStageIcon = document.getElementById('chatRelStageIcon');
+  const chatRelStageLabel = document.getElementById('chatRelStageLabel');
+  const chatRelScoreBadge = document.getElementById('chatRelScoreBadge');
+  const chatRelMoodPill = document.getElementById('chatRelMoodPill');
+  const chatRelProgressFill = document.getElementById('chatRelProgressFill');
+  const chatRelationshipPopover = document.getElementById('chatRelationshipPopover');
+  const btnCloseRelPopover = document.getElementById('btnCloseRelPopover');
+  const relPopoverDynamicBanner = document.getElementById('relPopoverDynamicBanner');
+  const relPopoverDynamicText = document.getElementById('relPopoverDynamicText');
+  const relMetricAffinity = document.getElementById('relMetricAffinity');
+  const relMetricTrust = document.getElementById('relMetricTrust');
+  const relMetricStrain = document.getElementById('relMetricStrain');
+  const relMetricMood = document.getElementById('relMetricMood');
+  const relOverridePreset = document.getElementById('relOverridePreset');
+  const relAffinitySlider = document.getElementById('relAffinitySlider');
+  const relAffinitySliderBadge = document.getElementById('relAffinitySliderBadge');
+  const relMoodSelect = document.getElementById('relMoodSelect');
+  const btnResetStrain = document.getElementById('btnResetStrain');
+  const btnApplyRelOverride = document.getElementById('btnApplyRelOverride');
+
   // Sidebar & Saved Chats View Elements
   const sidebarRecentList = document.getElementById('sidebar-recent-chats');
   const sidebarSessionCount = document.getElementById('sidebar-session-count');
@@ -170,8 +192,18 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     }
   };
 
+  const closeRelPopover = () => {
+    if (chatRelationshipPopover) {
+      chatRelationshipPopover.classList.add('hidden');
+    }
+    if (chatRelationshipBar) {
+      chatRelationshipBar.setAttribute('aria-expanded', 'false');
+    }
+  };
+
   const openRightDrawer = () => {
     closeHistoryDrawer();
+    closeRelPopover();
     if (rightDrawer) {
       rightDrawer.classList.remove('collapsed');
       rightDrawer.classList.add('open');
@@ -196,6 +228,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
   const openHistoryDrawer = async () => {
     closeRightDrawer();
+    closeRelPopover();
     if (chatHistoryDrawer) {
       chatHistoryDrawer.classList.remove('hidden');
     }
@@ -286,6 +319,196 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       if (target) target.classList.add('active');
     });
   });
+
+  const STAGE_ICONS = {
+    'Hatred / Nemesis': '<i class="ph-bold ph-skull"></i>',
+    'Hostile / Rival': '<i class="ph-bold ph-swords"></i>',
+    'Scared / Intimidated': '<i class="ph-bold ph-warning-circle"></i>',
+    'Submissive / Dependent': '<i class="ph-bold ph-lock-key"></i>',
+    'Cold / Guarded': '<i class="ph-bold ph-shield"></i>',
+    'Stranger / Neutral': '<i class="ph-bold ph-user"></i>',
+    'Acquaintance / Comrade': '<i class="ph-bold ph-handshake"></i>',
+    'Close Friend / Confidant': '<i class="ph-bold ph-users-three"></i>',
+    'Crush / Infatuated': '<i class="ph-fill ph-heart"></i>',
+    'Deep Love / Devoted': '<i class="ph-fill ph-heart"></i>',
+    'Obsessed / Possessive': '<i class="ph-fill ph-flame"></i>'
+  };
+
+  const PRESET_VALUES = {
+    lover: { affinity: 80, stage: 'Deep Love / Devoted', mood: 'Warm' },
+    crush: { affinity: 65, stage: 'Crush / Infatuated', mood: 'Flustered' },
+    friend: { affinity: 48, stage: 'Close Friend / Confidant', mood: 'Warm' },
+    acquaintance: { affinity: 22, stage: 'Acquaintance / Comrade', mood: 'Calm' },
+    stranger: { affinity: 0, stage: 'Stranger / Neutral', mood: 'Calm' },
+    cold: { affinity: -20, stage: 'Cold / Guarded', mood: 'Guarded' },
+    submissive: { affinity: -20, stage: 'Submissive / Dependent', mood: 'Submissive' },
+    scared: { affinity: -40, stage: 'Scared / Intimidated', mood: 'Afraid' },
+    hostile: { affinity: -45, stage: 'Hostile / Rival', mood: 'Quarreling / Heated' },
+    nemesis: { affinity: -85, stage: 'Hatred / Nemesis', mood: 'Quarreling / Heated' },
+    obsessed: { affinity: 95, stage: 'Obsessed / Possessive', mood: 'Possessive' }
+  };
+
+  /**
+   * Render Relationship Bar Pill & Director Popover
+   */
+  function renderRelationshipBar(session, character) {
+    if (!chatRelationshipBar) return;
+
+    const char = character || appState.activeCharacter;
+    const sess = session || appState.activeSession;
+
+    const affinity = Number(sess?.affinity ?? char?.initial_affinity ?? 0);
+    const trust = Number(sess?.trust ?? sess?.affinity ?? char?.initial_affinity ?? 0);
+    const strain = Number(sess?.strain ?? 0);
+    const stage = sess?.relationshipStage || char?.initial_relationship_stage || 'Stranger / Neutral';
+    const mood = sess?.relationshipMood || 'Calm';
+    const dynamic = char?.relationship_dynamic || '';
+
+    const percent = Math.min(100, Math.max(0, Math.round(((affinity + 100) / 200) * 100)));
+
+    if (chatRelStageIcon) {
+      chatRelStageIcon.innerHTML = STAGE_ICONS[stage] || '<i class="ph-bold ph-heart"></i>';
+    }
+    if (chatRelStageLabel) {
+      chatRelStageLabel.textContent = stage;
+    }
+    if (chatRelScoreBadge) {
+      chatRelScoreBadge.textContent = (affinity > 0 ? '+' : '') + affinity;
+    }
+    if (chatRelMoodPill) {
+      chatRelMoodPill.textContent = mood;
+    }
+    if (chatRelProgressFill) {
+      chatRelProgressFill.style.width = `${percent}%`;
+    }
+
+    if (relMetricAffinity) relMetricAffinity.textContent = (affinity > 0 ? '+' : '') + affinity;
+    if (relMetricTrust) relMetricTrust.textContent = (trust > 0 ? '+' : '') + trust;
+    if (relMetricStrain) relMetricStrain.textContent = String(strain);
+    if (relMetricMood) relMetricMood.textContent = mood;
+
+    if (relAffinitySlider) {
+      relAffinitySlider.value = affinity;
+    }
+    if (relAffinitySliderBadge) {
+      relAffinitySliderBadge.textContent = (affinity > 0 ? '+' : '') + affinity;
+    }
+    if (relMoodSelect) {
+      relMoodSelect.value = mood;
+    }
+
+    if (relPopoverDynamicBanner && relPopoverDynamicText) {
+      if (dynamic && dynamic.trim()) {
+        relPopoverDynamicBanner.style.display = 'flex';
+        relPopoverDynamicText.textContent = dynamic.trim();
+      } else {
+        relPopoverDynamicBanner.style.display = 'none';
+      }
+    }
+  }
+
+  if (chatRelationshipBar) {
+    chatRelationshipBar.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isHidden = chatRelationshipPopover?.classList.contains('hidden');
+      if (isHidden) {
+        closeRightDrawer();
+        closeHistoryDrawer();
+        chatRelationshipPopover?.classList.remove('hidden');
+        chatRelationshipBar.setAttribute('aria-expanded', 'true');
+        renderRelationshipBar(appState.activeSession, appState.activeCharacter);
+      } else {
+        closeRelPopover();
+      }
+    });
+  }
+
+  if (btnCloseRelPopover) {
+    btnCloseRelPopover.addEventListener('click', closeRelPopover);
+  }
+
+  document.addEventListener('click', (e) => {
+    if (chatRelationshipPopover && !chatRelationshipPopover.classList.contains('hidden')) {
+      if (!chatRelationshipPopover.contains(e.target) && !chatRelationshipBar?.contains(e.target)) {
+        closeRelPopover();
+      }
+    }
+  });
+
+  if (relAffinitySlider && relAffinitySliderBadge) {
+    relAffinitySlider.addEventListener('input', () => {
+      const val = parseInt(relAffinitySlider.value, 10) || 0;
+      relAffinitySliderBadge.textContent = (val > 0 ? '+' : '') + val;
+    });
+  }
+
+  if (relOverridePreset) {
+    relOverridePreset.addEventListener('change', () => {
+      const preset = PRESET_VALUES[relOverridePreset.value];
+      if (preset) {
+        if (relAffinitySlider) {
+          relAffinitySlider.value = preset.affinity;
+          if (relAffinitySliderBadge) {
+            relAffinitySliderBadge.textContent = (preset.affinity > 0 ? '+' : '') + preset.affinity;
+          }
+        }
+        if (relMoodSelect) {
+          relMoodSelect.value = preset.mood;
+        }
+      }
+    });
+  }
+
+  if (btnResetStrain) {
+    btnResetStrain.addEventListener('click', async () => {
+      if (!appState.activeSession) return;
+      try {
+        const updated = await api.updateSessionRelationship(appState.activeSession.id, {
+          strain: 0,
+          relationshipMood: 'Calm'
+        });
+        if (updated && updated.session) {
+          appState.activeSession = { ...appState.activeSession, ...updated.session };
+        } else if (updated && updated.relationship) {
+          Object.assign(appState.activeSession, updated.relationship);
+        }
+        renderRelationshipBar(appState.activeSession, appState.activeCharacter);
+        showToast('Conflict strain reset to 0. Scene restored to calm.');
+      } catch (err) {
+        showToast('Error resetting strain: ' + err.message);
+      }
+    });
+  }
+
+  if (btnApplyRelOverride) {
+    btnApplyRelOverride.addEventListener('click', async () => {
+      if (!appState.activeSession) return;
+      try {
+        const affinityVal = parseInt(relAffinitySlider?.value ?? 0, 10);
+        const moodVal = relMoodSelect?.value || 'Calm';
+        const presetKey = relOverridePreset?.value;
+        const stageVal = PRESET_VALUES[presetKey]?.stage;
+
+        const payload = {
+          affinity: affinityVal,
+          relationshipMood: moodVal
+        };
+        if (stageVal) payload.relationshipStage = stageVal;
+
+        const updated = await api.updateSessionRelationship(appState.activeSession.id, payload);
+        if (updated && updated.session) {
+          appState.activeSession = { ...appState.activeSession, ...updated.session };
+        } else if (updated && updated.relationship) {
+          Object.assign(appState.activeSession, updated.relationship);
+        }
+        renderRelationshipBar(appState.activeSession, appState.activeCharacter);
+        closeRelPopover();
+        showToast('Relationship dynamic updated.');
+      } catch (err) {
+        showToast('Error updating relationship: ' + err.message);
+      }
+    });
+  }
 
   let inflightSessionsPromise = null;
   let lastSessionsFetchTime = 0;
@@ -629,6 +852,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       navigateTo('chat', false);
       renderChatHeader(character, session);
       renderChatStream(character, session);
+      renderRelationshipBar(session, character);
       await Promise.all([
         refreshRightDrawer(character, session),
         loadAllSessions()
@@ -1001,6 +1225,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
           const updatedSession = await api.getChatSession(donePayload.sessionId || session.id);
           appState.activeSession = updatedSession;
           renderChatStream(appState.activeCharacter, updatedSession);
+          renderRelationshipBar(updatedSession, appState.activeCharacter);
           updateLocalSessionPreview(updatedSession.id, donePayload.response || accumulatedText);
           refreshRightDrawer(appState.activeCharacter, updatedSession).catch(() => {});
 
@@ -1014,6 +1239,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         const updatedSession = await api.getChatSession(session.id);
         appState.activeSession = updatedSession;
         renderChatStream(appState.activeCharacter, updatedSession);
+        renderRelationshipBar(updatedSession, appState.activeCharacter);
         updateLocalSessionPreview(updatedSession.id, accumulatedText);
         refreshRightDrawer(appState.activeCharacter, updatedSession).catch(() => {});
       }
@@ -1032,6 +1258,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         const updatedSession = await api.getChatSession(fallbackRes.sessionId || session.id);
         appState.activeSession = updatedSession;
         renderChatStream(appState.activeCharacter, updatedSession);
+        renderRelationshipBar(updatedSession, appState.activeCharacter);
         updateLocalSessionPreview(updatedSession.id, fallbackRes.response || text);
         refreshRightDrawer(appState.activeCharacter, updatedSession).catch(() => {});
 
@@ -1089,6 +1316,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       const updatedSession = await api.getChatSession(result.sessionId || session.id);
       appState.activeSession = updatedSession;
       renderChatStream(character, updatedSession);
+      renderRelationshipBar(updatedSession, character);
 
       if (autoSpeakTTS && result.response) {
         speakText(result.response);
@@ -1140,6 +1368,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       const updatedSession = await api.getChatSession(result.sessionId || session.id);
       appState.activeSession = updatedSession;
       renderChatStream(character, updatedSession);
+      renderRelationshipBar(updatedSession, character);
       updateLocalSessionPreview(updatedSession.id, result.response || '');
       refreshRightDrawer(character, updatedSession).catch(() => {});
 
@@ -1339,6 +1568,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         const url = `/chat.html?id=${encodeURIComponent(appState.activeCharacter.id)}&session=${encodeURIComponent(fresh.id)}`;
         window.history.replaceState({ view: 'chat', characterId: appState.activeCharacter.id, sessionId: fresh.id }, '', url);
         renderChatStream(appState.activeCharacter, fresh);
+        renderRelationshipBar(fresh, appState.activeCharacter);
         await refreshRightDrawer(appState.activeCharacter, fresh);
         await loadAllSessions(true);
         if (chatHistoryDrawer && !chatHistoryDrawer.classList.contains('hidden')) {

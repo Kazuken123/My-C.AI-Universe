@@ -310,6 +310,45 @@
                   </div>
                 </div>
 
+                <div class="form-divider" style="margin: 20px 0 16px; border-top: 1px solid var(--border-subtle);"></div>
+                <div class="card-header-row" style="margin-bottom: 12px;">
+                  <h4 style="margin: 0; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-higgsfield);">Starting Relationship &amp; Universe Dynamic</h4>
+                  <span class="mono-tag">PSYCHOLOGICAL ENGINE</span>
+                </div>
+
+                <div class="form-row-2col">
+                  <div class="form-group">
+                    <label for="charRelationshipPreset">Initial Relationship Stage</label>
+                    <div class="select-wrap">
+                      <select class="form-input" id="charRelationshipPreset">
+                        <option value="0" data-stage="Stranger / Neutral" selected>Stranger / Neutral (0)</option>
+                        <option value="22" data-stage="Acquaintance / Comrade">Acquaintance / Comrade (+22)</option>
+                        <option value="48" data-stage="Close Friend / Confidant">Close Friend / Confidant (+48)</option>
+                        <option value="65" data-stage="Crush / Infatuated">Crush / Infatuated (+65)</option>
+                        <option value="80" data-stage="Deep Love / Devoted">Deep Love / Devoted Partner (+80)</option>
+                        <option value="95" data-stage="Obsessed / Possessive">Obsessed / Possessive (+95)</option>
+                        <option value="-20" data-stage="Cold / Guarded">Cold / Guarded (-20)</option>
+                        <option value="-20" data-stage="Submissive / Dependent">Submissive / Dependent (-20)</option>
+                        <option value="-40" data-stage="Scared / Intimidated">Scared / Intimidated (-40)</option>
+                        <option value="-45" data-stage="Hostile / Rival">Hostile / Rival (-45)</option>
+                        <option value="-85" data-stage="Hatred / Nemesis">Hatred / Nemesis (-85)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                      <label for="charInitialAffinity" style="margin: 0;">Initial Bond / Affinity Score</label>
+                      <span class="mono-tag" id="charInitialAffinityBadge">0</span>
+                    </div>
+                    <input type="range" class="form-range" id="charInitialAffinity" min="-100" max="100" value="0" step="1" style="width: 100%; margin-top: 8px;" />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="charRelationshipDynamic">Custom Universe Dynamic &amp; History</label>
+                  <input type="text" class="form-input" id="charRelationshipDynamic" placeholder="e.g. Co-stars who secretly love each other • Bitter rivals forced to cooperate • Mentor &amp; Student" />
+                </div>
+
                 <div class="form-submit-bar">
                   <button type="submit" class="btn-island" id="btnSaveCharacter">
                     <span id="btnSaveText">Commit to SQL &amp; Launch Scene</span>
@@ -343,6 +382,10 @@
                     <div class="preview-dossier-tags" id="preview-tags">
                       <span class="tag-badge">Anime</span>
                       <span class="tag-badge">Roleplay</span>
+                    </div>
+                    <div class="preview-dossier-relationship" id="preview-relationship" style="margin-top: 8px; font-size: 11px; color: var(--accent-higgsfield); display: flex; align-items: center; gap: 6px;">
+                      <i class="ph-light ph-heart"></i>
+                      <span id="preview-relationship-text">Stranger / Neutral (0)</span>
                     </div>
                   </div>
 

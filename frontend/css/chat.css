@@ -1183,4 +1183,246 @@ kbd {
   font-style: italic;
 }
 
+/* ============================================================================
+   PSYCHOLOGICAL RELATIONSHIP BAR & DIRECTOR POPOVER (v2.6.0)
+   ============================================================================ */
+.chat-header-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.chat-relationship-bar-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 1px 8px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  color: var(--text-primary);
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+}
+
+.chat-relationship-bar-pill:hover,
+.chat-relationship-bar-pill.active {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--accent, #a78bfa);
+  box-shadow: 0 0 10px rgba(167, 139, 250, 0.25);
+}
+
+.chat-relationship-bar-pill .rel-stage-icon {
+  display: flex;
+  align-items: center;
+  color: #f472b6;
+  font-size: 0.8rem;
+}
+
+.chat-relationship-bar-pill .rel-stage-label {
+  font-weight: 600;
+  white-space: nowrap;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-relationship-bar-pill .rel-score-badge {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+}
+
+.chat-relationship-bar-pill .rel-mood-pill {
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: rgba(167, 139, 250, 0.15);
+  color: var(--accent, #a78bfa);
+  font-size: 0.65rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.chat-relationship-bar-pill .rel-progress-track {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.chat-relationship-bar-pill .rel-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ec4899, #a855f7, #6366f1);
+  transition: width 0.4s ease;
+}
+
+/* Relationship Director Popover */
+.chat-relationship-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 20px;
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  background: var(--bg-rail, #12111d);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  z-index: 100;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  animation: popoverFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chat-relationship-popover.hidden {
+  display: none !important;
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rel-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-hairline, rgba(255, 255, 255, 0.06));
+}
+
+.rel-popover-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: var(--text-primary);
+}
+
+.rel-popover-title-wrap i {
+  color: #f472b6;
+  font-size: 1rem;
+}
+
+.rel-popover-body {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: calc(85vh - 100px);
+  overflow-y: auto;
+}
+
+.rel-popover-dynamic-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(167, 139, 250, 0.08);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.rel-popover-dynamic-banner .rel-dynamic-icon {
+  color: var(--accent, #a78bfa);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.rel-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.rel-metric-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-hairline, rgba(255, 255, 255, 0.06));
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.rel-metric-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.rel-metric-val {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent, #a78bfa);
+}
+
+.rel-metric-sub {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.rel-director-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-hairline, rgba(255, 255, 255, 0.06));
+}
+
+.rel-control-group label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.rel-control-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+@media (max-width: 768px) {
+  .chat-relationship-popover {
+    left: 10px;
+    right: 10px;
+    top: 60px;
+    width: auto;
+    max-width: none;
+    position: fixed;
+  }
+  .chat-relationship-bar-pill .rel-stage-label {
+    max-width: 85px;
+  }
+}
+
+
 
