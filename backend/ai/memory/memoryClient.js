@@ -7,23 +7,35 @@ class MemoryClient {
     this.pythonProcess = null;
     this.serviceUrl = config.MEMORY_SERVICE_URL || 'http://localhost:5001';
     this.isRunning = false;
+    this.lastHealthCheckFailedAt = 0;
+    this.healthCheckCooldownMs = 30000;
   }
 
   /**
-   * Check whether the Python memory microservice is reachable
+   * Check whether the Python memory microservice is reachable (with cooldown backoff)
    */
-  async checkHealth() {
+  async checkHealth(force = false) {
+    if (!force && !this.isRunning && Date.now() - this.lastHealthCheckFailedAt < this.healthCheckCooldownMs) {
+      return false;
+    }
+
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 1500);
+      const timeout = setTimeout(() => controller.abort(), 1200);
       const response = await fetch(`${this.serviceUrl}/health`, {
         signal: controller.signal
       });
       clearTimeout(timeout);
       this.isRunning = response.ok;
+      if (this.isRunning) {
+        this.lastHealthCheckFailedAt = 0;
+      } else {
+        this.lastHealthCheckFailedAt = Date.now();
+      }
       return this.isRunning;
     } catch {
       this.isRunning = false;
+      this.lastHealthCheckFailedAt = Date.now();
       return false;
     }
   }
@@ -32,7 +44,7 @@ class MemoryClient {
    * Start the Python memory service (optional enhancement)
    */
   async startService() {
-    if (await this.checkHealth()) {
+    if (await this.checkHealth(true)) {
       console.log('[MEMORY] Python memory service already running');
       return;
     }
@@ -69,6 +81,7 @@ class MemoryClient {
 
       this.waitForService(10).then(() => {
         this.isRunning = true;
+        this.lastHealthCheckFailedAt = 0;
         console.log('[MEMORY] Python embedding service started');
         resolve();
       }).catch(() => {
@@ -80,7 +93,7 @@ class MemoryClient {
 
   async waitForService(maxAttempts = 10) {
     for (let i = 0; i < maxAttempts; i++) {
-      if (await this.checkHealth()) return;
+      if (await this.checkHealth(true)) return;
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
     throw new Error('Python memory service timeout');
@@ -100,17 +113,26 @@ class MemoryClient {
       const response = await fetch(`${this.serviceUrl}/memories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, character_id: characterId, metadata })
+        body: JSON.stringify({
+          id: metadata.id || null,
+          content,
+          character_id: characterId,
+          session_id: metadata.sessionId || null,
+          source: metadata.source || 'conversation',
+          metadata
+        })
       });
       if (!response.ok) return null;
       const result = await response.json();
       return result.memory_id;
     } catch {
+      this.isRunning = false;
+      this.lastHealthCheckFailedAt = Date.now();
       return null;
     }
   }
 
-  async retrieveMemories(query, characterId, topK = 3, threshold = 0.25) {
+  async retrieveMemories(query, characterId, topK = 3, threshold = 0.25, sessionId = null) {
     if (!this.isRunning && !(await this.checkHealth())) return null;
     try {
       const response = await fetch(`${this.serviceUrl}/memories/retrieve`, {
@@ -119,6 +141,7 @@ class MemoryClient {
         body: JSON.stringify({
           query,
           character_id: characterId,
+          session_id: sessionId || null,
           top_k: topK,
           threshold
         })
@@ -127,7 +150,24 @@ class MemoryClient {
       const result = await response.json();
       return result.memories || null;
     } catch {
+      this.isRunning = false;
+      this.lastHealthCheckFailedAt = Date.now();
       return null;
+    }
+  }
+
+  async deleteMemory(memoryId) {
+    if (!memoryId) return false;
+    if (!this.isRunning && !(await this.checkHealth())) return false;
+    try {
+      const response = await fetch(`${this.serviceUrl}/memories/${encodeURIComponent(memoryId)}`, {
+        method: 'DELETE'
+      });
+      return response.ok;
+    } catch {
+      this.isRunning = false;
+      this.lastHealthCheckFailedAt = Date.now();
+      return false;
     }
   }
 }

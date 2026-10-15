@@ -1,6 +1,6 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
-> **Current Version:** `v2.5.2`  
+> **Current Version:** `v2.5.3`  
 > **Status:** Production-Ready & Tested  
 > **Automated Test Coverage:** 22/22 E2E tests passing (`npm test`)  
 > **Primary Database:** Turso Cloud (LibSQL `@libsql/client`, AWS Tokyo `ap-northeast-1`)  
@@ -19,7 +19,21 @@ This document serves as the **single source of truth** for project history, rece
 
 ## 🚀 Version History & Milestones
 
-### 🏷️ `v2.5.2` (Current) — AI Orchestrator Fallback Hardening, Prompt Leakage Defense & Scalable Hybrid Memory
+### 🏷️ `v2.5.3` (Current) — Cross-Runtime Python Microservice Boundary Synchronization & Cooldown Optimization
+- **Session-Scoped Vector Memory & Lore Isolation**:
+  - Synchronized `session_id` filtering in [`memory-service/memory_service.py`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/memory-service/memory_service.py) with relational SQL rules: queries strictly match `character_id` and either global canon lore (`session_id is None`) or active chat session (`session_id == target`), preventing cross-story memory bleed.
+  - Stripped rolling story chronicles (`source == 'story_summary'`) from vector embedding stores to eliminate duplicate narrative echoes.
+- **Ghost Memory Elimination & ID Lifecycle Coordination**:
+  - Updated [`backend/ai/memory/memoryClient.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/memory/memoryClient.js) and [`backend/services/memory.service.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/services/memory.service.js) to propagate `CharacterMemory.id` directly into Python microservice storage.
+  - Implemented `deleteMemory(memoryId)` in `MemoryClient` triggered atomically upon SQL memory deletion.
+- **Health-Check Backoff & Instant 0ms Fallback**:
+  - Implemented 30-second cooldown backoff (`healthCheckCooldownMs = 30000`) on failed health check pings in [`backend/ai/memory/memoryClient.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/memory/memoryClient.js), eliminating 1.2s TCP timeout penalties per chat turn when the Python service is offline.
+- **Flask Process & RAM Optimization**:
+  - Set `debug=False, use_reloader=False` in [`memory-service/memory_service.py`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/memory-service/memory_service.py) to prevent Werkzeug from launching duplicate processes and loading `SentenceTransformer` weights twice.
+- **Automated Verification**:
+  - 22/22 E2E integration and security tests verified passing against live Turso Cloud database.
+
+### 🏷️ `v2.5.2` — AI Orchestrator Fallback Hardening, Prompt Leakage Defense & Scalable Hybrid Memory
 - **Eliminated Meta-Prompt Leakage in Regenerate/Swipe**:
   - Re-engineered `#buildInCharacterFallback` in [`backend/ai/index.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/index.js) to recognize technical directives (`options.isRegenerate`, `options.isContinuation`, `Directive`, `Rules:`) and banned echoing raw prompt substrings (`cleanInput.slice(0, 90)`) into character dialogue.
   - Added support for `excludeVariants` inside fallback beats to provide diverse narrative responses across swipe attempts.

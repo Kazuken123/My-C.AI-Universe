@@ -68,75 +68,88 @@ class MemoryService:
         except Exception as e:
             logger.error(f"Error saving memories: {e}")
 
-    def add_memory(self, content: str, character_id: str = None, metadata: Dict = None) -> str:
+    def add_memory(self, content: str, character_id: str = None, metadata: Dict = None,
+                   session_id: str = None, source: str = 'conversation', memory_id: str = None) -> str:
         """
-        Add a new memory with embedding.
-
-        Args:
-            content: The memory content text
-            character_id: Optional character ID for filtering
-            metadata: Optional metadata dictionary
-
-        Returns:
-            Memory ID
+        Add a new memory with embedding, deduplication, and session boundary metadata.
         """
+        metadata = metadata or {}
+        resolved_session_id = session_id or metadata.get('sessionId') or metadata.get('session_id')
+        resolved_source = source or metadata.get('source', 'conversation')
+
+        # Do not index rolling story summaries in vector retrieval store
+        if resolved_source == 'story_summary':
+            return ''
+
+        clean_content = content.strip()
+        for existing in self.memories:
+            existing_session = existing.get('session_id') or existing.get('metadata', {}).get('sessionId')
+            if (existing.get('character_id') == character_id and
+                existing_session == resolved_session_id and
+                existing.get('content', '').strip().lower() == clean_content.lower()):
+                return existing['id']
+
         self._load_model()
+        embedding = self.model.encode(clean_content).tolist()
 
-        # Generate embedding
-        embedding = self.model.encode(content).tolist()
-
-        # Create memory object
-        memory_id = str(uuid.uuid4())
+        final_id = memory_id or metadata.get('id') or str(uuid.uuid4())
         memory = {
-            'id': memory_id,
-            'content': content,
+            'id': final_id,
+            'content': clean_content,
             'embedding': embedding,
             'character_id': character_id,
-            'metadata': metadata or {},
+            'session_id': resolved_session_id,
+            'source': resolved_source,
+            'metadata': metadata,
             'created_at': str(np.datetime64('now'))
         }
 
         self.memories.append(memory)
         self.save_memories()
 
-        logger.info(f"Added memory: {content[:50]}...")
-        return memory_id
+        logger.info(f"Added memory [{final_id}]: {clean_content[:50]}...")
+        return final_id
 
     def retrieve_relevant_memories(self, query: str, character_id: str = None,
-                                 top_k: int = 3, threshold: float = 0.3) -> List[Dict[str, Any]]:
+                                   top_k: int = 3, threshold: float = 0.3,
+                                   session_id: str = None) -> List[Dict[str, Any]]:
         """
-        Retrieve relevant memories based on semantic similarity.
-
-        Args:
-            query: Query text to find relevant memories
-            character_id: Optional character ID filter
-            top_k: Number of top memories to return
-            threshold: Minimum similarity threshold
-
-        Returns:
-            List of relevant memories with similarity scores
+        Retrieve relevant memories scoped strictly to character lore (session_id is None)
+        and the active session (session_id == target), excluding story_summary records.
         """
         if not self.memories:
             return []
 
-        self._load_model()
+        filtered_memories = []
+        for m in self.memories:
+            if character_id and m.get('character_id') != character_id:
+                continue
 
-        # Encode query
-        query_embedding = self.model.encode(query).reshape(1, -1)
+            meta = m.get('metadata') or {}
+            mem_source = m.get('source') or meta.get('source', 'conversation')
+            if mem_source == 'story_summary':
+                continue
 
-        # Filter memories by character if specified
-        filtered_memories = self.memories
-        if character_id:
-            filtered_memories = [m for m in self.memories if m.get('character_id') == character_id]
+            mem_session_id = m.get('session_id') if 'session_id' in m else (meta.get('sessionId') or meta.get('session_id'))
+
+            if session_id:
+                if mem_session_id is not None and mem_session_id != session_id:
+                    continue
+            else:
+                if mem_session_id is not None:
+                    continue
+
+            filtered_memories.append(m)
 
         if not filtered_memories:
             return []
 
-        # Calculate similarities
+        self._load_model()
+        query_embedding = self.model.encode(query).reshape(1, -1)
+
         memory_embeddings = np.array([m['embedding'] for m in filtered_memories])
         similarities = cosine_similarity(query_embedding, memory_embeddings)[0]
 
-        # Get top-k memories above threshold
         relevant_indices = np.argsort(similarities)[::-1][:top_k]
         relevant_memories = []
 
@@ -189,13 +202,23 @@ def add_memory():
 
         content = data['content']
         character_id = data.get('character_id')
+        session_id = data.get('session_id')
+        source = data.get('source', 'conversation')
+        memory_id = data.get('id')
         metadata = data.get('metadata', {})
 
-        memory_id = memory_service.add_memory(content, character_id, metadata)
+        saved_id = memory_service.add_memory(
+            content=content,
+            character_id=character_id,
+            metadata=metadata,
+            session_id=session_id,
+            source=source,
+            memory_id=memory_id
+        )
 
         return jsonify({
             'success': True,
-            'memory_id': memory_id
+            'memory_id': saved_id
         })
 
     except Exception as e:
@@ -213,16 +236,21 @@ def retrieve_memories():
 
         query = data['query']
         character_id = data.get('character_id')
+        session_id = data.get('session_id')
         top_k = data.get('top_k', 3)
         threshold = data.get('threshold', 0.3)
 
         relevant_memories = memory_service.retrieve_relevant_memories(
-            query, character_id, top_k, threshold
+            query=query,
+            character_id=character_id,
+            top_k=top_k,
+            threshold=threshold,
+            session_id=session_id
         )
 
-        # Return only content and similarity for the chat backend
         memories_for_chat = [
             {
+                'id': m.get('id'),
                 'content': m['content'],
                 'similarity': m['similarity']
             }
@@ -270,5 +298,5 @@ def delete_memory(memory_id):
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    # Run on port 5001 to avoid conflict with Node.js server
-    app.run(host='localhost', port=5001, debug=True)
+    # Disable debug reloader so SentenceTransformer model is only loaded once into memory
+    app.run(host='localhost', port=5001, debug=False, use_reloader=False)

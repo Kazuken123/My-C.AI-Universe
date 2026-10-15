@@ -105,7 +105,13 @@ export class SemanticMemoryService {
     });
 
     await this.repository.save(newMemory);
-    this.pyClient.addMemory(cleanContent, characterId, { source, sessionId }).catch(() => {});
+    if (source !== 'story_summary') {
+      this.pyClient.addMemory(cleanContent, characterId, {
+        id: newMemory.id,
+        source,
+        sessionId
+      }).catch(() => {});
+    }
 
     return newMemory.toJSON();
   }
@@ -114,14 +120,18 @@ export class SemanticMemoryService {
    * Delete a memory by ID
    */
   async deleteMemory(memoryId) {
-    return await this.repository.deleteById(memoryId);
+    const deleted = await this.repository.deleteById(memoryId);
+    if (deleted) {
+      this.pyClient.deleteMemory(memoryId).catch(() => {});
+    }
+    return deleted;
   }
 
   /**
    * Retrieve top-K relevant memories scoped to character lore + active session
    */
   async retrieveRelevantMemories(query, characterId, topK = 4, sessionId = null) {
-    const pyResults = await this.pyClient.retrieveMemories(query, characterId, topK, 0.25);
+    const pyResults = await this.pyClient.retrieveMemories(query, characterId, topK, 0.25, sessionId);
     if (pyResults && pyResults.length > 0) {
       return pyResults;
     }
