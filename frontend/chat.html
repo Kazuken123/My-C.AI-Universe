@@ -206,6 +206,10 @@
                 <i class="ph-light ph-plus"></i>
                 <span>New Thread</span>
               </button>
+              <button class="btn-secondary btn-sm" id="btnChatHistory" type="button" title="Saved Threads &amp; History">
+                <i class="ph-light ph-clock-counter-clockwise"></i>
+                <span>History</span>
+              </button>
               <button class="btn-secondary btn-sm" id="btnMemoryNotebook" type="button" title="Open Character Memory Notebook">
                 <i class="ph-light ph-brain"></i>
                 <span>Memory</span>
@@ -311,6 +315,22 @@
               </div>
               <div id="drawer-sessions-list"></div>
             </div>
+          </div>
+        </aside>
+
+        <!-- Saved Threads / Conversation History Drawer (C.AI Style) -->
+        <aside class="chat-side-drawer chat-history-drawer hidden" id="chatHistoryDrawer" aria-label="Conversation History">
+          <div class="chat-history-header">
+            <button class="chat-history-close-btn" id="btnCloseHistoryDrawer" type="button" title="Close History">
+              <i class="ph-light ph-caret-right"></i>
+              <span>History</span>
+            </button>
+            <button class="icon-btn" id="btnHistoryNewThread" type="button" title="Start New Thread">
+              <i class="ph-light ph-note-pencil"></i>
+            </button>
+          </div>
+          <div class="chat-history-list" id="chatHistoryList">
+            <!-- Populated dynamically by ChatRoomController -->
           </div>
         </aside>
       </div>

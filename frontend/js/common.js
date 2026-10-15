@@ -98,6 +98,24 @@ export function initTheme() {
 }
 
 /**
+ * Deduplicate chat sessions by characterId while keeping the most recent session
+ * and counting total thread branches per character.
+ */
+export function deduplicateSessionsByCharacter(sessions = []) {
+  if (!Array.isArray(sessions)) return [];
+  const map = new Map();
+  for (const s of sessions) {
+    if (!s || !s.characterId) continue;
+    if (!map.has(s.characterId)) {
+      map.set(s.characterId, { ...s, threadCount: 1 });
+    } else {
+      map.get(s.characterId).threadCount += 1;
+    }
+  }
+  return Array.from(map.values());
+}
+
+/**
  * Initialize Shared Sidebar Navigation & State
  */
 export async function initSidebar(activePage = 'discover') {
@@ -191,7 +209,8 @@ export async function initSidebar(activePage = 'discover') {
       `;
     } else {
       try {
-        const sessions = await api.getChatSessions();
+        const rawSessions = await api.getChatSessions();
+        const sessions = deduplicateSessionsByCharacter(rawSessions);
         if (sessionCount) sessionCount.textContent = String(sessions.length);
 
         if (sessions.length === 0) {
@@ -713,15 +732,18 @@ export function initCustomSelects(container = document) {
 }
 
 // Global click outside listener to close custom dropdowns
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.select-wrap')) {
-    document.querySelectorAll('.custom-select-dropdown').forEach(d => {
-      d.style.display = 'none';
-      const p = d.closest('.select-wrap')?.querySelector('.custom-select-trigger');
-      if (p) {
-        p.classList.remove('active');
-        p.setAttribute('aria-expanded', 'false');
-      }
-    });
-  }
-});
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.select-wrap')) {
+      document.querySelectorAll('.custom-select-dropdown').forEach(d => {
+        d.style.display = 'none';
+        const p = d.closest('.select-wrap')?.querySelector('.custom-select-trigger');
+        if (p) {
+          p.classList.remove('active');
+          p.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+  });
+}
+

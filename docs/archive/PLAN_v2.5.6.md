@@ -1,0 +1,24 @@
+# IMPLEMENTATION PLAN: Character-Deduplicated Sidebar & Lightweight Right-Side Thread History Drawer (v2.5.6)
+
+- [x] Bước 1: Khử trùng lặp `ACTIVE STORYLINES` theo `characterId`
+  - Viết và xuất hàm `deduplicateSessionsByCharacter` trong `frontend/js/common.js`
+  - Cập nhật `initSidebar()` trong `frontend/js/common.js` để hiển thị 1 dòng đại diện duy nhất cho mỗi nhân vật
+  - Cập nhật `renderSidebarRecentChats()` trong `frontend/js/chat.js` để khử trùng lặp và làm nổi bật nhân vật đang trò chuyện
+- [x] Bước 2: Thêm nút History và ngăn kéo `chatHistoryDrawer` trong `frontend/chat.html`
+  - Bổ sung nút `#btnChatHistory` vào thanh công cụ đầu trang chat
+  - Tạo khung `aside#chatHistoryDrawer` chứa header, nút New Thread, thẻ hội thoại hiện tại và danh sách các thread cũ
+- [x] Bước 3: Định dạng CSS Double-Bezel Dark cho History Drawer trong `frontend/css/chat.css`
+  - Thêm trạng thái `.active` cho nút toolbar
+  - Định dạng slide-over panel, thẻ hội thoại hiện tại `.is-current`, timestamp tương đối và nút xóa nhanh
+  - Hỗ trợ responsive toàn diện trên thiết bị di động
+- [x] Bước 4: Điều khiển nghiệp vụ Drawer và chuyển đổi Thread trong `frontend/js/chat.js`
+  - Viết hàm `formatRelativeTime(dateInput)` tính toán thời gian tương đối không phụ thuộc thư viện ngoài
+  - Xử lý đóng mở loại trừ lẫn nhau giữa History Drawer và Dossier/Memory Drawer
+  - Tải danh sách thread qua `api.getChatSessions(characterId)`
+  - Hỗ trợ chuyển đổi thread tức thì qua `window.history.replaceState` mà không phải tải lại trang
+  - Xử lý xóa thread và tự động chuyển về thread mới nhất nếu xóa trúng thread hiện tại
+- [x] Bước 5: Kiểm thử tự động, đồng bộ biểu đồ mã nguồn và cập nhật phiên bản
+  - Viết kiểm thử `tests/sidebar-history-v2.5.6.test.js`
+  - Chạy toàn bộ bộ kiểm thử `npm test`
+  - Nâng phiên bản `package.json` lên 2.5.6 và cập nhật `PROGRESS.md`
+  - Cập nhật AST qua `graphify update .` và đẩy commit lên GitHub

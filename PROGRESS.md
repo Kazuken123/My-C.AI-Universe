@@ -1,8 +1,8 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
-> **Current Version:** `v2.5.5`  
+> **Current Version:** `v2.5.6`  
 > **Status:** Production-Ready & Tested  
-> **Automated Test Coverage:** 22/22 E2E tests passing (`npm test`)  
+> **Automated Test Coverage:** 25/25 E2E & unit tests passing (`npm test`)  
 > **Primary Database:** Turso Cloud (LibSQL `@libsql/client`, AWS Tokyo `ap-northeast-1`)  
 > **Primary AI Engine:** Google Gemini (`gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`, `gemini-2.5-flash`) with native `systemInstruction` & fallback chain  
 > **Last Updated:** October 2026
@@ -19,7 +19,23 @@ This document serves as the **single source of truth** for project history, rece
 
 ## 🚀 Version History & Milestones
 
-### 🏷️ `v2.5.5` (Current) — Dynamic Character Continuity, Strict Role-Alternation, Context-Aware Memory & Latency Elimination
+### 🏷️ `v2.5.6` (Current) — Character-Deduplicated Sidebar & C.AI-Style Thread History Drawer
+- **Sidebar Character Deduplication (`deduplicateSessionsByCharacter`)**:
+  - Implemented `deduplicateSessionsByCharacter` in [`frontend/js/common.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/js/common.js) and integrated into `initSidebar()` and [`frontend/js/chat.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/js/chat.js) `renderSidebarRecentChats()`.
+  - Aggregates multi-thread sessions per character so each character appears at most once in `ACTIVE STORYLINES`, retaining their most recently active thread while displaying the total thread count badge.
+  - Highlights the character row when chatting with that character across any of their thread branches.
+- **Character.AI-Style Right-Side History Drawer (`#chatHistoryDrawer`)**:
+  - Added dedicated History button (`#btnChatHistory`) to the top header toolbar in [`frontend/chat.html`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/chat.html).
+  - Built slide-over history drawer featuring a top card for the current conversation, a chronological list of past threads, relative timestamps, 3-line clamped preview snippets, and thread deletion with automatic fallback switching.
+  - Implemented instant zero-page-reload thread switching via `window.history.replaceState` and mutual drawer exclusion between History and Dossier/Memory drawers.
+  - Added Double-Bezel Dark styling and responsive mobile slide-over rules in [`frontend/css/chat.css`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/css/chat.css).
+- **Lightweight Relative Time Formatter (`formatRelativeTime`)**:
+  - Implemented standalone `formatRelativeTime(dateInput)` in [`frontend/js/chat.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/js/chat.js) with zero external library overhead.
+- **Unit & Integration Verification**:
+  - Created [`tests/sidebar-history-v2.5.6.test.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/tests/sidebar-history-v2.5.6.test.js) verifying deduplication edge cases and relative time ranges.
+  - Integrated into `npm test` test suite and verified passing.
+
+### 🏷️ `v2.5.5` — Dynamic Character Continuity, Strict Role-Alternation, Context-Aware Memory & Latency Elimination
 - **Strict Turn Alternation & Initial Scene Prepending in `GeminiProvider`**:
   - Implemented automatic turn merging for consecutive identical roles in [`backend/ai/providers/gemini.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/providers/gemini.js) `#buildContents`, ensuring multi-turn inputs always alternate strictly between `user` and `model`.
   - Prepended `{ role: 'user', parts: [{ text: '[Scene Start]' }] }` whenever conversation history begins with an opening character greeting (`role: 'model'`), preventing Gemini API multi-turn validation failures and attention degradation.

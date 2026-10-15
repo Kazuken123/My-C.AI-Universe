@@ -1,5 +1,6 @@
 import { api } from './api.js';
 import { escapeHtml, formatCount, bindSpotlightHover } from './characters.js';
+import { deduplicateSessionsByCharacter } from './common.js';
 
 /**
  * Format light-novel roleplay markup safely into HTML
@@ -10,6 +11,25 @@ export function formatRoleplayText(rawText) {
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/\*([^*]+)\*/g, '<em>$1</em>')
     .replace(/\n/g, '<br>');
+}
+
+/**
+ * Lightweight relative time formatter (zero external dependencies)
+ */
+export function formatRelativeTime(dateInput) {
+  if (!dateInput) return 'just now';
+  const diffSec = Math.max(0, Math.floor((Date.now() - new Date(dateInput).getTime()) / 1000));
+  if (diffSec < 60) return 'less than a minute ago';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `about ${diffMin} minute${diffMin === 1 ? '' : 's'} ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `about ${diffHr} hour${diffHr === 1 ? '' : 's'} ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 30) return `about ${diffDay} day${diffDay === 1 ? '' : 's'} ago`;
+  const diffMonth = Math.floor(diffDay / 30);
+  if (diffMonth < 12) return `about ${diffMonth} month${diffMonth === 1 ? '' : 's'} ago`;
+  const diffYear = Math.floor(diffDay / 365);
+  return `about ${diffYear} year${diffYear === 1 ? '' : 's'} ago`;
 }
 
 function getInitials(name, fallback = 'TR') {
@@ -35,6 +55,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
   const continueBtn = document.getElementById('continueBtn');
   const updateCmdBtn = document.getElementById('updateCmdBtn');
   const newSessionBtn = document.getElementById('btnNewChatSession');
+  const btnChatHistory = document.getElementById('btnChatHistory');
   const toggleDrawerBtn = document.getElementById('btnToggleDrawer');
   const memoryNotebookBtn = document.getElementById('btnMemoryNotebook');
   const ttsAutoBtn = document.getElementById('btnToggleTTS');
@@ -49,6 +70,12 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
   const drawerSessionsList = document.getElementById('drawer-sessions-list');
   const addMemoryForm = document.getElementById('add-memory-form');
   const newMemoryInput = document.getElementById('newMemoryInput');
+
+  // History Drawer Elements
+  const chatHistoryDrawer = document.getElementById('chatHistoryDrawer');
+  const btnCloseHistoryDrawer = document.getElementById('btnCloseHistoryDrawer');
+  const btnHistoryNewThread = document.getElementById('btnHistoryNewThread');
+  const chatHistoryList = document.getElementById('chatHistoryList');
 
   // Sidebar & Saved Chats View Elements
   const sidebarRecentList = document.getElementById('sidebar-recent-chats');
@@ -138,10 +165,13 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     if (toggleDrawerBtn) {
       toggleDrawerBtn.classList.remove('active');
     }
-    if (drawerBackdrop) drawerBackdrop.classList.remove('active');
+    if (drawerBackdrop && (!chatHistoryDrawer || chatHistoryDrawer.classList.contains('hidden'))) {
+      drawerBackdrop.classList.remove('active');
+    }
   };
 
   const openRightDrawer = () => {
+    closeHistoryDrawer();
     if (rightDrawer) {
       rightDrawer.classList.remove('collapsed');
       rightDrawer.classList.add('open');
@@ -150,6 +180,42 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       toggleDrawerBtn.classList.add('active');
     }
     if (drawerBackdrop && window.innerWidth <= 768) drawerBackdrop.classList.add('active');
+  };
+
+  const closeHistoryDrawer = () => {
+    if (chatHistoryDrawer) {
+      chatHistoryDrawer.classList.add('hidden');
+    }
+    if (btnChatHistory) {
+      btnChatHistory.classList.remove('active');
+    }
+    if (drawerBackdrop && (!rightDrawer || rightDrawer.classList.contains('collapsed'))) {
+      drawerBackdrop.classList.remove('active');
+    }
+  };
+
+  const openHistoryDrawer = async () => {
+    closeRightDrawer();
+    if (chatHistoryDrawer) {
+      chatHistoryDrawer.classList.remove('hidden');
+    }
+    if (btnChatHistory) {
+      btnChatHistory.classList.add('active');
+    }
+    if (drawerBackdrop && window.innerWidth <= 768) {
+      drawerBackdrop.classList.add('active');
+    }
+    await renderCharacterHistory();
+  };
+
+  const toggleHistoryDrawer = async (forceState) => {
+    const isCurrentlyOpen = chatHistoryDrawer && !chatHistoryDrawer.classList.contains('hidden');
+    const shouldOpen = typeof forceState === 'boolean' ? forceState : !isCurrentlyOpen;
+    if (shouldOpen) {
+      await openHistoryDrawer();
+    } else {
+      closeHistoryDrawer();
+    }
   };
 
   if (toggleDrawerBtn && rightDrawer) {
@@ -171,12 +237,33 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     });
   }
 
+  if (btnChatHistory) {
+    btnChatHistory.addEventListener('click', () => {
+      toggleHistoryDrawer();
+    });
+  }
+
+  if (btnCloseHistoryDrawer) {
+    btnCloseHistoryDrawer.addEventListener('click', () => {
+      closeHistoryDrawer();
+    });
+  }
+
+  if (btnHistoryNewThread) {
+    btnHistoryNewThread.addEventListener('click', () => {
+      if (newSessionBtn) newSessionBtn.click();
+    });
+  }
+
   if (drawerCloseBtn) {
     drawerCloseBtn.addEventListener('click', closeRightDrawer);
   }
 
   if (drawerBackdrop) {
-    drawerBackdrop.addEventListener('click', closeRightDrawer);
+    drawerBackdrop.addEventListener('click', () => {
+      closeRightDrawer();
+      closeHistoryDrawer();
+    });
   }
 
   // Initial state: start collapsed across all screen sizes (dossier only appears when clicked)
@@ -262,17 +349,23 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
   function renderSidebarRecentChats(sessions) {
     if (!sidebarRecentList) return;
-    if (!sessions || sessions.length === 0) {
+    const dedupedSessions = deduplicateSessionsByCharacter(sessions);
+    if (!dedupedSessions || dedupedSessions.length === 0) {
       sidebarRecentList.innerHTML = `
         <div class="sidebar-empty-threads" style="padding: 16px 14px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm); margin: 6px 0;">
           No active storylines yet.<br>Select any character to begin your fresh story!
         </div>
       `;
+      if (sidebarSessionCount) sidebarSessionCount.textContent = '0';
       return;
     }
 
-    sidebarRecentList.innerHTML = sessions.slice(0, 10).map(s => `
-      <div class="recent-chat-item ${appState.activeSession?.id === s.id ? 'active' : ''}" data-open-session="${escapeHtml(s.id)}" data-session-char="${escapeHtml(s.characterId)}">
+    if (sidebarSessionCount) {
+      sidebarSessionCount.textContent = String(dedupedSessions.length);
+    }
+
+    sidebarRecentList.innerHTML = dedupedSessions.slice(0, 10).map(s => `
+      <div class="recent-chat-item ${appState.activeCharacter?.id === s.characterId ? 'active' : ''}" data-open-session="${escapeHtml(s.id)}" data-session-char="${escapeHtml(s.characterId)}">
         <span class="recent-chat-avatar-wrap">
           <img class="recent-chat-avatar" src="${escapeHtml(s.characterAvatar || '')}" alt="${escapeHtml(s.characterName)}" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
         </span>
@@ -390,6 +483,118 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
   }
 
   /**
+   * Render saved conversation threads for the active character in the History Drawer
+   */
+  async function renderCharacterHistory() {
+    if (!chatHistoryList || !appState.activeCharacter) return;
+    try {
+      chatHistoryList.innerHTML = `
+        <div style="padding: 24px; text-align: center; color: var(--text-muted); font-size: 0.8rem;">
+          Loading conversation history...
+        </div>
+      `;
+
+      let charSessions = [];
+      try {
+        charSessions = await api.getChatSessions(appState.activeCharacter.id);
+      } catch {
+        charSessions = Array.isArray(appState.sessions)
+          ? appState.sessions.filter(s => s.characterId === appState.activeCharacter.id)
+          : [];
+      }
+
+      if (!charSessions || charSessions.length === 0) {
+        chatHistoryList.innerHTML = `
+          <div style="padding: 32px 16px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+            No conversation threads found for ${escapeHtml(appState.activeCharacter.name)}.
+          </div>
+        `;
+        return;
+      }
+
+      charSessions.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+
+      const currentSessionId = appState.activeSession?.id;
+      const currentSession = charSessions.find(s => s.id === currentSessionId);
+      const otherSessions = charSessions.filter(s => s.id !== currentSessionId);
+
+      const renderItem = (s, isCurrent = false) => {
+        const timeStr = formatRelativeTime(s.updatedAt);
+        const snippet = (s.lastMessage || '').replace(/\*/g, '').trim() || 'No messages yet';
+        return `
+          <div class="history-thread-item ${isCurrent ? 'is-current' : ''}" data-history-session="${escapeHtml(s.id)}">
+            ${isCurrent ? '<span class="history-current-label">Current conversation</span>' : ''}
+            <div class="history-thread-meta">
+              <span class="history-thread-time">${escapeHtml(timeStr)}</span>
+              <button class="history-thread-del" data-del-history-session="${escapeHtml(s.id)}" type="button" title="Delete Thread" aria-label="Delete Thread">
+                <i class="ph-light ph-trash"></i>
+              </button>
+            </div>
+            <div class="history-thread-snippet">${escapeHtml(snippet)}</div>
+          </div>
+        `;
+      };
+
+      let html = '';
+      if (currentSession) {
+        html += renderItem(currentSession, true);
+      }
+      for (const s of otherSessions) {
+        html += renderItem(s, false);
+      }
+      chatHistoryList.innerHTML = html;
+
+      chatHistoryList.querySelectorAll('.history-thread-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+          if (e.target.closest('.history-thread-del')) return;
+          const targetSessionId = item.dataset.historySession;
+          if (targetSessionId && targetSessionId !== appState.activeSession?.id) {
+            openChatWithCharacter(appState.activeCharacter.id, targetSessionId);
+          }
+        });
+      });
+
+      chatHistoryList.querySelectorAll('[data-del-history-session]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const targetId = btn.dataset.delHistorySession;
+          if (!targetId) return;
+          if (!confirm('Are you sure you want to delete this storyline thread?')) return;
+          try {
+            await api.deleteChatSession(targetId);
+            showToast('Thread deleted.');
+
+            if (Array.isArray(appState.sessions)) {
+              appState.sessions = appState.sessions.filter(s => s.id !== targetId);
+            }
+
+            if (appState.activeSession?.id === targetId) {
+              const remaining = otherSessions.filter(s => s.id !== targetId);
+              if (remaining.length > 0) {
+                await openChatWithCharacter(appState.activeCharacter.id, remaining[0].id);
+              } else {
+                if (newSessionBtn) newSessionBtn.click();
+              }
+            } else {
+              await renderCharacterHistory();
+              await loadAllSessions(true);
+            }
+          } catch (err) {
+            showToast(err.message || 'Failed to delete thread');
+          }
+        });
+      });
+    } catch (err) {
+      console.error('Failed to render character history:', err);
+      chatHistoryList.innerHTML = `
+        <div style="padding: 24px; text-align: center; color: var(--error); font-size: 0.8rem;">
+          Failed to load history: ${escapeHtml(err.message)}
+        </div>
+      `;
+    }
+  }
+
+  /**
    * Open the Chat Room for a specific Character and optional Session ID
    */
   async function openChatWithCharacter(characterId, sessionId = null) {
@@ -416,9 +621,9 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
       appState.activeSession = session;
 
-      const url = `/chat.html?id=${encodeURIComponent(character.id)}`;
+      const url = `/chat.html?id=${encodeURIComponent(character.id)}${session?.id ? `&session=${encodeURIComponent(session.id)}` : ''}`;
       if (window.location.pathname + window.location.search !== url) {
-        window.history.pushState({ view: 'chat', characterId: character.id }, '', url);
+        window.history.replaceState({ view: 'chat', characterId: character.id, sessionId: session?.id }, '', url);
       }
 
       navigateTo('chat', false);
@@ -428,6 +633,10 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         refreshRightDrawer(character, session),
         loadAllSessions()
       ]);
+
+      if (chatHistoryDrawer && !chatHistoryDrawer.classList.contains('hidden')) {
+        renderCharacterHistory().catch(() => {});
+      }
     } catch (error) {
       console.error('Failed to open chat:', error);
       showToast('Could not open chat: ' + error.message);
@@ -1127,9 +1336,14 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
           title: `Storyline ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
         });
         appState.activeSession = fresh;
+        const url = `/chat.html?id=${encodeURIComponent(appState.activeCharacter.id)}&session=${encodeURIComponent(fresh.id)}`;
+        window.history.replaceState({ view: 'chat', characterId: appState.activeCharacter.id, sessionId: fresh.id }, '', url);
         renderChatStream(appState.activeCharacter, fresh);
         await refreshRightDrawer(appState.activeCharacter, fresh);
-        await loadAllSessions();
+        await loadAllSessions(true);
+        if (chatHistoryDrawer && !chatHistoryDrawer.classList.contains('hidden')) {
+          await renderCharacterHistory();
+        }
         showToast('Started a fresh narrative thread.');
       } catch (err) {
         showToast(err.message);
@@ -1139,7 +1353,9 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
   return {
     loadAllSessions,
-    openChatWithCharacter
+    openChatWithCharacter,
+    toggleHistoryDrawer,
+    renderCharacterHistory
   };
 }
 
@@ -1151,5 +1367,7 @@ export class ChatRoomController {
     const controller = initChatModule(appState, navigateTo, openStudioForEdit, showToast);
     this.loadAllSessions = controller.loadAllSessions;
     this.openChatWithCharacter = controller.openChatWithCharacter;
+    this.toggleHistoryDrawer = controller.toggleHistoryDrawer;
+    this.renderCharacterHistory = controller.renderCharacterHistory;
   }
 }

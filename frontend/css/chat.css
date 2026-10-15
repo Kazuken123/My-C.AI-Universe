@@ -644,7 +644,8 @@ kbd {
 }
 
 #btnToggleDrawer.active,
-#btnMemoryNotebook.active {
+#btnMemoryNotebook.active,
+#btnChatHistory.active {
   background: var(--accent-soft);
   color: var(--accent);
   border-color: var(--accent-border);
@@ -749,6 +750,133 @@ kbd {
 }
 
 /* ============================================================================
+   SAVED THREADS / CONVERSATION HISTORY DRAWER (C.AI STYLE)
+   ============================================================================ */
+.chat-history-drawer {
+  width: 340px;
+  max-width: 90vw;
+  background: #0d0c14;
+  border-left: 1px solid var(--border-hairline, rgba(255, 255, 255, 0.08));
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  z-index: 30;
+  flex-shrink: 0;
+}
+
+.chat-history-drawer.hidden {
+  display: none !important;
+}
+
+.chat-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border-hairline, rgba(255, 255, 255, 0.08));
+}
+
+.chat-history-close-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  color: var(--text-primary, #f4f4f6);
+  font-family: var(--font-display, sans-serif);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.chat-history-close-btn:hover {
+  color: #ffffff;
+}
+
+.chat-history-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.history-thread-item {
+  position: relative;
+  padding: 14px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+  border: 1px solid transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.history-thread-item:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.history-thread-item.is-current {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(139, 92, 246, 0.28);
+  margin-bottom: 8px;
+}
+
+.history-current-label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #60a5fa;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.history-thread-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.history-thread-time {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.history-thread-del {
+  opacity: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted, #71717a);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.history-thread-item:hover .history-thread-del {
+  opacity: 1;
+}
+
+.history-thread-del:hover {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.history-thread-snippet {
+  font-size: 0.83rem;
+  line-height: 1.48;
+  color: var(--text-secondary, #a1a1aa);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+/* ============================================================================
    RESPONSIVE MOBILE RULES (NARRATIVE CHATROOM)
    ============================================================================ */
 .drawer-close-btn,
@@ -795,6 +923,20 @@ kbd {
 
   .chat-right-drawer.collapsed {
     transform: translateX(100%);
+  }
+
+  /* Off-canvas History Drawer */
+  .chat-history-drawer:not(.hidden) {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(350px, 88vw);
+    min-width: 0;
+    max-width: 100vw;
+    height: 100dvh;
+    z-index: 1050;
+    box-shadow: -12px 0 48px rgba(0, 0, 0, 0.85);
   }
 
   .drawer-close-btn {
