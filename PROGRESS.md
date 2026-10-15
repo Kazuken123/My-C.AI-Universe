@@ -1,6 +1,6 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
-> **Current Version:** `v2.5.3`  
+> **Current Version:** `v2.5.4`  
 > **Status:** Production-Ready & Tested  
 > **Automated Test Coverage:** 22/22 E2E tests passing (`npm test`)  
 > **Primary Database:** Turso Cloud (LibSQL `@libsql/client`, AWS Tokyo `ap-northeast-1`)  
@@ -19,7 +19,23 @@ This document serves as the **single source of truth** for project history, rece
 
 ## 🚀 Version History & Milestones
 
-### 🏷️ `v2.5.3` (Current) — Cross-Runtime Python Microservice Boundary Synchronization & Cooldown Optimization
+### 🏷️ `v2.5.4` (Current) — O(1) Fast Message Append, Parallel Context Hydration & Non-Blocking Post-Turn Pipeline
+- **O(1) Incremental Chat Message & Variant SQL Persistence**:
+  - Implemented `appendMessages(session, newMessages)` and `appendVariant(session, message, newVariant)` in [`backend/repositories/ChatSessionRepository.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/repositories/ChatSessionRepository.js).
+  - Eliminated $O(N)$ full-history rewrites on remote Turso Cloud (`ap-northeast-1`) that previously executed 60–100+ SQL round-trips per chat turn by executing targeted batch `INSERT`s strictly for new messages and new variants.
+  - Retained full `save(session)` fallback strictly for initial session initialization (`isNewSession`) and destructive operations (deletions/rewinds).
+- **O(1) Atomic Character Interactions Increment**:
+  - Implemented `incrementInteractions(id, updatedAt)` in [`backend/repositories/CharacterRepository.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/repositories/CharacterRepository.js).
+  - Replaced 23-column full-row rewrites with a lightweight single-column atomic SQL statement: `UPDATE characters SET interactions = interactions + 1, updated_at = ? WHERE id = ?`.
+- **Concurrency Guard for Rolling Story Summarization**:
+  - Added session-level in-flight mutex locks (`this.activeSummaryLocks = new Set()`) in [`backend/services/memory.service.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/services/memory.service.js) to guarantee only one LLM summarization pipeline runs per session at any time, preventing duplicate story summaries and race conditions.
+- **Parallel Context Hydration & Non-Blocking Background Post-Turn Pipeline**:
+  - Restructured [`backend/controllers/chat.controller.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/controllers/chat.controller.js) context loading to execute `memoryService.getContextMemories()` and user persona resolution in parallel via `Promise.all()`.
+  - Moved memory fact auto-detection and rolling story summarization out of the critical HTTP response path via `#schedulePostTurnTasks()`, executing them asynchronously in the background (`setImmediate`) without delaying the user response.
+- **Automated Verification**:
+  - 22/22 E2E integration, SQL security, and API tests verified passing against live Turso Cloud database.
+
+### 🏷️ `v2.5.3` — Cross-Runtime Python Microservice Boundary Synchronization & Cooldown Optimization
 - **Session-Scoped Vector Memory & Lore Isolation**:
   - Synchronized `session_id` filtering in [`memory-service/memory_service.py`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/memory-service/memory_service.py) with relational SQL rules: queries strictly match `character_id` and either global canon lore (`session_id is None`) or active chat session (`session_id == target`), preventing cross-story memory bleed.
   - Stripped rolling story chronicles (`source == 'story_summary'`) from vector embedding stores to eliminate duplicate narrative echoes.

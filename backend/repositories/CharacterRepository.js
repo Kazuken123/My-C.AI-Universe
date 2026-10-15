@@ -144,6 +144,23 @@ export class CharacterRepository extends BaseRepository {
   }
 
   /**
+   * O(1) Atomic interaction counter increment without rewriting full character row
+   * @param {string} id
+   * @param {string} [updatedAt]
+   */
+  async incrementInteractions(id, updatedAt = new Date().toISOString(), targetDb = null) {
+    if (!id) return false;
+    const conn = targetDb || this.db;
+    const res = await conn.prepare(`
+      UPDATE characters
+      SET interactions = COALESCE(interactions, 0) + 1,
+          updated_at = ?
+      WHERE id = ?
+    `).run(updatedAt, id);
+    return res.changes > 0;
+  }
+
+  /**
    * Bulk synchronize character collection inside a transaction
    * @param {Character[]} chars
    */

@@ -193,6 +193,127 @@ export class ChatSessionRepository extends BaseRepository {
   }
 
   /**
+   * O(1) Fast append for newly created messages in an existing or new session
+   * Avoids re-iterating and re-upserting the entire message history on every chat turn.
+   * @param {ChatSession} session
+   * @param {ChatMessage[]} newMessages
+   */
+  async appendMessages(session, newMessages = []) {
+    if (!newMessages || newMessages.length === 0) {
+      return await this.save(session);
+    }
+
+    await this.runInTransaction(async (db) => {
+      await db.prepare(`
+        INSERT INTO chat_sessions (id, user_id, character_id, persona_id, title, provider, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          user_id = COALESCE(excluded.user_id, chat_sessions.user_id),
+          persona_id = excluded.persona_id,
+          title = excluded.title,
+          provider = excluded.provider,
+          updated_at = excluded.updated_at
+      `).run(
+        session.id,
+        session.userId || null,
+        session.characterId,
+        session.personaId || null,
+        session.title,
+        session.provider,
+        session.createdAt,
+        session.updatedAt
+      );
+
+      const upsertMsgStmt = db.prepare(`
+        INSERT INTO chat_messages (
+          id, session_id, role, content, selected_variant_index, is_pinned, rating, position, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          role = excluded.role,
+          content = excluded.content,
+          selected_variant_index = excluded.selected_variant_index,
+          is_pinned = excluded.is_pinned,
+          rating = excluded.rating,
+          position = excluded.position
+      `);
+
+      const upsertVarStmt = db.prepare(`
+        INSERT INTO message_variants (id, message_id, variant_index, text, created_at)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          variant_index = excluded.variant_index,
+          text = excluded.text
+      `);
+
+      for (const msg of newMessages) {
+        const posIdx = session.messages.indexOf(msg);
+        const finalPos = posIdx !== -1 ? posIdx : Math.max(0, session.messages.length - 1);
+
+        await upsertMsgStmt.run(
+          msg.id,
+          session.id,
+          msg.role,
+          msg.content,
+          msg.selectedVariantIndex,
+          msg.isPinned ? 1 : 0,
+          msg.rating,
+          finalPos,
+          msg.createdAt
+        );
+
+        if (Array.isArray(msg.variants)) {
+          for (let varIdx = 0; varIdx < msg.variants.length; varIdx++) {
+            const v = msg.variants[varIdx];
+            await upsertVarStmt.run(
+              v.id || `${msg.id}_v${varIdx + 1}`,
+              msg.id,
+              varIdx,
+              v.text,
+              v.createdAt
+            );
+          }
+        }
+      }
+    });
+
+    return session;
+  }
+
+  /**
+   * O(1) Fast insert for a newly regenerated swipe variant on an existing message
+   * @param {ChatSession} session
+   * @param {ChatMessage} message
+   * @param {MessageVariant} newVariant
+   */
+  async appendVariant(session, message, newVariant) {
+    await this.runInTransaction(async (db) => {
+      await db.prepare(`
+        INSERT INTO message_variants (id, message_id, variant_index, text, created_at)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          variant_index = excluded.variant_index,
+          text = excluded.text
+      `).run(
+        newVariant.id || `${message.id}_v${message.variants.length}`,
+        message.id,
+        newVariant.variantIndex ?? (message.variants.length - 1),
+        newVariant.text,
+        newVariant.createdAt
+      );
+
+      await db.prepare(`
+        UPDATE chat_messages
+        SET content = ?, selected_variant_index = ?
+        WHERE id = ? AND session_id = ?
+      `).run(message.content, message.selectedVariantIndex, message.id, session.id);
+
+      await db.prepare(`
+        UPDATE chat_sessions SET updated_at = ? WHERE id = ?
+      `).run(session.updatedAt, session.id);
+    });
+  }
+
+  /**
    * Fast targeted update for a single message in a session without rewriting the entire session
    * @param {string} sessionId
    * @param {string} messageId

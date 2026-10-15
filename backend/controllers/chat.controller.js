@@ -62,6 +62,30 @@ export class ChatController extends BaseController {
     return session;
   }
 
+  /**
+   * Non-blocking background scheduler for post-turn metrics, memory detection and story summarization
+   */
+  #schedulePostTurnTasks({ userText, aiText, character, session }) {
+    character.incrementInteractions();
+    this.charsRepo.incrementInteractions(character.id, character.updatedAt).catch(err => {
+      console.warn('[CHAT CONTROLLER] Failed to increment interactions:', err.message);
+    });
+
+    setImmediate(() => {
+      if (aiText) {
+        this.memoryService.detectAndStoreFromTurn(userText, aiText, character.id, session.id).catch(err => {
+          console.warn('[CHAT CONTROLLER] Background memory extraction warning:', err.message);
+        });
+      }
+
+      if (session.messages.length >= 24) {
+        this.memoryService.updateRollingStorySummary(session, character).catch(err => {
+          console.warn('[CHAT CONTROLLER] Background rolling summary warning:', err.message);
+        });
+      }
+    });
+  }
+
   async getChatSessions(req, res) {
     try {
       const { characterId } = req.query;
@@ -311,6 +335,7 @@ export class ChatController extends BaseController {
         (session?.personaId && (await this.personasRepo.findById(session.personaId, userId))) ||
         (await this.personasRepo.findDefault(userId));
 
+      let isNewSession = false;
       if (!session) {
         session = this.#createNewSessionEntity(
           character,
@@ -319,6 +344,7 @@ export class ChatController extends BaseController {
           '',
           userId
         );
+        isNewSession = true;
       }
 
       if (personaId) session.personaId = personaId;
@@ -335,13 +361,17 @@ export class ChatController extends BaseController {
             }));
 
       const queryForMemory = message || lastMessage || character.name;
-      const relevantMemories = await this.memoryService.retrieveRelevantMemories(
-        queryForMemory,
-        charId,
-        4,
-        session ? session.id : null
-      );
-      const storySummary = session ? await this.memoryService.getSessionStorySummary(session.id) : '';
+      const [relevantMemories, storySummary] = await Promise.all([
+        this.memoryService.retrieveRelevantMemories(
+          queryForMemory,
+          charId,
+          4,
+          session ? session.id : null
+        ),
+        session
+          ? this.memoryService.getSessionStorySummary(session.id)
+          : Promise.resolve('')
+      ]);
 
       const aiOptions = {
         provider: provider || session.provider || config.AI_PROVIDER,
@@ -442,11 +472,16 @@ ${existingVariants.length > 0 ? `- Do NOT repeat these previous variants:\n${exi
           reply = await this.orchestrator.chat(character.toJSON(), regeneratePrompt, historyBeforeLastModel, regenOptions);
         }
 
+        let newVar = null;
         if (targetModelMsg) {
-          targetModelMsg.addVariant(reply);
+          newVar = targetModelMsg.addVariant(reply);
         }
         session.touch();
-        await this.sessionsRepo.save(session);
+        if (targetModelMsg && newVar) {
+          await this.sessionsRepo.appendVariant(session, targetModelMsg, newVar);
+        } else {
+          await this.sessionsRepo.save(session);
+        }
 
         return this.sendJson(res, {
           response: reply || 'AI did not respond',
@@ -482,10 +517,10 @@ Rules:
           role: 'model',
           content: reply
         });
-        await this.sessionsRepo.save(session);
+        session.touch();
+        await this.sessionsRepo.appendMessages(session, [newAiMsg]);
 
-        character.incrementInteractions();
-        await this.charsRepo.save(character);
+        this.#schedulePostTurnTasks({ userText: '', aiText: reply, character, session });
 
         return this.sendJson(res, {
           response: reply || 'AI did not respond',
@@ -527,17 +562,12 @@ Rules:
           role: 'model',
           content: fullReply || '...'
         });
+        session.touch();
 
-        await this.sessionsRepo.save(session);
-        character.incrementInteractions();
-        await this.charsRepo.save(character);
+        const newlyAdded = isNewSession ? session.messages : [userMsgObj, aiMsgObj];
+        await this.sessionsRepo.appendMessages(session, newlyAdded);
 
-        if (fullReply) {
-          this.memoryService.detectAndStoreFromTurn(message, fullReply, charId, session.id);
-        }
-        if (session.messages.length >= 24) {
-          this.memoryService.updateRollingStorySummary(session, character).catch(() => {});
-        }
+        this.#schedulePostTurnTasks({ userText: message, aiText: fullReply, character, session });
 
         res.write(`data: ${JSON.stringify({
           done: true,
@@ -560,18 +590,12 @@ Rules:
         role: 'model',
         content: reply
       });
+      session.touch();
 
-      await this.sessionsRepo.save(session);
+      const newlyAdded = isNewSession ? session.messages : [userMsgObj, aiMsgObj];
+      await this.sessionsRepo.appendMessages(session, newlyAdded);
 
-      character.incrementInteractions();
-      await this.charsRepo.save(character);
-
-      if (reply) {
-        this.memoryService.detectAndStoreFromTurn(message, reply, charId, session.id);
-      }
-      if (session.messages.length >= 24) {
-        this.memoryService.updateRollingStorySummary(session, character).catch(() => {});
-      }
+      this.#schedulePostTurnTasks({ userText: message, aiText: reply, character, session });
 
       return this.sendJson(res, {
         response: reply || 'AI did not respond',

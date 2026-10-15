@@ -23,6 +23,7 @@ export class SemanticMemoryService {
   constructor(repository = memoryRepository, pyClient = memoryClient) {
     this.repository = repository;
     this.pyClient = pyClient;
+    this.activeSummaryLocks = new Set();
   }
 
   /**
@@ -218,13 +219,15 @@ export class SemanticMemoryService {
    * Automatically generate a rolling story checkpoint summarizing earlier conversation turns
    */
   async updateRollingStorySummary(session, character, apiKey = process.env.GEMINI_API_KEY) {
+    if (!session || !session.messages || session.messages.length < 24) return null;
+    if (this.activeSummaryLocks.has(session.id)) return null;
+
+    const totalMsgs = session.messages.length;
+    // Trigger update roughly every 12 messages
+    if (totalMsgs % 12 !== 0 && totalMsgs !== 24) return null;
+
+    this.activeSummaryLocks.add(session.id);
     try {
-      if (!session || !session.messages || session.messages.length < 24) return null;
-
-      const totalMsgs = session.messages.length;
-      // Trigger update roughly every 12 messages
-      if (totalMsgs % 12 !== 0 && totalMsgs !== 24) return null;
-
       const existingSummary = await this.getSessionStorySummary(session.id);
       const olderMsgs = session.messages.slice(0, totalMsgs - 10);
       if (olderMsgs.length < 8) return null;
@@ -279,6 +282,8 @@ Output ONLY the distilled narrative summary text:`;
     } catch (err) {
       console.warn('[MEMORY SERVICE] Rolling summary warning:', err.message);
       return null;
+    } finally {
+      this.activeSummaryLocks.delete(session.id);
     }
   }
 }
