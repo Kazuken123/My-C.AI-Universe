@@ -804,6 +804,8 @@ body::after {
   outline: none;
   white-space: nowrap;
   user-select: none;
+  max-width: 100%;
+  box-sizing: border-box;
   transition: border-color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease, color 0.25s ease;
 }
 
@@ -834,6 +836,8 @@ body::after {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .custom-select-arrow {
