@@ -1,10 +1,10 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
-> **Current Version:** `v2.5.1`  
+> **Current Version:** `v2.5.2`  
 > **Status:** Production-Ready & Tested  
 > **Automated Test Coverage:** 22/22 E2E tests passing (`npm test`)  
 > **Primary Database:** Turso Cloud (LibSQL `@libsql/client`, AWS Tokyo `ap-northeast-1`)  
-> **Primary AI Engine:** Google Gemini (`gemini-3.5-flash-lite`) with `BLOCK_NONE` creative roleplay configuration  
+> **Primary AI Engine:** Google Gemini (`gemini-3.5-flash-lite`, `gemini-2.5-flash`, `gemini-2.0-flash`) with native `systemInstruction` & fallback chain  
 > **Last Updated:** October 2026
 
 ---
@@ -19,7 +19,23 @@ This document serves as the **single source of truth** for project history, rece
 
 ## 🚀 Version History & Milestones
 
-### 🏷️ `v2.5.1` (Current) — Top Loading Page Bar & Multi-Mode Architectural Personality Engine
+### 🏷️ `v2.5.2` (Current) — AI Orchestrator Fallback Hardening, Prompt Leakage Defense & Scalable Hybrid Memory
+- **Eliminated Meta-Prompt Leakage in Regenerate/Swipe**:
+  - Re-engineered `#buildInCharacterFallback` in [`backend/ai/index.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/index.js) to recognize technical directives (`options.isRegenerate`, `options.isContinuation`, `Directive`, `Rules:`) and banned echoing raw prompt substrings (`cleanInput.slice(0, 90)`) into character dialogue.
+  - Added support for `excludeVariants` inside fallback beats to provide diverse narrative responses across swipe attempts.
+  - Stripped `styleHint` `(${character.tagline})` from both `#buildInCharacterFallback` and [`backend/ai/prompt/characterPrompt.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/prompt/characterPrompt.js) `generateDefaultGreeting` to prevent lore metadata pollution in narration.
+- **Resilient Multi-Model Gemini Fallback & Native SDK Instructions**:
+  - Upgraded [`backend/ai/providers/gemini.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/providers/gemini.js) to automatically cycle through candidate models (`this.modelName`, `this.fallbackModelName`, `gemini-2.5-flash`, `gemini-2.0-flash`) when encountering 404, 429, 500, or 503 errors.
+  - Transitioned from mock turn injection to native SDK `config.systemInstruction` across `generateReply` and `generateReplyStream`, enabling calibrated temperature adjustment during regeneration (`0.95`).
+- **O(1) Indexed Relational SQL Memory Operations & Session Scoping**:
+  - Added `idx_character_memories_session_source` index to [`backend/db/schema.sql`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/db/schema.sql).
+  - Added targeted methods `findForContext`, `findStorySummary`, and `upsertStorySummary` in [`backend/repositories/MemoryRepository.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/repositories/MemoryRepository.js), eliminating $O(N)$ full-table scans.
+  - Enforced session-scoped memory retrieval in [`backend/services/memory.service.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/services/memory.service.js) and [`backend/controllers/chat.controller.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/controllers/chat.controller.js) (`character_id = ? AND (session_id IS NULL OR session_id = ?)`), preventing cross-session memory bleeding.
+  - Added bilingual English & Vietnamese stop words and conversational fact detection regexes.
+- **Automated Verification**:
+  - 22/22 E2E integration and security tests verified passing against live Turso Cloud database.
+
+### 🏷️ `v2.5.1` — Top Loading Page Bar & Multi-Mode Architectural Personality Engine
 - **YouTube / GitHub / Next.js Style Top Loading Page Bar**:
   - Engineered zero-dependency [`frontend/js/loading-bar.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/js/loading-bar.js) singleton with initial spring jump (`22%`), diminishing auto-trickle algorithm (`22% -> 90%`), 180ms snap-to-finish, and 240ms smooth fade-out.
   - Implemented dynamic accent gradient lighting (`var(--accent)` to `var(--accent-hover)`), a glowing 100px leading edge peg, and a continuous shimmer beam during network latency.

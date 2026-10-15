@@ -46,3 +46,4 @@ frontend/assets/avatars/*
 
 # Audit & temporary diff files
 *.diff
+repomix-output.*

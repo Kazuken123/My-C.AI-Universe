@@ -87,20 +87,41 @@ export class AIOrchestrator {
   #buildInCharacterFallback(character, userMsg, options = {}) {
     const name = character.name || 'Character';
     const userName = options.persona?.name || 'friend';
-    const styleHint = character.tagline ? `(${character.tagline})` : '';
+    const rawText = String(userMsg || '').trim();
 
-    const isDirective = !userMsg || userMsg.includes('Directive') || userMsg.includes('Continue the scene') || userMsg.includes('[Scene Continuation') || userMsg.trim().startsWith('[');
+    const isDirective =
+      !rawText ||
+      Boolean(options.isContinuation) ||
+      rawText.includes('Directive') ||
+      rawText.includes('Continue the scene') ||
+      rawText.includes('[Scene Continuation') ||
+      rawText.startsWith('[');
+
+    const continuationBeats = [
+      `*${name} stays close and observes in the quiet moment, keeping watch over ${userName}.*\n\n${name}: "I'm right here with you. Just take your time, ${userName}."`,
+      `*${name} glances softly at ${userName}, letting the quiet air linger for a beat.*\n\n${name}: "No rush at all. We have plenty of time, ${userName}."`,
+      `*${name} gently shifts position in the quiet room, keeping a warm presence beside ${userName}.*\n\n${name}: "I'm not going anywhere. Take as much time as you need."`
+    ];
+
     if (isDirective) {
-      const beats = [
-        `*${name} ${styleHint ? styleHint + ' ' : ''}stays close and observes in the quiet moment, keeping watch over ${userName}.*\n\n${name}: "I'm right here with you. Just take your time and rest, ${userName}."`,
-        `*${name} ${styleHint ? styleHint + ' ' : ''}glances softly at ${userName}, letting the quiet air linger for a beat.*\n\n${name}: "No rush at all. We have plenty of time, ${userName}."`,
-        `*${name} ${styleHint ? styleHint + ' ' : ''}gently shifts position in the quiet room, keeping a warm presence beside ${userName}.*\n\n${name}: "I'm not going anywhere. Take as much time as you need."`
-      ];
-      return beats[Math.floor(Math.random() * beats.length)];
+      const excluded = Array.isArray(options.excludeVariants) ? options.excludeVariants : [];
+      const availableBeats = continuationBeats.filter(b => !excluded.includes(b));
+      const pool = availableBeats.length > 0 ? availableBeats : continuationBeats;
+      return pool[Math.floor(Math.random() * pool.length)];
     }
 
-    const cleanInput = (userMsg || '').replace(/^Relevant memories:[\s\S]*?User message:\s*/i, '').trim();
-    return `*${name} ${styleHint ? styleHint + ' ' : ''}pauses thoughtfully, considering what ${userName} just said.*\n\n${name}: "I hear you—'${cleanInput.slice(0, 90)}${cleanInput.length > 90 ? '...' : ''}'. Give me just a moment to gather my thoughts on that, ${userName}."`;
+    const replyBeats = [
+      `*${name} turns toward ${userName}, meeting their gaze with steady attention.*\n\n${name}: "Go on, ${userName}. I'm listening—tell me what's on your mind."`,
+      `*${name} pauses for a brief moment, considering ${userName}'s words carefully before offering a faint nod.*\n\n${name}: "I see what you mean, ${userName}. Let's talk this through."`,
+      `*${name} takes a slow breath and steps a little closer, focusing entirely on ${userName}.*\n\n${name}: "You have my full attention, ${userName}. What happens next?"`,
+      `*${name} tilts their head slightly, a thoughtful expression crossing their face as they look at ${userName}.*\n\n${name}: "That caught my attention, ${userName}. Tell me more."`
+    ];
+
+    const excluded = Array.isArray(options.excludeVariants) ? options.excludeVariants : [];
+    const availableBeats = replyBeats.filter(b => !excluded.includes(b));
+    const pool = availableBeats.length > 0 ? availableBeats : replyBeats;
+
+    return pool[Math.floor(Math.random() * pool.length)];
   }
 }
 

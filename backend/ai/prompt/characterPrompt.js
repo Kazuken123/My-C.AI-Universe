@@ -46,11 +46,7 @@ export function generateDefaultGreeting(char) {
     return char.greeting.trim();
   }
   const name = char.name || 'Character';
-  const traitSnippet = char.tagline
-    ? `*${name} (${char.tagline}) notices your arrival and turns toward you.*`
-    : `*${name} turns toward you as you approach, taking a moment to size you up.*`;
-
-  return `${traitSnippet}\n\n${name}: "Hello there. Did you want to talk about something?"`;
+  return `*${name} notices your arrival and turns toward you, taking a moment to size you up.*\n\n${name}: "Hello there. Did you want to talk about something?"`;
 }
 
 /**

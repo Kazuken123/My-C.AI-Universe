@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+target/
+*.lock
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+*.log
+.git/
+graphify-out/
+.agents/
+*.diff
+.env

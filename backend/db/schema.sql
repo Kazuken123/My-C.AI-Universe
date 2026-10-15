@@ -148,4 +148,5 @@ CREATE INDEX IF NOT EXISTS idx_chat_sessions_character ON chat_sessions(characte
 CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON chat_messages(session_id, position ASC);
 CREATE INDEX IF NOT EXISTS idx_message_variants_message ON message_variants(message_id, variant_index ASC);
 CREATE INDEX IF NOT EXISTS idx_character_memories_character ON character_memories(character_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_character_memories_session_source ON character_memories(session_id, source);
 CREATE INDEX IF NOT EXISTS idx_media_assets_filename ON media_assets(filename);

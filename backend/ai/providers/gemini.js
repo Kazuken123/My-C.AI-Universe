@@ -49,33 +49,17 @@ export class GeminiProvider extends BaseAIProvider {
   }
 
   #getModelsToTry() {
-    const list = [this.modelName];
-    if (this.fallbackModelName && this.fallbackModelName !== this.modelName) {
-      list.push(this.fallbackModelName);
-    }
-    return list;
+    const candidates = [
+      this.modelName,
+      this.fallbackModelName,
+      'gemini-2.5-flash',
+      'gemini-2.0-flash'
+    ].filter(Boolean);
+    return [...new Set(candidates)];
   }
 
-  /**
-   * Polymorphic implementation of generateReply using Google Gemini
-   */
-  async generateReply(character, userMsg, memory = null, options = {}) {
-    const ai = this.#getClient();
-    const systemPrompt = this.buildSystemPrompt(character, options);
+  #buildContents(memory, userMsg) {
     const contents = [];
-
-    contents.push({
-      role: 'user',
-      parts: [{ text: sanitizePromptForGemini(systemPrompt) }]
-    });
-
-    contents.push({
-      role: 'model',
-      parts: [{
-        text: `*${character.name} nods in acknowledgment, stepping fully into character.*\n\n${character.name}: "Understood. I am ${character.name} and will respond naturally in character."`
-      }]
-    });
-
     if (Array.isArray(memory) && memory.length > 0) {
       for (const msg of memory) {
         if (!msg || !msg.content || !msg.content.trim()) continue;
@@ -85,12 +69,20 @@ export class GeminiProvider extends BaseAIProvider {
         });
       }
     }
-
     contents.push({
       role: 'user',
       parts: [{ text: sanitizePromptForGemini(userMsg) }]
     });
+    return contents;
+  }
 
+  /**
+   * Polymorphic implementation of generateReply using Google Gemini
+   */
+  async generateReply(character, userMsg, memory = null, options = {}) {
+    const ai = this.#getClient();
+    const systemPrompt = sanitizePromptForGemini(this.buildSystemPrompt(character, options));
+    const contents = this.#buildContents(memory, userMsg);
     const modelsToTry = this.#getModelsToTry();
     let lastError = null;
 
@@ -101,6 +93,8 @@ export class GeminiProvider extends BaseAIProvider {
           model: currentModel,
           contents,
           config: {
+            systemInstruction: systemPrompt,
+            temperature: options.isRegenerate ? 0.95 : 0.85,
             safetySettings: PERMISSIVE_SAFETY_SETTINGS
           }
         });
@@ -128,15 +122,17 @@ export class GeminiProvider extends BaseAIProvider {
         lastError = error;
         console.error(`[GEMINI PROVIDER ERROR] Model '${currentModel}':`, error.message);
 
-        const isRateLimitOrQuota =
-          error.message?.includes('quota') ||
-          error.message?.includes('rate limit') ||
-          error.message?.includes('RESOURCE_EXHAUSTED') ||
-          error.status === 429;
+        const isAuthError =
+          error.message?.includes('API_KEY_INVALID') ||
+          error.message?.includes('API key not valid') ||
+          error.status === 401 ||
+          error.status === 403;
 
-        if (isRateLimitOrQuota && i < modelsToTry.length - 1) {
+        const isSafetyError = error.status === 400 && error.message?.includes('safety filter');
+
+        if (!isAuthError && !isSafetyError && i < modelsToTry.length - 1) {
           const nextModel = modelsToTry[i + 1];
-          console.warn(`[GEMINI PROVIDER] Rate limit/quota reached on ${currentModel}. Falling back to ${nextModel}...`);
+          console.warn(`[GEMINI PROVIDER] Model '${currentModel}' failed (${error.status || 'ERR'}). Falling back to '${nextModel}'...`);
           continue;
         }
 
@@ -144,17 +140,17 @@ export class GeminiProvider extends BaseAIProvider {
       }
     }
 
-    if (lastError.message?.includes('quota') || lastError.message?.includes('rate limit') || lastError.message?.includes('RESOURCE_EXHAUSTED') || lastError.status === 429) {
+    if (lastError?.message?.includes('quota') || lastError?.message?.includes('rate limit') || lastError?.message?.includes('RESOURCE_EXHAUSTED') || lastError?.status === 429) {
       throw new AIError('Gemini quota exceeded', 429, lastError);
     }
-    if (lastError.message?.includes('API_KEY') || lastError.status === 401) {
+    if (lastError?.message?.includes('API_KEY') || lastError?.status === 401) {
       throw new AIError('Invalid Gemini API key', 401, lastError);
     }
-    if (lastError.status === 403) {
+    if (lastError?.status === 403) {
       throw new AIError('Gemini access forbidden', 403, lastError);
     }
 
-    throw new AIError(lastError.message || 'Gemini service temporarily unavailable', 503, lastError);
+    throw new AIError(lastError?.message || 'Gemini service temporarily unavailable', 503, lastError);
   }
 
   /**
@@ -162,36 +158,8 @@ export class GeminiProvider extends BaseAIProvider {
    */
   async *generateReplyStream(character, userMsg, memory = null, options = {}) {
     const ai = this.#getClient();
-    const systemPrompt = this.buildSystemPrompt(character, options);
-    const contents = [];
-
-    contents.push({
-      role: 'user',
-      parts: [{ text: sanitizePromptForGemini(systemPrompt) }]
-    });
-
-    contents.push({
-      role: 'model',
-      parts: [{
-        text: `*${character.name} nods in acknowledgment, stepping fully into character.*\n\n${character.name}: "Understood. I am ${character.name} and will respond naturally in character."`
-      }]
-    });
-
-    if (Array.isArray(memory) && memory.length > 0) {
-      for (const msg of memory) {
-        if (!msg || !msg.content || !msg.content.trim()) continue;
-        contents.push({
-          role: msg.role === 'user' ? 'user' : 'model',
-          parts: [{ text: sanitizePromptForGemini(msg.content) }]
-        });
-      }
-    }
-
-    contents.push({
-      role: 'user',
-      parts: [{ text: sanitizePromptForGemini(userMsg) }]
-    });
-
+    const systemPrompt = sanitizePromptForGemini(this.buildSystemPrompt(character, options));
+    const contents = this.#buildContents(memory, userMsg);
     const modelsToTry = this.#getModelsToTry();
     let lastError = null;
 
@@ -202,6 +170,8 @@ export class GeminiProvider extends BaseAIProvider {
           model: currentModel,
           contents,
           config: {
+            systemInstruction: systemPrompt,
+            temperature: options.isRegenerate ? 0.95 : 0.85,
             safetySettings: PERMISSIVE_SAFETY_SETTINGS
           }
         });
@@ -216,6 +186,20 @@ export class GeminiProvider extends BaseAIProvider {
       } catch (err) {
         lastError = err;
         console.warn(`[GEMINI PROVIDER:STREAM] ${currentModel} stream failed:`, err.message);
+
+        const isAuthError =
+          err.message?.includes('API_KEY_INVALID') ||
+          err.message?.includes('API key not valid') ||
+          err.status === 401 ||
+          err.status === 403;
+
+        if (!isAuthError && i < modelsToTry.length - 1) {
+          const nextModel = modelsToTry[i + 1];
+          console.warn(`[GEMINI PROVIDER:STREAM] Falling back to '${nextModel}'...`);
+          continue;
+        }
+
+        break;
       }
     }
 

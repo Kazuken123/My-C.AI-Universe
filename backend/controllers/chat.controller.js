@@ -335,7 +335,12 @@ export class ChatController extends BaseController {
             }));
 
       const queryForMemory = message || lastMessage || character.name;
-      const relevantMemories = await this.memoryService.retrieveRelevantMemories(queryForMemory, charId, 4);
+      const relevantMemories = await this.memoryService.retrieveRelevantMemories(
+        queryForMemory,
+        charId,
+        4,
+        session ? session.id : null
+      );
       const storySummary = session ? await this.memoryService.getSessionStorySummary(session.id) : '';
 
       const aiOptions = {
@@ -364,11 +369,25 @@ export class ChatController extends BaseController {
 
         // Filter out fallback texts and only keep at most the last 3 clean snippets
         const existingVariants = rawVariants
-          .filter(t => t && typeof t === 'string' && !t.includes('Directive') && !t.includes('pauses thoughtfully') && !t.includes('gather my thoughts'))
+          .filter(t =>
+            t &&
+            typeof t === 'string' &&
+            !t.includes('Directive') &&
+            !t.includes('pauses thoughtfully') &&
+            !t.includes('gather my thoughts') &&
+            !t.includes('Generate a fresh, distinct alternative reply')
+          )
           .slice(-3);
 
         const userName = activePersona ? activePersona.name : 'the user';
         let reply;
+
+        const regenOptions = {
+          ...aiOptions,
+          isRegenerate: true,
+          isContinuation: isContinuationTurn,
+          excludeVariants: existingVariants
+        };
 
         if (isContinuationTurn) {
           const anchorMsg = lastModelIdx > 0
@@ -397,7 +416,7 @@ Rules:
 ${existingVariants.length > 0 ? `- Do NOT repeat previous takes:\n${existingVariants.map(v => `  * "${v.slice(0, 100)}"`).join('\n')}` : ''}
 - Only speak and act as ${character.name}.`;
 
-          reply = await this.orchestrator.chat(character.toJSON(), regeneratePrompt, historyBeforeContinuation, aiOptions);
+          reply = await this.orchestrator.chat(character.toJSON(), regeneratePrompt, historyBeforeContinuation, regenOptions);
         } else {
           const precedingUserMsg = lastModelIdx > 0 && sessionMsgs[lastModelIdx - 1].role === 'user'
             ? ((sessionMsgs[lastModelIdx - 1].variants &&
@@ -420,7 +439,7 @@ Rules:
 - Keep the light-novel formatting (*italic actions* and ${character.name}: "Dialogue")
 ${existingVariants.length > 0 ? `- Do NOT repeat these previous variants:\n${existingVariants.map(v => `  * "${v.slice(0, 140)}"`).join('\n')}` : ''}`;
 
-          reply = await this.orchestrator.chat(character.toJSON(), regeneratePrompt, historyBeforeLastModel, aiOptions);
+          reply = await this.orchestrator.chat(character.toJSON(), regeneratePrompt, historyBeforeLastModel, regenOptions);
         }
 
         if (targetModelMsg) {

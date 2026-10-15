@@ -1,6 +1,7 @@
 import { memoryRepository } from '../repositories/index.js';
 import { CharacterMemory } from '../models/CharacterMemory.js';
 import { memoryClient } from '../ai/memory/memoryClient.js';
+import { config } from '../config/index.js';
 
 /**
  * SemanticMemoryService Class (OOP Service Layer)
@@ -13,7 +14,10 @@ export class SemanticMemoryService {
     'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will',
     'would', 'shall', 'should', 'can', 'could', 'may', 'might', 'must', 'it', 'its',
     'they', 'them', 'their', 'this', 'that', 'these', 'those', 'what', 'which', 'who',
-    'whom', 'how', 'when', 'where', 'why', 'just', 'very', 'too', 'also', 'so', 'than'
+    'whom', 'how', 'when', 'where', 'why', 'just', 'very', 'too', 'also', 'so', 'than',
+    'và', 'của', 'có', 'cho', 'với', 'trong', 'được', 'các', 'một', 'những', 'để', 'khi',
+    'này', 'đó', 'từ', 'về', 'như', 'người', 'thì', 'ở', 'đã', 'sẽ', 'cũng', 'hay', 'nhưng',
+    'tôi', 'mình', 'bạn', 'là'
   ]);
 
   constructor(repository = memoryRepository, pyClient = memoryClient) {
@@ -30,7 +34,7 @@ export class SemanticMemoryService {
       .toLowerCase()
       .replace(/[^\p{L}\p{N}\s]/gu, ' ')
       .split(/\s+/)
-      .filter(token => token.length > 2 && !SemanticMemoryService.STOP_WORDS.has(token));
+      .filter(token => token.length >= 2 && !SemanticMemoryService.STOP_WORDS.has(token));
   }
 
   /**
@@ -114,15 +118,15 @@ export class SemanticMemoryService {
   }
 
   /**
-   * Retrieve top-K relevant memories for a query and character
+   * Retrieve top-K relevant memories scoped to character lore + active session
    */
-  async retrieveRelevantMemories(query, characterId, topK = 4) {
+  async retrieveRelevantMemories(query, characterId, topK = 4, sessionId = null) {
     const pyResults = await this.pyClient.retrieveMemories(query, characterId, topK, 0.25);
     if (pyResults && pyResults.length > 0) {
       return pyResults;
     }
 
-    const charMemories = await this.repository.findAll(characterId);
+    const charMemories = await this.repository.findForContext(characterId, sessionId);
     if (charMemories.length === 0) return [];
 
     const scored = charMemories.map((mem, idx) => {
@@ -146,9 +150,9 @@ export class SemanticMemoryService {
 
       if (userMessage) {
         const userFactPatterns = [
-          /\b(?:my name is|call me|i'm called)\s+([^.!?\n]{2,50})/i,
-          /\b(?:i love|i really like|my favorite .* is|i hate|i am afraid of|i work as|i study)\s+([^.!?\n]{3,100})/i,
-          /\b(?:remember that|don't forget that)\s+([^.!?\n]{5,140})/i
+          /\b(?:my name is|call me|i'm called|tên tôi là|tên mình là|gọi tôi là|gọi mình là)\s+([^.!?\n]{2,50})/i,
+          /\b(?:i love|i really like|my favorite .* is|i hate|i am afraid of|i work as|i study|tôi thích|mình thích|tôi ghét|tôi sợ|tôi đang học|tôi làm nghề)\s+([^.!?\n]{3,100})/i,
+          /\b(?:remember that|don't forget that|nhớ rằng|đừng quên là)\s+([^.!?\n]{5,140})/i
         ];
 
         for (const pattern of userFactPatterns) {
@@ -162,13 +166,14 @@ export class SemanticMemoryService {
       if (aiResponse && aiResponse.length > 60) {
         const memoryKeywords = [
           'remember', 'promise', 'always', 'never', 'favorite', 'secret',
-          'childhood', 'past', 'dream', 'swear', 'treasure', 'friend'
+          'childhood', 'past', 'dream', 'swear', 'treasure', 'friend',
+          'hứa', 'nhớ', 'kỷ niệm', 'ước mơ', 'bí mật', 'bạn bè'
         ];
         const lowerResp = aiResponse.toLowerCase();
         if (memoryKeywords.some(k => lowerResp.includes(k))) {
           const sentences = aiResponse
             .replace(/\*/g, '')
-            .split(/[.!?]+/)
+            .split(/[.!?\n]+/)
             .map(s => s.trim())
             .filter(s => s.length > 25 && s.length < 180);
 
@@ -187,13 +192,12 @@ export class SemanticMemoryService {
   }
 
   /**
-   * Retrieve rolling narrative story summary for a session
+   * Retrieve rolling narrative story summary for a session via O(1) query
    */
   async getSessionStorySummary(sessionId) {
     if (!sessionId) return '';
     try {
-      const rows = await this.repository.findAll();
-      const summaryMem = rows.find(m => m.sessionId === sessionId && m.source === 'story_summary');
+      const summaryMem = await this.repository.findStorySummary(sessionId);
       return summaryMem ? summaryMem.content : '';
     } catch {
       return '';
@@ -238,21 +242,30 @@ ${existingSummary ? `Previous Story Arc Summary:\n${existingSummary}\n` : ''}
 
 Output ONLY the distilled narrative summary text:`;
 
-      const res = await ai.models.generateContent({
-        model: 'gemini-3.5-flash-lite',
-        contents: summaryPrompt
-      });
+      const modelsToTry = [...new Set([
+        config.GEMINI_MODEL,
+        config.GEMINI_FALLBACK_MODEL,
+        'gemini-2.5-flash',
+        'gemini-2.0-flash'
+      ].filter(Boolean))];
 
-      const summaryText = (res.text || '').trim();
-      if (!summaryText) return null;
-
-      const allMemories = await this.repository.findAll();
-      const oldSummary = allMemories.find(m => m.sessionId === session.id && m.source === 'story_summary');
-      if (oldSummary) {
-        await this.repository.deleteById(oldSummary.id);
+      let summaryText = '';
+      for (const modelName of modelsToTry) {
+        try {
+          const res = await ai.models.generateContent({
+            model: modelName,
+            contents: summaryPrompt
+          });
+          summaryText = (res.text || '').trim();
+          if (summaryText) break;
+        } catch {
+          // Continue to next fallback model
+        }
       }
 
-      return await this.addMemory(summaryText, character.id, 'story_summary', session.id);
+      if (!summaryText) return null;
+      const saved = await this.repository.upsertStorySummary(character.id, session.id, summaryText);
+      return saved ? saved.toJSON() : null;
     } catch (err) {
       console.warn('[MEMORY SERVICE] Rolling summary warning:', err.message);
       return null;
