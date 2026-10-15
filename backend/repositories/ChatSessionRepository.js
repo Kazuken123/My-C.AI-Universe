@@ -11,7 +11,8 @@ export class ChatSessionRepository extends BaseRepository {
   }
 
   /**
-   * Hydrate messages and variants for a given session row
+   * Hydrate messages and variants for a given session row.
+   * Uses a single batch query for all variants instead of N+1 per-message queries.
    */
   async _hydrateSession(sessionRow, targetDb = null) {
     if (!sessionRow) return null;
@@ -19,13 +20,29 @@ export class ChatSessionRepository extends BaseRepository {
     const msgRows = await conn
       .prepare('SELECT * FROM chat_messages WHERE session_id = ? ORDER BY position ASC, created_at ASC')
       .all(sessionRow.id);
-    const varStmt = conn.prepare('SELECT * FROM message_variants WHERE message_id = ? ORDER BY variant_index ASC');
 
-    const messages = [];
-    for (const mRow of msgRows) {
-      const vRows = await varStmt.all(mRow.id);
-      messages.push(ChatMessage.fromDatabaseRow(mRow, vRows));
+    if (msgRows.length === 0) {
+      return ChatSession.fromDatabaseRow(sessionRow, []);
     }
+
+    // Batch-load ALL variants for every message in this session in 1 query
+    const msgIds = msgRows.map(m => m.id);
+    const placeholders = msgIds.map(() => '?').join(',');
+    const allVariants = await conn
+      .prepare(`SELECT * FROM message_variants WHERE message_id IN (${placeholders}) ORDER BY variant_index ASC`)
+      .all(...msgIds);
+
+    // Group variants by message_id
+    const variantsByMsg = new Map();
+    for (const v of allVariants) {
+      const arr = variantsByMsg.get(v.message_id);
+      if (arr) arr.push(v);
+      else variantsByMsg.set(v.message_id, [v]);
+    }
+
+    const messages = msgRows.map(mRow =>
+      ChatMessage.fromDatabaseRow(mRow, variantsByMsg.get(mRow.id) || [])
+    );
 
     return ChatSession.fromDatabaseRow(sessionRow, messages);
   }
@@ -64,6 +81,47 @@ export class ChatSessionRepository extends BaseRepository {
     }
 
     return hydratedSessions;
+  }
+
+  /**
+   * Lightweight session listing: returns metadata (id, title, counts, last message)
+   * without hydrating all messages and variants. Uses 1 SQL query total.
+   * @param {string|null} characterId
+   * @param {string|null} userId
+   * @returns {Promise<Object[]>}
+   */
+  async findAllLean(characterId = null, userId = null) {
+    let query = `
+      SELECT
+        s.id, s.user_id, s.character_id, s.persona_id,
+        s.title, s.provider, s.created_at, s.updated_at,
+        COUNT(m.id) AS message_count,
+        (
+          SELECT cm.content FROM chat_messages cm
+          WHERE cm.session_id = s.id
+          ORDER BY cm.position DESC, cm.created_at DESC
+          LIMIT 1
+        ) AS last_message
+      FROM chat_sessions s
+      LEFT JOIN chat_messages m ON m.session_id = s.id
+      WHERE 1=1
+    `;
+    const params = [];
+
+    if (userId) {
+      query += ' AND s.user_id = ?';
+      params.push(userId);
+    } else {
+      query += ' AND s.user_id IS NULL';
+    }
+
+    if (characterId) {
+      query += ' AND s.character_id = ?';
+      params.push(characterId);
+    }
+
+    query += ' GROUP BY s.id ORDER BY s.updated_at DESC';
+    return await this.db.prepare(query).all(...params);
   }
 
   /**

@@ -26,6 +26,11 @@ function extractToken(req) {
  * Attaches req.user if a valid token is provided, without blocking unauthenticated requests
  */
 export async function optionalAuth(req, _res, next) {
+  // If req.user is already evaluated on this request, avoid re-running DB query
+  if (req.user !== undefined) {
+    return next();
+  }
+
   const token = extractToken(req);
   if (!token) {
     req.user = null;

@@ -74,7 +74,7 @@ export class AIOrchestrator {
         }
 
         resolve(response);
-        await new Promise(r => setTimeout(r, 350));
+        await new Promise(r => setTimeout(r, 50));
       } catch (error) {
         console.error('[AI ORCHESTRATOR ERROR]', error.message);
         resolve(this.#buildInCharacterFallback(character, userMsg, options));

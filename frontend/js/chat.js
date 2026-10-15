@@ -193,21 +193,63 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     });
   });
 
+  let inflightSessionsPromise = null;
+  let lastSessionsFetchTime = 0;
+  const SESSIONS_CACHE_TTL = 3000; // 3 seconds TTL
+
   /**
-   * Load all chat sessions for sidebar & Saved Chats view
+   * Load all chat sessions for sidebar & Saved Chats view (cached & deduplicated)
    */
-  async function loadAllSessions() {
-    try {
-      const sessions = await api.getChatSessions();
-      appState.sessions = sessions;
-      if (sidebarSessionCount) {
-        sidebarSessionCount.textContent = String(sessions.length);
+  async function loadAllSessions(force = false) {
+    if (!force && appState.sessions && (Date.now() - lastSessionsFetchTime < SESSIONS_CACHE_TTL)) {
+      renderSidebarRecentChats(appState.sessions);
+      renderSavedChatsView(appState.sessions);
+      renderContinueChattingRow(appState.sessions);
+      return appState.sessions;
+    }
+
+    if (inflightSessionsPromise) {
+      return inflightSessionsPromise;
+    }
+
+    inflightSessionsPromise = (async () => {
+      try {
+        const sessions = await api.getChatSessions();
+        appState.sessions = sessions;
+        lastSessionsFetchTime = Date.now();
+        if (sidebarSessionCount) {
+          sidebarSessionCount.textContent = String(sessions.length);
+        }
+        renderSidebarRecentChats(sessions);
+        renderSavedChatsView(sessions);
+        renderContinueChattingRow(sessions);
+        return sessions;
+      } catch (err) {
+        console.error('Failed to load chat sessions:', err);
+      } finally {
+        inflightSessionsPromise = null;
       }
-      renderSidebarRecentChats(sessions);
-      renderSavedChatsView(sessions);
-      renderContinueChattingRow(sessions);
-    } catch (err) {
-      console.error('Failed to load chat sessions:', err);
+    })();
+
+    return inflightSessionsPromise;
+  }
+
+  /**
+   * Optimistically update the sidebar and saved chats view in-memory without a network roundtrip
+   */
+  function updateLocalSessionPreview(sessionId, lastMsgContent) {
+    if (!Array.isArray(appState.sessions)) return;
+    const idx = appState.sessions.findIndex(s => s.id === sessionId);
+    if (idx !== -1) {
+      const target = appState.sessions[idx];
+      target.lastMessage = lastMsgContent;
+      target.updatedAt = new Date().toISOString();
+      target.messageCount = (target.messageCount || 0) + 1;
+      appState.sessions.splice(idx, 1);
+      appState.sessions.unshift(target);
+      renderSidebarRecentChats(appState.sessions);
+      renderSavedChatsView(appState.sessions);
+      renderContinueChattingRow(appState.sessions);
     }
   }
 
@@ -345,10 +387,12 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
    */
   async function openChatWithCharacter(characterId, sessionId = null) {
     try {
-      const character = await api.getCharacter(characterId);
+      const [character, charSessions] = await Promise.all([
+        api.getCharacter(characterId),
+        api.getChatSessions(characterId)
+      ]);
       appState.activeCharacter = character;
 
-      const charSessions = await api.getChatSessions(characterId);
       let session;
 
       if (sessionId) {
@@ -373,8 +417,10 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       navigateTo('chat', false);
       renderChatHeader(character, session);
       renderChatStream(character, session);
-      await refreshRightDrawer(character, session);
-      await loadAllSessions();
+      await Promise.all([
+        refreshRightDrawer(character, session),
+        loadAllSessions()
+      ]);
     } catch (error) {
       console.error('Failed to open chat:', error);
       showToast('Could not open chat: ' + error.message);
@@ -739,8 +785,8 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
           const updatedSession = await api.getChatSession(donePayload.sessionId || session.id);
           appState.activeSession = updatedSession;
           renderChatStream(appState.activeCharacter, updatedSession);
-          await refreshRightDrawer(appState.activeCharacter, updatedSession);
-          await loadAllSessions();
+          updateLocalSessionPreview(updatedSession.id, donePayload.response || accumulatedText);
+          refreshRightDrawer(appState.activeCharacter, updatedSession).catch(() => {});
 
           if (autoSpeakTTS && donePayload.response) {
             speakText(donePayload.response);
@@ -752,8 +798,8 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         const updatedSession = await api.getChatSession(session.id);
         appState.activeSession = updatedSession;
         renderChatStream(appState.activeCharacter, updatedSession);
-        await refreshRightDrawer(appState.activeCharacter, updatedSession);
-        await loadAllSessions();
+        updateLocalSessionPreview(updatedSession.id, accumulatedText);
+        refreshRightDrawer(appState.activeCharacter, updatedSession).catch(() => {});
       }
     } catch (streamError) {
       console.warn('[CHAT] Stream fallback:', streamError.message);
@@ -770,8 +816,8 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         const updatedSession = await api.getChatSession(fallbackRes.sessionId || session.id);
         appState.activeSession = updatedSession;
         renderChatStream(appState.activeCharacter, updatedSession);
-        await refreshRightDrawer(appState.activeCharacter, updatedSession);
-        await loadAllSessions();
+        updateLocalSessionPreview(updatedSession.id, fallbackRes.response || text);
+        refreshRightDrawer(appState.activeCharacter, updatedSession).catch(() => {});
 
         if (autoSpeakTTS && fallbackRes.response) {
           speakText(fallbackRes.response);
@@ -878,7 +924,8 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       const updatedSession = await api.getChatSession(result.sessionId || session.id);
       appState.activeSession = updatedSession;
       renderChatStream(character, updatedSession);
-      await loadAllSessions();
+      updateLocalSessionPreview(updatedSession.id, result.response || '');
+      refreshRightDrawer(character, updatedSession).catch(() => {});
 
       if (autoSpeakTTS && result.response) {
         speakText(result.response);
@@ -932,22 +979,27 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       }
     }
 
+    // Fetch memories and story summary in a SINGLE call if either panel is active
+    let sharedMemData = null;
+    if (character && (document.getElementById('drawer-story-chronicle') || drawerMemoriesList)) {
+      try {
+        sharedMemData = await api.getMemories(character.id, session?.id);
+      } catch (err) {
+        console.warn('Memory load error:', err);
+      }
+    }
+
     const drawerStoryChronicle = document.getElementById('drawer-story-chronicle');
     if (drawerStoryChronicle && character) {
-      try {
-        const memData = await api.getMemories(character.id, session?.id);
-        const storySummary = memData.storySummary || '';
-        drawerStoryChronicle.innerHTML = storySummary
-          ? `<div class="story-chronicle-box">
-               <div class="story-chronicle-title"><i class="ph-fill ph-book-bookmark"></i> Active Narrative Arc</div>
-               <div class="story-chronicle-text">${escapeHtml(storySummary)}</div>
-             </div>`
-          : `<p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px; font-style: italic;">
-               Chronicle active. Narrative milestones are summarized automatically every 12 turns once the scene passes turn 24.
-             </p>`;
-      } catch (err) {
-        console.warn('Story summary load error:', err);
-      }
+      const storySummary = sharedMemData?.storySummary || '';
+      drawerStoryChronicle.innerHTML = storySummary
+        ? `<div class="story-chronicle-box">
+             <div class="story-chronicle-title"><i class="ph-fill ph-book-bookmark"></i> Active Narrative Arc</div>
+             <div class="story-chronicle-text">${escapeHtml(storySummary)}</div>
+           </div>`
+        : `<p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px; font-style: italic;">
+             Chronicle active. Narrative milestones are summarized automatically every 12 turns once the scene passes turn 24.
+           </p>`;
     }
 
     if (drawerPinsList && session) {
@@ -962,37 +1014,34 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     }
 
     if (drawerMemoriesList) {
-      try {
-        const memData = await api.getMemories(character.id, session?.id);
-        const memories = (memData.memories || []).filter(m => m.source !== 'story_summary');
-        drawerMemoriesList.innerHTML = memories.length === 0
-          ? `<p style="font-size: 0.78rem; color: var(--text-muted);">No custom memories indexed yet.</p>`
-          : memories.map(m => `
-              <div class="memory-item">
-                <div>
-                  <div>${escapeHtml(m.content)}</div>
-                  <div style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); margin-top: 3px;">SOURCE: ${escapeHtml((m.source || 'conversation').toUpperCase())}</div>
-                </div>
-                <button class="msg-tool-btn" data-del-mem="${escapeHtml(m.id)}" type="button" title="Delete memory">
-                  <i class="ph-light ph-x"></i>
-                </button>
+      const memories = (sharedMemData?.memories || []).filter(m => m.source !== 'story_summary');
+      drawerMemoriesList.innerHTML = memories.length === 0
+        ? `<p style="font-size: 0.78rem; color: var(--text-muted);">No custom memories indexed yet.</p>`
+        : memories.map(m => `
+            <div class="memory-item">
+              <div>
+                <div>${escapeHtml(m.content)}</div>
+                <div style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); margin-top: 3px;">SOURCE: ${escapeHtml((m.source || 'conversation').toUpperCase())}</div>
               </div>
-            `).join('');
+              <button class="msg-tool-btn" data-del-mem="${escapeHtml(m.id)}" type="button" title="Delete memory">
+                <i class="ph-light ph-x"></i>
+              </button>
+            </div>
+          `).join('');
 
-        drawerMemoriesList.querySelectorAll('[data-del-mem]').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            await api.deleteMemory(btn.dataset.delMem);
-            await refreshRightDrawer(character, session);
-            showToast('Memory removed from SQL.');
-          });
+      drawerMemoriesList.querySelectorAll('[data-del-mem]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await api.deleteMemory(btn.dataset.delMem);
+          await refreshRightDrawer(character, session);
+          showToast('Memory removed from SQL.');
         });
-      } catch (err) {
-        console.warn('Memory load error:', err);
-      }
+      });
     }
 
     if (drawerSessionsList) {
-      const charSessions = await api.getChatSessions(character.id);
+      const charSessions = Array.isArray(appState.sessions) && appState.sessions.length > 0
+        ? appState.sessions.filter(s => s.characterId === character.id)
+        : await api.getChatSessions(character.id);
       drawerSessionsList.innerHTML = charSessions.map(s => `
         <div class="memory-item" style="cursor: pointer; ${s.id === session?.id ? 'border-color: var(--accent);' : ''}" data-switch-session="${escapeHtml(s.id)}">
           <div>

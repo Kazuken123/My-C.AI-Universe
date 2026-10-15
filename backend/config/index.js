@@ -17,8 +17,8 @@ export const config = {
 
   // AI Providers
   AI_PROVIDER: process.env.AI_PROVIDER || 'gemini',
-  GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
-  GEMINI_FALLBACK_MODEL: process.env.GEMINI_FALLBACK_MODEL || 'gemini-3.1-flash-lite',
+  GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+  GEMINI_FALLBACK_MODEL: process.env.GEMINI_FALLBACK_MODEL || 'gemini-2.0-flash',
   OLLAMA_URL: process.env.OLLAMA_URL || 'http://localhost:11434',
   OLLAMA_MODEL: process.env.OLLAMA_MODEL || 'qwen2.5:1.5b',
   MEMORY_SERVICE_URL: process.env.MEMORY_SERVICE_URL || 'http://localhost:5001',

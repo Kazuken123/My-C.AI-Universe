@@ -41,11 +41,11 @@ export class GeminiProvider extends BaseAIProvider {
   }
 
   get modelName() {
-    return process.env.GEMINI_MODEL || config.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+    return process.env.GEMINI_MODEL || config.GEMINI_MODEL || 'gemini-2.5-flash';
   }
 
   get fallbackModelName() {
-    return process.env.GEMINI_FALLBACK_MODEL || config.GEMINI_FALLBACK_MODEL || 'gemini-3.1-flash-lite';
+    return process.env.GEMINI_FALLBACK_MODEL || config.GEMINI_FALLBACK_MODEL || 'gemini-2.0-flash';
   }
 
   #getModelsToTry() {

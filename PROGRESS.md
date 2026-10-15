@@ -1,10 +1,10 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
-> **Current Version:** `v2.5.4`  
+> **Current Version:** `v2.5.5`  
 > **Status:** Production-Ready & Tested  
 > **Automated Test Coverage:** 22/22 E2E tests passing (`npm test`)  
 > **Primary Database:** Turso Cloud (LibSQL `@libsql/client`, AWS Tokyo `ap-northeast-1`)  
-> **Primary AI Engine:** Google Gemini (`gemini-3.5-flash-lite`, `gemini-2.5-flash`, `gemini-2.0-flash`) with native `systemInstruction` & fallback chain  
+> **Primary AI Engine:** Google Gemini (`gemini-2.5-flash`, `gemini-2.0-flash`) with native `systemInstruction` & fallback chain  
 > **Last Updated:** October 2026
 
 ---
@@ -19,7 +19,28 @@ This document serves as the **single source of truth** for project history, rece
 
 ## 🚀 Version History & Milestones
 
-### 🏷️ `v2.5.4` (Current) — O(1) Fast Message Append, Parallel Context Hydration & Non-Blocking Post-Turn Pipeline
+### 🏷️ `v2.5.5` (Current) — End-to-End Latency Elimination: Batch SQL, Lean Listing, Valid Model Fallback & Frontend Deduplication
+- **Eliminated N+1 Variant Loading in `ChatSessionRepository`**:
+  - Replaced the $M$-query sequential loop in `_hydrateSession` in [`backend/repositories/ChatSessionRepository.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/repositories/ChatSessionRepository.js) with a single batched query using `WHERE message_id IN (...)`, grouping variants in-memory via `Map`. Reduces variant hydration from $M$ network roundtrips down to exactly 1 query ($O(1)$).
+- **Lightweight Lean Session Listing (`findAllLean`)**:
+  - Added `findAllLean(characterId, userId)` in [`backend/repositories/ChatSessionRepository.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/repositories/ChatSessionRepository.js) using an aggregated SQL `LEFT JOIN` and correlated subquery to retrieve metadata, message counts, and last messages in a single query.
+  - Updated `getChatSessions` in [`backend/controllers/chat.controller.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/controllers/chat.controller.js) to call `findAllLean()`, reducing sidebar listing from 200+ SQL roundtrips ($O(S \times M)$) down to 2 SQL queries total.
+- **Fixed Model 404 Roundtrip Penalties in Gemini Provider**:
+  - Replaced non-existent model defaults (`gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`) with valid Google GenAI models (`gemini-2.5-flash`, `gemini-2.0-flash`) across [`backend/config/index.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/config/index.js), [`backend/ai/providers/gemini.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/providers/gemini.js), and local `.env`. Eliminates two failed 404 requests (1.0–2.0s wasted latency) before the first token.
+- **Deduplicated Auth Middleware**:
+  - Added fast guard `if (req.user !== undefined) return next();` in [`backend/middlewares/auth.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/middlewares/auth.js) `optionalAuth`, preventing duplicate `users` SQL lookups when `requireAuth` runs downstream of global `optionalAuth`.
+- **Parallelized Controller Lookups & Reduced AI Queue Delay**:
+  - Concurrently hydrated character, session, and active persona lookups via `Promise.all` in [`backend/controllers/chat.controller.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/controllers/chat.controller.js) `sendChatMessage` and `createChatSession`.
+  - Decreased artificial inter-request delay in [`backend/ai/index.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/ai/index.js) queue from 350ms to 50ms.
+- **Frontend In-Flight Deduplication, Cache & Optimistic UI**:
+  - Added in-flight request sharing and a 3-second cache TTL to `loadAllSessions()` in [`frontend/js/chat.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/js/chat.js).
+  - Parallelized initial character and session fetching in `openChatWithCharacter()`.
+  - Added `updateLocalSessionPreview()` for instant ($0\text{ ms}$) in-memory sidebar updates upon stream finish, eliminating the redundant post-turn `loadAllSessions()` cascade.
+  - Consolidated duplicate `getMemories()` calls into a single shared invocation in `refreshRightDrawer()`.
+- **Automated Verification**:
+  - 22/22 E2E integration, SQL security, and API tests verified passing against live Turso Cloud database.
+
+### 🏷️ `v2.5.4` — O(1) Fast Message Append, Parallel Context Hydration & Non-Blocking Post-Turn Pipeline
 - **O(1) Incremental Chat Message & Variant SQL Persistence**:
   - Implemented `appendMessages(session, newMessages)` and `appendVariant(session, message, newVariant)` in [`backend/repositories/ChatSessionRepository.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/repositories/ChatSessionRepository.js).
   - Eliminated $O(N)$ full-history rewrites on remote Turso Cloud (`ap-northeast-1`) that previously executed 60–100+ SQL round-trips per chat turn by executing targeted batch `INSERT`s strictly for new messages and new variants.

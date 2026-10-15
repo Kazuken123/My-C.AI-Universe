@@ -95,25 +95,24 @@ export class ChatController extends BaseController {
       }
       const characters = await this.charsRepo.findAll();
       const charMap = new Map(characters.map(c => [c.id, c]));
-      const sessions = await this.sessionsRepo.findAll(characterId || null, userId);
+      const rows = await this.sessionsRepo.findAllLean(characterId || null, userId);
 
-      const enriched = sessions.map(chat => {
-        const char = charMap.get(chat.characterId);
-        const lastMsg = chat.messages.length > 0 ? chat.messages[chat.messages.length - 1] : null;
+      const enriched = rows.map(row => {
+        const char = charMap.get(row.character_id);
         return {
-          id: chat.id,
-          userId: chat.userId,
-          characterId: chat.characterId,
+          id: row.id,
+          userId: row.user_id,
+          characterId: row.character_id,
           characterName: char ? char.name : 'Unknown Character',
           characterAvatar: char ? char.avatar : '',
           characterTagline: char ? char.tagline : '',
-          personaId: chat.personaId,
-          title: chat.title || (char ? `Chat with ${char.name}` : 'Chat'),
-          provider: chat.provider,
-          messageCount: chat.messages.length,
-          lastMessage: lastMsg ? lastMsg.content : '',
-          createdAt: chat.createdAt,
-          updatedAt: chat.updatedAt
+          personaId: row.persona_id,
+          title: row.title || (char ? `Chat with ${char.name}` : 'Chat'),
+          provider: row.provider,
+          messageCount: Number(row.message_count) || 0,
+          lastMessage: row.last_message || '',
+          createdAt: row.created_at,
+          updatedAt: row.updated_at
         };
       });
 
@@ -131,14 +130,16 @@ export class ChatController extends BaseController {
         throw new ValidationError('characterId is required', 'characterId');
       }
 
-      const character = await this.charsRepo.findById(characterId);
+      const [character, activePersona] = await Promise.all([
+        this.charsRepo.findById(characterId),
+        personaId
+          ? this.personasRepo.findById(personaId, userId)
+          : this.personasRepo.findDefault(userId)
+      ]);
+
       if (!character) {
         throw new NotFoundError('Character not found');
       }
-
-      const activePersona =
-        (personaId && (await this.personasRepo.findById(personaId, userId))) ||
-        (await this.personasRepo.findDefault(userId));
 
       const session = this.#createNewSessionEntity(
         character,
@@ -297,7 +298,16 @@ export class ChatController extends BaseController {
         throw new ValidationError(`Message too long (max ${config.MAX_MESSAGE_LENGTH} characters)`, 'message');
       }
 
-      const character = await this.charsRepo.findById(charId);
+      const [character, sessionLookup, preloadedPersona] = await Promise.all([
+        this.charsRepo.findById(charId),
+        sessionId
+          ? this.sessionsRepo.findById(sessionId, userId)
+          : (userId ? this.sessionsRepo.findAll(charId, userId).then(arr => arr[0] || null) : Promise.resolve(null)),
+        personaId
+          ? this.personasRepo.findById(personaId, userId)
+          : this.personasRepo.findDefault(userId)
+      ]);
+
       if (!character) {
         throw new ValidationError('Character not found', 'charId');
       }
@@ -323,17 +333,14 @@ export class ChatController extends BaseController {
         });
       }
 
-      // Load or create ChatSession entity
-      let session = sessionId ? await this.sessionsRepo.findById(sessionId, userId) : null;
-      if (!session) {
-        const existingForChar = await this.sessionsRepo.findAll(charId, userId);
-        session = existingForChar[0] || null;
+      let session = sessionLookup;
+      let activePersona = preloadedPersona;
+      if (!activePersona && session?.personaId) {
+        activePersona = await this.personasRepo.findById(session.personaId, userId);
       }
-
-      const activePersona =
-        (personaId && (await this.personasRepo.findById(personaId, userId))) ||
-        (session?.personaId && (await this.personasRepo.findById(session.personaId, userId))) ||
-        (await this.personasRepo.findDefault(userId));
+      if (!activePersona) {
+        activePersona = await this.personasRepo.findDefault(userId);
+      }
 
       let isNewSession = false;
       if (!session) {
