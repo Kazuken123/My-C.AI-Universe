@@ -854,6 +854,11 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       }
 
       navigateTo('chat', false);
+      if (streamInner) {
+        streamInner.classList.remove('chat-stream-switching');
+        void streamInner.offsetWidth;
+        streamInner.classList.add('chat-stream-switching');
+      }
       renderChatHeader(character, session);
       renderChatStream(character, session);
       renderRelationshipBar(session, character);
@@ -1000,16 +1005,22 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         const variantText = msg.variants[nextIdx]?.text || msg.content;
         msg.content = variantText;
 
-        // 2. Instant in-place DOM update (0ms latency, zero flicker)
+        // 2. Instant in-place DOM update with directional slide animation
         const msgRow = streamInner.querySelector(`[data-msg-id="${msgId}"]`);
         if (msgRow) {
           const bubble = msgRow.querySelector(`[data-bubble-id="${msgId}"]`);
           if (bubble) {
+            bubble.classList.remove('take-slide-right', 'take-slide-left', 'take-reveal');
+            void bubble.offsetWidth;
+            bubble.classList.add(dir > 0 ? 'take-slide-right' : 'take-slide-left');
             bubble.innerHTML = formatRoleplayText(variantText);
           }
           const badge = msgRow.querySelector('.take-switcher-badge');
           if (badge) {
             badge.innerHTML = `<i class="ph-light ph-film-slate"></i> Take ${nextIdx + 1}/${msg.variants.length}`;
+            badge.classList.remove('is-popping');
+            void badge.offsetWidth;
+            badge.classList.add('is-popping');
           }
           const prevBtn = msgRow.querySelector('[data-swipe-dir="-1"]');
           if (prevBtn) prevBtn.disabled = (nextIdx <= 0);
@@ -1180,7 +1191,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     const modelRow = document.createElement('div');
     modelRow.className = 'msg-row model';
     modelRow.innerHTML = `
-      <img class="msg-avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(character.name)}" />
+      <img class="msg-avatar is-generating" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(character.name)}" />
       <div class="msg-body">
         <div class="msg-sender-line">
           <span class="msg-sender-name">${escapeHtml(character.name)}</span>
@@ -1240,6 +1251,12 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
           updateLocalSessionPreview(updatedSession.id, donePayload.response || accumulatedText);
           refreshRightDrawer(appState.activeCharacter, updatedSession).catch(() => {});
 
+          const lastModelRow = streamInner?.querySelector('.msg-row.model:last-of-type');
+          const lastModelBubble = lastModelRow?.querySelector('.msg-bubble');
+          if (lastModelBubble) {
+            lastModelBubble.classList.add('take-reveal');
+          }
+
           if (autoSpeakTTS && donePayload.response) {
             speakText(donePayload.response);
           }
@@ -1260,6 +1277,12 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         renderRelationshipBar(updatedSession, appState.activeCharacter);
         updateLocalSessionPreview(updatedSession.id, accumulatedText);
         refreshRightDrawer(appState.activeCharacter, updatedSession).catch(() => {});
+
+        const lastModelRow = streamInner?.querySelector('.msg-row.model:last-of-type');
+        const lastModelBubble = lastModelRow?.querySelector('.msg-bubble');
+        if (lastModelBubble) {
+          lastModelBubble.classList.add('take-reveal');
+        }
       }
     } catch (streamError) {
       console.warn('[CHAT] Stream fallback:', streamError.message);
@@ -1286,6 +1309,12 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         renderRelationshipBar(updatedSession, appState.activeCharacter);
         updateLocalSessionPreview(updatedSession.id, fallbackRes.response || text);
         refreshRightDrawer(appState.activeCharacter, updatedSession).catch(() => {});
+
+        const lastFallbackRow = streamInner?.querySelector('.msg-row.model:last-of-type');
+        const lastFallbackBubble = lastFallbackRow?.querySelector('.msg-bubble');
+        if (lastFallbackBubble) {
+          lastFallbackBubble.classList.add('take-reveal');
+        }
 
         if (autoSpeakTTS && fallbackRes.response) {
           speakText(fallbackRes.response);
@@ -1321,7 +1350,27 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     isSending = true;
     if (btnElement) {
       btnElement.disabled = true;
+      btnElement.classList.add('is-spinning');
     }
+
+    const targetRow = streamInner?.querySelector(`[data-msg-id="${targetModelMsg.id}"]`);
+    const targetBubble = targetRow?.querySelector(`[data-bubble-id="${targetModelMsg.id}"]`);
+    const avatarEl = targetRow?.querySelector('.msg-avatar');
+
+    if (targetBubble) {
+      targetBubble.classList.add('is-reshooting');
+      targetBubble.innerHTML = `
+        <div class="reshoot-status-badge">
+          <i class="ph-bold ph-arrows-clockwise spinning"></i>
+          <span>${escapeHtml(character.name)} is reshooting take ${targetModelMsg.variants.length + 1}<span class="typing-dots"><span></span><span></span><span></span></span></span>
+          <span class="stream-cursor">▌</span>
+        </div>
+      `;
+    }
+    if (avatarEl) {
+      avatarEl.classList.add('is-generating');
+    }
+    scrollToBottom();
 
     try {
       const activeVariantText = (targetModelMsg.variants && targetModelMsg.variants[targetModelMsg.selectedVariantIndex]?.text) || targetModelMsg.content;
@@ -1343,12 +1392,28 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       renderChatStream(character, updatedSession);
       renderRelationshipBar(updatedSession, character);
 
+      // Animate the newly synthesized take with a smooth entrance
+      const newTargetRow = streamInner?.querySelector(`[data-msg-id="${targetModelMsg.id}"]`);
+      const newTargetBubble = newTargetRow?.querySelector(`[data-bubble-id="${targetModelMsg.id}"]`);
+      if (newTargetBubble) {
+        newTargetBubble.classList.add('take-slide-right');
+      }
+      const badge = newTargetRow?.querySelector('.take-switcher-badge');
+      if (badge) {
+        badge.classList.add('is-popping');
+      }
+
       if (autoSpeakTTS && result.response) {
         speakText(result.response);
       }
     } catch (error) {
+      renderChatStream(character, session);
       showToast('Failed to regenerate variant: ' + error.message);
     } finally {
+      if (btnElement) {
+        btnElement.classList.remove('is-spinning');
+        btnElement.disabled = false;
+      }
       isSending = false;
     }
   }
@@ -1363,12 +1428,20 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     const lastMsg = messages[messages.length - 1];
     isSending = true;
 
+    const avatarUrl = character.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(character.name)}`;
     const tempIndicator = document.createElement('div');
     tempIndicator.className = 'msg-row model';
     tempIndicator.innerHTML = `
-      <img class="msg-avatar" src="${escapeHtml(character.avatar || '')}" alt="" />
+      <img class="msg-avatar is-generating" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(character.name)}" />
       <div class="msg-body">
-        <div class="msg-bubble"><em>*${escapeHtml(character.name)} advances the scene...*</em></div>
+        <div class="msg-sender-line">
+          <span class="msg-sender-name">${escapeHtml(character.name)}</span>
+          <span class="soul-id-badge" style="font-size: 0.6rem; padding: 1px 6px;"><span class="soul-dot"></span>SOUL-ID</span>
+        </div>
+        <div class="msg-bubble streaming-bubble">
+          <em>*${escapeHtml(character.name)} advances the moment<span class="typing-dots"><span></span><span></span><span></span></span>*</em>
+          <span class="stream-cursor">▌</span>
+        </div>
       </div>
     `;
     streamInner.appendChild(tempIndicator);
@@ -1396,6 +1469,12 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       renderRelationshipBar(updatedSession, character);
       updateLocalSessionPreview(updatedSession.id, result.response || '');
       refreshRightDrawer(character, updatedSession).catch(() => {});
+
+      const lastModelRow = streamInner?.querySelector('.msg-row.model:last-of-type');
+      const lastModelBubble = lastModelRow?.querySelector('.msg-bubble');
+      if (lastModelBubble) {
+        lastModelBubble.classList.add('take-reveal');
+      }
 
       if (autoSpeakTTS && result.response) {
         speakText(result.response);

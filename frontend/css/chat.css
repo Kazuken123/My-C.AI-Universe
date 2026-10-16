@@ -1424,5 +1424,205 @@ kbd {
   }
 }
 
+/* ============================================================================
+   TACTILE MICRO-INTERACTIONS & CHAT DYNAMICS ANIMATIONS
+   - Reshoot / Retry Spinning & Shimmer
+   - Directional Variant Swiping (Take Slides Left / Right)
+   - Stream Entrance & Thread Switching Transition
+   - Advanced / Continuation Typing Pulse
+   ============================================================================ */
+
+/* 1. Retry / Reshoot Button Spinning */
+@keyframes spinClockwise {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.swipe-btn.is-spinning i,
+.swipe-btn.spinning i,
+.spinning {
+  display: inline-block;
+  animation: spinClockwise 0.75s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* 2. Regenerating / Reshooting Bubble State */
+.msg-bubble.is-reshooting {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--accent, #a78bfa) !important;
+  box-shadow: 0 0 16px rgba(167, 139, 250, 0.15), inset 0 0 12px rgba(167, 139, 250, 0.05);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.msg-bubble.is-reshooting::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(167, 139, 250, 0.08) 50%,
+    transparent 100%
+  );
+  animation: shimmerSweep 1.5s infinite;
+  pointer-events: none;
+}
+
+@keyframes shimmerSweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.reshoot-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent, #a78bfa);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+
+/* 3. Take Reveal / Directional Swiping Transitions */
+@keyframes takeSlideInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(18px) scale(0.99);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes takeSlideInLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-18px) scale(0.99);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes takeRevealFade {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.msg-bubble.take-slide-right {
+  animation: takeSlideInRight 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.msg-bubble.take-slide-left {
+  animation: takeSlideInLeft 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.msg-bubble.take-reveal {
+  animation: takeRevealFade 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Take Switcher Badge Spring Pop */
+@keyframes badgePop {
+  0% { transform: scale(0.94); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.take-switcher-badge.is-popping {
+  animation: badgePop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* 4. Chat Thread Switching Smooth Transition */
+@keyframes chatStreamSwitchIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chat-stream-switching {
+  animation: chatStreamSwitchIn 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* 5. Continuation / Advance Scene Typing Dots */
+.typing-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 2px;
+}
+
+.typing-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--accent, #a78bfa);
+  display: inline-block;
+  animation: typingBounce 1.2s infinite ease-in-out both;
+}
+
+.typing-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0s;
+}
+
+@keyframes typingBounce {
+  0%, 80%, 100% {
+    transform: scale(0.5);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+/* Avatar subtle breathing pulse when generating */
+.msg-avatar.is-generating {
+  animation: avatarPulseGlow 1.8s infinite ease-in-out;
+  border-color: var(--accent, #a78bfa);
+}
+
+@keyframes avatarPulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(167, 139, 250, 0);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(167, 139, 250, 0.35);
+  }
+}
+
 
 
