@@ -7,7 +7,7 @@ import {
 } from '../repositories/index.js';
 import { aiOrchestrator } from '../ai/index.js';
 import { memoryService } from '../services/memory.service.js';
-import { relationshipService } from '../services/relationship.service.js';
+import { relationshipService, createStreamTailFilter } from '../services/relationship.service.js';
 import { generateDefaultGreeting } from '../ai/prompt/characterPrompt.js';
 import { ValidationError, NotFoundError } from '../ai/errors.js';
 import { config } from '../config/index.js';
@@ -603,16 +603,22 @@ Rules:
         });
 
         let fullReply = '';
+        const tailFilter = createStreamTailFilter((safeChunk) => {
+          res.write(`data: ${JSON.stringify({ token: safeChunk })}\n\n`);
+        });
+
         try {
           for await (const chunk of this.orchestrator.chatStream(character.toJSON(), message.trim(), effectiveHistory, aiOptions)) {
             fullReply += chunk;
-            res.write(`data: ${JSON.stringify({ token: chunk })}\n\n`);
+            tailFilter.push(chunk);
           }
+          tailFilter.flush();
         } catch (streamErr) {
           console.warn('[CHAT CONTROLLER] Streaming fallback:', streamErr.message);
           if (!fullReply) {
             fullReply = await this.orchestrator.chat(character.toJSON(), message.trim(), effectiveHistory, aiOptions);
-            res.write(`data: ${JSON.stringify({ token: fullReply })}\n\n`);
+            const { cleanText: fallbackClean } = this.relationshipService.extractAndStripStateTag(fullReply);
+            res.write(`data: ${JSON.stringify({ token: fallbackClean })}\n\n`);
           }
         }
 

@@ -52,10 +52,7 @@ export class GeminiProvider extends BaseAIProvider {
   #getModelsToTry() {
     const candidates = [
       this.modelName,
-      this.fallbackModelName,
-      'gemini-3.5-flash-lite',
-      'gemini-3.1-flash-lite',
-      'gemini-2.5-flash'
+      this.fallbackModelName
     ].filter(Boolean);
     return [...new Set(candidates)];
   }
@@ -136,55 +133,75 @@ export class GeminiProvider extends BaseAIProvider {
 
     for (let i = 0; i < modelsToTry.length; i++) {
       const currentModel = modelsToTry[i];
-      try {
-        const response = await ai.models.generateContent({
-          model: currentModel,
-          contents,
-          config: {
-            systemInstruction: systemPrompt,
-            temperature: options.isRegenerate ? 0.95 : 0.85,
-            safetySettings: PERMISSIVE_SAFETY_SETTINGS
+      let attempt = 0;
+      const maxRetries = 1;
+
+      while (attempt <= maxRetries) {
+        try {
+          const response = await ai.models.generateContent({
+            model: currentModel,
+            contents,
+            config: {
+              systemInstruction: systemPrompt,
+              temperature: options.isRegenerate ? 0.95 : 0.85,
+              safetySettings: PERMISSIVE_SAFETY_SETTINGS
+            }
+          });
+
+          if (response.promptFeedback?.blockReason) {
+            console.warn(`[GEMINI PROVIDER] Prompt blocked by Gemini safety filter: ${response.promptFeedback.blockReason}`);
+            throw new AIError(`Gemini safety filter triggered: ${response.promptFeedback.blockReason}`, 400);
           }
-        });
 
-        if (response.promptFeedback?.blockReason) {
-          console.warn(`[GEMINI PROVIDER] Prompt blocked by Gemini safety filter: ${response.promptFeedback.blockReason}`);
-          throw new AIError(`Gemini safety filter triggered: ${response.promptFeedback.blockReason}`, 400);
-        }
-
-        const candidate = response.candidates?.[0];
-        if (candidate?.finishReason && !['STOP', 'MAX_TOKENS'].includes(candidate.finishReason)) {
-          if (['SAFETY', 'PROHIBITED_CONTENT', 'BLOCKLIST', 'SPII'].includes(candidate.finishReason)) {
-            console.warn(`[GEMINI PROVIDER] Candidate blocked by safety filter: ${candidate.finishReason}`);
-            throw new AIError(`Gemini safety filter blocked response: ${candidate.finishReason}`, 400);
+          const candidate = response.candidates?.[0];
+          if (candidate?.finishReason && !['STOP', 'MAX_TOKENS'].includes(candidate.finishReason)) {
+            if (['SAFETY', 'PROHIBITED_CONTENT', 'BLOCKLIST', 'SPII'].includes(candidate.finishReason)) {
+              console.warn(`[GEMINI PROVIDER] Candidate blocked by safety filter: ${candidate.finishReason}`);
+              throw new AIError(`Gemini safety filter blocked response: ${candidate.finishReason}`, 400);
+            }
           }
+
+          const text = response.text?.trim();
+          if (!text) {
+            throw new AIError('Empty response from Gemini', 503);
+          }
+
+          return text;
+        } catch (error) {
+          lastError = error;
+
+          const isTransientError =
+            error.status === 503 ||
+            error.message?.includes('503') ||
+            error.message?.includes('high demand') ||
+            error.message?.includes('temporarily unavailable') ||
+            error.status === 429 ||
+            error.message?.includes('RESOURCE_EXHAUSTED');
+
+          if (isTransientError && attempt < maxRetries) {
+            attempt++;
+            console.warn(`[GEMINI PROVIDER] Transient error on '${currentModel}', retrying after 1500ms backoff (attempt ${attempt}/${maxRetries})...`);
+            await new Promise(res => setTimeout(res, 1500));
+            continue;
+          }
+
+          console.error(`[GEMINI PROVIDER ERROR] Model '${currentModel}':`, error.message);
+
+          const isAuthError =
+            error.message?.includes('API_KEY_INVALID') ||
+            error.message?.includes('API key not valid') ||
+            error.status === 401 ||
+            error.status === 403;
+
+          const isSafetyError = error.status === 400 && error.message?.includes('safety filter');
+
+          if (!isAuthError && !isSafetyError && i < modelsToTry.length - 1) {
+            const nextModel = modelsToTry[i + 1];
+            console.warn(`[GEMINI PROVIDER] Model '${currentModel}' failed (${error.status || 'ERR'}). Falling back to '${nextModel}'...`);
+          }
+
+          break;
         }
-
-        const text = response.text?.trim();
-        if (!text) {
-          throw new AIError('Empty response from Gemini', 503);
-        }
-
-        return text;
-      } catch (error) {
-        lastError = error;
-        console.error(`[GEMINI PROVIDER ERROR] Model '${currentModel}':`, error.message);
-
-        const isAuthError =
-          error.message?.includes('API_KEY_INVALID') ||
-          error.message?.includes('API key not valid') ||
-          error.status === 401 ||
-          error.status === 403;
-
-        const isSafetyError = error.status === 400 && error.message?.includes('safety filter');
-
-        if (!isAuthError && !isSafetyError && i < modelsToTry.length - 1) {
-          const nextModel = modelsToTry[i + 1];
-          console.warn(`[GEMINI PROVIDER] Model '${currentModel}' failed (${error.status || 'ERR'}). Falling back to '${nextModel}'...`);
-          continue;
-        }
-
-        break;
       }
     }
 
@@ -213,41 +230,68 @@ export class GeminiProvider extends BaseAIProvider {
 
     for (let i = 0; i < modelsToTry.length; i++) {
       const currentModel = modelsToTry[i];
-      try {
-        const stream = await ai.models.generateContentStream({
-          model: currentModel,
-          contents,
-          config: {
-            systemInstruction: systemPrompt,
-            temperature: options.isRegenerate ? 0.95 : 0.85,
-            safetySettings: PERMISSIVE_SAFETY_SETTINGS
+      let attempt = 0;
+      const maxRetries = 1;
+      let hasYielded = false;
+
+      while (attempt <= maxRetries) {
+        try {
+          const stream = await ai.models.generateContentStream({
+            model: currentModel,
+            contents,
+            config: {
+              systemInstruction: systemPrompt,
+              temperature: options.isRegenerate ? 0.95 : 0.85,
+              safetySettings: PERMISSIVE_SAFETY_SETTINGS
+            }
+          });
+
+          for await (const chunk of stream) {
+            const text = chunk.text;
+            if (text) {
+              hasYielded = true;
+              yield text;
+            }
           }
-        });
+          return;
+        } catch (err) {
+          lastError = err;
 
-        for await (const chunk of stream) {
-          const text = chunk.text;
-          if (text) {
-            yield text;
+          if (hasYielded) {
+            console.error(`[GEMINI PROVIDER:STREAM] ${currentModel} stream interrupted mid-stream:`, err.message);
+            throw new AIError(err.message || 'Stream interrupted mid-generation', 503, err);
           }
+
+          const isTransientError =
+            err.status === 503 ||
+            err.message?.includes('503') ||
+            err.message?.includes('high demand') ||
+            err.message?.includes('temporarily unavailable') ||
+            err.status === 429 ||
+            err.message?.includes('RESOURCE_EXHAUSTED');
+
+          if (isTransientError && attempt < maxRetries) {
+            attempt++;
+            console.warn(`[GEMINI PROVIDER:STREAM] Transient error on '${currentModel}', retrying after 1500ms backoff (attempt ${attempt}/${maxRetries})...`);
+            await new Promise(res => setTimeout(res, 1500));
+            continue;
+          }
+
+          console.warn(`[GEMINI PROVIDER:STREAM] ${currentModel} stream failed:`, err.message);
+
+          const isAuthError =
+            err.message?.includes('API_KEY_INVALID') ||
+            err.message?.includes('API key not valid') ||
+            err.status === 401 ||
+            err.status === 403;
+
+          if (!isAuthError && i < modelsToTry.length - 1) {
+            const nextModel = modelsToTry[i + 1];
+            console.warn(`[GEMINI PROVIDER:STREAM] Falling back to '${nextModel}'...`);
+          }
+
+          break;
         }
-        return;
-      } catch (err) {
-        lastError = err;
-        console.warn(`[GEMINI PROVIDER:STREAM] ${currentModel} stream failed:`, err.message);
-
-        const isAuthError =
-          err.message?.includes('API_KEY_INVALID') ||
-          err.message?.includes('API key not valid') ||
-          err.status === 401 ||
-          err.status === 403;
-
-        if (!isAuthError && i < modelsToTry.length - 1) {
-          const nextModel = modelsToTry[i + 1];
-          console.warn(`[GEMINI PROVIDER:STREAM] Falling back to '${nextModel}'...`);
-          continue;
-        }
-
-        break;
       }
     }
 

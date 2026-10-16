@@ -98,9 +98,9 @@ export class AIOrchestrator {
       rawText.startsWith('[');
 
     const continuationBeats = [
-      `*${name} stays close and observes in the quiet moment, keeping watch over ${userName}.*\n\n${name}: "I'm right here with you. Just take your time, ${userName}."`,
-      `*${name} glances softly at ${userName}, letting the quiet air linger for a beat.*\n\n${name}: "No rush at all. We have plenty of time, ${userName}."`,
-      `*${name} gently shifts position in the quiet room, keeping a warm presence beside ${userName}.*\n\n${name}: "I'm not going anywhere. Take as much time as you need."`
+      `*${name} stays close in the quiet moment, letting the air settle before looking over at ${userName}.*`,
+      `*${name} glances toward ${userName}, waiting patiently to see where the moment leads.*`,
+      `*${name} shifts slightly in the calm atmosphere, keeping a steady presence beside ${userName}.*`
     ];
 
     if (isDirective) {
@@ -111,10 +111,10 @@ export class AIOrchestrator {
     }
 
     const replyBeats = [
-      `*${name} turns toward ${userName}, meeting their gaze with steady attention.*\n\n${name}: "Go on, ${userName}. I'm listening—tell me what's on your mind."`,
-      `*${name} pauses for a brief moment, considering ${userName}'s words carefully before offering a faint nod.*\n\n${name}: "I see what you mean, ${userName}. Let's talk this through."`,
-      `*${name} takes a slow breath and steps a little closer, focusing entirely on ${userName}.*\n\n${name}: "You have my full attention, ${userName}. What happens next?"`,
-      `*${name} tilts their head slightly, a thoughtful expression crossing their face as they look at ${userName}.*\n\n${name}: "That caught my attention, ${userName}. Tell me more."`
+      `*${name} pauses for a beat, looking at ${userName} with a thoughtful glance.*`,
+      `*${name} blinks, caught slightly off guard, before steadying their focus on ${userName}.*`,
+      `*${name} lets out a quiet breath, meeting ${userName}'s eyes as the room settles.*`,
+      `*${name} shifts slightly, watching ${userName} with curiosity to see what they will do next.*`
     ];
 
     const excluded = Array.isArray(options.excludeVariants) ? options.excludeVariants : [];

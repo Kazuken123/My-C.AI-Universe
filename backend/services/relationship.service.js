@@ -8,6 +8,280 @@
  * 3. Stage Hysteresis: Prevents established Lovers or Close Friends from being demoted to lower stages
  *    during temporary arguments unless sustained strain or betrayal occurs.
  */
+// Persona receptivity profiles:
+// pacing:
+// - 'slow_burn' (Mưa dầm thấm lâu): Affinity bị khóa theo Trust. Hành động cơ bản chỉ tích lũy Trust trước.
+// - 'guarded' (Lạnh lùng / Khó gần): Tăng cực chậm ở đầu, đòi hỏi Trust rất cao mới mở lòng.
+// - 'spark_prone' (Dễ trúng tiếng sét ái tình): Tử tế cơ bản vẫn không ăn thua, nhưng nếu chạm đúng khoảnh khắc cao trào (high_stakes) sẽ bùng nổ cảm xúc.
+export const PERSONA_RECEPTIVITY = {
+  // Kana: Mưa dầm thấm lâu điển hình — ngoài miệng sắc sảo, cần sự đồng hành và tin tưởng bền bỉ mới dám yêu
+  '1766394139616': {
+    pacing: 'slow_burn',
+    flatteryMultiplier: 0.4,
+    actionMultiplier: 1.2,
+    earlyStageArmor: 0.85,
+    deepIntimacyArmor: 0.6,
+    minTrustForCrush: 50,      // Phải tích lũy đủ Trust >= 50 qua thời gian mới lên được Crush
+    maxAffinityLeadOverTrust: 12 // Affinity không bao giờ vượt quá Trust + 12 điểm
+  },
+  // Gojo: Dễ thân lúc đầu (bạn bè), nhưng cực kỳ khó chạm tới trái tim thật (cần thời gian + biến cố lớn)
+  '1766160797313': {
+    pacing: 'guarded',
+    flatteryMultiplier: 0.25,
+    actionMultiplier: 0.9,
+    earlyStageArmor: 1.3,
+    deepIntimacyArmor: 0.35,
+    minTrustForCrush: 60,      // Đòi hỏi sự tin tưởng tuyệt đối mới mở lòng yêu
+    maxAffinityLeadOverTrust: 15
+  },
+  // Mẫu nhân vật "Tiếng sét ái tình" (có thể gán ID nhân vật lãng mạn vào đây)
+  spark_archetype: {
+    pacing: 'spark_prone',
+    flatteryMultiplier: 0.6,
+    actionMultiplier: 1.15,
+    earlyStageArmor: 1.0,
+    deepIntimacyArmor: 0.8,
+    minTrustForCrush: 25,      // Có thể rung động (Crush) ngay cả khi Trust còn thấp
+    maxAffinityLeadOverTrust: 35 // Cho phép Affinity vượt xa Trust khi trúng "tiếng sét ái tình"
+  },
+  default: {
+    pacing: 'slow_burn',
+    flatteryMultiplier: 0.5,
+    actionMultiplier: 1.0,
+    earlyStageArmor: 0.9,
+    deepIntimacyArmor: 0.7,
+    minTrustForCrush: 45,
+    maxAffinityLeadOverTrust: 15
+  }
+};
+
+const EFFORT_RANK = { none: 0, low: 1, meaningful: 2, milestone: 3 };
+
+export const STAGE_GATES = [
+  { name: 'Stranger / Neutral',        min: 0,  max: 14, ceilingCap: 14, breakthroughEffort: 'low',        requireMilestoneIntent: false, minTrust: 0  },
+  { name: 'Acquaintance / Comrade',    min: 15, max: 39, ceilingCap: 39, breakthroughEffort: 'low',        requireMilestoneIntent: false, minTrust: 12 },
+  { name: 'Close Friend / Confidant',  min: 40, max: 59, ceilingCap: 58, breakthroughEffort: 'meaningful', requireMilestoneIntent: false, minTrust: 30 },
+  { name: 'Crush / Infatuated',        min: 60, max: 74, ceilingCap: 73, breakthroughEffort: 'milestone',  requireMilestoneIntent: true,  minTrust: 50 },
+  { name: 'Deep Love / Devoted',       min: 75, max: 89, ceilingCap: 88, breakthroughEffort: 'milestone',  requireMilestoneIntent: true,  minTrust: 70 },
+  { name: 'Obsessed / Possessive',     min: 90, max: 100, ceilingCap: 100, breakthroughEffort: 'milestone', requireMilestoneIntent: true,  minTrust: 80 }
+];
+
+export function isPassiveOrMaintenanceTurn(relState = {}, userMessageText = '') {
+  const effort = relState.userEffort || 'low';
+  const intent = relState.intent || 'stage_maintenance';
+  const userText = String(userMessageText || '').trim();
+  const wordCount = userText.split(/\s+/).filter(Boolean).length;
+  const hasAsteriskAction = /\*[^*]+\*/.test(userText);
+
+  if (intent === 'stage_maintenance' || effort === 'none') return true;
+  if (wordCount <= 4 && !hasAsteriskAction && effort !== 'milestone') return true;
+  return false;
+}
+
+/**
+ * Deterministic Multi-Factor Evaluation:
+ * Returns { affinityDelta, trustBonus, sparkTriggered } so basic actions can build Trust over time ("Mưa dầm thấm lâu")
+ * when Affinity is capped by time/stage limits.
+ */
+export function computeContextualProgression({
+  characterId = '',
+  currentAffinity = 0,
+  currentTrust,
+  relState = {},
+  userMessageText = ''
+}) {
+  let rawDelta = Number(relState.affinityDelta) || 0;
+  if (rawDelta <= 0) {
+    return { affinityDelta: rawDelta, trustBonus: 0, sparkTriggered: false };
+  }
+
+  const effectiveTrust = (currentTrust !== undefined && currentTrust !== null)
+    ? Number(currentTrust)
+    : currentAffinity;
+
+  const profile = PERSONA_RECEPTIVITY[characterId] || PERSONA_RECEPTIVITY.default;
+  const effort = relState.userEffort || 'low';
+  const stakes = relState.contextStakes || 'mundane';
+  const intent = relState.intent || 'stage_maintenance';
+
+  // 1. User-Agency & Passive Turn Guard
+  if (isPassiveOrMaintenanceTurn(relState, userMessageText)) {
+    return { affinityDelta: 0, trustBonus: 0, sparkTriggered: false };
+  }
+
+  // 2. BASIC ACTION SATURATION (Chống cày điểm bằng hành động tử tế cơ bản):
+  // Khi đã là Bạn thân (Affinity >= 45), những hành động đời thường (mundane) hoặc lời nói xã giao (low)
+  // KHÔNG làm tăng tình yêu (Affinity = 0), mà chỉ bồi đắp niềm tin (Trust +1) -> Đúng chất "Mưa dầm thấm lâu"!
+  if (currentAffinity >= 45 && stakes === 'mundane' && effort !== 'milestone') {
+    return {
+      affinityDelta: 0,
+      trustBonus: effort === 'meaningful' ? 1 : 0,
+      sparkTriggered: false
+    };
+  }
+
+  // 3. CƠ CHẾ "TIẾNG SÉT ÁI TÌNH" (Coup de Foudre / Rare Spark):
+  // Chỉ kích hoạt khi: Đang ở giai đoạn đầu (< 55), nhưng User tạo ra một khoảnh khắc Đột phá (milestone)
+  // trong bối cảnh Cao trào (high_stakes).
+  const isLoveAtFirstSightSpark =
+    currentAffinity < 55 &&
+    effort === 'milestone' &&
+    stakes === 'high_stakes' &&
+    (intent === 'milestone_breakthrough' || intent === 'rupture_repair' || intent === 'affection_or_support');
+
+  if (isLoveAtFirstSightSpark) {
+    if (profile.pacing === 'spark_prone') {
+      // Nhân vật dễ trúng tiếng sét ái tình: Bùng nổ rung động (+8), nhảy thẳng vào vùng chớm Crush
+      return { affinityDelta: 8, trustBonus: 2, sparkTriggered: true };
+    }
+    if (profile.pacing === 'slow_burn') {
+      // Nhân vật mưa dầm thấm lâu: Bị chấn động tâm lý (+4 Affinity, +4 Trust), ấn tượng sâu sắc nhưng chưa yêu ngay
+      return { affinityDelta: 4, trustBonus: 4, sparkTriggered: true };
+    }
+    // Nhân vật lạnh lùng / phòng thủ cao (guarded): Chỉ mở khóa sự chú ý (+2 Affinity, +3 Trust)
+    return { affinityDelta: 2, trustBonus: 3, sparkTriggered: false };
+  }
+
+  // 4. Effort Base Cap cho các lượt tương tác bình thường
+  const effortCaps = { none: 0, low: 1.0, meaningful: 2.2, milestone: 4.0 };
+  rawDelta = Math.min(rawDelta, effortCaps[effort] ?? 1.0);
+
+  // 5. Context Stakes Multiplier
+  const stakesMultiplier = stakes === 'high_stakes' ? 1.35 : stakes === 'shared_moment' ? 1.0 : 0.5;
+
+  // 6. Persona Armor Multiplier
+  const stageArmor = currentAffinity >= 45 ? profile.deepIntimacyArmor : profile.earlyStageArmor;
+  const actionTypeMult = effort === 'low' ? profile.flatteryMultiplier : profile.actionMultiplier;
+
+  // 7. Crush Resonance Boost (rung động bên trong vùng Crush 60-73)
+  const inCrushBand = currentAffinity >= 60 && currentAffinity <= 73;
+  const crushResonance = (inCrushBand && (effort === 'meaningful' || effort === 'milestone')) ? 1.2 : 1.0;
+
+  let scaledDelta = rawDelta * stakesMultiplier * stageArmor * actionTypeMult * crushResonance;
+  let roundedDelta = Math.round(scaledDelta);
+  if (roundedDelta === 0) {
+    if (effort === 'milestone') {
+      roundedDelta = 1;
+    } else if (effort === 'meaningful' && stakes !== 'mundane') {
+      roundedDelta = 1;
+    } else if (effort === 'low' && currentAffinity < 60 && stakes !== 'mundane') {
+      roundedDelta = 1;
+    }
+  }
+
+  let trustBonus = 0;
+
+  // 8. RÀNG BUỘC "MƯA DẦM THẤM LÂU" (Trust-Gated Affinity):
+  // Affinity không được phép bỏ xa Trust quá mức cho phép của từng tính cách.
+  // Nếu Affinity chạm trần của Trust, điểm dư sẽ chuyển thành Trust Bonus (bồi đắp niềm tin trước!).
+  const maxAllowedByTrust = effectiveTrust + (profile.maxAffinityLeadOverTrust ?? 15);
+  if (currentAffinity + roundedDelta > maxAllowedByTrust) {
+    const allowedAff = Math.max(0, maxAllowedByTrust - currentAffinity);
+    if (roundedDelta > allowedAff) {
+      trustBonus = 1;
+    }
+    roundedDelta = allowedAff;
+    if (roundedDelta === 0) {
+      return { affinityDelta: 0, trustBonus, sparkTriggered: false };
+    }
+  }
+
+  // 9. Stage Equilibrium & Hard Ceiling Gate (Kiểm tra cả Effort, Intent VÀ MinTrust để qua màn)
+  const currentGate = STAGE_GATES.find(g => currentAffinity >= g.min && currentAffinity <= g.max);
+  if (currentGate) {
+    if (currentAffinity >= 60 && effort === 'low') {
+      return { affinityDelta: 0, trustBonus: 0, sparkTriggered: false };
+    }
+
+    const projected = currentAffinity + roundedDelta;
+    const requiredTrustForNextStage =
+      currentGate.name === 'Close Friend / Confidant'
+        ? Math.max(currentGate.minTrust, profile.minTrustForCrush ?? 50)
+        : currentGate.minTrust;
+
+    const meetsEffort = (EFFORT_RANK[effort] ?? 0) >= (EFFORT_RANK[currentGate.breakthroughEffort] ?? 1);
+    const meetsIntent = !currentGate.requireMilestoneIntent || intent === 'milestone_breakthrough';
+    const meetsTrust = effectiveTrust >= requiredTrustForNextStage;
+    const isBreakthrough = meetsEffort && meetsIntent && meetsTrust;
+
+    if (projected > currentGate.ceilingCap) {
+      if (!isBreakthrough) {
+        // Nếu bị chặn lại ở cổng (ví dụ: ở 58 Close Friend vì chưa đủ Trust = 50 để lên Crush),
+        // khóa Affinity ở 58 nhưng cộng +1 Trust để "mưa dầm thấm lâu" dần dần mở cổng!
+        const clampedAff = Math.max(0, currentGate.ceilingCap - currentAffinity);
+        return {
+          affinityDelta: clampedAff,
+          trustBonus: !meetsTrust ? 1 : trustBonus,
+          sparkTriggered: false
+        };
+      }
+      const targetMax = Math.min(100, currentGate.max + 1);
+      const minToCrossStage = targetMax - currentAffinity;
+      if (roundedDelta < minToCrossStage) {
+        return { affinityDelta: minToCrossStage, trustBonus: 1, sparkTriggered: false };
+      }
+    }
+  }
+
+  return { affinityDelta: roundedDelta, trustBonus, sparkTriggered: false };
+}
+
+export function computeContextualAffinityDelta(args) {
+  return computeContextualProgression(args).affinityDelta;
+}
+
+/**
+ * Stream tail holdback buffer to eliminate [[REL_STATE: ...]] tag flicker during SSE streaming.
+ * Holds back potential tag prefixes at chunk boundaries and suppresses the entire tag when detected.
+ * @param {Function} emit - Callback receiving safe text chunks to forward to SSE client
+ */
+export function createStreamTailFilter(emit) {
+  let pendingTail = '';
+  let insideRelStateTag = false;
+
+  return {
+    push(incomingChunk) {
+      if (!incomingChunk) return;
+      pendingTail += incomingChunk;
+
+      const lower = pendingTail.toLowerCase();
+      if (insideRelStateTag || lower.includes('[[rel_state')) {
+        insideRelStateTag = true;
+        const prefixIndex = lower.indexOf('[[rel_state');
+        if (prefixIndex > 0) {
+          const preText = pendingTail.slice(0, prefixIndex);
+          if (preText.trim()) {
+            emit(preText);
+          }
+          pendingTail = pendingTail.slice(prefixIndex);
+        }
+        return;
+      }
+
+      // Check if tail ends with the beginning of a potential tag (e.g., "\n\n[[", "[[REL_", "[")
+      const possibleTagStart = pendingTail.match(/(\n?\s*\[\[[A-Za-z_]*|\n?\s*\[)$/);
+      if (possibleTagStart) {
+        const safeLength = possibleTagStart.index;
+        if (safeLength > 0) {
+          emit(pendingTail.slice(0, safeLength));
+          pendingTail = pendingTail.slice(safeLength);
+        }
+        return;
+      }
+
+      emit(pendingTail);
+      pendingTail = '';
+    },
+    flush() {
+      // If the stream ended and the held tail was not a hidden tag, emit it
+      if (!insideRelStateTag && pendingTail.length > 0) {
+        emit(pendingTail);
+      }
+      pendingTail = '';
+    }
+  };
+}
+
 export class RelationshipService {
   static PRESETS = {
     nemesis: { affinity: -85, trust: -80, stage: 'Hatred / Nemesis', mood: 'Hostile' },
@@ -40,6 +314,8 @@ export class RelationshipService {
         if (parsed && typeof parsed === 'object') {
           llmState = {
             intent: typeof parsed.intent === 'string' ? parsed.intent.trim().toLowerCase() : null,
+            userEffort: typeof parsed.userEffort === 'string' ? parsed.userEffort.trim().toLowerCase() : 'low',
+            contextStakes: typeof parsed.contextStakes === 'string' ? parsed.contextStakes.trim().toLowerCase() : 'mundane',
             affinityDelta: Number.isFinite(Number(parsed.affinityDelta)) ? Number(parsed.affinityDelta) : null,
             trustDelta: Number.isFinite(Number(parsed.trustDelta)) ? Number(parsed.trustDelta) : null,
             strainDelta: Number.isFinite(Number(parsed.strainDelta)) ? Number(parsed.strainDelta) : null,
@@ -255,8 +531,28 @@ export class RelationshipService {
         strainDelta = Math.max(6, Math.min(15, rawStrain));
         mood = (strain + strainDelta >= 45) ? 'Hurt / Heartbroken' : 'Quarreling / Heated';
       } else {
-        affinityDelta = Math.max(-8, Math.min(5, rawAff));
-        trustDelta = Math.max(-8, Math.min(6, rawTrust));
+        let trustBonus = 0;
+        if (rawAff > 0) {
+          const progression = computeContextualProgression({
+            characterId: character.id,
+            currentAffinity: affinity,
+            currentTrust: trust,
+            relState: llmState,
+            userMessageText: userText
+          });
+          affinityDelta = progression.affinityDelta;
+          trustBonus = progression.trustBonus || 0;
+        } else {
+          affinityDelta = Math.max(-8, Math.min(0, rawAff));
+        }
+
+        if (rawTrust < 0) {
+          trustDelta = Math.max(-8, Math.min(0, rawTrust));
+        } else if (isPassiveOrMaintenanceTurn(llmState, userText)) {
+          trustDelta = 0;
+        } else {
+          trustDelta = Math.max(0, Math.min(6, rawTrust + trustBonus));
+        }
         strainDelta = Math.max(-25, Math.min(20, rawStrain));
 
         if (llmState.mood) {

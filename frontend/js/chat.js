@@ -3,10 +3,25 @@ import { escapeHtml, formatCount, bindSpotlightHover } from './characters.js';
 import { deduplicateSessionsByCharacter } from './common.js';
 
 /**
+ * Strips complete [[REL_STATE: ...]] tags AND any partial trailing tag
+ * currently being streamed (e.g., "[[", "[[REL_", "[[REL_STATE: {...").
+ */
+export function stripStreamingRelState(text) {
+  if (!text) return '';
+  return text
+    // 1. Strip complete [[REL_STATE: ...]] blocks anywhere in the text
+    .replace(/\s*\[\[REL_STATE:[\s\S]*?\]\]/gi, '')
+    // 2. Strip any incomplete trailing [[REL_STATE... prefix at the end of the stream
+    .replace(/\s*\[\[(?:R(?:E(?:L(?:_(?:S(?:T(?:A(?:T(?:E(?::[\s\S]*)?)?)?)?)?)?)?)?)?)?$/i, '')
+    .trimEnd();
+}
+
+/**
  * Format light-novel roleplay markup safely into HTML
  */
 export function formatRoleplayText(rawText) {
-  const safe = escapeHtml(rawText || '');
+  const sanitized = stripStreamingRelState(rawText);
+  const safe = escapeHtml(sanitized || '');
   return safe
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/\*([^*]+)\*/g, '<em>$1</em>')
