@@ -499,23 +499,20 @@ ${existingVariants.length > 0 ? `- Do NOT repeat previous takes:\n${existingVari
           reply = await this.orchestrator.chat(character.toJSON(), precedingUserMsg, historyBeforeLastModel, regenOptions);
         }
 
+        const { cleanText, llmState } = this.relationshipService.extractAndStripStateTag(reply);
+
         let newVar = null;
         if (targetModelMsg) {
-          newVar = targetModelMsg.addVariant(reply);
+          newVar = targetModelMsg.addVariant(cleanText);
         }
         session.touch();
 
-        // Idempotency guard: alternative takes adapt immediate mood without compounding strain/affinity
-        const combinedAi = String(reply || '').toLowerCase();
-        if (/\b(trembles|shivers in fear|steps back in terror|afraid|terrified|scared|voice shaking|cowers)\b/i.test(combinedAi)) {
-          session.relationshipMood = 'Afraid';
-        } else if (/\b(lowers head|obeys quietly|submits|at your mercy|whispers obedien|nods meekly)\b/i.test(combinedAi)) {
-          session.relationshipMood = 'Submissive';
-        } else if (/\b(glares|scowls|tears well|voice cracks|turns away hurt|snaps back|crosses arms)\b/i.test(combinedAi)) {
-          session.relationshipMood = session.strain >= 45 ? 'Hurt / Heartbroken' : 'Guarded';
-        } else if (/\b(smiles warmly|blushes|laughs softly|leans closer|gentle smile|eyes soften)\b/i.test(combinedAi)) {
-          session.relationshipMood = 'Warm';
-        }
+        // Idempotency guard: resolve variant mood cleanly without altering affinity, trust, strain, or stage
+        session.relationshipMood = this.relationshipService.resolveRegenerateMood({
+          aiText: cleanText,
+          session,
+          llmState
+        });
 
         if (targetModelMsg && newVar) {
           await Promise.all([
@@ -527,7 +524,7 @@ ${existingVariants.length > 0 ? `- Do NOT repeat previous takes:\n${existingVari
         }
 
         return this.sendJson(res, {
-          response: reply || 'AI did not respond',
+          response: cleanText || 'AI did not respond',
           regenerated: true,
           sessionId: session.id,
           message: targetModelMsg ? targetModelMsg.toJSON() : null,
@@ -561,19 +558,20 @@ Rules:
 - Write in light-novel style with *italicized narration/actions* and dialogue formatted as ${character.name}: "Dialogue".
 - Do not repeat your previous words. Only speak and act as ${character.name}.`;
 
-        const reply = await this.orchestrator.chat(character.toJSON(), continuationPrompt, effectiveHistory, aiOptions);
+        const rawReply = await this.orchestrator.chat(character.toJSON(), continuationPrompt, effectiveHistory, aiOptions);
+        const { cleanText } = this.relationshipService.extractAndStripStateTag(rawReply);
 
         const newAiMsg = session.addMessage({
           role: 'model',
-          content: reply
+          content: cleanText
         });
         session.touch();
         await this.sessionsRepo.appendMessages(session, [newAiMsg]);
 
-        this.#schedulePostTurnTasks({ userText: '', aiText: reply, character, session });
+        this.#schedulePostTurnTasks({ userText: '', aiText: cleanText, character, session });
 
         return this.sendJson(res, {
-          response: reply || 'AI did not respond',
+          response: cleanText || 'AI did not respond',
           continuation: true,
           sessionId: session.id,
           message: newAiMsg.toJSON(),
@@ -615,32 +613,35 @@ Rules:
           }
         }
 
+        const { cleanText, llmState } = this.relationshipService.extractAndStripStateTag(fullReply);
+
         const newRelState = this.relationshipService.evaluateTurn({
           userText: message,
-          aiText: fullReply,
+          aiText: cleanText,
           session,
-          character
+          character,
+          llmState
         });
         Object.assign(session, newRelState);
         await this.sessionsRepo.updateRelationshipState(session.id, newRelState);
 
         const aiMsgObj = session.addMessage({
           role: 'model',
-          content: fullReply || '...'
+          content: cleanText || '...'
         });
         session.touch();
 
         const newlyAdded = isNewSession ? session.messages : [userMsgObj, aiMsgObj];
         await this.sessionsRepo.appendMessages(session, newlyAdded);
 
-        this.#schedulePostTurnTasks({ userText: message, aiText: fullReply, character, session });
+        this.#schedulePostTurnTasks({ userText: message, aiText: cleanText, character, session });
 
         res.write(`data: ${JSON.stringify({
           done: true,
           sessionId: session.id,
           userMessage: userMsgObj.toJSON(),
           aiMessage: aiMsgObj.toJSON(),
-          response: fullReply,
+          response: cleanText,
           relationship: newRelState
         })}\n\n`);
         return res.end();
@@ -651,30 +652,32 @@ Rules:
         content: message.trim()
       });
 
-      const reply = await this.orchestrator.chat(character.toJSON(), message.trim(), effectiveHistory, aiOptions);
+      const rawReply = await this.orchestrator.chat(character.toJSON(), message.trim(), effectiveHistory, aiOptions);
+      const { cleanText, llmState } = this.relationshipService.extractAndStripStateTag(rawReply);
 
       const newRelState = this.relationshipService.evaluateTurn({
         userText: message,
-        aiText: reply,
+        aiText: cleanText,
         session,
-        character
+        character,
+        llmState
       });
       Object.assign(session, newRelState);
       await this.sessionsRepo.updateRelationshipState(session.id, newRelState);
 
       const aiMsgObj = session.addMessage({
         role: 'model',
-        content: reply
+        content: cleanText
       });
       session.touch();
 
       const newlyAdded = isNewSession ? session.messages : [userMsgObj, aiMsgObj];
       await this.sessionsRepo.appendMessages(session, newlyAdded);
 
-      this.#schedulePostTurnTasks({ userText: message, aiText: reply, character, session });
+      this.#schedulePostTurnTasks({ userText: message, aiText: cleanText, character, session });
 
       return this.sendJson(res, {
-        response: reply || 'AI did not respond',
+        response: cleanText || 'AI did not respond',
         sessionId: session.id,
         userMessage: userMsgObj.toJSON(),
         aiMessage: aiMsgObj.toJSON(),

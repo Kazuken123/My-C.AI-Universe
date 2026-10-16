@@ -120,10 +120,10 @@ const apologyResult = relationshipService.evaluateTurn({
 assert.ok(apologyResult.strain < postFightSession.strain, `Strain (${apologyResult.strain}) must decrease after sincere apology`);
 assert.ok(apologyResult.affinity >= postFightSession.affinity, 'Affinity should recover or slightly strengthen from repair');
 assert.ok(
-  apologyResult.relationshipMood === 'Calm' || apologyResult.relationshipMood === 'Warm',
-  `Mood (${apologyResult.relationshipMood}) should calm after forgiveness`
+  apologyResult.relationshipMood === 'Tender / Reconciled' || apologyResult.relationshipMood === 'Softening / Reconciling' || apologyResult.relationshipMood === 'Warm',
+  `Mood (${apologyResult.relationshipMood}) should reflect post-conflict reconciliation`
 );
-console.log('✅ 4. Apology & Repair: Sincere reconciliation discharges conflict strain');
+console.log('✅ 4. Apology & Repair: Sincere reconciliation discharges conflict strain with Catharsis bonus');
 
 // =========================================================================
 // Test 5: Dynamic Character Prompt Relationship Block Injection
@@ -139,14 +139,14 @@ const testPrompt = generateCharacterPrompt(character, {
   }
 });
 
-assert.ok(testPrompt.includes('[RELATIONSHIP & EMOTIONAL DYNAMICS WITH USER]'), 'System prompt must include relationship dynamics block');
+assert.ok(testPrompt.includes('[ACTIVE RELATIONSHIP STAGE MANDATE — OVERRIDES BASELINE DISTANCE]'), 'System prompt must include stage mandate block');
 assert.ok(testPrompt.includes('Deep Love / Devoted'), 'System prompt must reflect active relationship stage');
 assert.ok(testPrompt.includes('+82/100'), 'System prompt must state affinity score');
 assert.ok(testPrompt.includes('Warm'), 'System prompt must state active mood');
 assert.ok(testPrompt.includes('Secretly infatuated but masks vulnerability behind flustered sarcasm'), 'System prompt must include author dynamic');
 assert.ok(testPrompt.includes('High Emotional Inertia (Dual-Layer Realism)'), 'System prompt must enforce dual-layer realism');
-assert.ok(testPrompt.includes('Anti-Contradiction / Psychological Permanence'), 'System prompt must enforce anti-contradiction');
-console.log('✅ 5. System Prompt Injection: Relationship & emotional dynamics block fully formatted and injected');
+assert.ok(testPrompt.includes('[[REL_STATE:'), 'System prompt must include mandatory REL_STATE tag instruction');
+console.log('✅ 5. System Prompt Injection: Relationship stage mandate & hidden appraisal tag fully formatted and injected');
 
 // =========================================================================
 // Test 6: Persona Vulnerability & Stage Resolution
@@ -275,4 +275,102 @@ assert.equal(warmthReactionResult.relationshipMood, 'Warm', 'AI expressing gentl
 assert.ok(warmthReactionResult.strain <= neutralSession.strain, 'Warmth cools down or maintains low strain');
 console.log('✅ 9. AI-Driven Subtle Reactions: Emotional weather responds accurately to AI body language');
 
-console.log('\n✨ All v2.6.1 Psychological Relationship Engine unit tests passed successfully!');
+// =========================================================================
+// Test 10: Friendly Sparring & Combat Training (Camaraderie vs Malice)
+// =========================================================================
+const comradeSession = new ChatSession({
+  id: 'sess_spar',
+  characterId: character.id,
+  affinity: 48,
+  trust: 50,
+  strain: 10,
+  relationshipStage: 'Close Friend / Confidant',
+  relationshipMood: 'Warm'
+});
+
+const sparResult = relationshipService.evaluateTurn({
+  userText: "Don't hold back! I'm going to crush you in this sparring match!",
+  aiText: '*glares fiercely, clenching fists and lunging forward with a grin* You will regret saying that! Come at me!',
+  session: comradeSession,
+  character
+});
+
+assert.ok(sparResult.affinity >= comradeSession.affinity, 'Friendly sparring must not penalize affinity');
+assert.ok(sparResult.trust >= comradeSession.trust, 'Sparring builds mutual trust and respect');
+assert.ok(sparResult.strain <= comradeSession.strain, 'Sparring must not accumulate negative strain');
+assert.equal(sparResult.relationshipMood, 'Playful / Competitive', 'Sparring shifts mood to Playful / Competitive');
+assert.equal(sparResult.relationshipStage, 'Close Friend / Confidant', 'Comrades remain Close Friends during training');
+console.log('✅ 10. Sparring & Combat Training: Combat simulation builds camaraderie and trust without triggering malice');
+
+// =========================================================================
+// Test 11: Stage Hysteresis (Anti-Demotion Buffer for Lovers)
+// =========================================================================
+const loverQuarrelSession = new ChatSession({
+  id: 'sess_quarrel_hysteresis',
+  characterId: character.id,
+  affinity: 78,
+  trust: 75,
+  strain: 15,
+  relationshipStage: 'Deep Love / Devoted',
+  relationshipMood: 'Warm'
+});
+
+// A sharp quarrel where affinity dips to 73 (below 75 threshold)
+const postQuarrelState = relationshipService.resolveStage({
+  affinity: 72,
+  trust: 68,
+  strain: 48,
+  mood: 'Quarreling / Heated',
+  character,
+  currentStage: loverQuarrelSession.relationshipStage
+});
+
+assert.equal(postQuarrelState, 'Deep Love / Devoted', 'Stage Hysteresis must protect Lovers from demoting to Crush during arguments');
+console.log('✅ 11. Stage Hysteresis: Established Lovers maintain Deep Love stage even when affinity dips during quarrels');
+
+// =========================================================================
+// Test 12: Rupture-and-Repair Catharsis (Make-up Bonus)
+// =========================================================================
+const severeRuptureSession = new ChatSession({
+  id: 'sess_rupture',
+  characterId: character.id,
+  affinity: 65,
+  trust: 55,
+  strain: 52, // High strain from big fight
+  relationshipStage: 'Crush / Infatuated',
+  relationshipMood: 'Hurt / Heartbroken'
+});
+
+const catharsisResult = relationshipService.evaluateTurn({
+  userText: 'Kana, I am truly sorry. I was wrong, and I hate seeing you hurt like this. Please forgive me.',
+  aiText: '*tears spill over as she buries her face in your shoulder, trembling* You idiot... you complete idiot... don\'t ever do that again...',
+  session: severeRuptureSession,
+  character,
+  llmState: { intent: 'rupture_repair' }
+});
+
+assert.ok(catharsisResult.strain < 25, 'High strain must be substantially discharged after sincere repair');
+assert.ok(catharsisResult.trust >= severeRuptureSession.trust + 5, 'Catharsis must award bonus trust exceeding baseline');
+assert.ok(catharsisResult.affinity >= severeRuptureSession.affinity + 4, 'Catharsis must award bonus affinity breakthrough');
+assert.equal(catharsisResult.relationshipMood, 'Tender / Reconciled', 'Post-conflict reconciliation sets mood to Tender / Reconciled');
+console.log('✅ 12. Rupture-and-Repair Catharsis: Making up after high strain generates emotional breakthrough and Tender mood');
+
+// =========================================================================
+// Test 13: Hidden REL_STATE Extraction and Text Stripping
+// =========================================================================
+const rawModelOutput = `*Kana looks down, her cheeks flushing bright red as she tugs nervously at her hem.*
+
+Kana Arima: "I-It's not like I waited for you or anything, idiot..."
+
+[[REL_STATE: {"intent": "affection_or_support", "affinityDelta": 2, "trustDelta": 3, "strainDelta": -5, "mood": "Flustered"}]]`;
+
+const { cleanText, llmState } = relationshipService.extractAndStripStateTag(rawModelOutput);
+assert.ok(!cleanText.includes('[[REL_STATE'), 'Clean text must have [[REL_STATE tag completely stripped');
+assert.ok(cleanText.includes('Kana Arima: "I-It\'s not like I waited for you'), 'Clean text retains complete roleplay content');
+assert.equal(llmState.intent, 'affection_or_support', 'Extracted intent matches parsed JSON');
+assert.equal(llmState.affinityDelta, 2, 'Extracted affinityDelta matches parsed JSON');
+assert.equal(llmState.trustDelta, 3, 'Extracted trustDelta matches parsed JSON');
+assert.equal(llmState.mood, 'Flustered', 'Extracted mood matches parsed JSON');
+console.log('✅ 13. State Tag Extraction: [[REL_STATE]] parsed with high fidelity and cleanly stripped from dialogue');
+
+console.log('\n✨ All v2.6.2 Psychological Relationship Engine unit tests passed successfully!');

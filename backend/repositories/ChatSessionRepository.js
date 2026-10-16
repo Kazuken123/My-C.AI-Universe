@@ -446,14 +446,19 @@ export class ChatSessionRepository extends BaseRepository {
     if (!sessionId) return false;
     await this.db.prepare(`
       UPDATE chat_sessions
-      SET affinity = ?, trust = ?, strain = ?, relationship_stage = ?, relationship_mood = ?, updated_at = ?
+      SET affinity = COALESCE(?, affinity),
+          trust = COALESCE(?, trust),
+          strain = COALESCE(?, strain),
+          relationship_stage = COALESCE(?, relationship_stage),
+          relationship_mood = COALESCE(?, relationship_mood),
+          updated_at = ?
       WHERE id = ?
     `).run(
-      Number(state.affinity ?? 0),
-      Number(state.trust ?? state.affinity ?? 0),
-      Number(state.strain ?? 0),
-      String(state.relationshipStage || 'Stranger / Neutral'),
-      String(state.relationshipMood || 'Calm'),
+      typeof state.affinity === 'number' ? Number(state.affinity) : null,
+      typeof state.trust === 'number' ? Number(state.trust) : (typeof state.affinity === 'number' ? Number(state.affinity) : null),
+      typeof state.strain === 'number' ? Number(state.strain) : null,
+      (typeof state.relationshipStage === 'string' && state.relationshipStage.trim()) ? state.relationshipStage.trim() : null,
+      (typeof state.relationshipMood === 'string' && state.relationshipMood.trim()) ? state.relationshipMood.trim() : null,
       new Date().toISOString(),
       sessionId
     );
