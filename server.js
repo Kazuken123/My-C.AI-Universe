@@ -171,6 +171,14 @@ export class ApplicationServer {
       res.sendFile(path.join(frontendDir, 'admin.html'));
     });
 
+    // Ensure browsers always revalidate JS and CSS assets during live updates
+    this.app.use((req, res, next) => {
+      if (req.path.endsWith('.js') || req.path.endsWith('.css') || req.path.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+      }
+      next();
+    });
+
     this.app.use(express.static(frontendDir));
 
     this.app.get(['/', '/dashboard', '/index.html'], (_req, res) => {

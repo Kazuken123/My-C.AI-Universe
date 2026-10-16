@@ -278,6 +278,7 @@ export class ChatController extends BaseController {
       const {
         charId,
         sessionId,
+        messageId,
         personaId,
         provider,
         message,
@@ -419,14 +420,16 @@ export class ChatController extends BaseController {
       // Case 1: Regenerate Swipe Variant
       if (regenerate) {
         const sessionMsgs = session.messages;
-        const lastModelIdx = sessionMsgs.map(m => m.role).lastIndexOf('model');
-        const targetModelMsg = lastModelIdx !== -1 ? sessionMsgs[lastModelIdx] : null;
+        const targetModelIdx = messageId
+          ? sessionMsgs.findIndex(m => m.id === messageId)
+          : sessionMsgs.map(m => m.role).lastIndexOf('model');
+        const targetModelMsg = targetModelIdx !== -1 ? sessionMsgs[targetModelIdx] : null;
         if (!targetModelMsg) {
           throw new ValidationError('No character message found to regenerate', 'regenerate');
         }
 
         const isContinuationTurn = Boolean(req.body.isContinuation) ||
-          (lastModelIdx > 0 && sessionMsgs[lastModelIdx - 1].role === 'model');
+          (targetModelIdx > 0 && sessionMsgs[targetModelIdx - 1].role === 'model');
 
         const rawVariants = Array.isArray(excludeVariants) && excludeVariants.length > 0
           ? excludeVariants
@@ -455,15 +458,15 @@ export class ChatController extends BaseController {
         };
 
         if (isContinuationTurn) {
-          const anchorMsg = lastModelIdx > 0
-            ? ((sessionMsgs[lastModelIdx - 1].variants &&
-                sessionMsgs[lastModelIdx - 1].variants[sessionMsgs[lastModelIdx - 1].selectedVariantIndex]?.text) ||
-               sessionMsgs[lastModelIdx - 1].content)
+          const anchorMsg = targetModelIdx > 0
+            ? ((sessionMsgs[targetModelIdx - 1].variants &&
+                sessionMsgs[targetModelIdx - 1].variants[sessionMsgs[targetModelIdx - 1].selectedVariantIndex]?.text) ||
+               sessionMsgs[targetModelIdx - 1].content)
             : (lastMessage || '');
 
           // Keep all previous turns including the anchor character turn right before this continuation
           const historyBeforeContinuation = sessionMsgs
-            .slice(0, lastModelIdx)
+            .slice(0, targetModelIdx)
             .slice(-config.MAX_MEMORY_MESSAGES)
             .map(m => ({
               role: m.role,
@@ -483,14 +486,14 @@ ${existingVariants.length > 0 ? `- Do NOT repeat previous takes:\n${existingVari
 
           reply = await this.orchestrator.chat(character.toJSON(), regeneratePrompt, historyBeforeContinuation, regenOptions);
         } else {
-          const precedingUserMsg = lastModelIdx > 0 && sessionMsgs[lastModelIdx - 1].role === 'user'
-            ? ((sessionMsgs[lastModelIdx - 1].variants &&
-                sessionMsgs[lastModelIdx - 1].variants[sessionMsgs[lastModelIdx - 1].selectedVariantIndex]?.text) ||
-               sessionMsgs[lastModelIdx - 1].content)
+          const precedingUserMsg = targetModelIdx > 0 && sessionMsgs[targetModelIdx - 1].role === 'user'
+            ? ((sessionMsgs[targetModelIdx - 1].variants &&
+                sessionMsgs[targetModelIdx - 1].variants[sessionMsgs[targetModelIdx - 1].selectedVariantIndex]?.text) ||
+               sessionMsgs[targetModelIdx - 1].content)
             : (message || 'Continue roleplay');
 
-          const historyBeforeLastModel = lastModelIdx > 0
-            ? sessionMsgs.slice(0, lastModelIdx - 1).slice(-config.MAX_MEMORY_MESSAGES).map(m => ({
+          const historyBeforeLastModel = targetModelIdx > 0
+            ? sessionMsgs.slice(0, targetModelIdx - 1).slice(-config.MAX_MEMORY_MESSAGES).map(m => ({
                 role: m.role,
                 content: (m.variants && m.variants[m.selectedVariantIndex]?.text) || m.content
               }))

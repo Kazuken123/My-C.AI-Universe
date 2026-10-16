@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { relationshipService } from '../backend/services/relationship.service.js';
-import { generateCharacterPrompt } from '../backend/ai/prompt/characterPrompt.js';
+import { generateCharacterPrompt, buildRecencyStageNote } from '../backend/ai/prompt/characterPrompt.js';
 import { Character } from '../backend/models/Character.js';
 import { ChatSession } from '../backend/models/ChatSession.js';
 
@@ -373,4 +373,24 @@ assert.equal(llmState.trustDelta, 3, 'Extracted trustDelta matches parsed JSON')
 assert.equal(llmState.mood, 'Flustered', 'Extracted mood matches parsed JSON');
 console.log('✅ 13. State Tag Extraction: [[REL_STATE]] parsed with high fidelity and cleanly stripped from dialogue');
 
-console.log('\n✨ All v2.6.2 Psychological Relationship Engine unit tests passed successfully!');
+// =========================================================================
+// Test 14: Anti-Recency Bias Seam Directive (Depth 0)
+// =========================================================================
+const crushRelState = {
+  affinity: 69,
+  trust: 50,
+  strain: 0,
+  stage: 'Crush / Infatuated',
+  mood: 'Tender / Reconciled'
+};
+
+const recencyNote = buildRecencyStageNote(crushRelState, character, 'Aqua');
+assert.ok(recencyNote.includes('Crush / Infatuated'), 'Recency note must specify active relationship stage');
+assert.ok(recencyNote.includes('SPOKEN DIALOGUE'), 'Recency note must mandate spoken dialogue shift');
+assert.ok(recencyNote.includes('drop all cold distance'), 'Recency note explicitly bans baseline coldness in spoken lines');
+
+const neutralRelState = { affinity: 0, trust: 0, strain: 0, stage: 'Stranger / Neutral', mood: 'Calm' };
+assert.equal(buildRecencyStageNote(neutralRelState, character, 'Aqua'), '', 'Neutral calm state requires no recency override');
+console.log('✅ 14. Anti-Recency Seam Injection: Depth-0 stage directive generated cleanly and overrides baseline distance');
+
+console.log('\n✨ All v2.6.3 Psychological Relationship Engine unit tests passed successfully!');

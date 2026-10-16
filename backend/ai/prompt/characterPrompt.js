@@ -105,12 +105,12 @@ export function buildStageEvolutionDirective(rel, character = {}, targetName = '
 - BODY LANGUAGE: Comfortable closeness, unguarded expressions, casual physical familiarity, attentiveness to ${targetName}'s well-being.`,
 
     'Crush / Infatuated': `
-- EMOTIONAL CORE: ${name} has developed strong romantic feelings/infatuation for ${targetName} (Bond: ${affSign}${rel.affinity}/100). ${targetName} has a special effect on ${name}'s composure that nobody else does!
-- ARCHETYPE-ADAPTIVE SPEECH SHIFT (CRITICAL):
-  * Do NOT speak to ${targetName} with the flat detachment or neutral indifference of a stranger!
-  * If ${name} is naturally proud, tsundere, cold, stoic, or sharp-tongued: Their usual composure cracks around ${targetName}. Show subtle flustered tells, hesitation ('...', '—'), softened vocal tone beneath defensive banter, lingering attention, or excuses to stay near/care for ${targetName}. Their actions must betray clear affection even if their words try to play it cool.
-  * If ${name} is naturally gentle, shy, or warm: Show overt romantic warmth, bashful glances, heightened emotional sensitivity to ${targetName}'s words/touch, and eager tenderness.
-  * If ${name} is naturally confident, teasing, or dominant: Lean into charged romantic tension, softer intimate vocal drops, protective focus, and affectionate teasing aimed exclusively at ${targetName}.
+- EMOTIONAL CORE: ${name} has developed strong romantic feelings/infatuation for ${targetName} (Bond: ${affSign}${rel.affinity}/100). ${targetName} has a disarming effect on ${name}'s composure that nobody else has!
+- ARCHETYPE-ADAPTIVE SPEECH SHIFT (CRITICAL — SPOKEN DIALOGUE MUST RADICALLY EVOLVE):
+  * In ${name}'s SPOKEN DIALOGUE (${name}: "..."), their baseline coldness or indifference is BROKEN. Do NOT speak like a distant stranger or maintain harsh insults.
+  * If ${name} is naturally tsundere, proud, cold, or sharp-tongued: In spoken dialogue, their sharp tongue fails them around ${targetName}. They stammer, hesitate ('...', '—'), and their words become visibly flustered, embarrassed, or unexpectedly gentle. Stop using harsh insults or distant scowls. Even when trying to maintain dignity, their spoken words must slip into unmistakable romantic vulnerability and genuine care.
+  * If ${name} is naturally gentle, shy, or warm: In spoken dialogue, speak with open romantic warmth, tender admissions, sweet bashfulness, and sincere affection.
+  * If ${name} is naturally confident, teasing, or dominant: In spoken dialogue, speak with alluring closeness, intimate whispers, protective promises, and affectionate teasing aimed exclusively at ${targetName}.
 - BODY LANGUAGE: Heartbeat/composure shifts when ${targetName} gets close, lingering eye contact (or flustered looking away), leaning in, noticing small details about ${targetName}, subtle jealousy if others are mentioned.`,
 
     'Deep Love / Devoted': `
@@ -141,6 +141,48 @@ export function buildStageEvolutionDirective(rel, character = {}, targetName = '
 ${rel.dynamic ? `- Core Dynamic: ${rel.dynamic}\n` : ''}- BASELINE OVERRIDE RULE: The Personality, Speaking Style, and Example Dialogues in ${name}'s profile represent how ${name} acts at baseline with strangers. Because your bond with ${targetName} is currently **${stage}**, you MUST evolve ${name}'s dialogue, subtext, and physical reactions according to the mandate below:
 ${specificDirective}${moodOverlay}
 - OPENING ACTION GROUNDING: In your very first *italicized narration/action* line, depict ${name}'s authentic internal feeling, micro-expression, or physical tell reflecting **${stage}** and **${mood}** BEFORE ${name} speaks aloud.`;
+}
+
+/**
+ * Compact, highly targeted recency-depth directive injected at the generation seam (Depth 0)
+ * Completely eliminates recency bias and forces LLM to adopt the active relationship stage in spoken dialogue.
+ */
+export function buildRecencyStageNote(rel = {}, character = {}, targetName = 'User') {
+  const name = character?.name || 'Character';
+  const stage = rel?.stage || 'Stranger / Neutral';
+  const mood = rel?.mood || 'Calm';
+  const aff = Number(rel?.affinity ?? 0);
+  const affSign = aff > 0 ? '+' : '';
+
+  if (stage === 'Stranger / Neutral' && mood === 'Calm') {
+    return '';
+  }
+
+  if (stage === 'Crush / Infatuated') {
+    return `[Director's Note: Active Stage with ${targetName} is "${stage}" (Bond: ${affSign}${aff}/100, Mood: ${mood}). In ${name}'s SPOKEN DIALOGUE, their composure must visibly crack—drop all cold distance, sarcastic insults, and defensive indifference. Speak with genuine flustered vulnerability, soft hesitation, and clear affection toward ${targetName}.]`;
+  }
+
+  if (stage === 'Deep Love / Devoted') {
+    return `[Director's Note: Active Stage with ${targetName} is "${stage}" (Bond: ${affSign}${aff}/100, Mood: ${mood}). In ${name}'s SPOKEN DIALOGUE, speak with deep intimacy, tenderness, and unwavering devotion. No stranger distance.]`;
+  }
+
+  if (stage === 'Obsessed / Possessive') {
+    return `[Director's Note: Active Stage with ${targetName} is "${stage}" (Bond: ${affSign}${aff}/100, Mood: ${mood}). In ${name}'s SPOKEN DIALOGUE, show intense emotional fixation, possessive protectiveness, and desperate need for ${targetName}'s closeness.]`;
+  }
+
+  if (stage === 'Close Friend / Confidant') {
+    return `[Director's Note: Active Stage with ${targetName} is "${stage}" (Bond: ${affSign}${aff}/100, Mood: ${mood}). In ${name}'s SPOKEN DIALOGUE, speak with warm familiarity, loyalty, candid humor, and mutual trust.]`;
+  }
+
+  if (stage === 'Hatred / Nemesis' || stage === 'Hostile / Bitter') {
+    return `[Director's Note: Active Stage with ${targetName} is "${stage}" (Bond: ${affSign}${aff}/100, Mood: ${mood}). Speak with sharp coldness and guarded suspicion fitting this hostility.]`;
+  }
+
+  if (stage === 'Scared / Intimidated') {
+    return `[Director's Note: Active Stage with ${targetName} is "${stage}" with ${targetName}. Voice is hesitant, quiet, and careful not to provoke.]`;
+  }
+
+  return `[Director's Note: Current Stage with ${targetName} is "${stage}" (Mood: ${mood}). Let ${name}'s dialogue authentically reflect this bond.]`;
 }
 
 /**

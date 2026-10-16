@@ -825,6 +825,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
    * Open the Chat Room for a specific Character and optional Session ID
    */
   async function openChatWithCharacter(characterId, sessionId = null) {
+    isSending = false;
     try {
       const [character, charSessions] = await Promise.all([
         api.getCharacter(characterId),
@@ -994,7 +995,8 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       btn.addEventListener('click', () => {
         const msgId = btn.dataset.msgId;
         const dir = Number(btn.dataset.swipeDir);
-        const msg = session.messages.find(m => m.id === msgId);
+        const activeSess = appState.activeSession || session;
+        const msg = activeSess.messages?.find(m => m.id === msgId) || session.messages?.find(m => m.id === msgId);
         if (!msg || !Array.isArray(msg.variants)) return;
 
         const nextIdx = (msg.selectedVariantIndex || 0) + dir;
@@ -1029,7 +1031,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         }
 
         // 3. Debounced background sync to SQL database (UI is never blocked)
-        queueVariantSync(session.id, msgId, nextIdx);
+        queueVariantSync(activeSess.id, msgId, nextIdx);
       });
     });
 
@@ -1334,17 +1336,20 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     const session = appState.activeSession;
 
     const messages = session.messages || [];
-    const lastModelIdx = messages.map(m => m.role).lastIndexOf('model');
-    if (lastModelIdx === -1) return;
+    const targetMsgId = btnElement?.dataset?.regenMsg;
+    const targetModelIdx = targetMsgId
+      ? messages.findIndex(m => m.id === targetMsgId)
+      : messages.map(m => m.role).lastIndexOf('model');
+    if (targetModelIdx === -1) return;
 
-    const targetModelMsg = messages[lastModelIdx];
-    const isContinuation = lastModelIdx > 0 && messages[lastModelIdx - 1].role === 'model';
-    const precedingUserMsg = !isContinuation && lastModelIdx > 0 && messages[lastModelIdx - 1].role === 'user'
-      ? ((messages[lastModelIdx - 1].variants && messages[lastModelIdx - 1].variants[messages[lastModelIdx - 1].selectedVariantIndex]?.text) || messages[lastModelIdx - 1].content)
+    const targetModelMsg = messages[targetModelIdx];
+    const isContinuation = targetModelIdx > 0 && messages[targetModelIdx - 1].role === 'model';
+    const precedingUserMsg = !isContinuation && targetModelIdx > 0 && messages[targetModelIdx - 1].role === 'user'
+      ? ((messages[targetModelIdx - 1].variants && messages[targetModelIdx - 1].variants[messages[targetModelIdx - 1].selectedVariantIndex]?.text) || messages[targetModelIdx - 1].content)
       : '';
 
     const targetAnchorMsg = isContinuation
-      ? ((messages[lastModelIdx - 1].variants && messages[lastModelIdx - 1].variants[messages[lastModelIdx - 1].selectedVariantIndex]?.text) || messages[lastModelIdx - 1].content)
+      ? ((messages[targetModelIdx - 1].variants && messages[targetModelIdx - 1].variants[messages[targetModelIdx - 1].selectedVariantIndex]?.text) || messages[targetModelIdx - 1].content)
       : '';
 
     isSending = true;
@@ -1362,7 +1367,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       targetBubble.innerHTML = `
         <div class="reshoot-status-badge">
           <i class="ph-bold ph-arrows-clockwise spinning"></i>
-          <span>${escapeHtml(character.name)} is reshooting take ${targetModelMsg.variants.length + 1}<span class="typing-dots"><span></span><span></span><span></span></span></span>
+          <span>${escapeHtml(character.name)} is reshooting take ${(targetModelMsg.variants?.length || 1) + 1}<span class="typing-dots"><span></span><span></span><span></span></span></span>
           <span class="stream-cursor">▌</span>
         </div>
       `;
@@ -1372,11 +1377,22 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     }
     scrollToBottom();
 
+    let watchdogTimer = setTimeout(() => {
+      isSending = false;
+      if (btnElement) {
+        btnElement.classList.remove('is-spinning');
+        btnElement.disabled = false;
+      }
+      renderChatStream(character, session);
+      showToast('Reshoot timed out. Please try again.');
+    }, 45000);
+
     try {
       const activeVariantText = (targetModelMsg.variants && targetModelMsg.variants[targetModelMsg.selectedVariantIndex]?.text) || targetModelMsg.content;
       const result = await api.sendChatMessage({
         charId: character.id,
         sessionId: session.id,
+        messageId: targetModelMsg.id,
         provider: aiProviderSelect?.value || 'gemini',
         message: precedingUserMsg,
         regenerate: true,
@@ -1387,6 +1403,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         excludeVariants: (targetModelMsg.variants || []).map(v => v.text)
       });
 
+      clearTimeout(watchdogTimer);
       const updatedSession = await api.getChatSession(result.sessionId || session.id);
       appState.activeSession = updatedSession;
       renderChatStream(character, updatedSession);
@@ -1407,9 +1424,11 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         speakText(result.response);
       }
     } catch (error) {
+      clearTimeout(watchdogTimer);
       renderChatStream(character, session);
       showToast('Failed to regenerate variant: ' + error.message);
     } finally {
+      clearTimeout(watchdogTimer);
       if (btnElement) {
         btnElement.classList.remove('is-spinning');
         btnElement.disabled = false;
@@ -1430,7 +1449,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
     const avatarUrl = character.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(character.name)}`;
     const tempIndicator = document.createElement('div');
-    tempIndicator.className = 'msg-row model';
+    tempIndicator.className = 'msg-row model temp-continuation';
     tempIndicator.innerHTML = `
       <img class="msg-avatar is-generating" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(character.name)}" />
       <div class="msg-body">
@@ -1446,6 +1465,12 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     `;
     streamInner.appendChild(tempIndicator);
     scrollToBottom();
+
+    let watchdogTimer = setTimeout(() => {
+      isSending = false;
+      if (tempIndicator?.parentNode) tempIndicator.remove();
+      showToast('Scene advance timed out. Please try again.');
+    }, 45000);
 
     try {
       const lastContent = (lastMsg.variants && lastMsg.variants[lastMsg.selectedVariantIndex]?.text) || lastMsg.content;
@@ -1463,6 +1488,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         }))
       });
 
+      clearTimeout(watchdogTimer);
       const updatedSession = await api.getChatSession(result.sessionId || session.id);
       appState.activeSession = updatedSession;
       renderChatStream(character, updatedSession);
@@ -1480,9 +1506,11 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         speakText(result.response);
       }
     } catch (error) {
-      tempIndicator.remove();
+      clearTimeout(watchdogTimer);
+      if (tempIndicator?.parentNode) tempIndicator.remove();
       showToast('Continuation error: ' + error.message);
     } finally {
+      clearTimeout(watchdogTimer);
       isSending = false;
     }
   }

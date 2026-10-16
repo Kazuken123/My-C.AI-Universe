@@ -2,6 +2,7 @@ import { GoogleGenAI } from '@google/genai';
 import { BaseAIProvider } from './BaseAIProvider.js';
 import { AIError } from '../errors.js';
 import { config } from '../../config/index.js';
+import { buildRecencyStageNote } from '../prompt/characterPrompt.js';
 
 export const PERMISSIVE_SAFETY_SETTINGS = [
   { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
@@ -59,7 +60,7 @@ export class GeminiProvider extends BaseAIProvider {
     return [...new Set(candidates)];
   }
 
-  #buildContents(memory, userMsg) {
+  #buildContents(memory, userMsg, options = {}, character = {}) {
     const rawTurns = [];
 
     if (Array.isArray(memory) && memory.length > 0) {
@@ -97,6 +98,26 @@ export class GeminiProvider extends BaseAIProvider {
       });
     }
 
+    // Anti-Recency Bias Seam Injection:
+    // Append the targeted relationship stage mandate directly to the final user turn in contents.
+    // This sits at Depth 0 immediately before token generation and guarantees the model adopts
+    // the active stage in spoken dialogue rather than copying past cold turns.
+    if (mergedTurns.length > 0 && options.relationship) {
+      const targetName = options.persona?.name || 'User';
+      const stageNote = buildRecencyStageNote(options.relationship, character, targetName);
+      if (stageNote) {
+        const lastTurn = mergedTurns[mergedTurns.length - 1];
+        if (lastTurn.role === 'user') {
+          lastTurn.text = `${lastTurn.text}\n\n${stageNote}`;
+        } else {
+          mergedTurns.push({
+            role: 'user',
+            text: stageNote
+          });
+        }
+      }
+    }
+
     return mergedTurns.map(t => ({
       role: t.role,
       parts: [{ text: t.text }]
@@ -109,7 +130,7 @@ export class GeminiProvider extends BaseAIProvider {
   async generateReply(character, userMsg, memory = null, options = {}) {
     const ai = this.#getClient();
     const systemPrompt = sanitizePromptForGemini(this.buildSystemPrompt(character, options));
-    const contents = this.#buildContents(memory, userMsg);
+    const contents = this.#buildContents(memory, userMsg, options, character);
     const modelsToTry = this.#getModelsToTry();
     let lastError = null;
 
@@ -186,7 +207,7 @@ export class GeminiProvider extends BaseAIProvider {
   async *generateReplyStream(character, userMsg, memory = null, options = {}) {
     const ai = this.#getClient();
     const systemPrompt = sanitizePromptForGemini(this.buildSystemPrompt(character, options));
-    const contents = this.#buildContents(memory, userMsg);
+    const contents = this.#buildContents(memory, userMsg, options, character);
     const modelsToTry = this.#getModelsToTry();
     let lastError = null;
 
