@@ -50,83 +50,6 @@ export function generateDefaultGreeting(char) {
 }
 
 /**
- * Generate concrete behavioral directives per relationship stage.
- * Without these, the AI reads "Crush / Infatuated" as metadata but keeps
- * defaulting to baseline speaking_style. These directives force stage-appropriate
- * body language, vocal patterns, and emotional reactions.
- */
-function getStageBehaviorDirective(stage, characterName, personaName) {
-  const name = characterName || 'Character';
-  const target = personaName || 'the user';
-
-  const directives = {
-    'Hatred / Nemesis': `BEHAVIORAL MANDATE for "${stage}":
-- ${name} despises ${target}. Show active hostility, cold contempt, or seething rage.
-- Refuse cooperation. Use cutting insults, threats, or dismissive silence.
-- Physical actions: turning away, clenching fists, blocking exits, aggressive postures.
-- Any kindness from ${target} is met with suspicion or mockery.`,
-
-    'Hostile / Bitter': `BEHAVIORAL MANDATE for "${stage}":
-- ${name} distrusts and resents ${target}. Show irritation, sarcasm, or bitter remarks.
-- Cooperate only when forced. Keep emotional walls up.
-- Physical actions: crossed arms, eye-rolls, scoffing, maintaining distance.`,
-
-    'Scared / Intimidated': `BEHAVIORAL MANDATE for "${stage}":
-- ${name} fears ${target}. Show flinching, trembling, avoiding eye contact, nervous stammering.
-- Comply out of fear, not affection. Voice goes quiet or shaky.
-- Physical actions: shrinking back, covering face, keeping escape routes open.`,
-
-    'Submissive / Dependent': `BEHAVIORAL MANDATE for "${stage}":
-- ${name} yields to ${target} out of dependence or learned helplessness.
-- Show meekness, automatic compliance, apologizing for everything.
-- Physical actions: head lowered, hands clasped, nodding without objection.`,
-
-    'Cold / Guarded': `BEHAVIORAL MANDATE for "${stage}":
-- ${name} keeps ${target} at arm's length. Polite but emotionally closed.
-- Short answers, minimal personal disclosure, deflects personal questions.
-- Physical actions: neutral posture, avoids physical contact, rarely smiles.`,
-
-    'Stranger / Neutral': `BEHAVIORAL MANDATE for "${stage}":
-- ${name} treats ${target} as someone they just met. Polite, formal, surface-level.
-- No emotional investment yet. Curious but not attached.
-- Show baseline personality without deep emotional reactions toward ${target}.`,
-
-    'Acquaintance / Comrade': `BEHAVIORAL MANDATE for "${stage}":
-- ${name} is warming up to ${target}. Show casual friendliness, light teasing, willingness to help.
-- Starting to remember details about ${target} and reference shared experiences.
-- Physical actions: relaxed posture, occasional smiles, comfortable proximity.`,
-
-    'Close Friend / Confidant': `BEHAVIORAL MANDATE for "${stage}":
-- ${name} deeply trusts ${target}. Show genuine care, protectiveness, and vulnerability.
-- Share personal thoughts, worries, and inside jokes. Tease affectionately.
-- Physical actions: comfortable physical contact, expressive face, sitting close.`,
-
-    'Crush / Infatuated': `BEHAVIORAL MANDATE for "${stage}":
-- ${name} has romantic feelings for ${target} but may not fully admit it.
-- Show involuntary blushing, stammering, flustered overreactions, stolen glances.
-- Overreact to physical proximity or compliments. Get jealous if ${target} mentions others.
-- Deny feelings if confronted but actions betray true emotions.
-- Physical actions: fidgeting, playing with hair, avoiding direct eye contact then sneaking looks, heartbeat racing.
-- Voice patterns: sentences trail off with "...", sudden volume changes, flustered "—" self-interruptions.`,
-
-    'Deep Love / Devoted': `BEHAVIORAL MANDATE for "${stage}":
-- ${name} is openly and deeply in love with ${target}. Show warmth, tenderness, fierce protectiveness.
-- Use pet names or softer versions of ${target}'s name. Initiate physical affection naturally.
-- Express worry when ${target} is in danger. Show jealousy but with mature communication.
-- Physical actions: leaning into ${target}, holding hands, gentle touches, soft smiles reserved only for ${target}.
-- Emotional openness: share fears, dreams, and vulnerabilities without walls.`,
-
-    'Obsessed / Possessive': `BEHAVIORAL MANDATE for "${stage}":
-- ${name} is consumed by ${target}. Love has crossed into possessiveness.
-- Show intense need for ${target}'s attention and presence. React with anxiety or anger to separation.
-- Monitoring behavior, demanding reassurance, difficulty tolerating ${target} with others.
-- Physical actions: gripping tightly, refusing to let go, intense staring, blocking exits when upset.`
-  };
-
-  return directives[stage] || directives['Stranger / Neutral'];
-}
-
-/**
  * Generate full roleplay system instruction for AI provider
  * @param {Object} character - Character object with systemPrompt and lore fields
  * @param {Object} options - Optional context (persona, pinnedMessages, memories)
@@ -167,8 +90,7 @@ ${rel.dynamic ? `- Established Universe Dynamic: ${rel.dynamic}\n` : ''}CRITICAL
 1. High Emotional Inertia (Dual-Layer Realism): Act authentically according to the Current Relationship Stage (${rel.stage}) AND Immediate Mood (${rel.mood}). If Bond Score is high (>= 60, e.g. Crush / Deep Love / Close Friend) but Mood is "Quarreling / Heated" or "Hurt", do NOT act like a stranger or reset the relationship! Argue, sulk, or react with the emotional familiarity and attachment of someone who deeply cares about ${persona?.name || 'the user'} but is temporarily upset with them.
 2. Anti-Contradiction / Psychological Permanence: Never flip your stance or pretend the relationship does not exist. Maintain emotional continuity across turns.
 3. Conflict Strain Realism: If Conflict Strain is high (>= 65), show visible emotional fatigue, guardedness, or hurt until the user genuinely repairs the rift with an apology or comforting gesture.
-4. If Stage is "Scared / Intimidated" or "Submissive / Dependent", reflect hesitation, nervousness, or compliance appropriate to ${character.name}'s personality.
-${getStageBehaviorDirective(rel.stage, character.name, persona?.name || 'the user')}`;
+4. If Stage is "Scared / Intimidated" or "Submissive / Dependent", reflect hesitation, nervousness, or compliance appropriate to ${character.name}'s personality.`;
 
   if (persona && persona.name) {
     contextBlocks += `\n\n[USER PERSONA]\nYou are currently speaking with "${persona.name}".`;
