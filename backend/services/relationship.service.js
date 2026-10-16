@@ -226,8 +226,27 @@ export class RelationshipService {
         mood = 'Warm';
       } else {
         strainDelta -= 4;
-        affinityDelta += affinity >= 0 && affinity < 50 ? 1 : 0;
-        if (strain + strainDelta < 15) mood = 'Calm';
+        // Stage-appropriate neutral maintenance:
+        // High-bond states must NOT silently erode or reset mood to 'Calm'
+        if (affinity >= 75) {
+          // Deep Love / Obsessed: maintain warm mood, no silent erosion
+          affinityDelta += 0;
+          mood = (mood === 'Calm' || mood === 'Warm') ? 'Warm' : mood;
+        } else if (affinity >= 60) {
+          // Crush: maintain flustered mood instead of resetting to Calm
+          affinityDelta += 0;
+          mood = (mood === 'Calm') ? 'Flustered' : mood;
+        } else if (affinity >= 40) {
+          // Close Friend: keep warm, slight reinforcement
+          affinityDelta += 1;
+          mood = (strain + strainDelta < 15) ? 'Warm' : mood;
+        } else if (affinity >= 0) {
+          affinityDelta += affinity < 50 ? 1 : 0;
+          if (strain + strainDelta < 15) mood = 'Calm';
+        } else {
+          // Negative affinity: maintain appropriate negative mood
+          if (strain + strainDelta < 15) mood = affinity <= -40 ? 'Guarded' : 'Calm';
+        }
       }
     }
 

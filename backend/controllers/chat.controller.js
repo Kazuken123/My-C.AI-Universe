@@ -505,23 +505,11 @@ ${existingVariants.length > 0 ? `- Do NOT repeat previous takes:\n${existingVari
         }
         session.touch();
 
-        // Idempotency guard: alternative takes adapt immediate mood without compounding strain/affinity
-        const combinedAi = String(reply || '').toLowerCase();
-        if (/\b(trembles|shivers in fear|steps back in terror|afraid|terrified|scared|voice shaking|cowers)\b/i.test(combinedAi)) {
-          session.relationshipMood = 'Afraid';
-        } else if (/\b(lowers head|obeys quietly|submits|at your mercy|whispers obedien|nods meekly)\b/i.test(combinedAi)) {
-          session.relationshipMood = 'Submissive';
-        } else if (/\b(glares|scowls|tears well|voice cracks|turns away hurt|snaps back|crosses arms)\b/i.test(combinedAi)) {
-          session.relationshipMood = session.strain >= 45 ? 'Hurt / Heartbroken' : 'Guarded';
-        } else if (/\b(smiles warmly|blushes|laughs softly|leans closer|gentle smile|eyes soften)\b/i.test(combinedAi)) {
-          session.relationshipMood = 'Warm';
-        }
-
+        // IDEMPOTENT: Regenerated variants are alternative takes of the SAME turn.
+        // They must NOT alter affinity, trust, strain, stage, or mood.
+        // The relationship state was already evaluated on the original turn.
         if (targetModelMsg && newVar) {
-          await Promise.all([
-            this.sessionsRepo.appendVariant(session, targetModelMsg, newVar),
-            this.sessionsRepo.updateRelationshipState(session.id, { relationshipMood: session.relationshipMood })
-          ]);
+          await this.sessionsRepo.appendVariant(session, targetModelMsg, newVar);
         } else {
           await this.sessionsRepo.save(session);
         }
