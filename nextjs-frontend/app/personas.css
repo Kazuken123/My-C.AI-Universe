@@ -1,0 +1,239 @@
+/* ============================================================================
+   ROLEPLAY IDENTITIES & PERSONAS STYLES (PERSONAS.HTML)
+   Double-Bezel Chassis, Concentric Monograms & Two-Column Studio Layout
+   ============================================================================ */
+
+.personas-grid-layout {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 32px;
+  align-items: start;
+  width: 100%;
+}
+
+.personas-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.persona-card-shell {
+  padding: 6px;
+  border-radius: var(--radius-shell);
+  background: var(--bg-shell);
+  border: 1px solid var(--border-hairline);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.3s var(--ease-spring),
+              border-color 0.35s var(--ease-glow),
+              box-shadow 0.4s var(--ease-glow);
+}
+
+.persona-card-shell:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+.persona-card-shell.active {
+  border-color: var(--accent-border);
+  box-shadow: var(--accent-glow), 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+.persona-card-core {
+  background: var(--bg-core);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-core);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.persona-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.persona-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.persona-glyph-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="vanguard"] .persona-glyph-badge {
+  background: rgba(224, 86, 56, 0.12);
+  border-color: rgba(224, 86, 56, 0.32);
+  color: #e05638;
+}
+
+[data-theme="editorial"] .persona-glyph-badge {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+[data-theme="telemetry"] .persona-glyph-badge {
+  background: rgba(230, 25, 25, 0.12);
+  border-color: rgba(230, 25, 25, 0.4);
+  color: #e61919;
+}
+
+.persona-card-title-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.persona-card-name {
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.persona-active-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34d399;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.persona-active-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 6px #34d399;
+}
+
+.persona-card-desc {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-hairline);
+}
+
+.persona-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-end;
+}
+
+/* Right Column Register Card */
+.persona-register-shell {
+  position: sticky;
+  top: 24px;
+}
+
+.persona-register-core {
+  padding: 28px 24px;
+}
+
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.card-heading {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+.card-subtext {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 1024px) {
+  .personas-grid-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .persona-register-shell {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .persona-card-core {
+    padding: 18px 16px;
+  }
+
+  .persona-card-header {
+    gap: 12px;
+  }
+
+  .persona-avatar-wrap {
+    width: 44px;
+    height: 44px;
+    font-size: 1.35rem;
+  }
+
+  .persona-card-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .persona-card-actions .btn-secondary,
+  .persona-card-actions .icon-btn {
+    min-height: 38px;
+  }
+
+  .persona-register-core {
+    padding: 20px 16px;
+  }
+
+  #personaSubmitBtn {
+    width: 100%;
+    justify-content: center;
+    min-height: 48px;
+  }
+}
+

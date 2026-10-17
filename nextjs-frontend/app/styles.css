@@ -1,0 +1,10 @@
+/* ============================================================================
+   MY C.AI UNIVERSE — MODULAR CSS BUNDLE
+   Imports all modular stylesheets for backward compatibility
+   ============================================================================ */
+@import './base.css';
+@import './dashboard.css';
+@import './chat.css';
+@import './auth.css';
+@import './studio.css';
+@import './personas.css';

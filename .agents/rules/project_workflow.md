@@ -51,3 +51,12 @@ Whenever working on this codebase in any session, you **MUST ALWAYS** follow the
 - **Optimistic UI**: Message variant switching (`<-` / `->`) must update the DOM in-place immediately (0ms latency) and debounce database sync (`queueVariantSync`, 250ms).
 - **Gemini Safety Settings**: Always maintain `safetySettings: BLOCK_NONE` in `GeminiProvider` to prevent false-positive `PROHIBITED_CONTENT` blocks on creative roleplay.
 - **Prompt Isolation**: Internal system directives (`[...]`, `[Scene Continuation Directive]`, etc.) must never be echoed or leaked in character speech or fallback handlers.
+
+---
+
+### 6. 🎨 Mandatory Visual Design & Frontend Parity Standards
+- **Pixel-for-Pixel Fidelity**: When porting or redesigning UI into modern frameworks (Next.js, React, Vue), never substitute tailored brand CSS with generic AI default styling or boilerplate component kits.
+- **Brand Assets & Typography**: Always preserve the original branding marks (`favicon.svg`), typography systems (`Cabinet Grotesk`, `Satoshi`, `JetBrains Mono`), and tactile design tokens (`base.css`, `dashboard.css`, `double-bezel` chassis).
+- **Reject Generic AI Slop**: Never insert placeholder banners (*"Next.js App Router Active"*), delete split hero compositions, or downgrade asymmetrical bento grids to plain uniform card lists.
+- **Rule Verification**: Before declaring frontend tasks complete, visually and structurally compare against the primary reference design (`frontend/index.html`) to ensure 100% aesthetic and layout parity.
+

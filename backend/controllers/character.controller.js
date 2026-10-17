@@ -69,6 +69,9 @@ export class CharacterController extends BaseController {
         speaking_style: (req.body.speaking_style && req.body.speaking_style.trim()) || wikiData.speaking_style || '',
         example_dialogues: (req.body.example_dialogues && req.body.example_dialogues.trim()) || '',
         initial_memory: (req.body.initial_memory && req.body.initial_memory.trim()) || wikiData.initial_memory || '',
+        initial_affinity: req.body.initial_affinity ?? req.body.initialAffinity,
+        initial_relationship_stage: req.body.initial_relationship_stage || req.body.initialRelationshipStage,
+        relationship_dynamic: (req.body.relationship_dynamic && req.body.relationship_dynamic.trim()) || (req.body.relationshipDynamic && req.body.relationshipDynamic.trim()) || '',
         categories: Array.isArray(req.body.categories) && req.body.categories.length > 0 ? req.body.categories : ['Roleplay', 'Original'],
         wiki: (wiki && wiki.trim()) || '',
         wikiUrl: wikiData.wikiUrl || (wiki && wiki.trim()) || '',
@@ -127,13 +130,18 @@ export class CharacterController extends BaseController {
       const updatableFields = [
         'name', 'tagline', 'avatar', 'greeting', 'personality',
         'appearance', 'abilities', 'background', 'speaking_style',
-        'example_dialogues', 'initial_memory', 'wiki', 'categories'
+        'example_dialogues', 'initial_memory', 'wiki', 'categories',
+        'initial_affinity', 'initialAffinity',
+        'initial_relationship_stage', 'initialRelationshipStage',
+        'relationship_dynamic', 'relationshipDynamic'
       ];
 
       for (const field of updatableFields) {
         if (req.body[field] !== undefined) {
           if (field === 'categories' && Array.isArray(req.body[field])) {
             character.categories = req.body[field].map(c => String(c).slice(0, 50));
+          } else if (field === 'initial_affinity' || field === 'initialAffinity') {
+            character.initialAffinity = Math.max(-100, Math.min(100, Number(req.body[field]) || 0));
           } else if (typeof req.body[field] === 'string') {
             character[field] = req.body[field].trim();
           }

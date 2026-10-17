@@ -1,6 +1,6 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
-> **Current Version:** `v2.6.1`  
+> **Current Version:** `v2.7.0`  
 > **Status:** Production-Ready & Tested  
 > **Automated Test Coverage:** 34/34 E2E & unit tests passing (`npm test`)  
 > **Primary Database:** Turso Cloud (LibSQL `@libsql/client`, AWS Tokyo `ap-northeast-1`)  
@@ -17,9 +17,22 @@ This document serves as the **single source of truth** for project history, rece
 
 ---
 
-## 🚀 Version History & Milestones
+### 🏷️ `v2.7.0` (Current) — Next.js 14 App Router Full Visual Parity & Agency Design System Unification
+- **100% Pixel-for-Pixel Visual Parity with Express Backend**:
+  - Completely eradicated generic AI styling artifacts and boilerplate cards from `nextjs-frontend/`.
+  - Rebuilt [`nextjs-frontend/components/layout/sidebar.tsx`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/nextjs-frontend/components/layout/sidebar.tsx) with authentic brand logo (`favicon.svg`), `SQL STUDIO v2.3` typography, `Gemini 3.5 lite` telemetry pill, New Character island button, active storylines drawer, and active persona pill (`Traveler / Active Identity`).
+  - Restored the **Editorial Split Hero** (`double-bezel-shell .hero-shell`) in [`nextjs-frontend/components/characters/character-catalog.tsx`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/nextjs-frontend/components/characters/character-catalog.tsx) with high-contrast copy, `Enter Featured Scene` CTA, and the Kana Arima Featured Canon dossier spotlight card.
+  - Implemented the authentic 12-column asymmetric bento character grid with `getBentoSpanClass` dynamic spans, double-bezel card frames, DiceBear/custom avatar masks, mono tags, and optimistic like buttons in [`nextjs-frontend/components/characters/character-card.tsx`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/nextjs-frontend/components/characters/character-card.tsx).
+- **Unified Design Tokens & CSS Architecture**:
+  - Imported and synchronized all modular stylesheets (`base.css`, `dashboard.css`, `studio.css`, `personas.css`, `chat.css`, `auth.css`) directly into Next.js root layout [`nextjs-frontend/app/layout.tsx`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/nextjs-frontend/app/layout.tsx).
+  - Injected Fontshare (`Cabinet Grotesk`, `Satoshi`), Google Fonts (`JetBrains Mono`, `Instrument Serif`), and Phosphor Icons (`@phosphor-icons/web@2.1.1`).
+  - Attached GPU-accelerated cursor spotlight tracking (`--mouse-x`, `--mouse-y`) to all double-bezel chassis across the application via high-performance event delegation.
+  - Integrated 60fps kinetic motion canvas engine (`AmbientMotionCanvas`) in `AmbientCanvas` component and `ambient-grain` film overlay.
+- **Type Safety & Build Verification**:
+  - `npm run build` compiled 12/12 static and dynamic routes cleanly with 0 TypeScript errors and 0 ESLint warnings.
+  - Verified live parity against `http://localhost:3000` on `http://localhost:3001` with API proxy rewrites routing seamlessly to Turso Cloud.
 
-### 🏷️ `v2.6.1` (Current) — Negation Guard, Bidirectional Negative Inertia, Regenerate Idempotency & Schema Sync
+### 🏷️ `v2.6.1` — Negation Guard, Bidirectional Negative Inertia, Regenerate Idempotency & Schema Sync
 - **Negation-Aware Signal Detection (`#stripNegatedPhrases`)**:
   - Implemented `#stripNegatedPhrases` in [`backend/services/relationship.service.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/backend/services/relationship.service.js) to strip negated sentiment words in English and Vietnamese (`don't love`, `not worthless`, `không còn yêu`, `đừng nghĩ mình vô dụng`) before regex evaluation.
   - Added explicit cold rejection detection (`isColdRejection`) inflicting heartbreak penalties (`mood = 'Hurt / Heartbroken'`, `strain += 18`, `trust -= 6`, `affinity -= 2..7`) without misclassifying as affection.
