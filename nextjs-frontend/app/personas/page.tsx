@@ -36,8 +36,8 @@ export default function PersonasPage() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  const loadPersonas = useCallback(async () => {
-    setLoading(true);
+  const loadPersonas = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const data = await api.getPersonas();
       setPersonas(Array.isArray(data) ? data : []);
@@ -45,12 +45,12 @@ export default function PersonasPage() {
       const msg = err instanceof Error ? err.message : 'Failed to load personas';
       showToast(msg, 'error');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [showToast]);
 
   useEffect(() => {
-    loadPersonas();
+    loadPersonas(false);
   }, [loadPersonas]);
 
   const handleSetDefault = async (id: string) => {
@@ -58,7 +58,7 @@ export default function PersonasPage() {
     try {
       await api.setDefaultPersona(id);
       showToast('Active default persona updated.');
-      await loadPersonas();
+      await loadPersonas(true);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to update default persona';
       showToast(msg, 'error');
@@ -77,7 +77,7 @@ export default function PersonasPage() {
     try {
       await api.deletePersona(id);
       showToast('Persona identity removed.');
-      await loadPersonas();
+      await loadPersonas(true);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to delete persona';
       showToast(msg, 'error');
@@ -88,7 +88,7 @@ export default function PersonasPage() {
 
   const handleCreated = async (newPersona: UserPersona) => {
     showToast(`Saved identity "${newPersona.name}" to SQL.`);
-    await loadPersonas();
+    await loadPersonas(true);
   };
 
   const activePersona = personas.find((p) => p.isDefault);
@@ -145,7 +145,7 @@ export default function PersonasPage() {
 
           <button
             type="button"
-            onClick={loadPersonas}
+            onClick={() => loadPersonas(false)}
             disabled={loading}
             className="icon-btn h-9 w-9 text-text-muted hover:text-text-primary cursor-pointer"
             title="Refresh Roster"

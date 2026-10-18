@@ -2,13 +2,46 @@ import { spawn } from 'child_process';
 import path from 'path';
 import { config, PROJECT_ROOT } from '../../config/index.js';
 
+const ALLOWED_MEMORY_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+
 class MemoryClient {
   constructor() {
     this.pythonProcess = null;
-    this.serviceUrl = config.MEMORY_SERVICE_URL || 'http://localhost:5001';
+    const configuredUrl = config.MEMORY_SERVICE_URL || 'http://localhost:5001';
+    this.serviceUrl = this.isAllowedServiceUrl(configuredUrl) ? configuredUrl.replace(/\/+$/, '') : 'http://localhost:5001';
     this.isRunning = false;
     this.lastHealthCheckFailedAt = 0;
     this.healthCheckCooldownMs = 30000;
+    this.requestTimeoutMs = 3000;
+  }
+
+  /**
+   * Verify that the memory microservice URL points strictly to a trusted loopback interface (SSRF Defense)
+   */
+  isAllowedServiceUrl(rawUrl) {
+    try {
+      const parsed = new URL(rawUrl);
+      if (!['http:', 'https:'].includes(parsed.protocol)) return false;
+      return ALLOWED_MEMORY_HOSTS.has(parsed.hostname.toLowerCase());
+    } catch {
+      return false;
+    }
+  }
+
+  async #fetchWithTimeout(endpoint, options = {}, timeoutMs = this.requestTimeoutMs) {
+    if (!this.isAllowedServiceUrl(this.serviceUrl)) {
+      throw new Error('Blocked untrusted memory service URL');
+    }
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(`${this.serviceUrl}${endpoint}`, {
+        ...options,
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   /**
@@ -20,12 +53,7 @@ class MemoryClient {
     }
 
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 1200);
-      const response = await fetch(`${this.serviceUrl}/health`, {
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
+      const response = await this.#fetchWithTimeout('/health', {}, 1200);
       this.isRunning = response.ok;
       if (this.isRunning) {
         this.lastHealthCheckFailedAt = 0;
@@ -40,8 +68,17 @@ class MemoryClient {
     }
   }
 
+  async #hasPythonRuntime(pythonPath) {
+    const { execFile } = await import('child_process');
+    return new Promise((resolve) => {
+      execFile(pythonPath, ['--version'], { timeout: 2500 }, (error) => {
+        resolve(!error);
+      });
+    });
+  }
+
   /**
-   * Start the Python memory service (optional enhancement)
+   * Start the Python memory service without blocking the Node.js Event Loop
    */
   async startService() {
     if (await this.checkHealth(true)) {
@@ -50,10 +87,7 @@ class MemoryClient {
     }
 
     const pythonPath = process.platform === 'win32' ? 'python' : 'python3';
-    try {
-      const { execSync } = await import('child_process');
-      execSync(`${pythonPath} --version`, { encoding: 'utf8', stdio: 'pipe' });
-    } catch {
+    if (!(await this.#hasPythonRuntime(pythonPath))) {
       console.log('[MEMORY] Python not found, using built-in Node.js semantic memory engine');
       return;
     }
@@ -64,7 +98,7 @@ class MemoryClient {
     return new Promise((resolve) => {
       this.pythonProcess = spawn(pythonPath, [servicePath], {
         cwd: serviceDir,
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['ignore', 'pipe', 'pipe']
       });
 
       this.pythonProcess.stdout.on('data', (data) => {
@@ -79,7 +113,7 @@ class MemoryClient {
         this.isRunning = false;
       });
 
-      this.waitForService(10).then(() => {
+      this.waitForService(12, 350).then(() => {
         this.isRunning = true;
         this.lastHealthCheckFailedAt = 0;
         console.log('[MEMORY] Python embedding service started');
@@ -91,10 +125,10 @@ class MemoryClient {
     });
   }
 
-  async waitForService(maxAttempts = 10) {
+  async waitForService(maxAttempts = 12, intervalMs = 350) {
     for (let i = 0; i < maxAttempts; i++) {
       if (await this.checkHealth(true)) return;
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, intervalMs));
     }
     throw new Error('Python memory service timeout');
   }
@@ -107,19 +141,35 @@ class MemoryClient {
     }
   }
 
+  #normalizeMetadata(metadata = {}) {
+    const safeMeta = metadata && typeof metadata === 'object' ? metadata : {};
+    const sessionId = safeMeta.sessionId || safeMeta.session_id || null;
+    const source = safeMeta.source || 'conversation';
+    return {
+      id: safeMeta.id || null,
+      sessionId,
+      source,
+      raw: { ...safeMeta, sessionId, session_id: sessionId, source }
+    };
+  }
+
   async addMemory(content, characterId, metadata = {}) {
+    const normalized = this.#normalizeMetadata(metadata);
+    const trimmed = String(content || '').trim();
+    if (!trimmed || !characterId || String(normalized.source).toLowerCase() === 'story_summary') return null;
     if (!this.isRunning && !(await this.checkHealth())) return null;
+
     try {
-      const response = await fetch(`${this.serviceUrl}/memories`, {
+      const response = await this.#fetchWithTimeout('/memories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: metadata.id || null,
-          content,
+          id: normalized.id,
+          content: trimmed.slice(0, 2000),
           character_id: characterId,
-          session_id: metadata.sessionId || null,
-          source: metadata.source || 'conversation',
-          metadata
+          session_id: normalized.sessionId,
+          source: normalized.source,
+          metadata: normalized.raw
         })
       });
       if (!response.ok) return null;
@@ -133,17 +183,20 @@ class MemoryClient {
   }
 
   async retrieveMemories(query, characterId, topK = 3, threshold = 0.25, sessionId = null) {
+    if (!query || !characterId) return null;
     if (!this.isRunning && !(await this.checkHealth())) return null;
     try {
-      const response = await fetch(`${this.serviceUrl}/memories/retrieve`, {
+      const safeTopK = Math.max(1, Math.min(20, Number(topK) || 3));
+      const safeThreshold = Math.max(0, Math.min(1, Number(threshold) || 0.25));
+      const response = await this.#fetchWithTimeout('/memories/retrieve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          query,
+          query: String(query).trim().slice(0, 1000),
           character_id: characterId,
           session_id: sessionId || null,
-          top_k: topK,
-          threshold
+          top_k: safeTopK,
+          threshold: safeThreshold
         })
       });
       if (!response.ok) return null;
@@ -157,10 +210,10 @@ class MemoryClient {
   }
 
   async deleteMemory(memoryId) {
-    if (!memoryId) return false;
+    if (!memoryId || typeof memoryId !== 'string') return false;
     if (!this.isRunning && !(await this.checkHealth())) return false;
     try {
-      const response = await fetch(`${this.serviceUrl}/memories/${encodeURIComponent(memoryId)}`, {
+      const response = await this.#fetchWithTimeout(`/memories/${encodeURIComponent(memoryId)}`, {
         method: 'DELETE'
       });
       return response.ok;

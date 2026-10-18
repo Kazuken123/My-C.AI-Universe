@@ -31,8 +31,18 @@ class ImageCropper {
 
     this.onCropCallback = null;
     this.targetSize = 400;
+    this.uploader = (dataUrl) => api.uploadAvatar(dataUrl);
+    this.rafId = null;
 
     this.#buildModal();
+  }
+
+  #scheduleRender() {
+    if (this.rafId !== null) return;
+    this.rafId = window.requestAnimationFrame(() => {
+      this.rafId = null;
+      this.#render();
+    });
   }
 
   #buildModal() {
@@ -169,14 +179,14 @@ class ImageCropper {
     // Zoom slider
     this.slider.addEventListener('input', () => {
       this.zoom = parseFloat(this.slider.value) / 100;
-      this.#render();
+      this.#scheduleRender();
     });
 
     // Rotate
     rotateBtn.addEventListener('click', () => {
       this.rotation = (this.rotation + 90) % 360;
       this.#resetPosition();
-      this.#render();
+      this.#scheduleRender();
     });
 
     // Reset
@@ -196,13 +206,13 @@ class ImageCropper {
       if (!this.isDragging) return;
       this.offsetX = e.clientX - this.dragStartX;
       this.offsetY = e.clientY - this.dragStartY;
-      this.#render();
+      this.#scheduleRender();
     });
 
     window.addEventListener('mouseup', () => {
       if (this.isDragging) {
         this.isDragging = false;
-        this.#render();
+        this.#scheduleRender();
       }
     });
 
@@ -221,14 +231,14 @@ class ImageCropper {
       const t = e.touches[0];
       this.offsetX = t.clientX - this.dragStartX;
       this.offsetY = t.clientY - this.dragStartY;
-      this.#render();
+      this.#scheduleRender();
       e.preventDefault();
     }, { passive: false });
 
     window.addEventListener('touchend', () => {
       if (this.isDragging) {
         this.isDragging = false;
-        this.#render();
+        this.#scheduleRender();
       }
     });
 
@@ -240,7 +250,7 @@ class ImageCropper {
       let newZoom = Math.max(1, Math.min(4, this.zoom + delta));
       this.zoom = newZoom;
       this.slider.value = String(Math.round(this.zoom * 100));
-      this.#render();
+      this.#scheduleRender();
     }, { passive: false });
 
     // Apply Crop button
@@ -248,8 +258,13 @@ class ImageCropper {
   }
 
   #loadFile(file) {
+    const MAX_INPUT_FILE_BYTES = 15 * 1024 * 1024; // 15 MB raw file guard
     if (!file || !file.type.startsWith('image/')) {
       showToast('Please select a valid image file');
+      return;
+    }
+    if (file.size > MAX_INPUT_FILE_BYTES) {
+      showToast('Image file is too large (max 15MB)');
       return;
     }
     const reader = new FileReader();
@@ -370,6 +385,33 @@ class ImageCropper {
     this.ctx.restore();
   }
 
+  #exportCroppedDataUrl() {
+    const offscreen = document.createElement('canvas');
+    offscreen.width = this.targetSize;
+    offscreen.height = this.targetSize;
+    const offCtx = offscreen.getContext('2d');
+
+    const w = this.canvas.width;
+    const cropRadius = (w / 2) * 0.88;
+    const scaleToTarget = this.targetSize / (cropRadius * 2);
+
+    offCtx.save();
+    offCtx.translate(this.targetSize / 2, this.targetSize / 2);
+    offCtx.scale(scaleToTarget, scaleToTarget);
+    offCtx.translate(this.offsetX, this.offsetY);
+    offCtx.rotate((this.rotation * Math.PI) / 180);
+    const currentScale = this.baseScale * this.zoom;
+    offCtx.scale(currentScale, currentScale);
+    offCtx.drawImage(this.img, -this.img.width / 2, -this.img.height / 2);
+    offCtx.restore();
+
+    let dataUrl = offscreen.toDataURL('image/webp', 0.85);
+    if (!dataUrl.startsWith('data:image/webp')) {
+      dataUrl = offscreen.toDataURL('image/jpeg', 0.85);
+    }
+    return dataUrl;
+  }
+
   async #handleApply() {
     if (!this.img || !this.imgLoaded) return;
 
@@ -377,41 +419,18 @@ class ImageCropper {
     this.applyBtn.innerHTML = '<i class="ph-light ph-spinner ph-spin"></i><span>Saving...</span>';
 
     try {
-      // Render the framed region to offscreen canvas
-      const offscreen = document.createElement('canvas');
-      offscreen.width = this.targetSize;
-      offscreen.height = this.targetSize;
-      const offCtx = offscreen.getContext('2d');
+      const dataUrl = this.#exportCroppedDataUrl();
 
-      const w = this.canvas.width;
-      const h = this.canvas.height;
-      const cropRadius = (w / 2) * 0.88;
-      const scaleToTarget = this.targetSize / (cropRadius * 2);
-
-      offCtx.save();
-      offCtx.translate(this.targetSize / 2, this.targetSize / 2);
-      offCtx.scale(scaleToTarget, scaleToTarget);
-
-      // Apply the same canvas transform relative to center
-      offCtx.translate(this.offsetX, this.offsetY);
-      offCtx.rotate((this.rotation * Math.PI) / 180);
-      const currentScale = this.baseScale * this.zoom;
-      offCtx.scale(currentScale, currentScale);
-      offCtx.drawImage(this.img, -this.img.width / 2, -this.img.height / 2);
-      offCtx.restore();
-
-      const dataUrl = offscreen.toDataURL('image/jpeg', 0.92);
-
-      // Upload to server static asset storage
       let uploadedUrl = dataUrl;
       try {
-        const res = await api.uploadAvatar(dataUrl);
-        if (res && res.url) {
+        const res = await this.uploader(dataUrl);
+        if (typeof res === 'string' && res.trim().length > 0) {
+          uploadedUrl = res.trim();
+        } else if (res && res.url) {
           uploadedUrl = res.url;
         }
       } catch (uploadErr) {
         console.warn('Backend avatar upload warning:', uploadErr);
-        // Fall back cleanly to high-res dataUrl if offline or unauthenticated
         uploadedUrl = dataUrl;
       }
 
@@ -425,15 +444,17 @@ class ImageCropper {
       showToast('Avatar cropped and updated!');
       this.close();
     } catch (err) {
-      showToast('Error applying crop: ' + (err.message || 'unknown error'));
+      const errMsg = err?.message || (typeof err === 'string' ? err : 'unknown error');
+      showToast('Error applying crop: ' + errMsg);
     } finally {
       this.applyBtn.disabled = false;
       this.applyBtn.innerHTML = '<i class="ph-light ph-check"></i><span>Save &amp; Crop</span>';
     }
   }
 
-  open({ onCrop, initialImage = null, title = 'Adjust Profile Image', shape = 'circle' } = {}) {
+  open({ onCrop, uploader = null, initialImage = null, title = 'Adjust Profile Image', shape = 'circle' } = {}) {
     this.onCropCallback = onCrop || null;
+    this.uploader = uploader || ((dataUrl) => api.uploadAvatar(dataUrl));
     this.cropShape = shape;
     if (this.titleEl) this.titleEl.textContent = title;
 
@@ -455,6 +476,11 @@ class ImageCropper {
   }
 
   close() {
+    this.isDragging = false;
+    if (this.rafId !== null) {
+      window.cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
     this.overlay.classList.remove('active');
     document.body.style.overflow = '';
   }

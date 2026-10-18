@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
@@ -19,15 +19,30 @@ function AuthPageSkeleton() {
   );
 }
 
+function sanitizeReturnUrl(raw: string | null): string {
+  if (!raw) return '/';
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith('/') || trimmed.startsWith('//') || trimmed.startsWith('/\\')) {
+    return '/';
+  }
+  return trimmed;
+}
+
+function isSafeImageUrl(val?: string | null): boolean {
+  if (!val) return false;
+  return /^(https?:\/\/|\/(?!\/)|data:image\/(png|jpeg|jpg|webp|gif);base64,)/i.test(val.trim());
+}
+
 function AuthContent() {
   const searchParams = useSearchParams();
   const { user, isAuthenticated, loading, logout } = useAuth();
 
   const modeParam = searchParams.get('mode');
-  const returnUrl = searchParams.get('return') || '/';
+  const returnUrl = sanitizeReturnUrl(searchParams.get('return'));
 
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
   const [socialNotice, setSocialNotice] = useState<string | null>(null);
+  const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (modeParam === 'signup') {
@@ -37,18 +52,31 @@ function AuthContent() {
     }
   }, [modeParam]);
 
-  const handleGoogleAuth = () => {
-    setSocialNotice('Google OAuth client integration initialized. Connecting with Identity Provider...');
-    setTimeout(() => {
+  useEffect(() => {
+    return () => {
+      if (noticeTimerRef.current) {
+        clearTimeout(noticeTimerRef.current);
+      }
+    };
+  }, []);
+
+  const showTemporarySocialNotice = (msg: string) => {
+    if (noticeTimerRef.current) {
+      clearTimeout(noticeTimerRef.current);
+    }
+    setSocialNotice(msg);
+    noticeTimerRef.current = setTimeout(() => {
       setSocialNotice(null);
+      noticeTimerRef.current = null;
     }, 4000);
   };
 
+  const handleGoogleAuth = () => {
+    showTemporarySocialNotice('Google OAuth client integration initialized. Connecting with Identity Provider...');
+  };
+
   const handleFacebookAuth = () => {
-    setSocialNotice('Facebook OAuth requires an active Facebook App ID configuration.');
-    setTimeout(() => {
-      setSocialNotice(null);
-    }, 4000);
+    showTemporarySocialNotice('Facebook OAuth requires an active Facebook App ID configuration.');
   };
 
   return (
@@ -100,11 +128,11 @@ function AuthContent() {
             {/* User Profile Summary Card */}
             <div className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.025] border border-border-hairline">
               <div className="relative h-14 w-14 shrink-0 rounded-full bg-accent/20 border border-border-subtle overflow-hidden flex items-center justify-center text-xl font-bold text-accent">
-                {user.avatar ? (
+                {isSafeImageUrl(user.avatar) ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img src={user.avatar} alt={user.displayName} className="h-full w-full object-cover" />
                 ) : (
-                  user.displayName?.[0] || user.username[0]
+                  user.avatar || user.displayName?.[0] || user.username[0]
                 )}
               </div>
               <div className="flex flex-col min-w-0">

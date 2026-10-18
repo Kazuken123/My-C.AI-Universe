@@ -16,7 +16,7 @@ export class Character extends BaseEntity {
 
   constructor(props = {}) {
     super({
-      id: props.id || crypto.randomUUID(),
+      id: props.id || null,
       createdAt: props.createdAt || props.created_at,
       updatedAt: props.updatedAt || props.updated_at
     });

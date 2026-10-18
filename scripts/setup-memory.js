@@ -3,7 +3,7 @@
 /**
  * Setup script for the optional Python sentence-transformers memory microservice
  */
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -17,11 +17,11 @@ console.log('Setting up Python memory service...');
 
 let pythonCmd = 'python';
 try {
-  const v = execSync('python --version', { encoding: 'utf-8' });
+  const v = execFileSync('python', ['--version'], { encoding: 'utf-8' });
   console.log('✅ Python found:', v.trim());
 } catch {
   try {
-    const v3 = execSync('python3 --version', { encoding: 'utf-8' });
+    const v3 = execFileSync('python3', ['--version'], { encoding: 'utf-8' });
     pythonCmd = 'python3';
     console.log('✅ Python3 found:', v3.trim());
   } catch {
@@ -37,7 +37,7 @@ if (!fs.existsSync(MEMORY_SERVICE_DIR)) {
 
 console.log('Installing Python dependencies from memory-service/requirements.txt...');
 try {
-  execSync(`${pythonCmd} -m pip install -r requirements.txt`, {
+  execFileSync(pythonCmd, ['-m', 'pip', 'install', '-r', 'requirements.txt'], {
     cwd: MEMORY_SERVICE_DIR,
     stdio: 'inherit'
   });

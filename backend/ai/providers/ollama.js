@@ -15,20 +15,9 @@ export class OllamaProvider extends BaseAIProvider {
    */
   async generateReply(character, userMsg, memory = null, options = {}) {
     try {
-      const userName = options.persona?.name || 'User';
-      const conversationHistory = this.buildHistoryText(memory, character.name, userName);
-      const systemPrompt = this.buildSystemPrompt(character, options);
+      const prompt = this.buildFullPrompt(character, userMsg, memory, options);
 
-      const prompt = `${systemPrompt}
-
-${conversationHistory}${userName}: ${userMsg}
-
-${character.name}:`;
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), config.AI_TIMEOUT || 30000);
-
-      const res = await fetch(`${config.OLLAMA_URL}/api/generate`, {
+      const res = await this.fetchWithTimeout(`${config.OLLAMA_URL}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -36,14 +25,14 @@ ${character.name}:`;
           prompt,
           stream: false
         }),
-        signal: controller.signal
+        signal: options?.signal,
+        timeout: options?.timeout
       });
 
-      clearTimeout(timeoutId);
-
       if (!res.ok) {
-        const text = await res.text();
-        throw new AIError(`Ollama HTTP ${res.status}: ${text}`, 503);
+        const text = await res.text().catch(() => '');
+        console.error(`[OLLAMA UPSTREAM HTTP ${res.status}]`, text.slice(0, 300));
+        throw new AIError(`Ollama upstream service returned HTTP ${res.status}`, 503);
       }
 
       const data = await res.json();
@@ -55,8 +44,14 @@ ${character.name}:`;
 
       return response;
     } catch (error) {
-      if (error.name === 'AbortError') {
+      if (options?.signal?.aborted) {
+        throw new AIError('Ollama request cancelled by client', 499, error);
+      }
+      if (error.name === 'AbortError' || error.name === 'TimeoutError') {
         throw new AIError('Ollama request timeout', 504);
+      }
+      if (error instanceof AIError) {
+        throw error;
       }
       console.error('[OLLAMA PROVIDER ERROR]', error.message);
       throw new AIError('Ollama service unavailable. Ensure `ollama serve` is running.', 503, error);

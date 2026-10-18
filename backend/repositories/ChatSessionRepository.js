@@ -483,6 +483,41 @@ export class ChatSessionRepository extends BaseRepository {
       }
     });
   }
+
+  /**
+   * Count total chat messages across all sessions
+   * @param {Object} [targetDb]
+   * @returns {Promise<number>}
+   */
+  async countMessages(targetDb = null) {
+    const conn = targetDb || this.db;
+    try {
+      const row = await conn.prepare('SELECT COUNT(*) AS count FROM chat_messages').get();
+      return Number(row?.count) || 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Aggregate session count grouped by user_id
+   * @param {Object} [targetDb]
+   * @returns {Promise<Map<string, number>>}
+   */
+  async countByUser(targetDb = null) {
+    const conn = targetDb || this.db;
+    try {
+      const rows = await conn.prepare(`
+        SELECT user_id, COUNT(*) as count
+        FROM chat_sessions
+        WHERE user_id IS NOT NULL
+        GROUP BY user_id
+      `).all();
+      return new Map((rows || []).map(r => [r.user_id, Number(r.count) || 0]));
+    } catch {
+      return new Map();
+    }
+  }
 }
 
 export const chatSessionRepository = new ChatSessionRepository();

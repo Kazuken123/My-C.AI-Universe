@@ -1,3 +1,5 @@
+import crypto from 'node:crypto';
+
 /**
  * Abstract Base Entity Class (OOP Inheritance Root)
  * Encapsulates common identity, audit timestamps, and serialization contracts for all domain models.
@@ -20,11 +22,11 @@ export class BaseEntity {
   }
 
   /**
-   * Generate a unique identifier (can be overridden by subclasses)
+   * Generate a cryptographically strong unique identifier (64-bit CSPRNG entropy)
    * @returns {string}
    */
   generateId() {
-    return `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    return `${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
   }
 
   /**

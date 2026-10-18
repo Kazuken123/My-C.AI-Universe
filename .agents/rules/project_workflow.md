@@ -37,7 +37,16 @@ Whenever working on this codebase in any session, you **MUST ALWAYS** follow the
 
 ---
 
-### 4. 🧪 Always Verify with the Automated Test Suite
+### 4. 📦 Always Update Repomix Codebase Package
+- After modifying or updating any code files, features, tests, or configurations in this session, always re-pack the repository:
+  ```bash
+  npm run audit:pack
+  ```
+- This ensures `repomix-output.xml` and `AUDIT_PROMPT.md` are always synchronized with the latest codebase state for Gemini Web Argon.
+
+---
+
+### 5. 🧪 Always Verify with the Automated Test Suite
 - Run the full end-to-end API & security test suite before pushing:
   ```bash
   npm test
@@ -46,7 +55,7 @@ Whenever working on this codebase in any session, you **MUST ALWAYS** follow the
 
 ---
 
-### 5. 🏛️ Architectural & LLM Invariant Rules
+### 6. 🏛️ Architectural & LLM Invariant Rules
 - **Database Mutations**: Simple turn updates (swiping takes, editing, pinning) **must** use `ChatSessionRepository.updateMessageFields()` for 1ms single-row updates. Never invoke `.save(session)` for simple take swiping.
 - **Optimistic UI**: Message variant switching (`<-` / `->`) must update the DOM in-place immediately (0ms latency) and debounce database sync (`queueVariantSync`, 250ms).
 - **Gemini Safety Settings**: Always maintain `safetySettings: BLOCK_NONE` in `GeminiProvider` to prevent false-positive `PROHIBITED_CONTENT` blocks on creative roleplay.
@@ -54,7 +63,7 @@ Whenever working on this codebase in any session, you **MUST ALWAYS** follow the
 
 ---
 
-### 6. 🎨 Mandatory Visual Design & Frontend Parity Standards
+### 7. 🎨 Mandatory Visual Design & Frontend Parity Standards
 - **Pixel-for-Pixel Fidelity**: When porting or redesigning UI into modern frameworks (Next.js, React, Vue), never substitute tailored brand CSS with generic AI default styling or boilerplate component kits.
 - **Brand Assets & Typography**: Always preserve the original branding marks (`favicon.svg`), typography systems (`Cabinet Grotesk`, `Satoshi`, `JetBrains Mono`), and tactile design tokens (`base.css`, `dashboard.css`, `double-bezel` chassis).
 - **Reject Generic AI Slop**: Never insert placeholder banners (*"Next.js App Router Active"*), delete split hero compositions, or downgrade asymmetrical bento grids to plain uniform card lists.

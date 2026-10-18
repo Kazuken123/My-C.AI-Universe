@@ -45,7 +45,7 @@ export default function ProfilePage() {
     );
   }
 
-  const isImageUrl = (val: string) => /^(https?:\/\/|\/|data:image\/)/i.test(val?.trim() || '');
+  const isImageUrl = (val: string) => /^(https?:\/\/|\/(?!\/)|data:image\/(png|jpeg|jpg|webp|gif);base64,)/i.test(val?.trim() || '');
   const memberSince = user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',

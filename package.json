@@ -11,7 +11,8 @@
     "db:turso:push": "node scripts/migrate-to-turso.js",
     "db:sync:stats": "node scripts/sync-real-stats.js",
     "db:assets:sync": "node scripts/migrate-media-assets.js",
-    "setup-memory": "node scripts/setup-memory.js"
+    "setup-memory": "node scripts/setup-memory.js",
+    "audit:pack": "node scripts/prepare-audit.js"
   },
   "engines": {
     "node": ">=22.0.0"
