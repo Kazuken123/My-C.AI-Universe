@@ -9,16 +9,16 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <title>Profile & Persona Setup — My C.AI Universe</title>
   <meta name="description" content="Set up your display name, username handle, and active roleplay persona." />
-  <!-- Fonts: Cabinet Grotesk, Satoshi, JetBrains Mono -->
+  <!-- Fonts: General Sans, Cabinet Grotesk, Onest, Satoshi, JetBrains Mono -->
   <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
-  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
+  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@500,600,700&f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <!-- Icons -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="shortcut icon" href="/favicon.ico" />
-  <meta name="theme-color" content="#0c0b15" />
+  <meta name="theme-color" content="#060606" />
   <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
   <!-- Modular CSS for Auth & Setup -->
   <link rel="stylesheet" href="/css/base.css" />
@@ -35,7 +35,7 @@
       width: 58px;
       height: 58px;
       border-radius: 50%;
-      background: #191826;
+      background: #141414;
       border: 1px solid var(--border-subtle);
       display: flex;
       align-items: center;
@@ -45,12 +45,12 @@
       flex-shrink: 0;
       cursor: pointer;
       position: relative;
-      transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+      transition: border-color 0.2s cubic-bezier(0.22, 1, 0.36, 1), transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s cubic-bezier(0.22, 1, 0.36, 1);
     }
     .setup-avatar-preview:hover {
       border-color: var(--accent);
       transform: scale(1.05);
-      box-shadow: 0 0 14px var(--accent-soft);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.55);
     }
     .setup-avatar-preview img {
       width: 100%;
@@ -77,7 +77,7 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: background 0.18s ease, transform 0.18s ease;
+      transition: background-color 0.18s cubic-bezier(0.22, 1, 0.36, 1), transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
     }
     .setup-preset-btn:hover {
       background: rgba(255, 255, 255, 0.12);
@@ -87,9 +87,9 @@
       font-size: 0.78rem;
       font-family: var(--font-mono);
       font-weight: 700;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #c9b037;
+      color: var(--accent);
       margin: 20px 0 10px 0;
       padding-bottom: 6px;
       border-bottom: 1px solid var(--border-hairline);
@@ -140,7 +140,6 @@
         <div class="auth-card-core double-bezel-core">
 
           <header class="auth-card-header">
-            <span class="eyebrow-pill">IDENTITY &amp; PERSONA SETUP</span>
             <h1 class="auth-card-title" id="setupCardTitle">Configure Profile &amp; Persona</h1>
             <p class="auth-card-sub" id="setupCardSub">Set up your display name, username handle, and active roleplay persona so AI characters recognize you.</p>
           </header>

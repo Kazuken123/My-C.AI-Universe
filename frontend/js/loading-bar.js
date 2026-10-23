@@ -115,7 +115,7 @@ export class TopLoadingBar {
 
     // Reveal and animate initial spring jump (~22%)
     container.classList.add('is-active');
-    progress.style.transition = 'width 240ms cubic-bezier(0.23, 1, 0.32, 1)';
+    progress.style.transition = 'transform 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 240ms cubic-bezier(0.22, 1, 0.36, 1)';
     this.set(0.22);
 
     // Auto-trickle forward smoothly
@@ -193,7 +193,7 @@ export class TopLoadingBar {
     const { container, progress } = this.#getElements();
 
     if (progress) {
-      progress.style.transition = 'width 180ms cubic-bezier(0.23, 1, 0.32, 1)';
+      progress.style.transition = 'transform 180ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms cubic-bezier(0.22, 1, 0.36, 1)';
       progress.style.width = '100%';
     }
 

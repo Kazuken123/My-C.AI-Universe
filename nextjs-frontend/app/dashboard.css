@@ -54,7 +54,7 @@
 
 .topbar-index {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--accent);
   letter-spacing: 0.08em;
 }
@@ -104,12 +104,13 @@
 }
 
 .search-box input::placeholder {
-  color: var(--text-muted);
+  color: #8e8e98;
+  opacity: 1;
 }
 
 .search-kbd {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.74rem;
   padding: 1px 6px;
   border-radius: 4px;
   border: 1px solid var(--border-hairline);
@@ -118,7 +119,7 @@
 
 
 /* ============================================================================
-   EDITORIAL SPLIT HERO (soft-skill Section 3.B.3 & design-taste-frontend 4.7)
+   EDITORIAL SPLIT HERO (GetLayers Cinema & design-taste-frontend 4.7)
    ============================================================================ */
 .hero-shell {
   margin-bottom: 22px;
@@ -154,9 +155,9 @@
   background: var(--accent-soft);
   color: var(--accent);
   font-family: var(--font-mono);
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
@@ -191,17 +192,16 @@
    ============================================================================ */
 .hero-spotlight-dossier {
   position: relative;
-  background: linear-gradient(145deg, rgba(23, 21, 35, 0.94) 0%, rgba(13, 12, 22, 0.98) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: linear-gradient(145deg, rgba(22, 22, 24, 0.94) 0%, rgba(13, 13, 15, 0.98) 100%);
+  border: 0;
   border-radius: var(--radius-shell);
   padding: 22px 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   cursor: pointer;
-  box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: var(--tw-rim);
   transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.28s ease,
               box-shadow 0.35s ease,
               filter 0.28s ease;
   overflow: hidden;
@@ -223,10 +223,7 @@
 }
 
 .hero-spotlight-dossier:hover {
-  border-color: var(--accent-border);
-  box-shadow: var(--shadow-card-hover),
-              0 0 0 1px var(--accent-border),
-              inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.28);
   transform: translateY(-3px);
   filter: brightness(1.03);
 }
@@ -251,9 +248,9 @@
   isolation: isolate;
   -webkit-mask-image: -webkit-radial-gradient(white, black);
   mask-image: radial-gradient(white, black);
-  background: radial-gradient(circle at 50% 30%, rgba(139, 92, 246, 0.25) 0%, rgba(18, 16, 28, 0.98) 100%);
-  border: 1.5px solid rgba(139, 92, 246, 0.45);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  background: radial-gradient(circle at 50% 30%, rgba(255, 165, 130, 0.22) 0%, rgba(18, 18, 20, 0.98) 100%);
+  border: 1.5px solid rgba(255, 165, 130, 0.42);
+  box-shadow: 0 8px 14px -4px rgba(0, 0, 0, 0.65), var(--tw-rim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -284,16 +281,9 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #10b981;
-  border: 2.5px solid #0d0c16;
-  box-shadow: 0 0 10px #10b981;
-  animation: pulseLiveDot 2.2s infinite ease-in-out;
+  background: var(--success);
+  border: 2.5px solid #0d0d0d;
   z-index: 2;
-}
-
-@keyframes pulseLiveDot {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.15); opacity: 0.85; box-shadow: 0 0 14px #10b981; }
 }
 
 .dossier-header-meta {
@@ -313,7 +303,7 @@
 
 .dossier-creator-badge {
   font-family: var(--font-mono);
-  font-size: 0.65rem;
+  font-size: 0.74rem;
   color: var(--text-muted);
   letter-spacing: 0.04em;
 }
@@ -339,26 +329,23 @@
 
 .dossier-bio {
   position: relative;
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-left: 3px solid var(--accent);
+  background: rgba(255, 255, 255, 0.03);
+  border: 0;
   border-radius: 12px;
-  padding: 8px 12px;
-  font-size: 0.8rem;
-  line-height: 1.45;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  line-height: 1.48;
   color: #d4d4d8;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  transition: background 0.25s ease, border-color 0.25s ease;
+  transition: background-color 0.25s ease;
   font-style: italic;
 }
 
 .hero-spotlight-dossier:hover .dossier-bio {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.1);
-  border-left-color: var(--accent-hover);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .dossier-quote-mark {
@@ -376,19 +363,18 @@
 }
 
 .dossier-meta-card {
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+  border: 0;
   border-radius: 12px;
-  padding: 6px 10px;
+  padding: 8px 12px;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: background-color 0.2s ease;
 }
 
 .hero-spotlight-dossier:hover .dossier-meta-card {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(139, 92, 246, 0.2);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .dossier-meta-label {
@@ -396,10 +382,10 @@
   align-items: center;
   gap: 5px;
   font-family: var(--font-mono);
-  font-size: 0.64rem;
+  font-size: 0.74rem;
   font-weight: 600;
   color: var(--text-muted);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -445,7 +431,7 @@
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.07);
   font-family: var(--font-mono);
-  font-size: 0.65rem;
+  font-size: 0.74rem;
   color: var(--text-secondary);
 }
 
@@ -454,7 +440,7 @@
   align-items: center;
   gap: 6px;
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--accent-hover);
   letter-spacing: 0.04em;
@@ -536,7 +522,7 @@
 .category-pill:hover {
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.25);
-  background: #1c1c24;
+  background: var(--bg-card-hover);
   filter: brightness(1.1);
   transform: translateY(-1px);
 }
@@ -595,13 +581,12 @@
 .double-bezel-shell.card-shell:hover {
   transform: translateY(-3px);
   border-color: var(--accent-border);
-  box-shadow: 0 0 28px var(--accent-soft), var(--shadow-card-hover);
+  box-shadow: var(--shadow-card-hover), var(--tw-rim);
 }
 
 .double-bezel-shell.card-shell:hover .double-bezel-core {
-  border-color: rgba(255, 255, 255, 0.18);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 0 18px var(--accent-soft);
-  filter: brightness(1.06);
+  box-shadow: var(--tw-rim);
+  filter: brightness(1.04);
 }
 
 .cai-card-top {
@@ -626,9 +611,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 50% 30%, rgba(139, 92, 246, 0.2) 0%, rgba(18, 16, 28, 0.95) 100%);
+  background: radial-gradient(circle at 50% 30%, rgba(255, 165, 130, 0.16) 0%, rgba(18, 18, 20, 0.95) 100%);
   border: 1px solid var(--border-hairline);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.45);
   transition: border-color 0.35s var(--ease-glow), box-shadow 0.4s var(--ease-glow), filter 0.35s var(--ease-glow);
   isolation: isolate;
   -webkit-mask-image: -webkit-radial-gradient(white, black);
@@ -652,8 +637,8 @@
 
 .double-bezel-shell.card-shell:hover .cai-avatar-wrap {
   border-color: var(--accent-border);
-  box-shadow: 0 0 18px var(--accent-soft);
-  filter: brightness(1.08);
+  box-shadow: 0 8px 14px -3px rgba(0, 0, 0, 0.65);
+  filter: brightness(1.06);
 }
 
 .double-bezel-shell.card-shell:hover .cai-avatar {
@@ -697,7 +682,7 @@
 
 .cai-card-creator {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
   margin-top: 2px;
 }
@@ -735,7 +720,7 @@
 
 .tag-badge {
   font-family: var(--font-mono);
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   letter-spacing: 0.03em;
   padding: 3px 9px;
   border-radius: var(--radius-pill);
@@ -751,8 +736,7 @@
 .double-bezel-shell.card-shell:hover .btn-primary {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
-  filter: brightness(1.12);
-  box-shadow: 0 0 20px var(--accent-soft);
+  filter: brightness(1.08);
 }
 
 /* ============================================================================
@@ -1088,11 +1072,11 @@
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
-   1. VANGUARD (Electric Cyberpunk Cockpit)
-   - 3-Column Structured Cyber Matrix
-   - Command Deck Panoramic Hero with Center Tech Divider
-   - Monospace Cyber Key Filter Deck
-   - Sharp Cyan Seams & Tech Module Cards
+   1. VANGUARD (High-Precision Titanium & Solar Amber Cockpit)
+   - 3-Column Structured Matrix
+   - Command Deck Panoramic Hero
+   - Monospace Key Filter Deck
+   - Sharp Titanium & Amber Module Cards
    ---------------------------------------------------------------------------- */
 @media (min-width: 1025px) {
   [data-theme="vanguard"] .bento-character-grid {
@@ -1114,8 +1098,8 @@
 }
 
 [data-theme="vanguard"] .hero-shell {
-  border: 1px solid rgba(6, 182, 212, 0.35);
-  box-shadow: 0 0 28px rgba(6, 182, 212, 0.12), inset 0 1px 0 rgba(6, 182, 212, 0.25);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  box-shadow: 0 10px 14px -4px rgba(0, 0, 0, 0.8), var(--tw-rim);
   border-radius: 12px;
 }
 
@@ -1124,28 +1108,28 @@
   gap: 24px;
   padding: 22px 28px;
   background:
-    radial-gradient(750px circle at 15% 15%, rgba(6, 182, 212, 0.12), transparent 70%),
-    linear-gradient(180deg, rgba(9, 17, 34, 0.95) 0%, rgba(5, 8, 17, 0.98) 100%);
+    radial-gradient(750px circle at 15% 15%, rgba(245, 158, 11, 0.12), transparent 70%),
+    linear-gradient(180deg, rgba(12, 16, 23, 0.95) 0%, rgba(7, 9, 14, 0.98) 100%);
   position: relative;
 }
 
 [data-theme="vanguard"] .hero-copy-col .eyebrow-pill {
   border-radius: 4px;
-  background: rgba(6, 182, 212, 0.12);
-  border-color: rgba(6, 182, 212, 0.4);
-  color: #22d3ee;
-  letter-spacing: 0.18em;
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+  letter-spacing: 0.12em;
 }
 
 [data-theme="vanguard"] .hero-display-title {
-  text-shadow: 0 0 24px rgba(6, 182, 212, 0.25);
+  text-shadow: none;
 }
 
 [data-theme="vanguard"] .category-pills {
   gap: 6px;
   padding: 4px;
-  background: rgba(6, 182, 212, 0.04);
-  border: 1px solid rgba(6, 182, 212, 0.16);
+  background: rgba(245, 158, 11, 0.04);
+  border: 1px solid rgba(245, 158, 11, 0.18);
   border-radius: 8px;
   width: fit-content;
   max-width: 100%;
@@ -1156,35 +1140,35 @@
   border-color: transparent;
   background: transparent;
   font-family: var(--font-mono);
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 [data-theme="vanguard"] .category-pill:hover {
-  background: rgba(6, 182, 212, 0.12);
-  color: #22d3ee;
-  border-color: rgba(6, 182, 212, 0.35);
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.35);
 }
 
 [data-theme="vanguard"] .category-pill.active {
-  background: #06b6d4;
-  color: #050811;
+  background: #f59e0b;
+  color: #07090e;
   font-weight: 700;
-  box-shadow: 0 0 16px rgba(6, 182, 212, 0.45);
+  box-shadow: none;
 }
 
 [data-theme="vanguard"] .cai-card {
   position: relative;
-  border-top: 2px solid #06b6d4;
-  background: linear-gradient(180deg, rgba(14, 27, 51, 0.6) 0%, rgba(9, 17, 34, 0.95) 100%);
+  border-top: 2px solid #f59e0b;
+  background: linear-gradient(180deg, rgba(18, 24, 36, 0.6) 0%, rgba(12, 16, 23, 0.95) 100%);
   border-radius: 8px;
 }
 
 [data-theme="vanguard"] .cai-avatar-wrap {
   border-radius: 8px;
-  border: 1px solid rgba(6, 182, 212, 0.35);
-  box-shadow: 0 0 12px rgba(6, 182, 212, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.6);
 }
 
 [data-theme="vanguard"] .cai-avatar {
@@ -1242,9 +1226,9 @@
   padding: 0;
   color: var(--text-muted);
   font-family: var(--font-sans);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
@@ -1278,7 +1262,7 @@
 
 [data-theme="editorial"] .hero-spotlight-dossier {
   background: var(--bg-core-elevated);
-  border: 1px solid var(--border-hairline);
+  border: 0;
   border-radius: 2px;
   box-shadow: none;
 }
@@ -1332,7 +1316,7 @@
 [data-theme="editorial"] .double-bezel-shell.card-shell:hover {
   transform: translateY(-2px);
   border-color: rgba(255, 255, 255, 0.28);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.45);
 }
 
 [data-theme="editorial"] .double-bezel-core.cai-card {
@@ -1408,7 +1392,7 @@
 [data-theme="telemetry"] .hero-shell {
   border-radius: 0;
   border: 1px solid rgba(230, 25, 25, 0.45);
-  box-shadow: 0 0 20px rgba(230, 25, 25, 0.12), inset 0 0 0 1px rgba(230, 25, 25, 0.2);
+  box-shadow: none;
   position: relative;
   padding: 0;
 }
@@ -1426,10 +1410,10 @@
   border-radius: 0;
   border: 1px solid #e61919;
   background: rgba(230, 25, 25, 0.16);
-  color: #ff3333;
+  color: #ff6b6b;
   font-family: var(--font-mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.15em;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
 }
 
 [data-theme="telemetry"] .hero-display-title {
@@ -1443,9 +1427,9 @@
 
 [data-theme="telemetry"] .hero-spotlight-dossier {
   border-radius: 0;
-  border: 1px solid rgba(230, 25, 25, 0.4);
+  border: 0;
   background: #0f090c;
-  box-shadow: inset 0 0 12px rgba(230, 25, 25, 0.08);
+  box-shadow: none;
 }
 
 [data-theme="telemetry"] .category-pills {
@@ -1457,40 +1441,40 @@
   border: 1px solid rgba(230, 25, 25, 0.35);
   background: #0c0809;
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #a1a1aa;
+  color: #a8a8b0;
   padding: 6px 12px;
 }
 
 [data-theme="telemetry"] .category-pill:hover {
   background: rgba(230, 25, 25, 0.15);
-  color: #ff4d4d;
-  border-color: #ff3333;
+  color: #ff6b6b;
+  border-color: #ff4d4d;
   transform: none;
   filter: none;
 }
 
 [data-theme="telemetry"] .category-pill.active {
-  background: #e61919;
-  color: #000000;
+  background: #b91c1c;
+  color: #ffffff;
   font-weight: 800;
-  border-color: #ff3333;
-  box-shadow: 0 0 14px rgba(230, 25, 25, 0.5);
+  border-color: #ff4d4d;
+  box-shadow: none;
 }
 
 [data-theme="telemetry"] .double-bezel-shell.card-shell {
   border-radius: 0;
   border: 1px solid rgba(230, 25, 25, 0.32);
   background: #0c080a;
-  box-shadow: 0 0 0 1px rgba(230, 25, 25, 0.15);
+  box-shadow: none;
   padding: 0;
 }
 
 [data-theme="telemetry"] .double-bezel-shell.card-shell:hover {
-  border-color: #ff3333;
-  box-shadow: 0 0 18px rgba(230, 25, 25, 0.35), 0 0 0 1px #e61919;
+  border-color: #ff4d4d;
+  box-shadow: 0 8px 14px -4px rgba(0, 0, 0, 0.85);
   transform: translateY(-2px);
 }
 
@@ -1541,7 +1525,7 @@
 
 [data-theme="telemetry"] .cai-card-tagline {
   font-family: var(--font-mono);
-  font-size: 0.74rem;
+  font-size: 0.76rem;
   line-height: 1.45;
 }
 
@@ -1549,8 +1533,8 @@
   border-radius: 0;
   background: #15090b;
   border: 1px solid rgba(230, 25, 25, 0.35);
-  color: #ff6666;
-  font-size: 0.62rem;
+  color: #ff6b6b;
+  font-size: 0.74rem;
   padding: 2px 6px;
 }
 
@@ -1570,8 +1554,8 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  font-size: 0.68rem;
-  color: #ff6666;
+  font-size: 0.74rem;
+  color: #ff6b6b;
   white-space: nowrap;
 }
 
@@ -1586,7 +1570,7 @@
   border-radius: 0;
   border: 1px solid rgba(230, 25, 25, 0.4);
   background: rgba(230, 25, 25, 0.08);
-  color: #ff4d4d;
+  color: #ff6b6b;
   height: 28px;
   width: 28px;
   display: inline-flex;
@@ -1596,8 +1580,8 @@
 }
 
 [data-theme="telemetry"] .cai-card-actions .icon-btn:hover {
-  background: #e61919;
-  color: #000000;
+  background: #b91c1c;
+  color: #ffffff;
 }
 
 [data-theme="telemetry"] .cai-card-actions .btn-secondary {
@@ -1605,9 +1589,9 @@
   border-radius: 0;
   border: 1px solid rgba(230, 25, 25, 0.5);
   background: rgba(230, 25, 25, 0.12);
-  color: #ff4d4d;
+  color: #ff6b6b;
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   padding: 5px 8px;
@@ -1620,10 +1604,10 @@
 }
 
 [data-theme="telemetry"] .cai-card-actions .btn-secondary:hover {
-  background: #e61919;
-  color: #000000;
-  border-color: #ff3333;
-  box-shadow: 0 0 10px rgba(230, 25, 25, 0.5);
+  background: #b91c1c;
+  color: #ffffff;
+  border-color: #ff4d4d;
+  box-shadow: none;
 }
 
 

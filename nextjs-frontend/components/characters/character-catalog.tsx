@@ -156,7 +156,6 @@ export function CharacterCatalog() {
         <div className="double-bezel-shell hero-shell">
           <div className="double-bezel-core hero-split-grid">
             <div className="hero-copy-col">
-              <span className="eyebrow-pill">RELATIONAL NARRATIVE ENGINE</span>
               <h2 className="hero-display-title">Write scenes with characters that remember.</h2>
               <p className="hero-subtext">
                 Multi-variant dialogue branching, long-term vector recall, and instant Fandom lore extraction in one studio.

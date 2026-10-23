@@ -75,7 +75,7 @@ export class AmbientMotionCanvas {
 
     if (!this.reducedMotion) {
       this.resume();
-      console.log(`%c[AmbientCanvas] 🌌 60fps kinetic motion running (${this.currentTheme})`, 'color: #8b5cf6; font-weight: bold;');
+      console.log(`%c[AmbientCanvas] 🌌 60fps kinetic motion running (${this.currentTheme})`, 'color: #ffa582; font-weight: bold;');
     } else {
       console.log('[AmbientCanvas] ⏸️ Motion paused by in-app preference. Call window.ambientCanvas.toggleMotion() to re-enable.');
     }
@@ -187,7 +187,7 @@ export class AmbientMotionCanvas {
           progress: Math.random(),
           speed: Math.random() * 0.007 + 0.004,
           length: Math.random() * 0.18 + 0.06,
-          color: Math.random() > 0.35 ? '#06b6d4' : '#8b5cf6'
+          color: Math.random() > 0.35 ? '#f59e0b' : '#e8eaef'
         });
       }
       this.cyberRipples = [
@@ -279,12 +279,12 @@ export class AmbientMotionCanvas {
   }
 
   // --------------------------------------------------------------------------
-  // 1. HIGGSFIELD: Dynamic Traveling Starfield, Undulating Aurora Plasma & Streamers
+  // 1. HIGGSFIELD (GETLAYERS CINEMA): Traveling Starfield, Warm Peach & Periwinkle Ribbons
   // --------------------------------------------------------------------------
   #renderHiggsfield(ctx, now, dt, w, h) {
     this.auroraPhase += 0.45 * dt;
 
-    // A. Undulating Chromatic Aurora Plasma Bands
+    // A. Undulating GetLayers Cinema Volumetric Light Ribbons
     const bandCount = 3;
     for (let b = 0; b < bandCount; b++) {
       const yOffset = h * (0.15 + b * 0.35);
@@ -307,15 +307,15 @@ export class AmbientMotionCanvas {
 
       const grad = ctx.createLinearGradient(0, yOffset - 40, 0, yOffset + 240);
       if (b === 0) {
-        grad.addColorStop(0, 'rgba(139, 92, 246, 0.16)');
-        grad.addColorStop(0.5, 'rgba(99, 102, 241, 0.08)');
+        grad.addColorStop(0, 'rgba(255, 165, 130, 0.14)');
+        grad.addColorStop(0.5, 'rgba(255, 190, 162, 0.06)');
         grad.addColorStop(1, 'transparent');
       } else if (b === 1) {
-        grad.addColorStop(0, 'rgba(6, 182, 212, 0.13)');
-        grad.addColorStop(0.6, 'rgba(139, 92, 246, 0.06)');
+        grad.addColorStop(0, 'rgba(162, 183, 245, 0.11)');
+        grad.addColorStop(0.6, 'rgba(232, 234, 239, 0.05)');
         grad.addColorStop(1, 'transparent');
       } else {
-        grad.addColorStop(0, 'rgba(168, 85, 247, 0.1)');
+        grad.addColorStop(0, 'rgba(255, 165, 130, 0.08)');
         grad.addColorStop(1, 'transparent');
       }
 
@@ -336,8 +336,8 @@ export class AmbientMotionCanvas {
         const dy = this.stars[i].y - this.stars[j].y;
         const distSq = dx * dx + dy * dy;
         if (distSq < 5625) { // < 75px
-          const linkAlpha = (1 - Math.sqrt(distSq) / 75) * 0.18;
-          ctx.strokeStyle = `rgba(167, 139, 250, ${linkAlpha})`;
+          const linkAlpha = (1 - Math.sqrt(distSq) / 75) * 0.16;
+          ctx.strokeStyle = `rgba(255, 165, 130, ${linkAlpha})`;
           ctx.beginPath();
           ctx.moveTo(this.stars[i].x, this.stars[i].y);
           ctx.lineTo(this.stars[j].x, this.stars[j].y);
@@ -362,11 +362,11 @@ export class AmbientMotionCanvas {
 
       let color;
       if (star.colorType < 0.25) {
-        color = `rgba(167, 139, 250, ${alpha})`; // Violet
+        color = `rgba(255, 165, 130, ${alpha})`; // Warm Peach
       } else if (star.colorType < 0.5) {
-        color = `rgba(56, 189, 248, ${alpha})`; // Cyan
+        color = `rgba(162, 183, 245, ${alpha})`; // Periwinkle
       } else {
-        color = `rgba(255, 255, 255, ${alpha})`; // Pure starlight
+        color = `rgba(232, 234, 239, ${alpha})`; // Platinum Chrome
       }
 
       ctx.fillStyle = color;
@@ -376,7 +376,7 @@ export class AmbientMotionCanvas {
 
       // Subtle halo for larger stars
       if (star.size > 1.8) {
-        ctx.fillStyle = `rgba(139, 92, 246, ${alpha * 0.25})`;
+        ctx.fillStyle = `rgba(255, 165, 130, ${alpha * 0.22})`;
         ctx.beginPath();
         ctx.arc(star.x, star.y, star.size * 2.5, 0, Math.PI * 2);
         ctx.fill();
@@ -421,7 +421,7 @@ export class AmbientMotionCanvas {
 
       const grad = ctx.createLinearGradient(headX, headY, tailX, tailY);
       grad.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
-      grad.addColorStop(0.3, `rgba(167, 139, 250, ${alpha * 0.8})`);
+      grad.addColorStop(0.3, `rgba(255, 165, 130, ${alpha * 0.8})`);
       grad.addColorStop(1, 'transparent');
 
       ctx.lineWidth = 2.2;
@@ -455,7 +455,7 @@ export class AmbientMotionCanvas {
       const y = horizon + Math.pow(prog, 2.6) * (h - horizon);
       const alpha = Math.sin(prog * Math.PI) * 0.32;
 
-      ctx.strokeStyle = `rgba(6, 182, 212, ${alpha})`;
+      ctx.strokeStyle = `rgba(245, 158, 11, ${alpha})`;
       ctx.lineWidth = 1 + prog * 1.5;
       ctx.beginPath();
       ctx.moveTo(0, y);
@@ -467,7 +467,7 @@ export class AmbientMotionCanvas {
     const rayCount = 22;
     for (let i = -rayCount / 2; i <= rayCount / 2; i++) {
       const spreadX = vpX + (i / (rayCount / 2)) * w * 1.1;
-      ctx.strokeStyle = 'rgba(6, 182, 212, 0.12)';
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.12)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(vpX, horizon);
@@ -493,9 +493,9 @@ export class AmbientMotionCanvas {
       const x2 = vpX + stream.lane * (w * 0.65) * Math.pow(p2, 1.6);
 
       const alpha = Math.sin(stream.progress * Math.PI) * 0.85;
-      ctx.strokeStyle = stream.color === '#06b6d4'
-        ? `rgba(6, 182, 212, ${alpha})`
-        : `rgba(168, 85, 247, ${alpha})`;
+      ctx.strokeStyle = stream.color === '#f59e0b'
+        ? `rgba(245, 158, 11, ${alpha})`
+        : `rgba(232, 234, 239, ${alpha})`;
 
       ctx.lineWidth = 2.4;
       ctx.beginPath();
@@ -516,7 +516,7 @@ export class AmbientMotionCanvas {
       const radius = ripple.progress * ripple.maxRadius;
       const alpha = Math.sin((1 - ripple.progress) * Math.PI * 0.5) * 0.22;
 
-      ctx.strokeStyle = `rgba(6, 182, 212, ${alpha})`;
+      ctx.strokeStyle = `rgba(245, 158, 11, ${alpha})`;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.arc(vpX, horizon + 50, radius, 0, Math.PI * 2);

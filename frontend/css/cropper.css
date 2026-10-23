@@ -31,9 +31,9 @@
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
   border-radius: var(--radius-shell, 22px);
   padding: 8px;
-  box-shadow: var(--shadow-ambient, 0 32px 80px -16px rgba(0, 0, 0, 0.85));
+  box-shadow: 0 10px 14px -4px rgba(0, 0, 0, 0.85), var(--tw-rim);
   transform: scale(0.96) translateY(8px);
-  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .cropper-modal-overlay.active .cropper-shell {
@@ -41,13 +41,14 @@
 }
 
 .cropper-core {
-  background: var(--bg-core, #0e0d16);
-  border: 1px solid var(--border-hairline, rgba(255, 255, 255, 0.08));
+  background: var(--bg-core, #0d0d0d);
+  border: 0;
   border-radius: var(--radius-core, 16px);
   padding: 22px;
   display: flex;
   flex-direction: column;
   gap: 18px;
+  box-shadow: var(--inner-highlight);
 }
 
 .cropper-header {
@@ -65,17 +66,17 @@
 }
 
 .cropper-title {
-  font-family: var(--font-display, 'Cabinet Grotesk', sans-serif);
+  font-family: var(--font-display, 'General Sans', 'Cabinet Grotesk', sans-serif);
   font-size: 1.15rem;
   font-weight: 700;
-  color: var(--text-primary, #f4f4f7);
+  color: var(--text-primary, #f5f5f7);
   letter-spacing: -0.01em;
 }
 
 .cropper-subtitle {
   font-size: 0.76rem;
   font-family: var(--font-mono, monospace);
-  color: var(--text-muted, #71717a);
+  color: var(--text-muted, #9494a0);
 }
 
 .cropper-close-btn {
@@ -84,12 +85,12 @@
   border-radius: 8px;
   border: 1px solid var(--border-hairline, rgba(255, 255, 255, 0.08));
   background: rgba(255, 255, 255, 0.04);
-  color: var(--text-secondary, #a1a1aa);
+  color: var(--text-secondary, #a8a8b2);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.16s ease, color 0.16s ease;
+  transition: background-color 0.16s cubic-bezier(0.22, 1, 0.36, 1), color 0.16s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .cropper-close-btn:hover {
@@ -106,7 +107,7 @@
   margin: 0 auto;
   border-radius: var(--radius-md, 12px);
   overflow: hidden;
-  background: #09090e;
+  background: #08080a;
   border: 1px solid var(--border-strong, rgba(255, 255, 255, 0.22));
   box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.6);
   cursor: grab;
@@ -130,16 +131,16 @@
   bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(14, 13, 22, 0.88);
+  background: rgba(13, 13, 13, 0.9);
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
   backdrop-filter: blur(4px);
   padding: 4px 10px;
   border-radius: var(--radius-pill, 9999px);
   font-family: var(--font-mono, monospace);
-  font-size: 0.68rem;
-  color: var(--text-secondary, #a1a1aa);
+  font-size: 0.74rem;
+  color: var(--text-secondary, #a8a8b2);
   pointer-events: none;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.25s cubic-bezier(0.22, 1, 0.36, 1);
   white-space: nowrap;
 }
 
@@ -158,15 +159,15 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-hairline, rgba(255, 255, 255, 0.08));
+  background: rgba(255, 255, 255, 0.035);
+  border: 0;
   border-radius: var(--radius-sm, 8px);
   padding: 8px 14px;
 }
 
 .cropper-zoom-icon {
   font-size: 0.95rem;
-  color: var(--text-muted, #71717a);
+  color: var(--text-muted, #9494a0);
   display: inline-flex;
   align-items: center;
 }
@@ -188,11 +189,11 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--accent, #8b5cf6);
-  border: 2px solid #ffffff;
-  box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+  background: var(--accent, #ffa582);
+  border: 2px solid #0d0d0d;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
   cursor: pointer;
-  transition: transform 0.12s ease;
+  transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .cropper-slider::-webkit-slider-thumb:hover {
@@ -203,9 +204,9 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--accent, #8b5cf6);
-  border: 2px solid #ffffff;
-  box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+  background: var(--accent, #ffa582);
+  border: 2px solid #0d0d0d;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
   cursor: pointer;
 }
 
@@ -224,11 +225,11 @@
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
   border-radius: var(--radius-sm, 8px);
-  color: var(--text-secondary, #a1a1aa);
+  color: var(--text-secondary, #a8a8b2);
   font-size: 0.78rem;
   font-family: var(--font-mono, monospace);
   cursor: pointer;
-  transition: all 0.16s ease;
+  transition: background-color 0.16s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.16s cubic-bezier(0.22, 1, 0.36, 1), color 0.16s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .cropper-tool-btn:hover {
@@ -245,11 +246,11 @@
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
   border-radius: var(--radius-sm, 8px);
-  color: var(--text-secondary, #a1a1aa);
+  color: var(--text-secondary, #a8a8b2);
   font-size: 0.78rem;
   font-family: var(--font-mono, monospace);
   cursor: pointer;
-  transition: all 0.16s ease;
+  transition: background-color 0.16s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.16s cubic-bezier(0.22, 1, 0.36, 1), color 0.16s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .cropper-file-label:hover {
@@ -277,11 +278,11 @@
   border-radius: var(--radius-sm, 8px);
   background: transparent;
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
-  color: var(--text-secondary, #a1a1aa);
+  color: var(--text-secondary, #a8a8b2);
   font-size: 0.84rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.16s ease;
+  transition: background-color 0.16s cubic-bezier(0.22, 1, 0.36, 1), color 0.16s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .cropper-btn-cancel:hover {
@@ -292,23 +293,23 @@
 .cropper-btn-apply {
   padding: 9px 20px;
   border-radius: var(--radius-sm, 8px);
-  background: var(--accent, #8b5cf6);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #ffffff;
+  background: var(--accent, #ffa582);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: var(--text-on-accent, #0d0d0d);
   font-size: 0.84rem;
   font-weight: 600;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
-  transition: all 0.18s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), var(--tw-rim);
+  transition: background-color 0.18s cubic-bezier(0.22, 1, 0.36, 1), transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .cropper-btn-apply:hover {
-  background: var(--accent-hover, #9d74f8);
+  background: var(--accent-hover, #ffbea2);
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(139, 92, 246, 0.45);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.6), var(--tw-rim);
 }
 
 .cropper-btn-apply:disabled {
@@ -332,20 +333,20 @@
   border-radius: var(--radius-md, 12px);
   background: rgba(255, 255, 255, 0.015);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.2s cubic-bezier(0.22, 1, 0.36, 1);
   text-align: center;
   padding: 24px;
 }
 
 .cropper-dropzone:hover,
 .cropper-dropzone.dragover {
-  border-color: var(--accent, #8b5cf6);
-  background: rgba(139, 92, 246, 0.06);
+  border-color: var(--accent, #ffa582);
+  background: var(--accent-soft, rgba(255, 165, 130, 0.08));
 }
 
 .cropper-dropzone-icon {
   font-size: 2.4rem;
-  color: var(--accent, #8b5cf6);
+  color: var(--accent, #ffa582);
 }
 
 .cropper-dropzone-title {
@@ -356,6 +357,6 @@
 
 .cropper-dropzone-sub {
   font-size: 0.78rem;
-  color: var(--text-muted, #71717a);
+  color: var(--text-muted, #9494a0);
   max-width: 28ch;
 }

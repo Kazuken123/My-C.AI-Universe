@@ -39,6 +39,18 @@ class ChatPageApp {
         `).join('');
         initCustomSelects(personaSelect.closest('.select-wrap') || document);
       }
+
+      // Synchronize in-page persona selection when switched via sidebar quick-switcher
+      window.addEventListener('persona-switched', (evt) => {
+        if (evt.detail) {
+          this.state.activePersona = evt.detail;
+          const select = document.getElementById('chatPersonaSelect');
+          if (select) {
+            select.value = evt.detail.id;
+            initCustomSelects(select.closest('.select-wrap') || document);
+          }
+        }
+      });
     } catch (err) {
       console.warn('Could not load personas for chat:', err);
     }

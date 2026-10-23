@@ -1,46 +1,48 @@
-@import url('https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=general-sans@500,600,700&f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=Onest:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --font-display: 'Cabinet Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-sans: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+:root,
+[data-theme="higgsfield"] {
+  --font-display: 'General Sans', 'Cabinet Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Onest', 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   --font-serif: 'Instrument Serif', Georgia, serif;
 
-  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
-  --ease-glow: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-tactile: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-glow: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-tactile: cubic-bezier(0.22, 1, 0.36, 1);
+  --tw-rim: inset 0 1px 1px 0 rgba(255, 255, 255, 0.22);
 
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 
-  /* Higgsfield Cinema Defaults */
-  --bg-canvas: #07070b;
-  --bg-canvas-mesh: radial-gradient(circle at 50% -10%, rgba(139, 92, 246, 0.18), transparent 55%),
-                    radial-gradient(circle at 85% 20%, rgba(6, 182, 212, 0.12), transparent 45%),
-                    #07070b;
-  --bg-shell: rgba(255, 255, 255, 0.03);
-  --bg-core: #0e0d16;
-  --bg-core-elevated: #131522;
-  --bg-input: rgba(14, 13, 22, 0.85);
-  --bg-input-focus: rgba(20, 22, 36, 0.95);
-  --bg-rail: rgba(9, 10, 16, 0.85);
+  /* GetLayers Cinema Defaults */
+  --bg-canvas: #060606;
+  --bg-canvas-mesh: radial-gradient(circle at 20% -10%, rgba(255, 165, 130, 0.12), transparent 52%),
+                    radial-gradient(circle at 82% 18%, rgba(162, 183, 245, 0.08), transparent 45%),
+                    #060606;
+  --bg-shell: rgba(255, 255, 255, 0.025);
+  --bg-core: #0d0d0d;
+  --bg-core-elevated: #141414;
+  --bg-input: #111113;
+  --bg-input-focus: #17171a;
+  --bg-rail: rgba(9, 9, 10, 0.92);
 
-  --accent: #8b5cf6;
-  --accent-hover: #a78bfa;
-  --accent-soft: rgba(139, 92, 246, 0.18);
-  --accent-border: rgba(139, 92, 246, 0.50);
-  --accent-glow: 0 0 30px rgba(139, 92, 246, 0.30);
-  --text-on-accent: #ffffff;
+  --accent: #ffa582;
+  --accent-hover: #ffbea2;
+  --accent-soft: rgba(255, 165, 130, 0.14);
+  --accent-border: rgba(255, 165, 130, 0.42);
+  --accent-glow: none;
+  --text-on-accent: #0d0d0d;
 
-  --text-primary: #f3f1ec;
-  --text-secondary: rgba(243, 241, 236, 0.72);
-  --text-muted: rgba(243, 241, 236, 0.44);
-  --text-faint: rgba(243, 241, 236, 0.22);
+  --text-primary: #f5f5f7;
+  --text-secondary: #b4b4be;
+  --text-muted: #9494a0;
+  --text-faint: #787884;
 
   --radius-shell: 22px;
   --radius-core: 16px;
@@ -49,39 +51,39 @@
   --radius-sm: 8px;
   --radius-pill: 9999px;
 
-  --shadow-card: 0 16px 40px -10px rgba(0, 0, 0, 0.6);
-  --shadow-card-hover: 0 24px 60px -12px rgba(139, 92, 246, 0.22);
-  --inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --shadow-card: 0 8px 14px -4px rgba(0, 0, 0, 0.72);
+  --shadow-card-hover: 0 10px 14px -4px rgba(0, 0, 0, 0.85);
+  --inner-highlight: var(--tw-rim);
 
   --border-hairline: rgba(255, 255, 255, 0.08);
   --border-subtle: rgba(255, 255, 255, 0.14);
   --border-strong: rgba(255, 255, 255, 0.28);
 
-  --user-bubble: #161224;
-  --user-bubble-border: rgba(139, 92, 246, 0.35);
-  --ai-bubble: #0d1017;
+  --user-bubble: #181617;
+  --user-bubble-border: rgba(255, 165, 130, 0.32);
+  --ai-bubble: #111113;
   --ai-bubble-border: rgba(255, 255, 255, 0.09);
   --sidebar-backdrop: blur(28px);
 }
 
 [data-theme="vanguard"] {
-  --bg-canvas: #050811;
-  --bg-canvas-mesh: radial-gradient(circle at 50% -10%, rgba(6, 182, 212, 0.18), transparent 55%),
-                    radial-gradient(circle at 85% 25%, rgba(139, 92, 246, 0.14), transparent 45%),
-                    #050811;
-  --bg-shell: rgba(6, 182, 212, 0.035);
-  --bg-core: #091122;
-  --bg-core-elevated: #0e1b33;
-  --bg-input: rgba(9, 17, 34, 0.85);
-  --bg-input-focus: rgba(14, 27, 51, 0.95);
-  --bg-rail: rgba(7, 13, 24, 0.92);
+  --bg-canvas: #08090c;
+  --bg-canvas-mesh: radial-gradient(circle at 50% -10%, rgba(245, 158, 11, 0.12), transparent 55%),
+                    radial-gradient(circle at 85% 25%, rgba(232, 234, 239, 0.06), transparent 45%),
+                    #08090c;
+  --bg-shell: rgba(245, 158, 11, 0.03);
+  --bg-core: #0f1116;
+  --bg-core-elevated: #161920;
+  --bg-input: #111319;
+  --bg-input-focus: #171a22;
+  --bg-rail: rgba(10, 11, 15, 0.94);
 
-  --accent: #06b6d4;
-  --accent-hover: #22d3ee;
-  --accent-soft: rgba(6, 182, 212, 0.16);
-  --accent-border: rgba(6, 182, 212, 0.45);
-  --accent-glow: 0 0 28px rgba(6, 182, 212, 0.35);
-  --text-on-accent: #050811;
+  --accent: #f59e0b;
+  --accent-hover: #fbbf24;
+  --accent-soft: rgba(245, 158, 11, 0.15);
+  --accent-border: rgba(245, 158, 11, 0.44);
+  --accent-glow: none;
+  --text-on-accent: #08090c;
 
   --radius-shell: 14px;
   --radius-core: 10px;
@@ -90,17 +92,17 @@
   --radius-sm: 6px;
   --radius-pill: 9999px;
 
-  --shadow-card: 0 16px 40px -10px rgba(0, 0, 0, 0.75);
-  --shadow-card-hover: 0 0 28px rgba(6, 182, 212, 0.28), 0 0 0 1px rgba(6, 182, 212, 0.50);
-  --inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --shadow-card: 0 8px 14px -4px rgba(0, 0, 0, 0.78);
+  --shadow-card-hover: 0 10px 14px -4px rgba(0, 0, 0, 0.88);
+  --inner-highlight: var(--tw-rim);
 
-  --border-hairline: rgba(6, 182, 212, 0.15);
-  --border-subtle: rgba(6, 182, 212, 0.30);
-  --border-strong: rgba(6, 182, 212, 0.50);
+  --border-hairline: rgba(245, 158, 11, 0.14);
+  --border-subtle: rgba(245, 158, 11, 0.28);
+  --border-strong: rgba(245, 158, 11, 0.48);
 
-  --user-bubble: #0c1c38;
-  --user-bubble-border: rgba(6, 182, 212, 0.40);
-  --ai-bubble: #081122;
+  --user-bubble: #191610;
+  --user-bubble-border: rgba(245, 158, 11, 0.36);
+  --ai-bubble: #101218;
   --ai-bubble-border: rgba(255, 255, 255, 0.10);
   --sidebar-backdrop: blur(22px);
 }
@@ -136,8 +138,8 @@
 
 [data-theme="telemetry"] {
   --bg-canvas: #060608;
-  --bg-canvas-mesh: linear-gradient(rgba(230, 25, 25, 0.035) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(230, 25, 25, 0.035) 1px, transparent 1px);
+  --bg-canvas-mesh: radial-gradient(circle at 50% 0%, rgba(230, 25, 25, 0.09), transparent 65%),
+                    #060608;
   --bg-shell: rgba(230, 25, 25, 0.03);
   --bg-core: #0e090b;
   --bg-core-elevated: #160d10;
@@ -148,7 +150,7 @@
   --accent-hover: #ff3333;
   --accent-soft: rgba(230, 25, 25, 0.16);
   --accent-border: rgba(230, 25, 25, 0.5);
-  --accent-glow: 0 0 18px rgba(230, 25, 25, 0.35);
+  --accent-glow: none;
   --text-on-accent: #000000;
   --radius-shell: 0px;
   --radius-core: 0px;
@@ -157,7 +159,7 @@
   --radius-sm: 0px;
   --radius-pill: 0px;
   --shadow-card: 0 0 0 1px rgba(230, 25, 25, 0.25);
-  --shadow-card-hover: 0 0 24px rgba(230, 25, 25, 0.3), 0 0 0 1px #e61919;
+  --shadow-card-hover: 0 8px 14px -4px rgba(0, 0, 0, 0.85), 0 0 0 1px #e61919;
   --inner-highlight: none;
   --border-hairline: rgba(230, 25, 25, 0.2);
   --border-subtle: rgba(230, 25, 25, 0.38);
@@ -186,7 +188,7 @@ body {
   border-radius: var(--radius-shell);
   background: var(--bg-shell);
   border: 1px solid var(--border-hairline);
-  box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow-card), var(--tw-rim);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   transition: transform 0.4s var(--ease-spring),
@@ -221,7 +223,7 @@ body {
   position: relative;
   background: var(--bg-core);
   border-radius: var(--radius-core);
-  border: 1px solid var(--border-hairline);
+  border: 0;
   box-shadow: var(--inner-highlight);
   height: 100%;
   width: 100%;
@@ -245,7 +247,8 @@ body {
   font-family: var(--font-sans);
   font-weight: 600;
   font-size: 0.88rem;
-  border: 1px solid transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: var(--tw-rim), 0 4px 10px rgba(0, 0, 0, 0.45);
   cursor: pointer;
   text-decoration: none;
   transition: transform 0.2s var(--ease-spring),
@@ -255,8 +258,8 @@ body {
 }
 
 .btn-island:hover {
-  filter: brightness(1.08);
-  box-shadow: 0 0 24px rgba(255, 255, 255, 0.22), 0 6px 18px rgba(0, 0, 0, 0.4);
+  filter: brightness(1.06);
+  box-shadow: var(--tw-rim), 0 8px 14px -4px rgba(0, 0, 0, 0.72);
   transform: translateY(-1px);
 }
 
@@ -270,7 +273,7 @@ body {
   height: 28px;
   border-radius: 9999px;
   background: var(--accent);
-  color: #ffffff;
+  color: var(--text-on-accent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -313,14 +316,7 @@ body {
   height: 8px;
   border-radius: 50%;
   background: #10b981;
-  box-shadow: 0 0 8px #10b981;
   display: inline-block;
-  animation: pulse-dot 2.4s infinite ease-in-out;
-}
-
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.55; transform: scale(0.85); }
 }
 
 /* Custom Sleek Scrollbar */

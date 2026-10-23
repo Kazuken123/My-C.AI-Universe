@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#07070b',
+  themeColor: '#060606',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -37,13 +37,13 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
         <link
-          href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap"
+          href="https://api.fontshare.com/v2/css?f[]=general-sans@500,600,700&f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap"
           rel="stylesheet"
         />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=Onest:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
         <script src="https://unpkg.com/@phosphor-icons/web@2.1.1" async></script>

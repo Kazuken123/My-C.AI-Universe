@@ -166,6 +166,32 @@ export async function initSidebar(activePage = 'discover') {
     });
   }
 
+  // Nav shortcut badges: Reveal when holding Alt key, and handle Alt+1..4 workspace shortcuts
+  if (!window.__navKbdBound) {
+    window.__navKbdBound = true;
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Alt') {
+        document.body.classList.add('show-nav-kbd');
+      }
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || document.activeElement?.isContentEditable) return;
+      if (e.altKey && !e.ctrlKey && !e.metaKey) {
+        if (e.key === '1' || e.code === 'Digit1' || e.code === 'Numpad1') { window.location.href = '/'; e.preventDefault(); }
+        else if (e.key === '2' || e.code === 'Digit2' || e.code === 'Numpad2') { window.location.href = '/create.html'; e.preventDefault(); }
+        else if (e.key === '3' || e.code === 'Digit3' || e.code === 'Numpad3') { window.location.href = '/chats.html'; e.preventDefault(); }
+        else if (e.key === '4' || e.code === 'Digit4' || e.code === 'Numpad4') { window.location.href = '/personas.html'; e.preventDefault(); }
+      }
+    });
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'Alt') {
+        document.body.classList.remove('show-nav-kbd');
+      }
+    });
+    window.addEventListener('blur', () => {
+      document.body.classList.remove('show-nav-kbd');
+    });
+  }
+
   // Set active nav link
   document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
     const page = item.dataset.page || item.dataset.view;
@@ -506,6 +532,199 @@ export async function initAccountState() {
   }
 }
 
+export function toMonogram(name, avatarField) {
+  const cleanAvatar = String(avatarField || '').trim();
+  if (cleanAvatar && !cleanAvatar.startsWith('http://') && !cleanAvatar.startsWith('https://') && !cleanAvatar.startsWith('/') && !cleanAvatar.startsWith('data:')) {
+    if (/^[A-Za-z0-9]{1,3}$/.test(cleanAvatar)) {
+      return cleanAvatar.toUpperCase();
+    }
+    const codePoints = Array.from(cleanAvatar);
+    if (codePoints.length <= 2) {
+      return cleanAvatar;
+    }
+  }
+  const cleanName = String(name || '').trim();
+  if (!cleanName) return 'TR';
+  const parts = cleanName.split(/\s+/);
+  if (parts.length >= 2 && parts[0] && parts[1]) {
+    const p1 = Array.from(parts[0])[0] || '';
+    const p2 = Array.from(parts[1])[0] || '';
+    return (p1 + p2).toUpperCase();
+  }
+  return Array.from(cleanName).slice(0, 2).join('').toUpperCase();
+}
+
+/**
+ * Interactive Persona Quick-Switcher Popover
+ */
+export function bindPersonaQuickSwitcher(personas = [], initialActive = null) {
+  if (typeof document === 'undefined') return;
+  const trigger = document.getElementById('sidebar-persona-pill');
+  if (!trigger) return;
+
+  // Always update persona data on the element so repeated calls don't retain stale lists
+  trigger.__personas = Array.isArray(personas) ? personas : [];
+  if (initialActive) {
+    trigger.__activePersona = initialActive;
+  }
+
+  if (trigger.__switcherBound) return;
+  trigger.__switcherBound = true;
+
+  trigger.addEventListener('click', (e) => {
+    // If not authenticated, let auth guard handle redirection
+    if (!api.getToken()) return;
+
+    // If modifier keys held, let browser navigate to /personas.html
+    if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const existingPopover = document.getElementById('personaQuickSwitcherPopover');
+    if (existingPopover) {
+      const closeFn = trigger.__closeSwitcher;
+      if (typeof closeFn === 'function') {
+        closeFn();
+      } else {
+        existingPopover.remove();
+      }
+      return;
+    }
+
+    const currentPersonas = trigger.__personas || [];
+    const activeId = trigger.__activePersona?.id || (currentPersonas.find(p => p.isDefault)?.id) || currentPersonas[0]?.id;
+
+    const popover = document.createElement('div');
+    popover.id = 'personaQuickSwitcherPopover';
+    popover.className = 'persona-quick-switcher-popover';
+    popover.setAttribute('role', 'dialog');
+    popover.setAttribute('aria-label', 'Switch Active Persona');
+
+    const emptyHtml = `
+      <div class="persona-switcher-empty">
+        <p>No custom personas created yet.</p>
+        <a href="/personas.html" class="persona-switcher-link" style="color: var(--accent); font-weight: 600;">+ Create Persona</a>
+      </div>
+    `;
+
+    const listHtml = currentPersonas.length === 0 ? emptyHtml : `
+      <div class="persona-switcher-list">
+        ${currentPersonas.map(p => {
+          const isAct = p.id === activeId;
+          const mono = toMonogram(p.name, p.avatar);
+          return `
+            <button type="button" class="persona-switcher-item ${isAct ? 'active' : ''}" data-persona-id="${escapeHtml(p.id)}">
+              <span class="persona-item-badge">${escapeHtml(mono)}</span>
+              <div class="persona-item-info">
+                <div class="persona-item-name">${escapeHtml(p.name)}</div>
+                <div class="persona-item-desc">${escapeHtml((p.description || 'Custom Persona Identity').slice(0, 36))}</div>
+              </div>
+              ${isAct ? '<i class="ph-light ph-check persona-item-check"></i>' : ''}
+            </button>
+          `;
+        }).join('')}
+      </div>
+    `;
+
+    popover.innerHTML = `
+      <div class="persona-switcher-header">
+        <span>Switch Active Persona</span>
+        <span class="persona-switcher-count">${currentPersonas.length} Available</span>
+      </div>
+      ${listHtml}
+      <div class="persona-switcher-footer">
+        <a href="/personas.html" class="persona-switcher-link">
+          <i class="ph-light ph-identification-card"></i>
+          <span>Manage Personas</span>
+        </a>
+        <a href="/profile-setup.html" class="persona-switcher-link">
+          <i class="ph-light ph-gear"></i>
+          <span>Settings</span>
+        </a>
+      </div>
+    `;
+
+    // Position fixed to prevent sidebar overflow/clipping and support collapsed rail
+    const rect = trigger.getBoundingClientRect();
+    const sidebar = trigger.closest('.sidebar');
+    const isCollapsed = sidebar?.classList.contains('collapsed');
+    const isMobile = window.innerWidth <= 768;
+
+    popover.style.position = 'fixed';
+    popover.style.zIndex = '2000';
+
+    if (isCollapsed && !isMobile) {
+      popover.style.left = `${Math.round(rect.right + 12)}px`;
+      popover.style.bottom = `${Math.max(16, Math.round(window.innerHeight - rect.bottom))}px`;
+      popover.style.width = '260px';
+    } else {
+      popover.style.left = `${Math.round(rect.left)}px`;
+      popover.style.bottom = `${Math.max(16, Math.round(window.innerHeight - rect.top + 8))}px`;
+      popover.style.width = `${Math.max(Math.round(rect.width), 240)}px`;
+    }
+
+    document.body.appendChild(popover);
+
+    function closeSwitcher() {
+      const p = document.getElementById('personaQuickSwitcherPopover');
+      if (p) p.remove();
+      document.removeEventListener('click', onDocClick);
+      document.removeEventListener('keydown', onDocKey);
+      window.removeEventListener('resize', closeSwitcher);
+      trigger.__closeSwitcher = null;
+    }
+
+    trigger.__closeSwitcher = closeSwitcher;
+
+    popover.querySelectorAll('.persona-switcher-item').forEach(btn => {
+      btn.addEventListener('click', async (evt) => {
+        evt.stopPropagation();
+        const pid = btn.dataset.personaId;
+        const selected = (trigger.__personas || []).find(p => p.id === pid);
+        if (!selected) {
+          closeSwitcher();
+          return;
+        }
+
+        try {
+          await api.setDefaultPersona(pid);
+          trigger.__activePersona = selected;
+
+          const personaEmoji = document.getElementById('sidebar-persona-emoji');
+          const personaName = document.getElementById('sidebar-persona-name');
+          if (personaEmoji) personaEmoji.textContent = toMonogram(selected.name, selected.avatar);
+          if (personaName) personaName.textContent = selected.name;
+
+          window.dispatchEvent(new CustomEvent('persona-switched', { detail: selected }));
+          showToast(`Active Persona: ${selected.name}`);
+        } catch (err) {
+          showToast(`Failed to switch persona: ${err.message}`);
+        } finally {
+          closeSwitcher();
+        }
+      });
+    });
+
+    const onDocClick = (evt) => {
+      if (!popover.contains(evt.target) && !trigger.contains(evt.target)) {
+        closeSwitcher();
+      }
+    };
+    setTimeout(() => {
+      document.addEventListener('click', onDocClick);
+    }, 10);
+
+    const onDocKey = (evt) => {
+      if (evt.key === 'Escape') {
+        closeSwitcher();
+      }
+    };
+    document.addEventListener('keydown', onDocKey);
+    window.addEventListener('resize', closeSwitcher);
+  });
+}
+
 /**
  * Initialize Persona Pill in Sidebar
  */
@@ -517,7 +736,9 @@ export async function initPersonaPill() {
     const personas = await api.getPersonas();
     const active = personas.find(p => p.isDefault) || personas[0] || { name: 'Traveler', avatar: 'TR' };
     if (personaName) personaName.textContent = active.name;
-    if (personaEmoji) personaEmoji.textContent = active.avatar || 'TR';
+    if (personaEmoji) personaEmoji.textContent = toMonogram(active.name, active.avatar);
+
+    bindPersonaQuickSwitcher(personas, active);
   } catch {
     // fallback
   }

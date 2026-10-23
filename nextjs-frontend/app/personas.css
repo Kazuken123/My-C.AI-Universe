@@ -31,22 +31,23 @@
 .persona-card-shell:hover {
   transform: translateY(-2px);
   border-color: rgba(255, 255, 255, 0.22);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-card-hover), var(--tw-rim);
 }
 
 .persona-card-shell.active {
   border-color: var(--accent-border);
-  box-shadow: var(--accent-glow), 0 16px 40px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-card-hover), var(--tw-rim);
 }
 
 .persona-card-core {
-  background: var(--bg-core);
-  border: 1px solid var(--border-hairline);
-  border-radius: var(--radius-core);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   padding: 20px 22px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  box-shadow: none;
 }
 
 .persona-card-header {
@@ -67,8 +68,8 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: rgba(139, 92, 246, 0.12);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
   color: var(--accent);
   display: flex;
   align-items: center;
@@ -78,13 +79,13 @@
   font-size: 1.05rem;
   letter-spacing: -0.02em;
   flex-shrink: 0;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
 }
 
 [data-theme="vanguard"] .persona-glyph-badge {
-  background: rgba(224, 86, 56, 0.12);
-  border-color: rgba(224, 86, 56, 0.32);
-  color: #e05638;
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.34);
+  color: #f59e0b;
 }
 
 [data-theme="editorial"] .persona-glyph-badge {
@@ -126,9 +127,9 @@
   border: 1px solid rgba(16, 185, 129, 0.35);
   color: #34d399;
   font-family: var(--font-mono);
-  font-size: 0.64rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
 }
 
 .persona-active-dot {
@@ -136,17 +137,16 @@
   height: 5px;
   border-radius: 50%;
   background: #34d399;
-  box-shadow: 0 0 6px #34d399;
 }
 
 .persona-card-desc {
   font-size: 0.84rem;
   color: var(--text-secondary);
   line-height: 1.5;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.035);
   padding: 10px 14px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border-hairline);
+  border: 0;
 }
 
 .persona-card-actions {

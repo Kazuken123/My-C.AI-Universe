@@ -116,7 +116,6 @@ function AuthContent() {
           /* ========================================================== */
           <div className="flex flex-col gap-6 animate-fadeIn">
             <header className="flex flex-col gap-1.5 text-left">
-              <span className="eyebrow-pill">ACTIVE SQL SESSION</span>
               <h1 className="font-display text-2xl font-extrabold text-white tracking-tight">
                 You are Signed In
               </h1>
@@ -183,7 +182,6 @@ function AuthContent() {
           /* ========================================================== */
           <div className="flex flex-col gap-5 animate-fadeIn">
             <header className="flex flex-col gap-1.5 text-left">
-              <span className="eyebrow-pill">USER IDENTITY PORTAL</span>
               <h1 className="font-display text-2xl font-extrabold text-white tracking-tight transition-all duration-200">
                 {activeTab === 'signin' ? 'Sign In to Universe' : 'Create Universe Account'}
               </h1>

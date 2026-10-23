@@ -1,6 +1,6 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
-> **Current Version:** `v2.7.0`  
+> **Current Version:** `v2.8.0`  
 > **Status:** Production-Ready & Tested  
 > **Automated Test Coverage:** 34/34 E2E & unit tests passing (`npm test`)  
 > **Primary Database:** Turso Cloud (LibSQL `@libsql/client`, AWS Tokyo `ap-northeast-1`)  
@@ -17,7 +17,18 @@ This document serves as the **single source of truth** for project history, rece
 
 ---
 
-### 🏷️ `v2.7.0` (Current) — Next.js 14 App Router Full Visual Parity & Agency Design System Unification
+### 🏷️ `v2.8.0` (Current) — GetLayers.ai Cinema UI/UX Refinement & Multi-Skill Design Engineering Overhaul
+- **GetLayers.ai Production Design System Integration (`DESIGN.md`, `PRODUCT.md`, `base.css`, `globals.css`)**:
+  - Extracted and applied GetLayers.ai's production visual language across both [`frontend/`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/index.html) and [`nextjs-frontend/`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/nextjs-frontend/app/layout.tsx): deep obsidian canvas (`#060606`), primary carbon surface (`#0d0d0d`), elevated control surface (`#141414`), warm peach/terracotta accent (`#ffa582` / `#ffbea2`), platinum chrome (`#e8eaef`), and periwinkle refraction (`#a2b7f5`).
+  - Integrated GetLayers' typography pairing (`General Sans` + `Cabinet Grotesk` display headings, `Onest` + `Satoshi` body prose, `JetBrains Mono` telemetry, and `Instrument Serif` editorial mode) across all 9 HTML pages and the Next.js root layout.
+  - Replaced coloured outer neon `box-shadow` halos with GetLayers' specular top rim lighting (`--tw-rim: inset 0 1px 1px 0 rgba(255, 255, 255, 0.22)`), compact neutral elevation shadows (`0 8px 14px -4px rgba(0, 0, 0, 0.72)`), and inset radial peach/periwinkle button refraction on `.btn-island`.
+  - Preserved the 4-mode theme switcher (`higgsfield` GetLayers Cinema default, `vanguard` Solar Amber + Titanium, `editorial` Warm Monochrome Serif, and `telemetry` Tactical Avionics) and updated [`frontend/js/ambient-canvas.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/js/ambient-canvas.js) to render warm peach, periwinkle, and platinum chrome volumetric light ribbons and starfield motes.
+- **Full Impeccable & Emil Kowalski Design Audit Remediation**:
+  - **WCAG AA Contrast & Legibility Floor**: Raised `--text-muted` and input placeholders to `#8e8e98` / `#9494a0` (>5.8:1 contrast on `#0d0d0d`), set `--text-on-accent` to `#0d0d0d` (>9.8:1 contrast on `#ffa582`), and enforced a strict `>= 0.74rem` (`11.84px`) floor across all badges, keycaps, mobile nav tabs, and relationship telemetry labels.
+  - **GPU-Composited Motion & Tactile Choreography**: Replaced all `transition: width` and `transition: all` declarations with explicit `transform` (`scaleX(...)`), `opacity`, `background-color`, `border-color`, and `box-shadow` transitions on `cubic-bezier(0.22, 1, 0.36, 1)` in [`frontend/css/base.css`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/css/base.css), [`frontend/css/chat.css`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/css/chat.css), and [`frontend/js/loading-bar.js`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/js/loading-bar.js).
+  - **Anti-Slop Structural Cleanup**: Removed tracked uppercase kicker pills directly above `<h1>`/`<h2>` headings, fixed `h1 -> h2 -> h3` heading hierarchy in [`frontend/create.html`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/create.html) and [`frontend/personas.html`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/frontend/personas.html), removed infinite decorative pulsing/shimmer loops (`.admin-status-dot`, `.dossier-live-dot`, `.typing-dots`, `.msg-bubble.is-reshooting::after`), removed 3px side-tab stripes on `.sec-rule-card` and `.msg-paragraph-quote`, added `12px` inset padding to `.admin-table-container`, and flattened nested card borders inside `.double-bezel-shell`.
+
+### 🏷️ `v2.7.0` — Next.js 14 App Router Full Visual Parity & Agency Design System Unification
 - **100% Pixel-for-Pixel Visual Parity with Express Backend**:
   - Completely eradicated generic AI styling artifacts and boilerplate cards from `nextjs-frontend/`.
   - Rebuilt [`nextjs-frontend/components/layout/sidebar.tsx`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/nextjs-frontend/components/layout/sidebar.tsx) with authentic brand logo (`favicon.svg`), `SQL STUDIO v2.3` typography, `Gemini 3.5 lite` telemetry pill, New Character island button, active storylines drawer, and active persona pill (`Traveler / Active Identity`).

@@ -11,10 +11,10 @@
   <meta name="description" content="Interactive character roleplay directory backed by relational SQL persistence, semantic vector recall, and multi-variant scene branching." />
   <!-- Fonts -->
   <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
-  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
+  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@500,600,700&f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <!-- Favicon & App Icons -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
@@ -22,7 +22,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
   <link rel="shortcut icon" href="/favicon.ico" />
   <link rel="manifest" href="/site.webmanifest" />
-  <meta name="theme-color" content="#0c0b15" />
+  <meta name="theme-color" content="#060606" />
   <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
   <!-- Modular CSS for Dashboard -->
   <link rel="stylesheet" href="/css/base.css" />
@@ -94,10 +94,10 @@
       </div>
 
       <div class="sidebar-cta-wrap">
-        <a href="/create.html" class="btn-island btn-island-full">
-          <span>New Character</span>
+        <a href="/chat.html" class="btn-island btn-island-full sidebar-quick-chat-btn" title="Start a New Chat / Quick Scene">
+          <span>+ New Chat / Quick Scene</span>
           <span class="btn-island-icon" aria-hidden="true">
-            <i class="ph-light ph-arrow-up-right"></i>
+            <i class="ph-light ph-plus"></i>
           </span>
         </a>
       </div>
@@ -135,36 +135,44 @@
 
       <div class="sidebar-footer">
         <div class="sidebar-account-box" id="sidebar-account-section">
+          <!-- Guest State -->
           <div class="auth-guest-view" id="authGuestView">
             <a href="/auth.html" class="btn-island btn-island-full auth-launch-btn">
               <span>Sign In / Register</span>
               <span class="btn-island-icon" aria-hidden="true"><i class="ph-light ph-user-circle"></i></span>
             </a>
           </div>
+
+          <!-- Authenticated State: Unified User & Persona Switcher -->
           <div class="auth-user-view hidden" id="authUserView">
-            <a href="/profile-setup.html" class="auth-user-meta-wrap" title="Edit Profile and Persona">
-              <span class="auth-user-avatar-tag" id="authUserAvatar">👤</span>
-              <div class="auth-user-text">
-                <div class="auth-user-name" id="authUserName">User</div>
-                <div class="auth-user-handle" id="authUserHandle">@username</div>
-              </div>
-            </a>
-            <button class="icon-btn auth-signout-btn" id="authSignOutBtn" type="button" title="Sign Out">
-              <i class="ph-light ph-sign-out"></i>
-            </button>
+            <div class="sidebar-unified-card">
+              <a href="/personas.html" class="sidebar-unified-switcher" id="sidebar-persona-pill" title="Switch Persona or Edit Profile">
+                <div class="unified-avatar-anchor">
+                  <span class="auth-user-avatar-tag" id="authUserAvatar">👤</span>
+                  <span class="persona-badge-sub" id="sidebar-persona-emoji" title="Active Persona Monogram">TR</span>
+                </div>
+                <div class="unified-user-meta">
+                  <div class="auth-user-name" id="authUserName">User</div>
+                  <div class="unified-persona-row">
+                    <span class="persona-status-pip"></span>
+                    <span class="persona-name" id="sidebar-persona-name">Traveler</span>
+                  </div>
+                  <span class="sr-only" id="authUserHandle">@username</span>
+                </div>
+                <i class="ph-light ph-caret-up-down persona-caret" aria-hidden="true"></i>
+              </a>
+              <button class="icon-btn auth-signout-btn" id="authSignOutBtn" type="button" title="Sign Out">
+                <i class="ph-light ph-sign-out"></i>
+              </button>
+            </div>
           </div>
         </div>
 
-        <div class="sidebar-footer-row">
-          <a href="/personas.html" class="persona-pill" id="sidebar-persona-pill" title="Switch Active Roleplay Identity">
-            <span class="persona-monogram" id="sidebar-persona-emoji">TR</span>
-            <div class="persona-info">
-              <div class="persona-name" id="sidebar-persona-name">Traveler</div>
-              <div class="persona-sub">Active Identity</div>
-            </div>
-            <i class="ph-light ph-caret-up-down persona-caret"></i>
+        <div class="sidebar-footer-controls">
+          <a href="/profile-setup.html" class="sidebar-settings-link" title="Account & Identity Settings">
+            <i class="ph-light ph-gear"></i>
+            <span>Settings</span>
           </a>
-
           <button class="icon-btn theme-toggle-btn" id="themeToggleBtn" type="button" title="Cycle Theme">
             <i class="ph-light ph-sliders-horizontal" id="themeToggleIcon"></i>
             <span class="theme-mode-label sr-only" id="themeModeLabel">Higgsfield</span>
@@ -205,7 +213,6 @@
         <div class="double-bezel-shell hero-shell">
           <div class="double-bezel-core hero-split-grid">
             <div class="hero-copy-col">
-              <span class="eyebrow-pill">RELATIONAL NARRATIVE ENGINE</span>
               <h2 class="hero-display-title">Write scenes with characters that remember.</h2>
               <p class="hero-subtext">Multi-variant dialogue branching, long-term vector recall, and instant Fandom lore extraction in one studio.</p>
               <div class="hero-actions">

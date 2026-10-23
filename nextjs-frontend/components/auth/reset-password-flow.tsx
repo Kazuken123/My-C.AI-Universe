@@ -148,7 +148,6 @@ export function ResetPasswordFlow() {
     <div className="flex flex-col gap-5">
       {/* Dynamic Header */}
       <header className="flex flex-col gap-1.5 text-left">
-        <span className="eyebrow-pill">SECURITY &amp; RECOVERY</span>
         <h1 className="font-display text-2xl font-extrabold text-white tracking-tight">
           {step === 'request' && 'Reset Password'}
           {step === 'reset' && 'Enter New Password'}
