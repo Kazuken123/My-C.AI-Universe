@@ -72,6 +72,15 @@ export function CharacterCard({
         data-char-card={character.id}
         style={{ cursor: 'pointer' }}
         onClick={handleCardClick}
+        onKeyDown={(event) => {
+          if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            handleCardClick();
+          }
+        }}
+        tabIndex={0}
+        role="group"
+        aria-label={`Character: ${character.name}. Press Enter to open chat.`}
       >
         <div className="double-bezel-core cai-card">
           <div className="cai-card-top">
@@ -81,6 +90,8 @@ export function CharacterCard({
                 className="cai-avatar"
                 src={avatarSrc}
                 alt={character.name}
+                loading="lazy"
+                decoding="async"
                 onError={() => {
                   setAvatarSrc(
                     `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(character.name)}`
@@ -110,6 +121,9 @@ export function CharacterCard({
                 onClick={handleLike}
                 type="button"
                 title="Like character"
+                aria-label={`${isLiked ? 'Unlike' : 'Like'} ${character.name}`}
+                aria-pressed={isLiked}
+                disabled={isLiking}
               >
                 <i className={isLiked ? 'ph-fill ph-heart' : 'ph-light ph-heart'} />
                 <span>{formatCount(likes)}</span>
@@ -122,7 +136,8 @@ export function CharacterCard({
               <Link
                 href={`/create?id=${encodeURIComponent(character.id)}`}
                 className="icon-btn"
-                title="Edit Architecture"
+                title="Edit character"
+                aria-label={`Edit ${character.name}`}
                 onClick={(e) => e.stopPropagation()}
               >
                 <i className="ph-light ph-pencil-simple" />
@@ -130,10 +145,12 @@ export function CharacterCard({
               <Link
                 href={`/chat/${encodeURIComponent(character.id)}`}
                 className="btn-secondary btn-sm"
+                aria-label={`Open chat with ${character.name}`}
+                title={`Open chat with ${character.name}`}
                 onClick={(e) => e.stopPropagation()}
               >
                 <i className="ph-light ph-chat-circle-dots" />
-                <span>Enter Scene</span>
+                <span>Open chat</span>
               </Link>
             </div>
           </div>

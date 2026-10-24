@@ -27,16 +27,16 @@ Used in desktop and mobile web browsers across two primary modes:
 ## Capabilities and Constraints
 
 - Dual-frontend parity: Express static HTML/CSS/JS (`frontend/`) and Next.js 14 App Router (`nextjs-frontend/`) sharing unified CSS design tokens and layout architecture.
-- Multi-theme architecture led by the default **GetLayers Cinema** (`higgsfield`) obsidian, platinum chrome, warm peach, and periwinkle aesthetic, alongside selectable workspace themes (`vanguard`, `editorial`, `telemetry`).
+- Multi-theme architecture led by **Orbit Studio** (persisted key: `higgsfield`), with midnight green, ivory and sage. Other workspace themes remain selectable.
 - 60fps HTML5 Canvas ambient motion backdrop (`AmbientMotionCanvas`) with user-toggleable motion control.
 - Real-time voice synthesis (Web Speech API TTS) and Fandom/Wikipedia canon ingestion.
 
 ## Brand Commitments
 
-- **Brand Name**: My C.AI Universe (`C.AI Universe · SQL STUDIO v2.7`)
+- **Brand Name**: My C.AI Universe (Orbit Studio)
 - **Brand Mark**: `/favicon.svg`
-- **Visual Direction**: GetLayers.ai Cinema aesthetic — deep obsidian surfaces (`#060606`, `#0d0d0d`, `#141414`), brushed platinum chrome (`#e8eaef`, `#bcc0ca`), warm peach/terracotta (`#ffa582`, `#ffbea2`), and soft periwinkle (`#a2b7f5`) accents, specular rim lighting (`inset 0 1px 0 rgba(255,255,255,0.09)`), double-bezel nested containers, and tactile pill-island CTAs.
-- **Typography**: `General Sans` and `Cabinet Grotesk` for display headings, `Onest` and `Satoshi` for UI and roleplay prose, `JetBrains Mono` for telemetry and keycaps, and `Instrument Serif` for editorial mode accents.
+- **Visual Direction**: Cinematic editorial discovery, portrait cards, a CSS 3D orbital sculpture and quiet green reading surfaces. See DESIGN.md for the current tokens and motion system.
+- **Typography**: Manrope for UI and prose, Newsreader for editorial headings, JetBrains Mono for numeric metadata.
 
 ## Evidence on Hand
 
@@ -52,6 +52,6 @@ Used in desktop and mobile web browsers across two primary modes:
 
 ## Accessibility & Inclusion
 
-- WCAG AA contrast compliance across all dark surfaces: body and placeholder text maintain ≥4.5:1 contrast (`#8e8e98` minimum muted/placeholder text on `#0d0d0d` and `#141414`), and dark obsidian text (`#0d0d0d`) on warm peach (`#ffa582`) and platinum chrome (`#e8eaef`) accents exceeds 9.5:1 contrast.
+- Default Orbit Studio text and action color pairs are checked against the WCAG AA 4.5:1 target. Visible focus, keyboard actions and an animation pause control are provided.
 - Minimum 11px (`0.72rem` at `16px` root) functional UI typography floor across all badges, keycaps, and metadata labels.
 - Full keyboard navigation (`/` to search, `1–4` workspace shortcuts, `[` sidebar collapse, `<-`/`->` take swiping, visible `:focus-visible` rings, and skip-to-workspace link).

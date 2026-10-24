@@ -8,13 +8,10 @@
   <meta name="apple-mobile-web-app-title" content="C.AI Universe" />
   <meta name="mobile-web-app-capable" content="yes" />
   <title>Dashboard &amp; Character Directory — My C.AI Universe</title>
-  <meta name="description" content="Interactive character roleplay directory backed by relational SQL persistence, semantic vector recall, and multi-variant scene branching." />
+  <meta name="description" content="Meet unforgettable characters, build worlds together, and write stories with characters who remember you." />
   <!-- Fonts -->
-  <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
-  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@500,600,700&f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <!-- Favicon & App Icons -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
@@ -22,13 +19,15 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
   <link rel="shortcut icon" href="/favicon.ico" />
   <link rel="manifest" href="/site.webmanifest" />
-  <meta name="theme-color" content="#060606" />
+  <meta name="theme-color" content="#090b18" />
   <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
   <!-- Modular CSS for Dashboard -->
   <link rel="stylesheet" href="/css/base.css" />
   <link rel="stylesheet" href="/css/dashboard.css" />
   <script type="module" src="/js/loading-bar.js"></script>
   <script type="module" src="/js/ambient-canvas.js"></script>
+  <link rel="stylesheet" href="/css/orbit.css" />
+  <script type="module" src="/js/orbit-motion.js"></script>
 </head>
 <body>
   <!-- Ambient Kinetic Motion Canvas Engine -->
@@ -73,7 +72,7 @@
             </span>
             <div class="brand-text-wrap">
               <span class="brand-title">C.AI Universe</span>
-              <span class="brand-version">SQL STUDIO v2.3</span>
+              <span class="brand-version">ORBIT STUDIO</span>
             </div>
           </a>
           <div class="sidebar-header-actions">
@@ -95,7 +94,7 @@
 
       <div class="sidebar-cta-wrap">
         <a href="/chat.html" class="btn-island btn-island-full sidebar-quick-chat-btn" title="Start a New Chat / Quick Scene">
-          <span>+ New Chat / Quick Scene</span>
+          <span>Start a new story</span>
           <span class="btn-island-icon" aria-hidden="true">
             <i class="ph-light ph-plus"></i>
           </span>
@@ -181,23 +180,66 @@
       </div>
     </aside>
 
+    <div class="island-dock">
+      <div class="universe-island" data-universe-island data-mirror-sidebar>
+        <button class="island-trigger" type="button" aria-expanded="false" aria-controls="island-menu" aria-label="Open universe navigation"><span class="island-orb" aria-hidden="true"></span><span>My universe</span><span class="island-trigger-hint" aria-hidden="true">✦</span></button>
+        <div class="island-menu" id="island-menu" hidden>
+          <div class="island-menu-heading"><span>YOUR UNIVERSE</span><span>Make yourself at home.</span></div>
+          <div data-island-content></div>
+          <div class="island-tools"><button type="button" data-island-sidebar aria-label="Toggle sidebar" title="Toggle sidebar"><i class="ph-light ph-sidebar-simple"></i></button><button class="orbit-motion-toggle" data-motion-toggle type="button" aria-label="Pause animations" aria-pressed="true">Ⅱ</button></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Main Workspace -->
     <main class="main-workspace" id="main-workspace">
-      <div class="content-container">
+      <div class="content-container orbit-discover">
         <!-- Top Command Bar -->
-        <header class="discover-topbar">
+        <header class="discover-topbar universe-searchbar">
           <div class="topbar-title-group">
-            <span class="topbar-index">01 / DIRECTORY</span>
-            <h1 class="topbar-heading">Character Roster</h1>
+            <span class="topbar-index">YOUR UNIVERSE</span>
+            <span class="topbar-heading">Discover</span>
           </div>
 
           <div class="search-controls">
             <div class="search-box">
               <i class="ph-light ph-magnifying-glass search-icon"></i>
-              <input type="text" id="discoverSearch" placeholder="Filter by name, canon, or archetype..." autocomplete="off" />
+              <input type="text" id="discoverSearch" aria-label="Search characters" placeholder="Search characters, worlds, stories..." autocomplete="off" />
               <kbd class="search-kbd">/</kbd>
             </div>
-            <div class="select-wrap">
+<button class="orbit-motion-toggle" data-motion-toggle type="button" aria-label="Pause animations" aria-pressed="true">Ⅱ</button>
+          </div>
+        </header>
+
+
+        <section class="orbit-hero" aria-labelledby="orbit-title">
+          <div class="orbit-hero-copy">
+            <div class="orbit-eyebrow">A space for your imagination</div>
+            <h1 id="orbit-title" class="orbit-title">Every character.<em>A new universe.</em></h1>
+            <p class="orbit-description">Meet someone unforgettable. Build a world together. Write stories with characters who remember you.</p>
+            <div class="hero-actions">
+              <a class="btn-island" href="#character-roster"><span>Find your next story</span><span class="btn-island-icon" aria-hidden="true">↗</span></a>
+              <a class="btn-ghost" href="/create.html" id="hero-create-btn"><span>Create a character</span><span aria-hidden="true">↗</span></a>
+            </div>
+            <div class="orbit-hero-note"><span><i class="ph-light ph-infinity" aria-hidden="true"></i>Endless possibilities</span><span><i class="ph-light ph-fingerprint" aria-hidden="true"></i>Entirely your story</span></div>
+          </div>
+          <div class="orbit-art" aria-hidden="true">
+            <span class="orbit-coordinate">IMAGINATION, IN ORBIT</span>
+            <div class="orbit-shadow"></div>
+            <div class="orbit-sculpture"><div class="orbit-ring"></div><div class="orbit-ring"></div><div class="orbit-ring"></div><div class="orbit-ring"></div><div class="orbit-ring"></div><div class="orbit-core"></div></div>
+            <div class="orbit-floating-label memory"><i class="ph-light ph-sparkle"></i><div><strong>A connection that stays</strong><small>Characters with memory</small></div></div>
+            <div class="orbit-floating-label story"><i class="ph-light ph-planet"></i><div><strong>Your world. Your rules.</strong><small>Let the story unfold</small></div></div>
+            <span class="orbit-art-caption">ONE CONVERSATION. INFINITE DIRECTIONS.</span>
+          </div>
+        </section>
+        <div class="orbit-strip"><span><i class="ph-light ph-brain" aria-hidden="true"></i>Memories that last</span><span><i class="ph-light ph-git-branch" aria-hidden="true"></i>Stories that branch</span><span><i class="ph-light ph-heart" aria-hidden="true"></i>Connections that grow</span></div>
+        <section class="orbit-continue" id="continue-chatting-section" style="display:none" aria-labelledby="continue-heading">
+          <div class="orbit-section-heading"><h2 id="continue-heading">Pick up where you left off</h2><a class="btn-ghost" href="/chats.html">All threads ↗</a></div>
+          <div class="orbit-continue-grid" id="continue-chatting-row"></div>
+        </section>
+
+        <!-- Category Filter Pills & Bento Character Roster -->
+        <section class="section-block orbit-roster" id="character-roster" aria-labelledby="roster-heading"><div class="orbit-section-heading"><div><h2 id="roster-heading">Discover your next connection</h2><p id="roster-status" role="status">A familiar face. An unexpected adventure.</p></div>            <div class="select-wrap">
               <i class="ph-light ph-funnel-simple select-icon"></i>
               <select class="select-control" id="discoverSort" aria-label="Sort characters">
                 <option value="popular">Most Interactions</option>
@@ -205,39 +247,9 @@
                 <option value="newest">Recently Added</option>
                 <option value="name">Alphabetical (A–Z)</option>
               </select>
-            </div>
-          </div>
-        </header>
-
-        <!-- Editorial Split Hero -->
-        <div class="double-bezel-shell hero-shell">
-          <div class="double-bezel-core hero-split-grid">
-            <div class="hero-copy-col">
-              <h2 class="hero-display-title">Write scenes with characters that remember.</h2>
-              <p class="hero-subtext">Multi-variant dialogue branching, long-term vector recall, and instant Fandom lore extraction in one studio.</p>
-              <div class="hero-actions">
-                <a href="/chat.html" class="btn-island" id="hero-start-chat-btn">
-                  <span>Enter Featured Scene</span>
-                  <span class="btn-island-icon" aria-hidden="true">
-                    <i class="ph-light ph-arrow-up-right"></i>
-                  </span>
-                </a>
-                <a href="/create.html" class="btn-ghost" id="hero-create-btn">
-                  <i class="ph-light ph-sparkle"></i>
-                  <span>Open Character Studio</span>
-                </a>
-              </div>
-            </div>
-
-            <!-- Right Column: Featured Character Spotlight Card -->
-            <div class="hero-Featured-col" id="hero-spotlight-card"></div>
-          </div>
-        </div>
-
-        <!-- Category Filter Pills & Bento Character Roster -->
-        <div class="section-block">
+            </div></div>
           <div class="roster-filter-bar">
-            <div class="category-pills" id="category-pills" role="tablist" aria-label="Character Categories">
+            <div class="category-pills" id="category-pills" role="group" aria-label="Character Categories">
               <button class="category-pill active" data-category="All" type="button">All Canon</button>
               <button class="category-pill" data-category="Anime" type="button">Anime</button>
               <button class="category-pill" data-category="Roleplay" type="button">Roleplay</button>
@@ -251,8 +263,13 @@
           </div>
 
           <!-- Asymmetric 12-Col Bento Grid -->
-          <div class="bento-character-grid" id="discover-grid"></div>
-        </div>
+          <div class="character-rail" data-character-rail>
+            <button class="rail-arrow rail-prev" type="button" data-rail-prev aria-label="Previous characters" aria-controls="discover-grid" hidden>‹</button>
+            <div class="bento-character-grid character-track" id="discover-grid" aria-busy="true" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Characters. Use left and right arrow keys to browse."></div>
+            <button class="rail-arrow rail-next" type="button" data-rail-next aria-label="Next characters" aria-controls="discover-grid" hidden>›</button>
+            <span class="sr-only" data-rail-status role="status" aria-live="polite"></span>
+          </div>
+        </section><footer class="orbit-footer"><strong>Made for the stories only you can tell.</strong><span>My C.AI Universe · Your imagination, in motion.</span></footer>
       </div>
     </main>
   </div>

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { DynamicIsland } from './dynamic-island';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/auth-context';
 import { api } from '@/lib/api';
@@ -37,6 +38,7 @@ export function Sidebar({
   useEffect(() => {
     if (!user) {
       setSessions([]);
+      setActivePersona({ name: 'Traveler', avatar: 'TR' });
       return;
     }
     let isCancelled = false;
@@ -68,9 +70,11 @@ export function Sidebar({
   }, [user, pathname]);
 
   return (
+    <>
     <aside
       className={cn('sidebar', isCollapsed && 'collapsed', isMobileOpen && 'mobile-open')}
       aria-label="Primary Navigation"
+      id="primary-navigation"
     >
       {/* 1. Header: Brand Logo & Collapse Controls */}
       <div className="sidebar-header">
@@ -82,7 +86,7 @@ export function Sidebar({
             </span>
             <div className="brand-text-wrap">
               <span className="brand-title">C.AI Universe</span>
-              <span className="brand-version">SQL STUDIO v2.3</span>
+              <span className="brand-version">ORBIT STUDIO</span>
             </div>
           </Link>
           <div className="sidebar-header-actions">
@@ -90,7 +94,9 @@ export function Sidebar({
               className="icon-btn sidebar-collapse-btn"
               id="sidebarCollapseBtn"
               type="button"
-              aria-label="Toggle Sidebar Rail"
+              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-expanded={!isCollapsed}
+              aria-controls="primary-navigation"
               title={isCollapsed ? 'Expand Sidebar ([)' : 'Collapse Sidebar ([)'}
               onClick={onToggleCollapse}
             >
@@ -117,7 +123,7 @@ export function Sidebar({
 
       {/* 2. Primary CTA: New Character */}
       <div className="sidebar-cta-wrap">
-        <Link href="/create" onClick={onMobileClose} className="btn-island btn-island-full">
+        <Link href="/create" onClick={onMobileClose} className="btn-island btn-island-full" aria-label="Create a character">
           <span>New Character</span>
           <span className="btn-island-icon" aria-hidden="true">
             <i className="ph-light ph-arrow-up-right" />
@@ -131,6 +137,9 @@ export function Sidebar({
           href="/"
           onClick={onMobileClose}
           className={cn('nav-item', pathname === '/' && 'active')}
+          title="Discover"
+          aria-label="Discover"
+          aria-current={pathname === '/' ? 'page' : undefined}
           data-page="discover"
         >
           <i className="ph-light ph-compass" />
@@ -141,6 +150,8 @@ export function Sidebar({
           href="/create"
           onClick={onMobileClose}
           className={cn('nav-item', pathname.startsWith('/create') && 'active')}
+          title="Studio"
+          aria-label="Studio"
           data-page="create"
         >
           <i className="ph-light ph-sparkle" />
@@ -151,6 +162,8 @@ export function Sidebar({
           href="/chats"
           onClick={onMobileClose}
           className={cn('nav-item', pathname.startsWith('/chats') && 'active')}
+          title="Threads"
+          aria-label="Threads"
           data-page="chats"
         >
           <i className="ph-light ph-chats-circle" />
@@ -161,6 +174,8 @@ export function Sidebar({
           href="/personas"
           onClick={onMobileClose}
           className={cn('nav-item', pathname.startsWith('/personas') && 'active')}
+          title="Personas"
+          aria-label="Personas"
           data-page="personas"
         >
           <i className="ph-light ph-identification-card" />
@@ -284,6 +299,7 @@ export function Sidebar({
                 id="authSignOutBtn"
                 type="button"
                 title="Sign Out"
+                aria-label="Sign out"
                 onClick={() => logout()}
               >
                 <i className="ph-light ph-sign-out" />
@@ -295,6 +311,7 @@ export function Sidebar({
                 href="/auth"
                 onClick={onMobileClose}
                 className="btn-island btn-island-full auth-launch-btn"
+                aria-label="Sign in or register"
               >
                 <span>Sign In / Register</span>
                 <span className="btn-island-icon" aria-hidden="true">
@@ -314,7 +331,10 @@ export function Sidebar({
             title="Switch Active Roleplay Identity"
           >
             <span className="persona-monogram" id="sidebar-persona-emoji">
-              {activePersona.avatar || 'TR'}
+              { /^(https?:\/\/|\/|data:)/i.test(activePersona.avatar) ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={activePersona.avatar} alt="" className="persona-avatar-image" />
+              ) : (activePersona.avatar || activePersona.name.slice(0, 2)).slice(0, 3) }
             </span>
             <div className="persona-info">
               <div className="persona-name" id="sidebar-persona-name">
@@ -328,6 +348,7 @@ export function Sidebar({
           <button
             className="icon-btn theme-toggle-btn"
             id="themeToggleBtn"
+            aria-label="Change color theme"
             type="button"
             title={`Cycle Theme (Current: ${currentTheme})`}
             onClick={onCycleTheme}
@@ -340,5 +361,7 @@ export function Sidebar({
         </div>
       </div>
     </aside>
+    {pathname === '/' && <div className="island-dock"><DynamicIsland sessions={sessions} personaName={activePersona.name} currentTheme={currentTheme} onCycleTheme={onCycleTheme} onToggleSidebar={onToggleCollapse} /></div>}
+    </>
   );
 }

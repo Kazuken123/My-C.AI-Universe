@@ -6,6 +6,8 @@ import './studio.css';
 import './personas.css';
 import './chat.css';
 import './auth.css';
+import './orbit.css';
+import Script from 'next/script';
 import { AuthProvider } from '@/context/auth-context';
 import { AmbientCanvas } from '@/components/layout/ambient-canvas';
 import { ShellLayout } from '@/components/layout/shell-layout';
@@ -20,7 +22,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#060606',
+  themeColor: '#090b18',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -35,21 +37,13 @@ export default function RootLayout({
   return (
     <html lang="en" data-theme="higgsfield">
       <head>
-        <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
-        <link
-          href="https://api.fontshare.com/v2/css?f[]=general-sans@500,600,700&f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap"
-          rel="stylesheet"
-        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=Onest:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
         <script src="https://unpkg.com/@phosphor-icons/web@2.1.1" async></script>
         <script type="module" src="/js/ambient-canvas.js" async></script>
       </head>
       <body>
+        <Script src="/js/orbit-motion.js" strategy="afterInteractive" />
         <AuthProvider>
           <AmbientCanvas />
           <div className="ambient-grain" aria-hidden="true" />

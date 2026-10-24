@@ -13,6 +13,7 @@ export function ShellLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAuthRoute = pathname?.startsWith('/auth') || pathname?.startsWith('/reset-password');
 
+  const [isDesktop, setIsDesktop] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [currentTheme, setCurrentTheme] = useState('higgsfield');
@@ -39,6 +40,26 @@ export function ShellLayout({ children }: { children: React.ReactNode }) {
     window.addEventListener('pointermove', handlePointerMove, { passive: true });
     return () => window.removeEventListener('pointermove', handlePointerMove);
   }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1025px)');
+    const update = () => { setIsDesktop(media.matches); setIsMobileOpen(false); };
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+
+  useEffect(() => {
+    document.body.classList.toggle('mobile-drawer-locked', isMobileOpen);
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsMobileOpen(false);
+    };
+    window.addEventListener('keydown', escape);
+    return () => {
+      document.body.classList.remove('mobile-drawer-locked');
+      window.removeEventListener('keydown', escape);
+    };
+  }, [isMobileOpen]);
 
   const handleToggleCollapse = () => {
     setIsCollapsed((prev) => {
@@ -110,8 +131,8 @@ export function ShellLayout({ children }: { children: React.ReactNode }) {
         <Sidebar
           isMobileOpen={isMobileOpen}
           onMobileClose={() => setIsMobileOpen(false)}
-          isCollapsed={isCollapsed}
-          onToggleCollapse={handleToggleCollapse}
+          isCollapsed={isCollapsed && isDesktop}
+          onToggleCollapse={isDesktop ? handleToggleCollapse : () => setIsMobileOpen(true)}
           currentTheme={currentTheme}
           onCycleTheme={handleCycleTheme}
         />

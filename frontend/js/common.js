@@ -3,7 +3,7 @@ export { loadingBar } from './loading-bar.js';
 export { ambientCanvas } from './ambient-canvas.js';
 
 export const SKILL_THEMES = [
-  { id: 'higgsfield', label: 'Higgsfield Cinema' },
+  { id: 'higgsfield', label: 'Orbit Studio' },
   { id: 'vanguard', label: 'Vanguard' },
   { id: 'editorial', label: 'Editorial' },
   { id: 'telemetry', label: 'Telemetry' }
@@ -129,8 +129,8 @@ export async function initSidebar(activePage = 'discover') {
 
   const setSidebarCollapsed = (collapsed) => {
     if (!sidebar) return;
-    sidebar.classList.toggle('collapsed', collapsed);
-    document.body.classList.toggle('sidebar-collapsed', collapsed);
+    sidebar.classList.toggle('collapsed', collapsed && window.innerWidth > 1024);
+    document.body.classList.toggle('sidebar-collapsed', collapsed && window.innerWidth > 1024);
     if (collapseBtn) {
       collapseBtn.title = collapsed ? 'Expand Sidebar ([)' : 'Collapse Sidebar ([)';
       collapseBtn.setAttribute('aria-expanded', String(!collapsed));
@@ -140,9 +140,10 @@ export async function initSidebar(activePage = 'discover') {
     } catch {}
   };
 
-  if (isCollapsed) {
-    setSidebarCollapsed(true);
-  }
+  setSidebarCollapsed(isCollapsed);
+  window.matchMedia('(min-width: 1025px)').addEventListener('change', () => {
+    setSidebarCollapsed(localStorage.getItem('cai_sidebar_collapsed') === 'true');
+  });
 
   if (collapseBtn && !collapseBtn.__collapseBound) {
     collapseBtn.__collapseBound = true;
@@ -191,6 +192,13 @@ export async function initSidebar(activePage = 'discover') {
       document.body.classList.remove('show-nav-kbd');
     });
   }
+
+  document.querySelectorAll('.sidebar a, .sidebar button').forEach(control => {
+    if (!control.getAttribute('aria-label')) {
+      const label = control.getAttribute('title') || control.textContent.trim().replace(/\s+/g, ' ');
+      if (label) control.setAttribute('aria-label', label);
+    }
+  });
 
   // Set active nav link
   document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
@@ -646,7 +654,8 @@ export function bindPersonaQuickSwitcher(personas = [], initialActive = null) {
     `;
 
     // Position fixed to prevent sidebar overflow/clipping and support collapsed rail
-    const rect = trigger.getBoundingClientRect();
+    const visibleAnchor = trigger.__popoverAnchor || trigger;
+    const rect = visibleAnchor.getBoundingClientRect();
     const sidebar = trigger.closest('.sidebar');
     const isCollapsed = sidebar?.classList.contains('collapsed');
     const isMobile = window.innerWidth <= 768;
@@ -654,7 +663,16 @@ export function bindPersonaQuickSwitcher(personas = [], initialActive = null) {
     popover.style.position = 'fixed';
     popover.style.zIndex = '2000';
 
-    if (isCollapsed && !isMobile) {
+    if (visibleAnchor !== trigger) {
+      const width = Math.min(280, window.innerWidth - 32);
+      const top = Math.max(16, Math.min(rect.bottom + 8, window.innerHeight - 320));
+      popover.style.left = Math.max(16, Math.min(rect.left, window.innerWidth - width - 16)) + 'px';
+      popover.style.top = top + 'px';
+      popover.style.bottom = 'auto';
+      popover.style.width = width + 'px';
+      popover.style.maxHeight = (window.innerHeight - top - 16) + 'px';
+      popover.style.overflowY = 'auto';
+    } else if (isCollapsed && !isMobile) {
       popover.style.left = `${Math.round(rect.right + 12)}px`;
       popover.style.bottom = `${Math.max(16, Math.round(window.innerHeight - rect.bottom))}px`;
       popover.style.width = '260px';
@@ -707,7 +725,7 @@ export function bindPersonaQuickSwitcher(personas = [], initialActive = null) {
     });
 
     const onDocClick = (evt) => {
-      if (!popover.contains(evt.target) && !trigger.contains(evt.target)) {
+      if (!popover.contains(evt.target) && !trigger.contains(evt.target) && !visibleAnchor.contains(evt.target)) {
         closeSwitcher();
       }
     };
@@ -718,6 +736,7 @@ export function bindPersonaQuickSwitcher(personas = [], initialActive = null) {
     const onDocKey = (evt) => {
       if (evt.key === 'Escape') {
         closeSwitcher();
+        visibleAnchor.focus({ preventScroll: true });
       }
     };
     document.addEventListener('keydown', onDocKey);

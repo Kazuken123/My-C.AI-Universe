@@ -307,15 +307,15 @@ export class AmbientMotionCanvas {
 
       const grad = ctx.createLinearGradient(0, yOffset - 40, 0, yOffset + 240);
       if (b === 0) {
-        grad.addColorStop(0, 'rgba(255, 165, 130, 0.14)');
-        grad.addColorStop(0.5, 'rgba(255, 190, 162, 0.06)');
+        grad.addColorStop(0, 'rgba(178, 148, 250, 0.14)');
+        grad.addColorStop(0.5, 'rgba(207, 186, 255, 0.06)');
         grad.addColorStop(1, 'transparent');
       } else if (b === 1) {
-        grad.addColorStop(0, 'rgba(162, 183, 245, 0.11)');
+        grad.addColorStop(0, 'rgba(115, 186, 236, 0.11)');
         grad.addColorStop(0.6, 'rgba(232, 234, 239, 0.05)');
         grad.addColorStop(1, 'transparent');
       } else {
-        grad.addColorStop(0, 'rgba(255, 165, 130, 0.08)');
+        grad.addColorStop(0, 'rgba(178, 148, 250, 0.08)');
         grad.addColorStop(1, 'transparent');
       }
 
@@ -337,7 +337,7 @@ export class AmbientMotionCanvas {
         const distSq = dx * dx + dy * dy;
         if (distSq < 5625) { // < 75px
           const linkAlpha = (1 - Math.sqrt(distSq) / 75) * 0.16;
-          ctx.strokeStyle = `rgba(255, 165, 130, ${linkAlpha})`;
+          ctx.strokeStyle = `rgba(178, 148, 250, ${linkAlpha})`;
           ctx.beginPath();
           ctx.moveTo(this.stars[i].x, this.stars[i].y);
           ctx.lineTo(this.stars[j].x, this.stars[j].y);
@@ -362,9 +362,9 @@ export class AmbientMotionCanvas {
 
       let color;
       if (star.colorType < 0.25) {
-        color = `rgba(255, 165, 130, ${alpha})`; // Warm Peach
+        color = `rgba(178, 148, 250, ${alpha})`; // Nebula Violet
       } else if (star.colorType < 0.5) {
-        color = `rgba(162, 183, 245, ${alpha})`; // Periwinkle
+        color = `rgba(115, 186, 236, ${alpha})`; // Starlight Blue
       } else {
         color = `rgba(232, 234, 239, ${alpha})`; // Platinum Chrome
       }
@@ -376,7 +376,7 @@ export class AmbientMotionCanvas {
 
       // Subtle halo for larger stars
       if (star.size > 1.8) {
-        ctx.fillStyle = `rgba(255, 165, 130, ${alpha * 0.22})`;
+        ctx.fillStyle = `rgba(178, 148, 250, ${alpha * 0.22})`;
         ctx.beginPath();
         ctx.arc(star.x, star.y, star.size * 2.5, 0, Math.PI * 2);
         ctx.fill();
@@ -421,7 +421,7 @@ export class AmbientMotionCanvas {
 
       const grad = ctx.createLinearGradient(headX, headY, tailX, tailY);
       grad.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
-      grad.addColorStop(0.3, `rgba(255, 165, 130, ${alpha * 0.8})`);
+      grad.addColorStop(0.3, `rgba(178, 148, 250, ${alpha * 0.8})`);
       grad.addColorStop(1, 'transparent');
 
       ctx.lineWidth = 2.2;

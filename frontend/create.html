@@ -10,11 +10,8 @@
   <title>Character Architecture Studio — My C.AI Universe</title>
   <meta name="description" content="Synthesize canonical characters from Fandom/Wikipedia or author custom personalities with persistent SQL memory." />
   <!-- Fonts -->
-  <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
-  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@500,600,700&f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <!-- Icons -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
@@ -22,7 +19,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
   <link rel="shortcut icon" href="/favicon.ico" />
   <link rel="manifest" href="/site.webmanifest" />
-  <meta name="theme-color" content="#060606" />
+  <meta name="theme-color" content="#090b18" />
   <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
   <!-- Modular CSS for Studio -->
   <link rel="stylesheet" href="/css/base.css" />
@@ -30,6 +27,8 @@
   <link rel="stylesheet" href="/css/cropper.css" />
   <script type="module" src="/js/loading-bar.js"></script>
   <script type="module" src="/js/ambient-canvas.js"></script>
+  <link rel="stylesheet" href="/css/orbit.css" />
+  <script type="module" src="/js/orbit-motion.js"></script>
 </head>
 <body>
   <!-- Ambient Kinetic Motion Canvas Engine -->
@@ -73,7 +72,7 @@
             </span>
             <div class="brand-text-wrap">
               <span class="brand-title">C.AI Universe</span>
-              <span class="brand-version">SQL STUDIO v2.2</span>
+              <span class="brand-version">ORBIT STUDIO</span>
             </div>
           </a>
           <div class="sidebar-header-actions">
@@ -95,7 +94,7 @@
 
       <div class="sidebar-cta-wrap">
         <a href="/chat.html" class="btn-island btn-island-full sidebar-quick-chat-btn" title="Start a New Chat / Quick Scene">
-          <span>+ New Chat / Quick Scene</span>
+          <span>Start a new story</span>
           <span class="btn-island-icon" aria-hidden="true">
             <i class="ph-light ph-plus"></i>
           </span>
