@@ -9,6 +9,11 @@ import { emailService } from './email.service.js';
 import { AuthenticationError, ConflictError, ValidationError, NotFoundError } from '../ai/errors.js';
 import { config, isAdminIdentity } from '../config/index.js';
 
+export const RESERVED_USERNAMES = Object.freeze(new Set([
+  'community', 'system', 'admin', 'administrator', 'moderator',
+  'root', 'support', 'kazuken', 'guest', 'you', 'universe'
+]));
+
 const JWT_SECRET = config.JWT_SECRET;
 const TOKEN_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 
@@ -36,6 +41,7 @@ export class AuthService {
   constructor(userRepo = userRepository, personaRepo = personaRepository) {
     this.userRepo = userRepo;
     this.personaRepo = personaRepo;
+    this.failedResetAttempts = new Map();
   }
 
   /**
@@ -45,11 +51,15 @@ export class AuthService {
    */
   generateToken(user) {
     const header = { alg: 'HS256', typ: 'JWT' };
+    const pwdFingerprint = user.passwordHash
+      ? crypto.createHash('sha256').update(user.passwordHash).digest('hex').slice(0, 12)
+      : '';
     const payload = {
       sub: user.id,
       username: user.username,
       displayName: user.displayName,
       role: user.role || 'user',
+      pwd: pwdFingerprint,
       exp: Date.now() + TOKEN_TTL_MS
     };
 
@@ -124,10 +134,6 @@ export class AuthService {
     const cleanUsername = String(username).trim().toLowerCase();
     const cleanEmail = email ? String(email).trim().toLowerCase() : '';
 
-    const RESERVED_USERNAMES = new Set([
-      'community', 'system', 'admin', 'administrator', 'moderator',
-      'root', 'support', 'universe', 'kazuken', 'guest'
-    ]);
     if (RESERVED_USERNAMES.has(cleanUsername)) {
       throw new ValidationError(`Username "${cleanUsername}" is reserved and cannot be registered`, 'username');
     }
@@ -220,7 +226,6 @@ export class AuthService {
       if (!/^[a-zA-Z0-9_]{3,25}$/.test(cleanUsername)) {
         throw new ValidationError('Username must be 3 to 25 characters and contain only letters, numbers, and underscores', 'username');
       }
-      const RESERVED_USERNAMES = new Set(['community', 'system', 'admin', 'administrator', 'moderator', 'root', 'support', 'universe']);
       if (RESERVED_USERNAMES.has(cleanUsername) && !user.isAdmin()) {
         throw new ValidationError(`Username "${cleanUsername}" is reserved and cannot be claimed`, 'username');
       }
@@ -239,83 +244,126 @@ export class AuthService {
 
   /**
    * Authenticate via Social OAuth (Google / Facebook)
-   * Auto-links existing accounts by email/providerId or creates a new user with default persona
+   * Strictly verifies cryptographic provider token before trusting identity claims.
+   * Auto-links existing accounts by verified email (matching provider only) or creates new user.
    * @param {Object} param0
    * @returns {Promise<{ user: Object, token: string, isNewUser: boolean }>}
    */
-  async socialAuth({ provider, providerId, email, name, avatar, token }) {
+  async socialAuth({ provider, providerId, email, name, avatar, token } = {}) {
     const cleanProvider = String(provider || '').trim().toLowerCase();
     if (!['google', 'facebook'].includes(cleanProvider)) {
-      throw new ValidationError('Authentication provider must be either google or facebook', 'provider');
+      throw new ValidationError('Unsupported social authentication provider', 'provider');
     }
 
-    let profileEmail = email ? String(email).trim().toLowerCase() : '';
-    let profileId = providerId ? String(providerId).trim() : '';
-    let profileName = name ? String(name).trim() : '';
-    let profileAvatar = avatar ? String(avatar).trim() : (cleanProvider === 'google' ? '🌐' : '📘');
+    if (!token || typeof token !== 'string' || !token.trim()) {
+      throw new AuthenticationError('Valid OAuth provider token is required');
+    }
 
-    // If token provided, verify with provider if possible
-    if (token && cleanProvider === 'google') {
+    let verifiedEmail = '';
+    let verifiedName = '';
+    let verifiedAvatar = '';
+    let verifiedProviderId = '';
+
+    // Deterministic mock strictly gated to automated test suite
+    if (
+      config.IS_TEST &&
+      token === 'test_mock_google_oauth_token' &&
+      cleanProvider === 'google'
+    ) {
+      verifiedEmail = String(email || '').trim().toLowerCase();
+      verifiedName = String(name || '').trim();
+      verifiedAvatar = String(avatar || '').trim();
+      verifiedProviderId = String(providerId || '').trim();
+    } else if (cleanProvider === 'google') {
+      let tokenRes;
       try {
-        let verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`);
-        if (verifyRes.ok) {
-          const payload = await verifyRes.json();
-          profileId = payload.sub || profileId;
-          profileEmail = payload.email || profileEmail;
-          profileName = payload.name || profileName;
-          profileAvatar = payload.picture || profileAvatar;
-        } else {
-          const userinfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (userinfoRes.ok) {
-            const userinfo = await userinfoRes.json();
-            profileId = userinfo.sub || profileId;
-            profileEmail = userinfo.email || profileEmail;
-            profileName = userinfo.name || profileName;
-            profileAvatar = userinfo.picture || profileAvatar;
-          }
-        }
+        const isJwtIdToken = token.split('.').length === 3;
+        const verifyEndpoint = isJwtIdToken
+          ? `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`
+          : `https://www.googleapis.com/oauth2/v3/userinfo`;
+        const fetchOpts = isJwtIdToken
+          ? {}
+          : { headers: { Authorization: `Bearer ${token}` } };
+
+        tokenRes = await fetch(verifyEndpoint, fetchOpts);
       } catch {
-        // Fallback to client payload
+        throw new AuthenticationError('Failed to contact Google OAuth verification service');
       }
-    } else if (token && cleanProvider === 'facebook') {
+
+      if (!tokenRes.ok) {
+        throw new AuthenticationError('Invalid or expired Google OAuth token');
+      }
+
+      const payload = await tokenRes.json().catch(() => null);
+      if (!payload || !payload.email) {
+        throw new AuthenticationError('Google OAuth token did not return a valid email');
+      }
+
+      const emailVerified = payload.email_verified === true || payload.email_verified === 'true';
+      if (!emailVerified) {
+        throw new AuthenticationError('Google account email is not verified');
+      }
+
+      if (payload.aud && config.GOOGLE_CLIENT_ID && payload.aud !== config.GOOGLE_CLIENT_ID) {
+        throw new AuthenticationError('Google OAuth token audience mismatch');
+      }
+
+      verifiedEmail = String(payload.email).trim().toLowerCase();
+      verifiedName = String(payload.name || '').trim();
+      verifiedAvatar = String(payload.picture || '').trim();
+      verifiedProviderId = String(payload.sub || '').trim();
+    } else if (cleanProvider === 'facebook') {
+      let fbRes;
       try {
-        const verifyRes = await fetch(`https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token=${encodeURIComponent(token)}`);
-        if (verifyRes.ok) {
-          const payload = await verifyRes.json();
-          profileId = payload.id || profileId;
-          profileEmail = payload.email || profileEmail;
-          profileName = payload.name || profileName;
-          profileAvatar = payload.picture?.data?.url || profileAvatar;
-        }
+        fbRes = await fetch(
+          `https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token=${encodeURIComponent(token)}`
+        );
       } catch {
-        // Fallback to client payload
+        throw new AuthenticationError('Failed to contact Facebook OAuth verification service');
       }
+
+      if (!fbRes.ok) {
+        throw new AuthenticationError('Invalid or expired Facebook OAuth token');
+      }
+
+      const payload = await fbRes.json().catch(() => null);
+      if (!payload || !payload.email || !payload.id) {
+        throw new AuthenticationError('Facebook OAuth token did not return a verified email and id');
+      }
+
+      verifiedEmail = String(payload.email).trim().toLowerCase();
+      verifiedName = String(payload.name || '').trim();
+      verifiedAvatar = String(payload.picture?.data?.url || '').trim();
+      verifiedProviderId = String(payload.id).trim();
     }
 
-    if (!profileId && !profileEmail) {
-      throw new ValidationError('Social authentication requires a provider ID or email');
+    if (!verifiedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(verifiedEmail)) {
+      throw new ValidationError('Valid verified email address is required from social provider', 'email');
     }
 
-    // 1. Look up user by provider and providerId
-    let user = profileId ? await this.userRepo.findByProvider(cleanProvider, profileId) : null;
+    // 1. Look up existing user by provider and providerId
+    let user = verifiedProviderId ? await this.userRepo.findByProvider(cleanProvider, verifiedProviderId) : null;
 
-    // 2. Look up user by email if not found
-    if (!user && profileEmail) {
-      user = await this.userRepo.findByEmail(profileEmail);
-    }
-
-    // 3. Look up user by username if not found
-    if (!user && profileEmail) {
-      const derivedUsername = profileEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
-      user = await this.userRepo.findByUsername(derivedUsername);
+    // 2. Look up user by verified email ONLY (never by derived username)
+    if (!user && verifiedEmail) {
+      user = await this.userRepo.findByEmail(verifiedEmail);
     }
 
     if (user) {
+      // Prevent OAuth account pre-hijacking / overwriting password-based local accounts
+      if ((user.authProvider || 'local') !== cleanProvider) {
+        throw new ValidationError(
+          'An account with this email already exists using a different sign-in method. Please sign in with your password.',
+          'email'
+        );
+      }
+
       user.authProvider = cleanProvider;
-      user.providerId = profileId || user.providerId;
-      if (!user.email && profileEmail) user.email = profileEmail;
+      user.providerId = verifiedProviderId || user.providerId;
+      if (!user.email && verifiedEmail) user.email = verifiedEmail;
+      if ((!user.avatar || user.avatar === '👤') && verifiedAvatar) {
+        user.avatar = verifiedAvatar;
+      }
       await this.userRepo.update(user);
 
       // Ensure user has an active persona configured
@@ -343,34 +391,25 @@ export class AuthService {
       };
     }
 
-    // 3. New user: generate a clean unique username
-    let baseUsername = '';
-    if (profileEmail) {
-      baseUsername = profileEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_');
-    } else if (profileName) {
-      baseUsername = profileName.replace(/[^a-zA-Z0-9_]/g, '_');
-    } else {
-      baseUsername = `${cleanProvider}_user`;
-    }
-    if (baseUsername.length < 3) baseUsername = `${baseUsername}_cai`;
-    if (baseUsername.length > 20) baseUsername = baseUsername.slice(0, 20);
+    // 3. New user: generate a clean unique username without collision with reserved usernames
+    const rawHandle = verifiedEmail
+      .split('@')[0]
+      .replace(/[^a-zA-Z0-9_]/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 20);
+    const baseHandle = rawHandle.length >= 3 ? rawHandle : `${cleanProvider}_user`;
+    const uniqueUsername = await this.#generateUniqueSocialUsername(baseHandle);
 
-    let finalUsername = baseUsername.toLowerCase();
-    let suffix = 1;
-    while (await this.userRepo.findByUsername(finalUsername)) {
-      finalUsername = `${baseUsername}_${suffix++}`.toLowerCase();
-    }
-
-    const dummyPasswordHash = User.hashPassword(crypto.randomBytes(24).toString('hex'));
+    const dummyPasswordHash = User.hashPassword(crypto.randomBytes(32).toString('hex'));
     const newUser = new User({
-      username: finalUsername,
-      email: profileEmail || null,
+      username: uniqueUsername,
+      email: verifiedEmail,
       passwordHash: dummyPasswordHash,
-      displayName: profileName || finalUsername,
-      avatar: profileAvatar,
+      displayName: (verifiedName || uniqueUsername).slice(0, 50),
+      avatar: verifiedAvatar || '✨',
       role: 'user',
       authProvider: cleanProvider,
-      providerId: profileId || null
+      providerId: verifiedProviderId || null
     });
 
     const savedUser = await this.userRepo.create(newUser);
@@ -390,6 +429,22 @@ export class AuthService {
       token: sessionToken,
       isNewUser: true
     };
+  }
+
+  async #generateUniqueSocialUsername(baseHandle) {
+    let candidate = baseHandle.toLowerCase();
+    if (RESERVED_USERNAMES.has(candidate)) {
+      candidate = `${candidate}_user`;
+    }
+    let attempt = 0;
+    while (attempt < 20) {
+      const existing = await this.userRepo.findByUsername(candidate);
+      if (!existing && !RESERVED_USERNAMES.has(candidate)) return candidate;
+      attempt++;
+      const suffix = crypto.randomBytes(2).toString('hex');
+      candidate = `${baseHandle.slice(0, 18).toLowerCase()}_${suffix}`;
+    }
+    return `pilot_${crypto.randomBytes(4).toString('hex')}`;
   }
 
   /**
@@ -418,12 +473,16 @@ export class AuthService {
       throw new ValidationError('This account does not have a valid email configured to receive verification codes');
     }
 
-    // Generate 6-digit OTP
+    const db = getDatabase();
+    // Invalidate previous active codes for this email and reset failed attempt counter
+    await db.prepare('UPDATE password_resets SET used = 1 WHERE email = ? COLLATE NOCASE AND used = 0').run(targetEmail);
+    this.failedResetAttempts.delete(targetEmail);
+
+    // Generate cryptographically secure 6-digit OTP
     const code = String(crypto.randomInt(100000, 999999));
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-    const id = `reset_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const id = `reset_${crypto.randomUUID()}`;
 
-    const db = getDatabase();
     await db.prepare(`
       INSERT INTO password_resets (id, email, code, expires_at, used, created_at)
       VALUES (?, ?, ?, ?, 0, ?)
@@ -435,12 +494,17 @@ export class AuthService {
       baseUrl
     });
 
-    return {
+    const response = {
       success: true,
       message: 'A 6-digit verification code has been sent to your email address.',
-      email: targetEmail,
-      previewCode: emailResult.previewCode
+      email: targetEmail
     };
+
+    if (config.IS_TEST && emailResult.previewCode) {
+      response.previewCode = emailResult.previewCode;
+    }
+
+    return response;
   }
 
   /**
@@ -464,6 +528,15 @@ export class AuthService {
     `).get(cleanEmail, cleanCode);
 
     if (!row) {
+      const attempts = (this.failedResetAttempts.get(cleanEmail) || 0) + 1;
+      this.failedResetAttempts.set(cleanEmail, attempts);
+      if (attempts >= 5) {
+        try {
+          await db.prepare('UPDATE password_resets SET used = 1 WHERE email = ? COLLATE NOCASE AND used = 0').run(cleanEmail);
+        } catch {}
+        this.failedResetAttempts.delete(cleanEmail);
+        throw new ValidationError('Too many failed verification attempts. Verification code has been invalidated for security. Please request a new code.');
+      }
       throw new ValidationError('Invalid or previously used verification code');
     }
 
@@ -471,6 +544,7 @@ export class AuthService {
       throw new ValidationError('Verification code has expired');
     }
 
+    this.failedResetAttempts.delete(cleanEmail);
     return { valid: true };
   }
 
@@ -507,49 +581,83 @@ export class AuthService {
     };
   }
 
+  static #detectRasterMagicBytes(buffer) {
+    if (!Buffer.isBuffer(buffer) || buffer.length < 12) return null;
+    // PNG: 89 50 4E 47 0D 0A 1A 0A
+    if (
+      buffer[0] === 0x89 &&
+      buffer[1] === 0x50 &&
+      buffer[2] === 0x4e &&
+      buffer[3] === 0x47 &&
+      buffer[4] === 0x0d &&
+      buffer[5] === 0x0a &&
+      buffer[6] === 0x1a &&
+      buffer[7] === 0x0a
+    ) {
+      return { ext: 'png', mimeType: 'image/png' };
+    }
+    // JPEG: FF D8 FF
+    if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+      return { ext: 'jpg', mimeType: 'image/jpeg' };
+    }
+    // GIF: GIF87a or GIF89a
+    if (
+      buffer[0] === 0x47 &&
+      buffer[1] === 0x49 &&
+      buffer[2] === 0x46 &&
+      buffer[3] === 0x38 &&
+      (buffer[4] === 0x37 || buffer[4] === 0x39) &&
+      buffer[5] === 0x61
+    ) {
+      return { ext: 'gif', mimeType: 'image/gif' };
+    }
+    // WEBP: RIFF....WEBP
+    if (
+      buffer[0] === 0x52 &&
+      buffer[1] === 0x49 &&
+      buffer[2] === 0x46 &&
+      buffer[3] === 0x46 &&
+      buffer[8] === 0x57 &&
+      buffer[9] === 0x45 &&
+      buffer[10] === 0x42 &&
+      buffer[11] === 0x50
+    ) {
+      return { ext: 'webp', mimeType: 'image/webp' };
+    }
+    return null;
+  }
+
   /**
    * Save uploaded base64 data URL avatar image to static storage
+   * Strictly enforces raster image formats (PNG, JPEG, WEBP, GIF) and validates magic bytes.
    * @param {string} dataUrl
    * @returns {{ url: string, filename: string, size: number }}
    */
   async saveBase64Avatar(dataUrl) {
-    if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
-      throw new ValidationError('Invalid image payload; expected data:image/ base64 URL');
+    if (!dataUrl || typeof dataUrl !== 'string') {
+      throw new ValidationError('Valid base64 image data is required', 'image');
     }
 
-    const matches = dataUrl.match(/^data:image\/([a-zA-Z0-9.+-]+);base64,(.+)$/i);
-    if (!matches || matches.length !== 3) {
-      throw new ValidationError('Invalid data URL image format');
+    const match = dataUrl.match(/^data:image\/(png|jpeg|jpg|webp|gif);base64,([A-Za-z0-9+/=\s]+)$/i);
+    if (!match) {
+      throw new ValidationError('Only PNG, JPEG, WEBP, and GIF raster images are allowed', 'image');
     }
 
-    const sub = matches[1].toLowerCase();
-    let ext = 'jpg';
-    let mimeType = `image/${sub}`;
-    if (sub === 'jpeg' || sub === 'jpg') {
-      ext = 'jpg';
-      mimeType = 'image/jpeg';
-    } else if (sub === 'png') {
-      ext = 'png';
-      mimeType = 'image/png';
-    } else if (sub === 'webp') {
-      ext = 'webp';
-      mimeType = 'image/webp';
-    } else if (sub === 'gif') {
-      ext = 'gif';
-      mimeType = 'image/gif';
-    } else if (sub === 'svg' || sub === 'svg+xml') {
-      ext = 'svg';
-      mimeType = 'image/svg+xml';
-    } else {
-      ext = sub.replace(/[^a-z0-9]/g, '') || 'jpg';
-    }
-
-    const base64Data = matches[2];
+    const base64Data = match[2].replace(/\s+/g, '');
     const buffer = Buffer.from(base64Data, 'base64');
 
     if (buffer.length > 5 * 1024 * 1024) {
-      throw new ValidationError('Uploaded image size exceeds 5MB limit');
+      throw new ValidationError('Avatar image size must be under 5MB', 'image');
     }
+
+    const detected = AuthService.#detectRasterMagicBytes(buffer);
+    if (!detected) {
+      throw new ValidationError('Invalid or corrupted image file signature', 'image');
+    }
+
+    const { ext, mimeType } = detected;
+    const filename = `avatar_${Date.now()}_${crypto.randomBytes(8).toString('hex')}.${ext}`;
+    const publicUrl = `/assets/avatars/${filename}`;
 
     const avatarsDir = path.resolve('frontend', 'assets', 'avatars');
     if (!fs.existsSync(avatarsDir)) {
@@ -557,11 +665,8 @@ export class AuthService {
         fs.mkdirSync(avatarsDir, { recursive: true });
       } catch {}
     }
-
-    const filename = `avatar_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.${ext}`;
-    const filePath = path.join(avatarsDir, filename);
     try {
-      fs.writeFileSync(filePath, buffer);
+      fs.writeFileSync(path.join(avatarsDir, filename), buffer);
     } catch (fsErr) {
       console.warn('[AuthService] Local filesystem cache write notice:', fsErr.message);
     }
@@ -585,7 +690,7 @@ export class AuthService {
     }
 
     return {
-      url: `/assets/avatars/${filename}`,
+      url: publicUrl,
       filename,
       size: buffer.length
     };
@@ -606,7 +711,15 @@ export class AuthService {
   async getUserFromToken(token) {
     try {
       const payload = this.verifyToken(token);
-      return await this.userRepo.findById(payload.sub);
+      const user = await this.userRepo.findById(payload.sub);
+      if (!user) return null;
+      if (payload.pwd && user.passwordHash) {
+        const expectedPwd = crypto.createHash('sha256').update(user.passwordHash).digest('hex').slice(0, 12);
+        if (payload.pwd !== expectedPwd) {
+          return null;
+        }
+      }
+      return user;
     } catch {
       return null;
     }

@@ -40,6 +40,7 @@ graphify-out/
 # Avatar media files (Persisted directly in Turso Cloud media_assets table)
 frontend/assets/avatars/*
 !frontend/assets/avatars/.gitkeep
+nextjs-frontend/public/assets/avatars/avatar_*
 .git_backup/
 
 
@@ -47,3 +48,4 @@ frontend/assets/avatars/*
 # Audit & temporary diff files
 *.diff
 repomix-output.*
+repomix-*.xml

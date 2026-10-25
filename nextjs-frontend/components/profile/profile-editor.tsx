@@ -23,6 +23,9 @@ const RESERVED_HANDLES = new Set([
   'root',
   'support',
   'universe',
+  'kazuken',
+  'guest',
+  'you'
 ]);
 
 export function ProfileEditor({ user, onProfileUpdated }: ProfileEditorProps) {

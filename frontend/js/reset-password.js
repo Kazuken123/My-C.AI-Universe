@@ -120,11 +120,7 @@ class ResetPasswordPageController {
           showToast('Verification code sent successfully!');
           if (this.resetEmailInput) this.resetEmailInput.value = email;
 
-          let msg = res.message || 'A verification code has been sent to your email address.';
-          if (res.previewCode) {
-            msg += ` - Test Code: ${res.previewCode}`;
-            if (this.resetCodeInput) this.resetCodeInput.value = res.previewCode;
-          }
+          const msg = res.message || 'A verification code has been sent to your email address.';
 
           this.showStep('reset');
           this.showAlert(msg, false);

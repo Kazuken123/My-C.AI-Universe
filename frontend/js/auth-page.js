@@ -1,5 +1,5 @@
 import { api } from './api.js';
-import { initTheme, bindSpotlightHover, showToast, renderUserAvatar } from './common.js';
+import { initTheme, bindSpotlightHover, showToast, renderUserAvatar, sanitizeReturnUrl } from './common.js';
 
 class AuthPageController {
   constructor() {
@@ -150,14 +150,15 @@ class AuthPageController {
               displayName: displayName || username
             });
             showToast(`Account created successfully. Welcome, @${username}!`);
-            const returnParam = params.get('return') ? `&return=${encodeURIComponent(params.get('return'))}` : '';
+            const returnUrl = sanitizeReturnUrl(params.get('return'));
+            const returnParam = returnUrl !== '/' ? `&return=${encodeURIComponent(returnUrl)}` : '';
             setTimeout(() => {
               window.location.href = `/profile-setup.html?new=1${returnParam}`;
             }, 400);
           } else {
             await api.login({ username, password });
             showToast(`Welcome back, @${username}!`);
-            const returnUrl = params.get('return') || '/';
+            const returnUrl = sanitizeReturnUrl(params.get('return'));
             setTimeout(() => {
               window.location.href = returnUrl;
             }, 400);
@@ -183,8 +184,9 @@ class AuthPageController {
           token
         });
         showToast('Signed in successfully with Google!');
-        const returnParam = params.get('return') ? `&return=${encodeURIComponent(params.get('return'))}` : '';
-        const targetUrl = authResult?.isNewUser ? `/profile-setup.html?new=1${returnParam}` : (params.get('return') || '/');
+        const returnUrl = sanitizeReturnUrl(params.get('return'));
+        const returnParam = returnUrl !== '/' ? `&return=${encodeURIComponent(returnUrl)}` : '';
+        const targetUrl = authResult?.isNewUser ? `/profile-setup.html?new=1${returnParam}` : returnUrl;
         setTimeout(() => {
           window.location.href = targetUrl;
         }, 400);

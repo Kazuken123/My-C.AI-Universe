@@ -472,13 +472,32 @@ export function initMobileNavigation(activePage = 'discover') {
   }
 }
 
+export function sanitizeReturnUrl(raw) {
+  if (!raw || typeof raw !== 'string') return '/';
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith('/') || trimmed.startsWith('//') || trimmed.startsWith('/\\')) {
+    return '/';
+  }
+  return trimmed;
+}
+
+export function isSafeImageSrc(val) {
+  if (!val || typeof val !== 'string') return false;
+  return /^(https?:\/\/|\/(?!\/)|data:image\/(png|jpeg|jpg|webp|gif);base64,)/i.test(val.trim());
+}
+
 export function renderUserAvatar(el, avatar, fallback = '👤') {
   if (!el) return;
-  const val = (avatar || '').trim();
-  if (val.startsWith('http://') || val.startsWith('https://') || val.startsWith('data:') || val.startsWith('/')) {
-    el.innerHTML = `<img src="${val}" alt="" style="width: 100%; height: 100%; object-fit: cover; object-position: center top; border-radius: inherit; display: block;" />`;
+  const val = String(avatar || '').trim();
+  el.textContent = '';
+  if (isSafeImageSrc(val)) {
+    const img = document.createElement('img');
+    img.src = val;
+    img.alt = '';
+    img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; object-position: center top; border-radius: inherit; display: block;';
+    el.appendChild(img);
   } else {
-    el.textContent = val || fallback;
+    el.textContent = val.slice(0, 4) || fallback;
   }
 }
 

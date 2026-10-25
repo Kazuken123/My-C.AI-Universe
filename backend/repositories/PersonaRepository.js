@@ -91,12 +91,12 @@ export class PersonaRepository extends BaseRepository {
           INSERT INTO user_personas (id, user_id, name, avatar, description, is_default, created_at, updated_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
           ON CONFLICT(id) DO UPDATE SET
-            user_id = excluded.user_id,
             name = excluded.name,
             avatar = excluded.avatar,
             description = excluded.description,
             is_default = excluded.is_default,
             updated_at = excluded.updated_at
+          WHERE user_personas.user_id IS excluded.user_id
         `).run(
           persona.id,
           persona.userId || null,

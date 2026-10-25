@@ -26,21 +26,27 @@ export class MemoryController extends BaseController {
         throw new ValidationError('characterId or sessionId parameter is required to retrieve memories', 'characterId');
       }
 
-      const memories = characterId
-        ? await this.service.getMemories(characterId)
-        : (req.user && req.user.isAdmin() ? await this.service.getMemories(null) : []);
-
-      let storySummary = '';
-      if (sessionId) {
-        // Enforce session privacy: story summary only accessible to session owner or admin
-        if (req.user) {
-          const session = await this.sessionRepo.findById(sessionId, req.user.id);
-          if (session || req.user.isAdmin()) {
-            storySummary = await this.service.getSessionStorySummary(sessionId);
-          }
+      let verifiedSessionId = null;
+      if (sessionId && req.user?.id) {
+        const session = await this.sessionRepo.findById(sessionId, req.user.id);
+        if (session && (!characterId || session.characterId === characterId)) {
+          verifiedSessionId = session.id;
         }
       }
-      return this.sendJson(res, { memories, count: memories.length, storySummary });
+
+      let memories = [];
+      if (characterId) {
+        memories = await this.service.getMemories(characterId, verifiedSessionId);
+      } else if (req.user && req.user.isAdmin()) {
+        memories = await this.service.getMemories(null);
+      }
+
+      let storySummary = '';
+      if (verifiedSessionId || (sessionId && req.user?.isAdmin())) {
+        const targetSid = verifiedSessionId || sessionId;
+        storySummary = await this.service.getSessionStorySummary(targetSid);
+      }
+      return this.sendJson(res, { memories, count: memories.length, storySummary: storySummary || '' });
     } catch (error) {
       return this.handleError(res, error, 'Failed to load memories');
     }
@@ -92,10 +98,22 @@ export class MemoryController extends BaseController {
         throw new NotFoundError('Memory not found');
       }
 
-      // Check centralized domain authorization rule
-      const character = await this.charRepo.findById(memory.characterId);
-      if (character && !character.canModify(req.user)) {
-        return this.sendError(res, 'You do not have permission to delete this memory', 403);
+      const isAdmin = req.user && (typeof req.user.isAdmin === 'function' ? req.user.isAdmin() : req.user.role === 'admin');
+
+      if (memory.sessionId) {
+        let isOwner = false;
+        if (req.user?.id) {
+          const session = await this.sessionRepo.findById(memory.sessionId, req.user.id);
+          if (session) isOwner = true;
+        }
+        if (!isOwner && !isAdmin) {
+          return this.sendError(res, 'You do not have permission to delete this session memory', 403);
+        }
+      } else {
+        const character = await this.charRepo.findById(memory.characterId);
+        if (!character || !character.canModify(req.user)) {
+          return this.sendError(res, 'You do not have permission to delete this memory', 403);
+        }
       }
 
       const deleted = await this.service.deleteMemory(req.params.id);

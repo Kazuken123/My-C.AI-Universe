@@ -53,7 +53,8 @@ export function RegisterForm({ returnUrl = '/', onSwitchToSignIn }: RegisterForm
     }
 
     const lowerUser = trimmedUser.toLowerCase();
-    if (lowerUser === 'admin' || lowerUser === 'community') {
+    const RESERVED_NAMES = new Set(['admin', 'community', 'system', 'administrator', 'moderator', 'root', 'support', 'kazuken', 'guest', 'you', 'universe']);
+    if (RESERVED_NAMES.has(lowerUser)) {
       return 'This username is reserved. Please choose another.';
     }
 

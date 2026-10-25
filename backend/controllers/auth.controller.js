@@ -1,5 +1,6 @@
 import { BaseController } from './BaseController.js';
 import { authService } from '../services/auth.service.js';
+import { config } from '../config/index.js';
 
 /**
  * AuthController Class (extends BaseController)
@@ -42,7 +43,7 @@ export class AuthController extends BaseController {
   async forgotPassword(req, res) {
     try {
       const { email } = req.body || {};
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const baseUrl = config.PUBLIC_BASE_URL;
       const result = await this.service.requestPasswordReset({ email, baseUrl });
       return this.sendJson(res, result, 200);
     } catch (error) {
@@ -127,6 +128,7 @@ export class AuthController extends BaseController {
   }
 
   logout(_req, res) {
+    res.setHeader('Set-Cookie', 'cai_auth_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax');
     return this.sendJson(res, { message: 'Successfully signed out', authenticated: false });
   }
 }

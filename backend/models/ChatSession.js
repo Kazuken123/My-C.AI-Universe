@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { BaseEntity } from './BaseEntity.js';
 
 /**
@@ -7,7 +8,7 @@ import { BaseEntity } from './BaseEntity.js';
 export class MessageVariant extends BaseEntity {
   constructor(props = {}) {
     super({
-      id: props.id || `var_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      id: props.id || `var_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
       createdAt: props.createdAt || props.created_at
     });
     this.messageId = props.messageId || props.message_id || '';
@@ -41,7 +42,7 @@ export class MessageVariant extends BaseEntity {
 export class ChatMessage extends BaseEntity {
   constructor(props = {}) {
     super({
-      id: props.id || `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      id: props.id || `msg_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
       createdAt: props.createdAt || props.created_at
     });
     this.sessionId = props.sessionId || props.session_id || '';
@@ -143,7 +144,7 @@ export class ChatMessage extends BaseEntity {
 export class ChatSession extends BaseEntity {
   constructor(props = {}) {
     super({
-      id: props.id || `chat_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      id: props.id || `chat_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`,
       createdAt: props.createdAt || props.created_at,
       updatedAt: props.updatedAt || props.updated_at
     });

@@ -14,15 +14,16 @@ export class ApiClient {
   }
 
   setToken(token) {
+    const secureFlag = (typeof window !== 'undefined' && window.location?.protocol === 'https:') ? '; Secure' : '';
     if (token) {
       localStorage.setItem('cai_auth_token', token);
       if (typeof document !== 'undefined') {
-        document.cookie = `cai_auth_token=${encodeURIComponent(token)}; path=/; max-age=604800; SameSite=Lax`;
+        document.cookie = `cai_auth_token=${encodeURIComponent(token)}; path=/; max-age=604800; SameSite=Lax${secureFlag}`;
       }
     } else {
       localStorage.removeItem('cai_auth_token');
       if (typeof document !== 'undefined') {
-        document.cookie = 'cai_auth_token=; path=/; max-age=0; SameSite=Lax';
+        document.cookie = `cai_auth_token=; path=/; max-age=0; SameSite=Lax${secureFlag}`;
       }
     }
   }
@@ -425,7 +426,8 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   try {
     const existingToken = localStorage.getItem('cai_auth_token');
     if (existingToken && !document.cookie.includes('cai_auth_token=')) {
-      document.cookie = `cai_auth_token=${encodeURIComponent(existingToken)}; path=/; max-age=604800; SameSite=Lax`;
+      const secureFlag = window.location?.protocol === 'https:' ? '; Secure' : '';
+      document.cookie = `cai_auth_token=${encodeURIComponent(existingToken)}; path=/; max-age=604800; SameSite=Lax${secureFlag}`;
     }
   } catch {}
 }

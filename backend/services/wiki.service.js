@@ -104,6 +104,53 @@ export class WikiScraperService {
     return null;
   }
 
+  async #fetchSafeText(initialUrl, headers = {}, signal = null, maxRedirects = 3, maxBytes = 2 * 1024 * 1024) {
+    let currentUrl = this.validateUrl(initialUrl).toString();
+
+    for (let hop = 0; hop <= maxRedirects; hop++) {
+      const res = await fetch(currentUrl, {
+        headers,
+        redirect: 'manual',
+        signal: signal || AbortSignal.timeout(this.timeoutMs || 15000)
+      });
+
+      if ([301, 302, 303, 307, 308].includes(res.status)) {
+        const location = res.headers.get('location');
+        if (!location) {
+          throw new ValidationError('Upstream wiki returned an invalid redirect', 'wiki');
+        }
+        const resolved = new URL(location, currentUrl).toString();
+        currentUrl = this.validateUrl(resolved).toString();
+        continue;
+      }
+
+      if (!res.ok) {
+        throw new AIError(`Wiki fetch failed: HTTP ${res.status}`, 502);
+      }
+
+      if (!res.body) return '';
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let totalBytes = 0;
+      let text = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        totalBytes += value.byteLength;
+        if (totalBytes > maxBytes) {
+          await reader.cancel();
+          break;
+        }
+        text += decoder.decode(value, { stream: true });
+      }
+      text += decoder.decode();
+      return text;
+    }
+
+    throw new ValidationError('Too many redirects from wiki URL', 'wiki');
+  }
+
   /**
    * Fetch Wiki HTML either via MediaWiki API or direct browser-emulated HTTP GET
    */
@@ -113,22 +160,18 @@ export class WikiScraperService {
     if (mw) {
       try {
         console.log('[WIKI SERVICE] Querying MediaWiki API for canon lore:', mw.apiUrl);
-        const apiRes = await fetch(mw.apiUrl, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-            'Accept': 'application/json'
-          },
-          signal
-        });
-        if (apiRes.ok) {
-          const apiJson = await apiRes.json();
-          if (apiJson.parse && apiJson.parse.text && apiJson.parse.text['*']) {
-            return {
-              html: apiJson.parse.text['*'],
-              title: apiJson.parse.title || mw.pageTitle,
-              isApi: true
-            };
-          }
+        const rawJsonText = await this.#fetchSafeText(mw.apiUrl, {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+          'Accept': 'application/json'
+        }, signal);
+
+        const apiJson = JSON.parse(rawJsonText);
+        if (apiJson.parse && apiJson.parse.text && apiJson.parse.text['*']) {
+          return {
+            html: apiJson.parse.text['*'],
+            title: apiJson.parse.title || mw.pageTitle,
+            isApi: true
+          };
         }
       } catch (apiErr) {
         console.warn('[WIKI SERVICE] MediaWiki API notice, falling back to direct HTML fetch:', apiErr.message);
@@ -136,20 +179,12 @@ export class WikiScraperService {
     }
 
     // 2. Direct HTML fetch with realistic browser headers
-    const directRes = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9'
-      },
-      signal
-    });
+    const html = await this.#fetchSafeText(url, {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9'
+    }, signal);
 
-    if (!directRes.ok) {
-      throw new AIError(`Wiki fetch failed: HTTP ${directRes.status}`, 502);
-    }
-
-    const html = await directRes.text();
     return { html, title: '', isApi: false };
   }
 

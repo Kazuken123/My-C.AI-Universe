@@ -14,6 +14,9 @@ export const DB_DIR = path.join(PROJECT_ROOT, 'backend', 'db');
 export const config = {
   // Server
   PORT: Number(process.env.PORT) || 3000,
+  PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL || 'http://localhost:3000',
+  IS_TEST: process.env.NODE_ENV === 'test',
+  ROOT_DIR: PROJECT_ROOT,
 
   // AI Providers
   AI_PROVIDER: process.env.AI_PROVIDER || 'gemini',
@@ -22,7 +25,7 @@ export const config = {
   OLLAMA_URL: process.env.OLLAMA_URL || 'http://localhost:11434',
   OLLAMA_MODEL: process.env.OLLAMA_MODEL || 'qwen2.5:1.5b',
   MEMORY_SERVICE_URL: process.env.MEMORY_SERVICE_URL || 'http://localhost:5001',
-  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '254873060516-vtieqsbihjcle1lqgpqfp3u5lpgocf7g.apps.googleusercontent.com',
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
 
   // Database & Persistence
   TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL || '',
@@ -37,7 +40,6 @@ export const config = {
   ALLOWED_DOMAINS: [
     'wikipedia.org',
     'fandom.com',
-    'translate.goog',
     'wikibooks.org',
     'wikia.com'
   ],

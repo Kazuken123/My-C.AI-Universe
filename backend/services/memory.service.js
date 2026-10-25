@@ -77,10 +77,14 @@ export class SemanticMemoryService {
   }
 
   /**
-   * Get memories (optionally filtered by characterId)
+   * Get memories (scoped strictly to characterId and verified session context)
    */
-  async getMemories(characterId = null) {
-    const rows = await this.repository.findAll(characterId);
+  async getMemories(characterId = null, verifiedSessionId = null) {
+    if (!characterId) {
+      const rows = await this.repository.findAll();
+      return rows.map(m => m.toJSON());
+    }
+    const rows = await this.repository.findForContext(characterId, verifiedSessionId);
     return rows.map(m => m.toJSON());
   }
 
@@ -91,10 +95,13 @@ export class SemanticMemoryService {
     if (!content || !content.trim() || !characterId) return null;
     const cleanContent = content.trim();
 
-    const charMemories = await this.repository.findAll(characterId);
-    const isDuplicate = charMemories.some(
-      m => m.content.toLowerCase() === cleanContent.toLowerCase() ||
-           this.computeSimilarity(cleanContent, m.content) > 0.85
+    // Deduplicate ONLY within the same session (or global canon scope when sessionId is null)
+    const scopedMemories = await this.repository.findForContext(characterId, sessionId);
+    const isDuplicate = scopedMemories.some(
+      m => ((m.sessionId || null) === (sessionId || null)) && (
+        m.content.toLowerCase() === cleanContent.toLowerCase() ||
+        this.computeSimilarity(cleanContent, m.content) > 0.85
+      )
     );
     if (isDuplicate) return null;
 

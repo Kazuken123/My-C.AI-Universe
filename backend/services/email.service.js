@@ -1,4 +1,14 @@
 import nodemailer from 'nodemailer';
+import { config } from '../config/index.js';
+
+function escapeHtml(str = '') {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 /**
  * EmailService Class (OOP Email Delivery & Notification Engine)
@@ -46,9 +56,20 @@ export class EmailService {
    * @param {string} [param0.baseUrl] - Web app base URL for direct reset link
    * @returns {Promise<{ delivered: boolean, previewCode?: string }>}
    */
-  async sendPasswordResetOtp({ email, code, baseUrl = 'http://localhost:3000' }) {
-    const resetUrl = `${baseUrl.replace(/\/$/, '')}/reset-password.html?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`;
+  async sendPasswordResetOtp({ email, code, baseUrl = '' }) {
+    let safeOrigin = 'http://localhost:3000';
+    try {
+      const parsed = new URL(baseUrl || config.PUBLIC_BASE_URL);
+      safeOrigin = parsed.origin;
+    } catch {
+      safeOrigin = config.PUBLIC_BASE_URL || 'http://localhost:3000';
+    }
+
+    const resetUrl = `${safeOrigin}/reset-password.html?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`;
     const subject = `[C.AI Universe] Password Reset Code: ${code}`;
+    const safeEmail = escapeHtml(email);
+    const safeResetUrl = escapeHtml(resetUrl);
+    const safeCode = escapeHtml(code);
 
     const html = `
       <!DOCTYPE html>
@@ -70,12 +91,12 @@ export class EmailService {
         <div class="container">
           <div class="brand">C.AI UNIVERSE</div>
           <h2>Password Reset Request</h2>
-          <p>We received a request to reset the password for the account associated with <strong>${email}</strong>.</p>
+          <p>We received a request to reset the password for the account associated with <strong>${safeEmail}</strong>.</p>
           <p>Your 6-digit security verification code is:</p>
-          <div class="otp-badge">${code}</div>
+          <div class="otp-badge">${safeCode}</div>
           <p>This code is valid for <strong>15 minutes</strong>. Please do not share this code with anyone.</p>
           <p>You can also click the button below to proceed directly to the new password page:</p>
-          <a class="btn" href="${resetUrl}">Reset Password</a>
+          <a class="btn" href="${safeResetUrl}">Reset Password</a>
           <div class="footer">
             If you did not request a password reset, you can safely ignore this email. Your account remains secure.
           </div>
@@ -99,15 +120,20 @@ export class EmailService {
         return { delivered: true };
       } catch (err) {
         console.error(`[EmailService] Failed to send email via SMTP to ${email}:`, err.message);
-        // Fallback to preview code in dev/test
-        return { delivered: false, error: err.message, previewCode: code };
+        if (config.IS_TEST) {
+          return { delivered: false, error: err.message, previewCode: code };
+        }
+        return { delivered: false, error: err.message };
       }
     }
 
     // Dev/Test mode: simulated delivery
     console.log(`\n📨 [EmailService:Dev] Verification email for ${email} with OTP code: [${code}]`);
     console.log(`🔗 [EmailService:Dev] Direct reset URL: ${resetUrl}\n`);
-    return { delivered: false, simulated: true, previewCode: code };
+    if (config.IS_TEST) {
+      return { delivered: false, simulated: true, previewCode: code };
+    }
+    return { delivered: false, simulated: true };
   }
 }
 

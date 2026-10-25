@@ -1,5 +1,5 @@
 export function extractClientIp(req) {
-  return req.ip || req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1';
+  return req.ip || req.socket?.remoteAddress || '127.0.0.1';
 }
 
 /**
@@ -53,6 +53,10 @@ export class MemoryRateLimiter {
 
       let record = this.hits.get(key);
       if (!record || now > record.resetTime) {
+        if (this.hits.size >= 10000) {
+          const oldestKey = this.hits.keys().next().value;
+          if (oldestKey) this.hits.delete(oldestKey);
+        }
         record = {
           count: 1,
           resetTime: now + this.windowMs
@@ -126,6 +130,11 @@ export function securityHeadersMiddleware() {
     res.setHeader('X-XSS-Protection', '1; mode=block');
     // Referrer policy
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    // Baseline Content Security Policy
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com; frame-src 'self' https://accounts.google.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
+    );
     next();
   };
 }
@@ -157,4 +166,13 @@ export const sensitiveEndpointLimiter = new MemoryRateLimiter({
   windowMs: 60 * 1000,
   maxRequests: 30,
   message: 'High-frequency request limit reached for AI / external scraping services. Please slow down.'
+});
+
+// Dedicated rate limiter for image/avatar uploads (15 uploads / 5 minutes per user/IP)
+export const uploadRateLimiter = new MemoryRateLimiter({
+  name: 'upload-avatar',
+  windowMs: 5 * 60 * 1000,
+  maxRequests: process.env.NODE_ENV === 'test' ? 50 : 15,
+  message: 'Too many image uploads. Please wait a few minutes.',
+  keyGenerator: (req) => (req.user?.id ? `user:${req.user.id}` : `ip:${extractClientIp(req)}`)
 });

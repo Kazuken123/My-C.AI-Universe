@@ -34,14 +34,24 @@ export class PersonaController extends BaseController {
 
   async createPersona(req, res) {
     try {
+      const { name, avatar, description, isDefault } = req.body || {};
+      if (!name || typeof name !== 'string' || !name.trim()) {
+        throw new ValidationError('Persona name is required', 'name');
+      }
+      if (name.length > 100 || (description && description.length > 2000)) {
+        throw new ValidationError('Persona name (max 100) or description (max 2000) exceeds length limit');
+      }
       const userId = req.user ? req.user.id : null;
-      const { name, avatar, description, isDefault } = req.body;
+      if (!userId) {
+        return res.status(401).json({ error: { message: 'Authentication required to create persona.', code: 401 } });
+      }
+
       const currentPersonas = await this.repository.findAll(userId);
       const persona = new UserPersona({
         userId,
-        name,
+        name: name.trim(),
         avatar,
-        description,
+        description: description ? description.trim() : '',
         isDefault: Boolean(isDefault) || currentPersonas.length === 0
       });
       await this.repository.save(persona, userId);

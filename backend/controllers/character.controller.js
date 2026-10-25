@@ -36,9 +36,29 @@ export class CharacterController extends BaseController {
 
   async createCharacter(req, res) {
     try {
-      const { name, wiki } = req.body;
+      const { name, wiki, tagline, avatar } = req.body || {};
       if ((!name || typeof name !== 'string' || !name.trim()) && !wiki) {
         throw new ValidationError('Character name or Wiki URL is required', 'name');
+      }
+      if (name && name.length > 100) {
+        throw new ValidationError('Character name must not exceed 100 characters', 'name');
+      }
+      if (tagline && tagline.length > 300) {
+        throw new ValidationError('Character tagline must not exceed 300 characters', 'tagline');
+      }
+      if (wiki && typeof wiki === 'string' && wiki.trim()) {
+        if (!/^https?:\/\//i.test(wiki.trim())) {
+          throw new ValidationError('Wiki URL must start with http:// or https://', 'wiki');
+        }
+      }
+      if (avatar && typeof avatar === 'string' && avatar.trim().length > 8) {
+        if (!/^(https?:\/\/|\/(?!\/)|data:image\/(png|jpeg|jpg|webp|gif);base64,)/i.test(avatar.trim())) {
+          throw new ValidationError('Invalid avatar image format', 'avatar');
+        }
+      }
+
+      if (!req.user || !req.user.id) {
+        return this.sendError(res, 'Authentication required to create a character', 401);
       }
 
       let wikiData = {};
@@ -57,10 +77,10 @@ export class CharacterController extends BaseController {
       const character = new Character({
         id: crypto.randomUUID(),
         creator: creatorHandle,
-        ownerUserId: req.user ? req.user.id : null,
+        ownerUserId: req.user.id,
         name: (name && name.trim()) || wikiData.name || 'Unnamed Character',
-        tagline: (req.body.tagline && req.body.tagline.trim()) || wikiData.tagline || 'AI Roleplay Character',
-        avatar: (req.body.avatar && req.body.avatar.trim()) || wikiData.avatar || '',
+        tagline: (tagline && tagline.trim()) || wikiData.tagline || 'AI Roleplay Character',
+        avatar: (avatar && avatar.trim()) || wikiData.avatar || '',
         greeting: (req.body.greeting && req.body.greeting.trim()) || wikiData.greeting || '',
         personality: (req.body.personality && req.body.personality.trim()) || wikiData.personality || '',
         appearance: (req.body.appearance && req.body.appearance.trim()) || wikiData.appearance || '',
@@ -143,7 +163,14 @@ export class CharacterController extends BaseController {
           } else if (field === 'initial_affinity' || field === 'initialAffinity') {
             character.initialAffinity = Math.max(-100, Math.min(100, Number(req.body[field]) || 0));
           } else if (typeof req.body[field] === 'string') {
-            character[field] = req.body[field].trim();
+            const val = req.body[field].trim();
+            if (field === 'wiki' && val && !/^https?:\/\//i.test(val)) {
+              throw new ValidationError('Wiki URL must start with http:// or https://', 'wiki');
+            }
+            if (field === 'avatar' && val.length > 8 && !/^(https?:\/\/|\/(?!\/)|data:image\/(png|jpeg|jpg|webp|gif);base64,)/i.test(val)) {
+              throw new ValidationError('Invalid avatar image format', 'avatar');
+            }
+            character[field] = val;
           }
         }
       }
@@ -179,12 +206,10 @@ export class CharacterController extends BaseController {
 
   async toggleLikeCharacter(req, res) {
     try {
-      const character = await this.repository.findById(req.params.id);
-      if (!character) {
+      const result = await this.repository.toggleLikeAtomic(req.params.id);
+      if (!result) {
         throw new NotFoundError('Character not found');
       }
-      const result = character.toggleLike();
-      await this.repository.save(character);
       return this.sendJson(res, result);
     } catch (error) {
       return this.handleError(res, error, 'Failed to like character');
@@ -193,10 +218,17 @@ export class CharacterController extends BaseController {
 
   async parseWikiPreview(req, res) {
     try {
-      const { url } = req.body;
+      const { url } = req.body || {};
       if (!url) {
         throw new ValidationError('Wiki URL is required', 'url');
       }
+      // Run domain and protocol SSRF validation first (throws ValidationError / 400 on bad URLs)
+      this.wikiService.validateUrl(url);
+
+      if (!req.user || !req.user.id) {
+        return this.sendError(res, 'Authentication required to extract wiki lore', 401);
+      }
+
       const extracted = await this.wikiService.parse(url);
       return this.sendJson(res, {
         ...extracted,
@@ -209,9 +241,15 @@ export class CharacterController extends BaseController {
 
   async generateCharacterAI(req, res) {
     try {
-      const { concept } = req.body;
+      const { concept } = req.body || {};
       if (!concept || typeof concept !== 'string' || concept.trim().length < 3) {
         throw new ValidationError('Please provide a character concept (at least 3 characters)', 'concept');
+      }
+      if (concept.length > 2000) {
+        throw new ValidationError('Concept prompt must not exceed 2000 characters', 'concept');
+      }
+      if (!req.user || !req.user.id) {
+        return this.sendError(res, 'Authentication required to synthesize AI characters', 401);
       }
       const generated = await this.aiGenerator.generateCharacterProfile(concept.trim());
       generated.avatar = Character.buildDefaultAvatar(generated.name || concept);

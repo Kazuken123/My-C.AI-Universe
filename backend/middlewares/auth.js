@@ -15,7 +15,11 @@ function extractToken(req) {
   if (req.headers.cookie && typeof req.headers.cookie === 'string') {
     const match = req.headers.cookie.match(/(?:^|;\s*)cai_auth_token=([^;]+)/);
     if (match) {
-      return decodeURIComponent(match[1]);
+      try {
+        return decodeURIComponent(match[1]);
+      } catch {
+        return null;
+      }
     }
   }
   return null;

@@ -1547,7 +1547,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
               <i class="ph-light ph-download-simple"></i> <span>Export JSON</span>
             </button>
           </div>
-          ${character.wiki ? `<div style="margin-top: 8px;"><a href="${escapeHtml(character.wiki)}" target="_blank" style="color: var(--accent); font-size: 0.76rem; text-decoration: none;">Source Canon Wiki <i class="ph-light ph-arrow-up-right"></i></a></div>` : ''}
+          ${character.wiki && /^https?:\/\//i.test(character.wiki) ? `<div style="margin-top: 8px;"><a href="${escapeHtml(character.wiki)}" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-size: 0.76rem; text-decoration: none;">Source Canon Wiki <i class="ph-light ph-arrow-up-right"></i></a></div>` : ''}
         </div>
         ${character.personality ? `<div class="lore-block"><h4>Temperament</h4><p>${escapeHtml(character.personality)}</p></div>` : ''}
         ${character.appearance ? `<div class="lore-block"><h4>Visual Design</h4><p>${escapeHtml(character.appearance)}</p></div>` : ''}

@@ -49,10 +49,24 @@ export class BaseController {
       });
     }
 
-    const statusCode = error.status || error.code || 500;
+    const rawCode = error?.statusCode ?? error?.status ?? error?.code;
+    const statusCode =
+      typeof rawCode === 'number' && Number.isInteger(rawCode) && rawCode >= 400 && rawCode <= 599
+        ? rawCode
+        : 500;
+
+    if (statusCode >= 500) {
+      console.error(`[BaseController Error]:`, error);
+    }
+
+    const safeMessage =
+      statusCode >= 500
+        ? defaultMessage
+        : (error?.message || defaultMessage);
+
     return res.status(statusCode).json({
       error: {
-        message: error.message || defaultMessage,
+        message: safeMessage,
         code: statusCode
       }
     });

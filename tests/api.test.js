@@ -746,11 +746,24 @@ async function runTests() {
   console.log(`✅ 17. User Profile Update verified (displayName updated to "${updateData.user.displayName}", avatar: "${updateData.user.avatar}")`);
 
   // 18. Social Authentication (Google & Facebook OAuth)
+  const unauthSocialRes = await fetch(`${BASE_URL}/api/auth/social`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      provider: 'google',
+      email: `pilot_spec_${Date.now()}@gmail.com`
+    })
+  });
+  if (unauthSocialRes.status !== 401) {
+    throw new Error(`Expected 401 for tokenless social auth, got ${unauthSocialRes.status}`);
+  }
+
   const socialRes = await fetch(`${BASE_URL}/api/auth/social`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       provider: 'google',
+      token: 'test_mock_google_oauth_token',
       email: `pilot_spec_${Date.now()}@gmail.com`,
       name: 'Google Space Pilot',
       providerId: `g_${Date.now()}`
@@ -841,9 +854,21 @@ async function runTests() {
 
   // 21. Avatar Upload & Cropper Storage verified
   const samplePngBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
-  const uploadRes = await fetch(`${BASE_URL}/api/auth/upload-avatar`, {
+  const unauthUploadRes = await fetch(`${BASE_URL}/api/auth/upload-avatar`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image: samplePngBase64 })
+  });
+  if (unauthUploadRes.status !== 401) {
+    throw new Error(`Expected 401 for unauthenticated upload-avatar, got ${unauthUploadRes.status}`);
+  }
+
+  const uploadRes = await fetch(`${BASE_URL}/api/auth/upload-avatar`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${pilotAuth.token}`
+    },
     body: JSON.stringify({ image: samplePngBase64 })
   });
   const uploadData = await assertResponse(uploadRes, 'Upload Avatar');

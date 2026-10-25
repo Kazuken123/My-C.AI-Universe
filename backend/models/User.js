@@ -6,7 +6,7 @@ import { ValidationError } from '../ai/errors.js';
  */
 export class User {
   constructor({
-    id = `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    id = `user_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`,
     username = '',
     email = '',
     passwordHash = '',

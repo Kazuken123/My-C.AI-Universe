@@ -81,8 +81,15 @@ export class Character extends BaseEntity {
     if (!user) return false;
     if (typeof user.isAdmin === 'function' && user.isAdmin()) return true;
     if (user.role === 'admin') return true;
-    if (this.ownerUserId && user.id && this.ownerUserId === user.id) return true;
-    if (this.creator && user.username && this.creator.toLowerCase() === `@${user.username.toLowerCase()}`) {
+    if (this.ownerUserId) {
+      return Boolean(user.id && this.ownerUserId === user.id);
+    }
+    const creatorHandle = String(this.creator || '').trim().toLowerCase();
+    const FORBIDDEN_LEGACY_HANDLES = new Set(['@community', '@system', '@kazuken', '@you', '@admin']);
+    if (FORBIDDEN_LEGACY_HANDLES.has(creatorHandle)) {
+      return false;
+    }
+    if (creatorHandle && user.username && creatorHandle === `@${user.username.toLowerCase()}`) {
       return true;
     }
     return false;

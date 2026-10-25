@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { BaseEntity } from './BaseEntity.js';
 import { ValidationError } from '../ai/errors.js';
 
@@ -8,7 +9,7 @@ import { ValidationError } from '../ai/errors.js';
 export class UserPersona extends BaseEntity {
   constructor(props = {}) {
     super({
-      id: props.id || `persona_${Date.now()}`,
+      id: props.id || `persona_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`,
       createdAt: props.createdAt || props.created_at,
       updatedAt: props.updatedAt || props.updated_at
     });

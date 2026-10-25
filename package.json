@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "test": "node tests/continuity-v2.5.5.test.js && node tests/sidebar-history-v2.5.6.test.js && node tests/relationship-v2.6.0.test.js && node tests/character-demeanor-v2.6.4.test.js && node tests/anti-inflation-v2.6.5.test.js && node tests/api.test.js",
+    "test": "node tests/continuity-v2.5.5.test.js && node tests/sidebar-history-v2.5.6.test.js && node tests/relationship-v2.6.0.test.js && node tests/character-demeanor-v2.6.4.test.js && node tests/anti-inflation-v2.6.5.test.js && node tests/security-audit.test.js && node tests/api.test.js",
     "db:init": "node scripts/init-database.js",
     "db:turso:push": "node scripts/migrate-to-turso.js",
     "db:sync:stats": "node scripts/sync-real-stats.js",

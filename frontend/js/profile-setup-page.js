@@ -1,5 +1,5 @@
 import { api } from './api.js';
-import { initTheme, bindSpotlightHover, showToast, renderUserAvatar } from './common.js';
+import { initTheme, bindSpotlightHover, showToast, renderUserAvatar, sanitizeReturnUrl } from './common.js';
 import { openImageCropper } from './cropper.js';
 
 class ProfileSetupController {
@@ -194,7 +194,7 @@ class ProfileSetupController {
 
           showToast('Profile and persona saved successfully!');
           const params = new URLSearchParams(window.location.search);
-          const returnUrl = params.get('return') || '/';
+          const returnUrl = sanitizeReturnUrl(params.get('return'));
           setTimeout(() => {
             window.location.href = returnUrl;
           }, 350);

@@ -168,6 +168,44 @@ export class CharacterRepository extends BaseRepository {
   }
 
   /**
+   * O(1) Atomic like counter and toggle without rewriting full character row
+   * @param {string} id
+   * @param {Object} [targetDb]
+   * @returns {Promise<{ likes: number, isLiked: boolean }|null>}
+   */
+  async toggleLikeAtomic(id, targetDb = null) {
+    if (!id) return null;
+    const conn = targetDb || this.db;
+    try {
+      const row = await conn.prepare(`
+        UPDATE characters
+        SET
+          is_liked = CASE WHEN is_liked = 1 THEN 0 ELSE 1 END,
+          likes = CASE WHEN is_liked = 1 THEN MAX(0, likes - 1) ELSE likes + 1 END
+        WHERE id = ?
+        RETURNING likes, is_liked
+      `).get(id);
+      if (row) {
+        return {
+          likes: Number(row.likes || 0),
+          isLiked: Boolean(row.is_liked)
+        };
+      }
+    } catch {
+      const existing = await this.findById(id, conn);
+      if (!existing) return null;
+      const result = existing.toggleLike();
+      await conn.prepare(`
+        UPDATE characters
+        SET likes = ?, is_liked = ?
+        WHERE id = ?
+      `).run(result.likes, result.isLiked ? 1 : 0, id);
+      return result;
+    }
+    return null;
+  }
+
+  /**
    * Bulk synchronize character collection inside a transaction
    * @param {Character[]} chars
    */

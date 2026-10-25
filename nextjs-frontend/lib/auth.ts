@@ -90,5 +90,10 @@ export function isTokenExpired(token: string): boolean {
 export function extractTokenFromCookieHeader(cookieHeader: string | null | undefined): string | null {
   if (!cookieHeader) return null;
   const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${TOKEN_COOKIE_NAME}=([^;]+)`));
-  return match && match[1] ? decodeURIComponent(match[1]) : null;
+  if (!match || !match[1]) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return null;
+  }
 }

@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { BaseEntity } from './BaseEntity.js';
 import { ValidationError } from '../ai/errors.js';
 
@@ -8,7 +9,7 @@ import { ValidationError } from '../ai/errors.js';
 export class CharacterMemory extends BaseEntity {
   constructor(props = {}) {
     super({
-      id: props.id || `mem_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      id: props.id || `mem_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`,
       createdAt: props.createdAt || props.created_at
     });
     this.characterId = props.characterId || props.character_id;

@@ -21,6 +21,9 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# Avatar uploads (Persisted directly in Turso Cloud media_assets table)
+public/assets/avatars/avatar_*
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

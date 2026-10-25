@@ -53,7 +53,7 @@ export class ApplicationServer {
   #configureMiddleware() {
     if (process.env.TRUST_PROXY) {
       const tpVal = process.env.TRUST_PROXY.trim();
-      this.app.set('trust proxy', tpVal === 'true' ? true : (!isNaN(Number(tpVal)) ? Number(tpVal) : tpVal));
+      this.app.set('trust proxy', tpVal === 'true' || tpVal === '1' ? 1 : (!isNaN(Number(tpVal)) ? Number(tpVal) : tpVal));
     } else {
       this.app.set('trust proxy', false);
     }
@@ -82,8 +82,7 @@ export class ApplicationServer {
     this.app.use('/api', globalRateLimiter.middleware());
     this.app.use(['/api/chat', '/api/chats', '/api/character/generate', '/api/character/parse-wiki'], sensitiveEndpointLimiter.middleware());
 
-    this.app.use(express.json({ limit: '10mb' }));
-    this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+    this.app.use(express.json({ limit: '7mb' }));
   }
 
   #configureRoutes() {
@@ -93,11 +92,12 @@ export class ApplicationServer {
 
     this.app.get('/api/health', async (_req, res) => {
       const sqlStats = await storage.getSqlStats();
+      const dbType = sqlStats.engine && sqlStats.engine.includes('Turso') ? 'turso' : 'sqlite';
       res.json({
         status: 'healthy',
         architecture: 'OOP (Models, Repositories, Services, Controllers, Providers)',
         timestamp: new Date().toISOString(),
-        database: sqlStats.engine,
+        database: dbType,
         ai_provider: config.AI_PROVIDER,
         gemini_model: config.GEMINI_MODEL,
         gemini_available: !!process.env.GEMINI_API_KEY,
@@ -111,16 +111,26 @@ export class ApplicationServer {
 
     // Dynamic Database Fallback for Media Assets (/assets/avatars/:filename)
     // Ensures avatars persist even without committing images to Git or on ephemeral hosting
+    const SAFE_AVATAR_FILENAME = /^[a-zA-Z0-9_-]+\.(png|jpg|jpeg|webp|gif)$/i;
+    const ALLOWED_AVATAR_MIMES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
+
     this.app.get('/assets/avatars/:filename', async (req, res, next) => {
-      const { filename } = req.params;
-      const localFilePath = path.join(frontendDir, 'assets', 'avatars', filename);
+      const rawFilename = String(req.params.filename || '');
+      if (!SAFE_AVATAR_FILENAME.test(rawFilename)) {
+        return res.status(400).end();
+      }
+
+      res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+
+      const localFilePath = path.join(frontendDir, 'assets', 'avatars', rawFilename);
       if (fs.existsSync(localFilePath)) {
-        return next(); // Served statically from disk cache
+        return res.sendFile(localFilePath);
       }
 
       try {
         const db = this.dbConnection.connect();
-        const asset = await db.prepare('SELECT mime_type, data_base64 FROM media_assets WHERE filename = ?').get(filename);
+        const asset = await db.prepare('SELECT mime_type, data_base64 FROM media_assets WHERE filename = ?').get(rawFilename);
         if (asset && asset.data_base64) {
           const buffer = Buffer.from(asset.data_base64, 'base64');
           // Self-heal disk cache if folder is writable
@@ -130,14 +140,15 @@ export class ApplicationServer {
             fs.writeFileSync(localFilePath, buffer);
           } catch {}
 
-          res.setHeader('Content-Type', asset.mime_type || 'image/jpeg');
+          const safeMime = ALLOWED_AVATAR_MIMES.has(asset.mime_type) ? asset.mime_type : 'application/octet-stream';
+          res.setHeader('Content-Type', safeMime);
           res.setHeader('Cache-Control', 'public, max-age=86400');
           return res.send(buffer);
         }
       } catch (err) {
         console.warn('[Server] Media asset SQL fallback notice:', err.message);
       }
-      next();
+      return res.status(404).end();
     });
 
     // Admin Operations Center & Security Assets Gatekeeper
@@ -160,8 +171,14 @@ export class ApplicationServer {
     };
 
     // Intercept any direct static requests to admin files before express.static can serve them
+    // Normalize duplicate slashes, backslashes, and trailing Windows NTFS dots/spaces before gating admin assets
     this.app.use((req, res, next) => {
-      if (/^\/(admin(\.html)?|js\/admin-page\.js|css\/admin\.css)$/i.test(req.path)) {
+      const normalizedPath = path.posix
+        .normalize(String(req.path || '/').replace(/\\/g, '/'))
+        .replace(/\/+/g, '/')
+        .replace(/[.\s]+$/, '');
+
+      if (/^\/(admin(\.html)?|js\/admin-page\.js|css\/admin\.css)$/i.test(normalizedPath)) {
         return requireAdminWebAccess(req, res, next);
       }
       next();
@@ -217,7 +234,7 @@ export class ApplicationServer {
       res.sendFile(path.join(frontendDir, 'index.html'));
     });
 
-    this.app.get(['/admin', '/admin.html'], (_req, res) => {
+    this.app.get(['/admin', '/admin.html'], requireAdminWebAccess, (_req, res) => {
       res.sendFile(path.join(frontendDir, 'admin.html'));
     });
   }
@@ -237,10 +254,20 @@ export class ApplicationServer {
         timestamp: new Date().toISOString()
       });
 
-      const statusCode = error.status || error.code || 500;
+      const rawCode = error?.statusCode ?? error?.status ?? error?.code;
+      const statusCode =
+        typeof rawCode === 'number' && Number.isInteger(rawCode) && rawCode >= 400 && rawCode <= 599
+          ? rawCode
+          : 500;
+
+      const safeMessage =
+        statusCode >= 500
+          ? 'Internal server error'
+          : (error?.message || 'Internal server error');
+
       res.status(statusCode).json({
         error: {
-          message: error.message || 'Internal server error',
+          message: safeMessage,
           code: statusCode
         }
       });

@@ -274,7 +274,7 @@ export function Sidebar({
                 title="Edit Profile and Persona"
               >
                 <span className="auth-user-avatar-tag" id="authUserAvatar">
-                  {user.avatar && /^(https?:\/\/|\/|data:)/i.test(user.avatar) ? (
+                  {user.avatar && /^(https?:\/\/|\/(?!\/)|data:image\/(png|jpeg|jpg|webp|gif);base64,)/i.test(user.avatar) ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={user.avatar}
@@ -331,7 +331,7 @@ export function Sidebar({
             title="Switch Active Roleplay Identity"
           >
             <span className="persona-monogram" id="sidebar-persona-emoji">
-              { /^(https?:\/\/|\/|data:)/i.test(activePersona.avatar) ? (
+              { /^(https?:\/\/|\/(?!\/)|data:image\/(png|jpeg|jpg|webp|gif);base64,)/i.test(activePersona.avatar) ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={activePersona.avatar} alt="" className="persona-avatar-image" />
               ) : (activePersona.avatar || activePersona.name.slice(0, 2)).slice(0, 3) }
