@@ -3,16 +3,12 @@ import fs from 'node:fs';
 import path from 'path';
 import { User } from '../models/User.js';
 import { UserPersona } from '../models/UserPersona.js';
-import { userRepository, personaRepository } from '../repositories/index.js';
-import { getDatabase } from '../db/database.js';
+import { userRepository, personaRepository, passwordResetRepository, mediaAssetRepository } from '../repositories/index.js';
 import { emailService } from './email.service.js';
 import { AuthenticationError, ConflictError, ValidationError, NotFoundError } from '../ai/errors.js';
-import { config, isAdminIdentity } from '../config/index.js';
+import { config, isAdminIdentity, RESERVED_USERNAMES } from '../config/index.js';
 
-export const RESERVED_USERNAMES = Object.freeze(new Set([
-  'community', 'system', 'admin', 'administrator', 'moderator',
-  'root', 'support', 'kazuken', 'guest', 'you', 'universe'
-]));
+export { RESERVED_USERNAMES };
 
 const JWT_SECRET = config.JWT_SECRET;
 const TOKEN_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
@@ -38,10 +34,51 @@ function base64UrlDecode(str) {
  * AuthService Class (OOP Authentication, Session Token & Account Lifecycle Manager)
  */
 export class AuthService {
-  constructor(userRepo = userRepository, personaRepo = personaRepository) {
+  constructor(
+    userRepo = userRepository,
+    personaRepo = personaRepository,
+    passwordResetRepo = passwordResetRepository,
+    mediaAssetRepo = mediaAssetRepository
+  ) {
     this.userRepo = userRepo;
     this.personaRepo = personaRepo;
+    this.passwordResetRepo = passwordResetRepo;
+    this.mediaAssetRepo = mediaAssetRepo;
     this.failedResetAttempts = new Map();
+  }
+
+  /**
+   * Validate whether an avatar input string is safe against XSS and protocol smuggling
+   * @param {string} avatar
+   * @returns {boolean}
+   */
+  static isSafeAvatar(avatar) {
+    if (!avatar || typeof avatar !== 'string') return false;
+    const str = avatar.trim();
+    if (!str) return false;
+    // Allow short glyphs / emojis (<= 8 chars) that contain no dangerous script/markup symbols
+    if (str.length <= 8 && !/[<>"'\/\\&;:]/.test(str)) {
+      return true;
+    }
+    // Allow safe http/https URLs, relative paths starting with single /, or safe raster data URLs
+    const SAFE_URL_REGEX = /^(https?:\/\/|\/(?!\/)|data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$)/i;
+    return SAFE_URL_REGEX.test(str);
+  }
+
+  /**
+   * Mask an email address to protect privacy during password reset queries
+   * @param {string} email
+   * @returns {string}
+   */
+  static maskEmail(email) {
+    if (!email || typeof email !== 'string') return '';
+    const parts = email.split('@');
+    if (parts.length !== 2) return email;
+    const [name, domain] = parts;
+    if (name.length <= 2) {
+      return `${name[0] || '*'}***@${domain}`;
+    }
+    return `${name[0]}***${name[name.length - 1]}@${domain}`;
   }
 
   /**
@@ -149,6 +186,13 @@ export class AuthService {
       }
     }
 
+    if (avatar) {
+      const cleanAvatar = String(avatar).trim();
+      if (!AuthService.isSafeAvatar(cleanAvatar)) {
+        throw new ValidationError('Invalid avatar URL or format', 'avatar');
+      }
+    }
+
     const passwordHash = User.hashPassword(password);
     const user = new User({
       username: cleanUsername,
@@ -236,7 +280,11 @@ export class AuthService {
       user.username = cleanUsername;
     }
     if (avatar !== undefined) {
-      user.avatar = String(avatar).trim().slice(0, 100000);
+      const cleanAvatar = String(avatar).trim();
+      if (cleanAvatar && !AuthService.isSafeAvatar(cleanAvatar)) {
+        throw new ValidationError('Invalid avatar URL or format', 'avatar');
+      }
+      user.avatar = cleanAvatar.slice(0, 100000);
     }
     await this.userRepo.update(user);
     return user.toJSON();
@@ -465,7 +513,11 @@ export class AuthService {
     }
 
     if (!user) {
-      throw new NotFoundError('No account found with this email or username');
+      return {
+        success: true,
+        message: 'A 6-digit verification code has been sent to your email address if an account exists.',
+        email: AuthService.maskEmail(cleanEmail)
+      };
     }
 
     const targetEmail = user.email || cleanEmail;
@@ -473,9 +525,8 @@ export class AuthService {
       throw new ValidationError('This account does not have a valid email configured to receive verification codes');
     }
 
-    const db = getDatabase();
     // Invalidate previous active codes for this email and reset failed attempt counter
-    await db.prepare('UPDATE password_resets SET used = 1 WHERE email = ? COLLATE NOCASE AND used = 0').run(targetEmail);
+    await this.passwordResetRepo.invalidateByEmail(targetEmail);
     this.failedResetAttempts.delete(targetEmail);
 
     // Generate cryptographically secure 6-digit OTP
@@ -483,10 +534,12 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
     const id = `reset_${crypto.randomUUID()}`;
 
-    await db.prepare(`
-      INSERT INTO password_resets (id, email, code, expires_at, used, created_at)
-      VALUES (?, ?, ?, ?, 0, ?)
-    `).run(id, targetEmail, code, expiresAt, new Date().toISOString());
+    await this.passwordResetRepo.createReset({
+      id,
+      email: targetEmail,
+      code,
+      expiresAt
+    });
 
     const emailResult = await emailService.sendPasswordResetOtp({
       email: targetEmail,
@@ -497,7 +550,7 @@ export class AuthService {
     const response = {
       success: true,
       message: 'A 6-digit verification code has been sent to your email address.',
-      email: targetEmail
+      email: AuthService.maskEmail(targetEmail)
     };
 
     if (config.IS_TEST && emailResult.previewCode) {
@@ -520,19 +573,14 @@ export class AuthService {
     const cleanEmail = String(email).trim().toLowerCase();
     const cleanCode = String(code).trim();
 
-    const db = getDatabase();
-    const row = await db.prepare(`
-      SELECT * FROM password_resets
-      WHERE email = ? COLLATE NOCASE AND code = ? AND used = 0
-      ORDER BY created_at DESC LIMIT 1
-    `).get(cleanEmail, cleanCode);
+    const row = await this.passwordResetRepo.findActiveByEmailAndCode(cleanEmail, cleanCode);
 
     if (!row) {
       const attempts = (this.failedResetAttempts.get(cleanEmail) || 0) + 1;
       this.failedResetAttempts.set(cleanEmail, attempts);
       if (attempts >= 5) {
         try {
-          await db.prepare('UPDATE password_resets SET used = 1 WHERE email = ? COLLATE NOCASE AND used = 0').run(cleanEmail);
+          await this.passwordResetRepo.invalidateByEmail(cleanEmail);
         } catch {}
         this.failedResetAttempts.delete(cleanEmail);
         throw new ValidationError('Too many failed verification attempts. Verification code has been invalidated for security. Please request a new code.');
@@ -569,11 +617,7 @@ export class AuthService {
     const newHash = User.hashPassword(newPassword);
     await this.userRepo.updatePassword(user.id, newHash);
 
-    const db = getDatabase();
-    await db.prepare(`
-      UPDATE password_resets SET used = 1
-      WHERE email = ? COLLATE NOCASE AND code = ?
-    `).run(cleanEmail, String(code).trim());
+    await this.passwordResetRepo.markUsedByEmailAndCode(cleanEmail, String(code).trim());
 
     return {
       success: true,
@@ -673,18 +717,13 @@ export class AuthService {
 
     // Persist to relational SQL database (Turso libSQL / SQLite) for cloud durability
     try {
-      const db = getDatabase();
-      await db.prepare(`
-        INSERT OR REPLACE INTO media_assets (id, filename, mime_type, data_base64, size, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `).run(
-        `asset_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
+      await this.mediaAssetRepo.saveAsset({
+        id: `asset_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
         filename,
         mimeType,
-        base64Data,
-        buffer.length,
-        new Date().toISOString()
-      );
+        dataBase64: base64Data,
+        size: buffer.length
+      });
     } catch (dbErr) {
       console.warn('[AuthService] Could not persist media asset to SQL DB:', dbErr.message);
     }
@@ -713,9 +752,9 @@ export class AuthService {
       const payload = this.verifyToken(token);
       const user = await this.userRepo.findById(payload.sub);
       if (!user) return null;
-      if (payload.pwd && user.passwordHash) {
+      if (user.passwordHash) {
         const expectedPwd = crypto.createHash('sha256').update(user.passwordHash).digest('hex').slice(0, 12);
-        if (payload.pwd !== expectedPwd) {
+        if (!payload.pwd || payload.pwd !== expectedPwd) {
           return null;
         }
       }

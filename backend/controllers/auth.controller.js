@@ -128,7 +128,8 @@ export class AuthController extends BaseController {
   }
 
   logout(_req, res) {
-    res.setHeader('Set-Cookie', 'cai_auth_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax');
+    const secureFlag = config.IS_PRODUCTION ? '; Secure' : '';
+    res.setHeader('Set-Cookie', `cai_auth_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax${secureFlag}`);
     return this.sendJson(res, { message: 'Successfully signed out', authenticated: false });
   }
 }

@@ -28,9 +28,10 @@ import { UserPersona } from '../backend/models/UserPersona.js';
 import { User } from '../backend/models/User.js';
 import { CharacterMemory } from '../backend/models/CharacterMemory.js';
 import { ChatSession, ChatMessage, MessageVariant } from '../backend/models/ChatSession.js';
-import { RESERVED_USERNAMES } from '../backend/services/auth.service.js';
+import { RESERVED_USERNAMES, authService, AuthService } from '../backend/services/auth.service.js';
 import { extractClientIp } from '../backend/middlewares/security.js';
 import { BaseController } from '../backend/controllers/BaseController.js';
+import { personaController } from '../backend/controllers/persona.controller.js';
 
 console.log('🧪 Running Security Audit Regression Test Suite (VULN-01 to VULN-15)...\n');
 
@@ -162,5 +163,120 @@ console.log('Testing [VULN-15] Repo Hygiene...');
 const gitignoreContent = fs.readFileSync(path.resolve('.gitignore'), 'utf8');
 assert.ok(gitignoreContent.includes('nextjs-frontend/public/assets/avatars/avatar_*'), '.gitignore must ignore Next.js avatar uploads');
 console.log('✅ [VULN-15] Git ignore correctly protects user-uploaded avatars');
+
+// 8. [VULN-01] Social Auth Token Enforcement
+console.log('Testing [VULN-01] Social Auth Token Enforcement...');
+await assert.rejects(
+  authService.socialAuth({ provider: 'google', email: 'test@example.com' }),
+  /Valid OAuth provider token is required/i
+);
+await assert.rejects(
+  authService.socialAuth({ provider: 'google', email: 'test@example.com', token: '   ' }),
+  /Valid OAuth provider token is required/i
+);
+console.log('✅ [VULN-01] Social auth strictly rejects requests missing cryptographic provider token');
+
+// 9. [VULN-02] Password Reset Email Masking
+console.log('Testing [VULN-02] Password Reset Email Masking...');
+assert.equal(AuthService.maskEmail('kazuken@example.com'), 'k***n@example.com');
+assert.equal(AuthService.maskEmail('ab@example.com'), 'a***@example.com');
+assert.equal(AuthService.maskEmail('developer_spec@universe.ai'), 'd***c@universe.ai');
+console.log('✅ [VULN-02] maskEmail obscures private email addresses on username lookup');
+
+// 10. [VULN-04] Admin Asset Gatekeeper Normalization
+console.log('Testing [VULN-04] Admin Asset Gatekeeper Path Normalization...');
+function normalizeAdminPath(rawPath) {
+  return path.posix
+    .normalize(String(rawPath || '/').replace(/\\/g, '/'))
+    .replace(/\/+/g, '/')
+    .replace(/[.\s]+$/, '');
+}
+const adminRegex = /^\/(admin(\.html)?|js\/admin-page\.js|css\/admin\.css)$/i;
+assert.ok(adminRegex.test(normalizeAdminPath('//admin.html')));
+assert.ok(adminRegex.test(normalizeAdminPath('/admin.html.')));
+assert.ok(adminRegex.test(normalizeAdminPath('/admin ')));
+assert.ok(adminRegex.test(normalizeAdminPath('\\admin.html')));
+assert.ok(adminRegex.test(normalizeAdminPath('///admin')));
+assert.ok(adminRegex.test(normalizeAdminPath('/js//admin-page.js')));
+assert.equal(adminRegex.test(normalizeAdminPath('/chat.html')), false);
+console.log('✅ [VULN-04] Admin path normalization catches all NTFS, slash, and encoding bypass attempts');
+
+// 11. [VULN-06b] AuthService Avatar Validation
+console.log('Testing [VULN-06b] AuthService Avatar Format Validation...');
+assert.equal(AuthService.isSafeAvatar('javascript:alert(1)'), false);
+assert.equal(AuthService.isSafeAvatar('data:image/svg+xml;base64,PHNjcmlwdD4='), false);
+assert.equal(AuthService.isSafeAvatar('<script>alert(1)</script>'), false);
+assert.equal(AuthService.isSafeAvatar('👤'), true);
+assert.equal(AuthService.isSafeAvatar('🚀'), true);
+assert.equal(AuthService.isSafeAvatar('https://res.cloudinary.com/avatar.png'), true);
+assert.equal(AuthService.isSafeAvatar('/assets/avatars/avatar_123_abc.png'), true);
+console.log('✅ [VULN-06b] AuthService.isSafeAvatar rejects XSS and SVG payloads');
+
+// 12. [VULN-09b] PersonaController BaseController sendError inheritance
+console.log('Testing [VULN-09b] PersonaController BaseController error responses...');
+const mockPersonaRes = new MockResponse();
+await personaController.createPersona({ body: { name: 'Valid Name' }, user: null }, mockPersonaRes);
+assert.equal(mockPersonaRes.statusCode, 401);
+assert.equal(mockPersonaRes.body.error.code, 401);
+assert.equal(mockPersonaRes.body.error.message, 'Authentication required to create persona.');
+console.log('✅ [VULN-09b] PersonaController properly uses BaseController.sendError');
+
+// 13. [VULN-10] Token Revocation & Password Hash Fingerprint
+console.log('Testing [VULN-10] Token Revocation on Missing or Mismatched pwd claim...');
+const mockUser = new User({
+  id: 'user_test_pwd_revocation',
+  username: 'revocation_user',
+  passwordHash: User.hashPassword('SecretPass123')
+});
+const mockUserRepo = {
+  findById: async (id) => (id === mockUser.id ? mockUser : null)
+};
+const testAuthService = new AuthService(mockUserRepo);
+const validToken = testAuthService.generateToken(mockUser);
+const validVerified = await testAuthService.getUserFromToken(validToken);
+assert.ok(validVerified, 'Valid token with matching pwd claim must be accepted');
+
+// Token lacking pwd claim must be rejected when user has a passwordHash
+const tokenParts = validToken.split('.');
+const payloadJson = Buffer.from(tokenParts[1], 'base64').toString('utf8');
+const payloadObj = JSON.parse(payloadJson);
+delete payloadObj.pwd; // Strip pwd
+const forgedPayloadB64 = Buffer.from(JSON.stringify(payloadObj)).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+const forgedSig = crypto.createHmac('sha256', 'test_cai_universe_super_secret_jwt_key_2026_for_dev_mode_only_replace_in_prod!')
+  .update(`${tokenParts[0]}.${forgedPayloadB64}`)
+  .digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+const forgedToken = `${tokenParts[0]}.${forgedPayloadB64}.${forgedSig}`;
+
+const forgedVerified = await testAuthService.getUserFromToken(forgedToken);
+assert.equal(forgedVerified, null, 'Token without pwd claim must be rejected when user has a passwordHash');
+console.log('✅ [VULN-10] Tokens lacking pwd claim or with outdated fingerprints are rejected');
+
+// 14. [VULN-02b] Password Reset Account Enumeration Defense
+console.log('Testing [VULN-02b] Account Enumeration Protection on Non-Existent Users...');
+const mockEmptyUserRepo = {
+  findByEmail: async () => null,
+  findByUsername: async () => null
+};
+const enumDefenseAuthService = new AuthService(mockEmptyUserRepo);
+const nonExistentReset = await enumDefenseAuthService.requestPasswordReset({ email: 'nonexistent_target@universe.ai' });
+assert.equal(nonExistentReset.success, true);
+assert.equal(nonExistentReset.email, 'n***t@universe.ai');
+assert.ok(nonExistentReset.message.includes('if an account exists'));
+console.log('✅ [VULN-02b] requestPasswordReset returns uniform success to prevent account enumeration');
+
+// 15. [VULN-03b] SQL Persistence of Uploaded Avatars (dataBase64 Reference Fix)
+console.log('Testing [VULN-03b] SQL Persistence of Uploaded Avatars...');
+let savedMediaAsset = null;
+const mockMediaRepo = {
+  saveAsset: async (asset) => { savedMediaAsset = asset; }
+};
+const avatarAuthService = new AuthService(mockUserRepo, null, null, mockMediaRepo);
+const samplePngBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+const avatarResult = await avatarAuthService.saveBase64Avatar(samplePngBase64);
+assert.ok(avatarResult.url.startsWith('/assets/avatars/'));
+assert.ok(savedMediaAsset, 'Media asset must be passed to saveAsset');
+assert.ok(savedMediaAsset.dataBase64, 'dataBase64 must be populated without ReferenceError');
+assert.equal(savedMediaAsset.mimeType, 'image/png');
+console.log('✅ [VULN-03b] saveBase64Avatar passes dataBase64 correctly without ReferenceError');
 
 console.log('\n✨ All Security Audit unit tests passed successfully!\n');

@@ -15,6 +15,7 @@ import {
   sensitiveEndpointLimiter
 } from './backend/middlewares/security.js';
 import { optionalAuth } from './backend/middlewares/auth.js';
+import { mediaAssetRepository } from './backend/repositories/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -129,8 +130,7 @@ export class ApplicationServer {
       }
 
       try {
-        const db = this.dbConnection.connect();
-        const asset = await db.prepare('SELECT mime_type, data_base64 FROM media_assets WHERE filename = ?').get(rawFilename);
+        const asset = await mediaAssetRepository.findByFilename(rawFilename);
         if (asset && asset.data_base64) {
           const buffer = Buffer.from(asset.data_base64, 'base64');
           // Self-heal disk cache if folder is writable

@@ -5,6 +5,7 @@ import { wikiScraperService } from '../services/wiki.service.js';
 import { memoryService } from '../services/memory.service.js';
 import { geminiProvider } from '../ai/providers/index.js';
 import { ValidationError, NotFoundError } from '../ai/errors.js';
+import { AuthService } from '../services/auth.service.js';
 
 /**
  * CharacterController Class (extends BaseController)
@@ -51,10 +52,8 @@ export class CharacterController extends BaseController {
           throw new ValidationError('Wiki URL must start with http:// or https://', 'wiki');
         }
       }
-      if (avatar && typeof avatar === 'string' && avatar.trim().length > 8) {
-        if (!/^(https?:\/\/|\/(?!\/)|data:image\/(png|jpeg|jpg|webp|gif);base64,)/i.test(avatar.trim())) {
-          throw new ValidationError('Invalid avatar image format', 'avatar');
-        }
+      if (avatar && typeof avatar === 'string' && !AuthService.isSafeAvatar(avatar.trim())) {
+        throw new ValidationError('Invalid avatar image format', 'avatar');
       }
 
       if (!req.user || !req.user.id) {
@@ -167,7 +166,7 @@ export class CharacterController extends BaseController {
             if (field === 'wiki' && val && !/^https?:\/\//i.test(val)) {
               throw new ValidationError('Wiki URL must start with http:// or https://', 'wiki');
             }
-            if (field === 'avatar' && val.length > 8 && !/^(https?:\/\/|\/(?!\/)|data:image\/(png|jpeg|jpg|webp|gif);base64,)/i.test(val)) {
+            if (field === 'avatar' && val && !AuthService.isSafeAvatar(val)) {
               throw new ValidationError('Invalid avatar image format', 'avatar');
             }
             character[field] = val;

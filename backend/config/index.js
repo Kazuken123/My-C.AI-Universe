@@ -75,6 +75,14 @@ export const config = {
   ]
 };
 
+/**
+ * Immutable canonical reserved usernames across universe authentication and characters
+ */
+export const RESERVED_USERNAMES = Object.freeze(new Set([
+  'community', 'system', 'admin', 'administrator', 'moderator',
+  'root', 'support', 'kazuken', 'guest', 'you', 'universe'
+]));
+
 export function isAdminIdentity(username = '', email = '') {
   const cleanUser = String(username || '').trim().toLowerCase();
   const cleanEmail = String(email || '').trim().toLowerCase();

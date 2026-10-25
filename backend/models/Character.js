@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { BaseEntity } from './BaseEntity.js';
 import { ValidationError } from '../ai/errors.js';
 import { compileCharacterSystemPrompt, generateDefaultGreeting } from '../ai/prompt/characterPrompt.js';
+import { RESERVED_USERNAMES } from '../config/index.js';
 
 /**
  * Character Domain Entity Class
@@ -85,8 +86,8 @@ export class Character extends BaseEntity {
       return Boolean(user.id && this.ownerUserId === user.id);
     }
     const creatorHandle = String(this.creator || '').trim().toLowerCase();
-    const FORBIDDEN_LEGACY_HANDLES = new Set(['@community', '@system', '@kazuken', '@you', '@admin']);
-    if (FORBIDDEN_LEGACY_HANDLES.has(creatorHandle)) {
+    const cleanHandle = creatorHandle.startsWith('@') ? creatorHandle.slice(1) : creatorHandle;
+    if (RESERVED_USERNAMES.has(cleanHandle)) {
       return false;
     }
     if (creatorHandle && user.username && creatorHandle === `@${user.username.toLowerCase()}`) {

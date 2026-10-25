@@ -43,7 +43,7 @@ export class PersonaController extends BaseController {
       }
       const userId = req.user ? req.user.id : null;
       if (!userId) {
-        return res.status(401).json({ error: { message: 'Authentication required to create persona.', code: 401 } });
+        return this.sendError(res, 'Authentication required to create persona.', 401);
       }
 
       const currentPersonas = await this.repository.findAll(userId);
@@ -65,7 +65,7 @@ export class PersonaController extends BaseController {
     try {
       const userId = req.user ? req.user.id : null;
       if (!userId) {
-        return res.status(401).json({ error: { message: 'Authentication required to update persona.', code: 401 } });
+        return this.sendError(res, 'Authentication required to update persona.', 401);
       }
       const persona = await this.repository.findById(req.params.id);
       if (!persona) {
@@ -73,9 +73,7 @@ export class PersonaController extends BaseController {
       }
 
       if (persona.userId !== userId && !req.user?.isAdmin()) {
-        return res.status(403).json({
-          error: { message: 'You do not have permission to edit this persona.', code: 403 }
-        });
+        return this.sendError(res, 'You do not have permission to edit this persona.', 403);
       }
 
       const { name, avatar, description, isDefault } = req.body;
@@ -96,7 +94,7 @@ export class PersonaController extends BaseController {
     try {
       const userId = req.user ? req.user.id : null;
       if (!userId) {
-        return res.status(401).json({ error: { message: 'Authentication required to delete persona.', code: 401 } });
+        return this.sendError(res, 'Authentication required to delete persona.', 401);
       }
 
       const target = await this.repository.findById(req.params.id);
@@ -106,9 +104,7 @@ export class PersonaController extends BaseController {
 
       // Enforce ownership check (owner or admin)
       if (target.userId !== userId && !req.user?.isAdmin()) {
-        return res.status(403).json({
-          error: { message: 'You do not have permission to delete this persona.', code: 403 }
-        });
+        return this.sendError(res, 'You do not have permission to delete this persona.', 403);
       }
 
       const ownerUserId = target.userId;

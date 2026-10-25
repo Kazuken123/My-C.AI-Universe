@@ -18,6 +18,13 @@ This document serves as the **single source of truth** for project history, rece
 ---
 
 ### 🏷️ `v2.9.0` (Current) — Comprehensive Security Hardening & Zero-Vulnerability Release (15/15 Audit Remediations)
+- **Post-Review Hardening & Defect Elimination**:
+  - **Fixed Avatar Cloud Persistence**: Resolved runtime `ReferenceError` by passing `dataBase64: base64Data` in `AuthService.saveBase64Avatar()`, guaranteeing durable asset storage in Turso Cloud `media_assets` table.
+  - **Unified Avatar URL Validation**: Centralized avatar validation under `AuthService.isSafeAvatar()`, imported and enforced consistently across `CharacterController` (`createCharacter`, `updateCharacter`) and `auth.service.js`.
+  - **Unified Reserved Usernames**: Canonical `RESERVED_USERNAMES` centralized in `backend/config/index.js` and imported into `Character.canModify()` and `auth.service.js`, protecting all 11 system usernames against legacy character takeover.
+  - **Account Enumeration Defense**: Hardened `AuthService.requestPasswordReset()` to return a uniform success response when queried with non-existent accounts.
+  - **Database Abstraction Cleanup**: Replaced direct raw SQL queries for password resets and media assets with dedicated `PasswordResetRepository` and `MediaAssetRepository` extending `BaseRepository`.
+  - **BaseController Response Inheritance**: Converted all manual response calls in `PersonaController` to standardized `this.sendError()`.
 - **Batch 1: Authentication, Password Reset & Upload Hardening**:
   - `[VULN-01]` **Social Authentication Cryptographic Hardening**: Enforced mandatory provider token verification via `verifyGoogleIdToken` with audience checking and `email_verified: true`. Prevented account takeover by rejecting account matching via derived username and blocking local password account overwrite with Google identities unless cryptographically proven. Provided deterministic test mock token under `config.IS_TEST`.
   - `[VULN-02]` **Host Header Injection, OTP Brute-Force & Reset Leakage**: Replaced dynamic `req.get('host')` with immutable `config.PUBLIC_BASE_URL` in reset email links. Added exponential/brute-force lockout (maximum 5 failed OTP attempts before invalidation). Invalidated existing OTPs upon generating new ones. Enforced `config.IS_TEST` gating for OTP preview returned in API responses and removed client-side auto-fill vulnerability from `reset-password.js`. Escaped email recipient strings against HTML injection.

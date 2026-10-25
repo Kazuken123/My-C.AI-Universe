@@ -40,7 +40,8 @@ export function setAuthToken(token: string): void {
     if (token) {
       localStorage.setItem(TOKEN_STORAGE_KEY, token);
       if (typeof document !== 'undefined') {
-        document.cookie = `${TOKEN_COOKIE_NAME}=${encodeURIComponent(token)}; path=/; max-age=${COOKIE_MAX_AGE_SECONDS}; SameSite=Lax`;
+        const isSecure = typeof window !== 'undefined' && window.location && window.location.protocol === 'https:';
+        document.cookie = `${TOKEN_COOKIE_NAME}=${encodeURIComponent(token)}; path=/; max-age=${COOKIE_MAX_AGE_SECONDS}; SameSite=Lax${isSecure ? '; Secure' : ''}`;
       }
     } else {
       removeAuthToken();
@@ -59,7 +60,8 @@ export function removeAuthToken(): void {
   try {
     localStorage.removeItem(TOKEN_STORAGE_KEY);
     if (typeof document !== 'undefined') {
-      document.cookie = `${TOKEN_COOKIE_NAME}=; path=/; max-age=0; SameSite=Lax`;
+      const isSecure = typeof window !== 'undefined' && window.location && window.location.protocol === 'https:';
+      document.cookie = `${TOKEN_COOKIE_NAME}=; path=/; max-age=0; SameSite=Lax${isSecure ? '; Secure' : ''}`;
     }
   } catch {
     // Storage access blocked
