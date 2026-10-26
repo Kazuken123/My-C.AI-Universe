@@ -14,12 +14,18 @@ export class CharacterMemory extends BaseEntity {
     });
     this.characterId = props.characterId || props.character_id;
     this.sessionId = props.sessionId || props.session_id || null;
+    this.visibility = props.visibility ?? (this.sessionId ? 'session' : 'quarantined');
     this.content = (props.content || '').trim();
     this.source = props.source || 'conversation';
     this.similarity = props.similarity !== undefined ? Number(props.similarity) : undefined;
   }
 
   validate() {
+    if (!['global', 'session', 'quarantined'].includes(this.visibility) ||
+        (this.visibility === 'global' && this.sessionId) ||
+        (this.visibility === 'session' && !this.sessionId)) {
+      throw new ValidationError('Invalid memory visibility or session scope', 'visibility');
+    }
     if (!this.characterId) {
       throw new ValidationError('characterId is required for CharacterMemory', 'characterId');
     }
@@ -38,6 +44,7 @@ export class CharacterMemory extends BaseEntity {
       id: row.id,
       characterId: row.character_id,
       sessionId: row.session_id,
+      visibility: row.visibility || 'quarantined',
       content: row.content,
       source: row.source,
       createdAt: row.created_at
@@ -49,6 +56,7 @@ export class CharacterMemory extends BaseEntity {
       id: this.id,
       characterId: this.characterId,
       sessionId: this.sessionId,
+      visibility: this.visibility,
       content: this.content,
       source: this.source,
       createdAt: this.createdAt

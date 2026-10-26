@@ -11,6 +11,7 @@ import { relationshipService, createStreamTailFilter } from '../services/relatio
 import { generateDefaultGreeting } from '../ai/prompt/characterPrompt.js';
 import { ValidationError, NotFoundError } from '../ai/errors.js';
 import { config } from '../config/index.js';
+import { normalizeProviderName } from '../ai/providerSelection.js';
 
 /**
  * ChatController Class (extends BaseController)
@@ -138,7 +139,8 @@ export class ChatController extends BaseController {
 
   async createChatSession(req, res) {
     try {
-      const { characterId, personaId, provider, title } = req.body;
+      const { characterId, personaId, provider: requestedProvider, title } = req.body;
+      const provider = normalizeProviderName(requestedProvider);
       const userId = req.user ? req.user.id : null;
       if (!characterId) {
         throw new ValidationError('characterId is required', 'characterId');
@@ -280,7 +282,7 @@ export class ChatController extends BaseController {
         sessionId,
         messageId,
         personaId,
-        provider,
+        provider: requestedProvider,
         message,
         memory: clientMemory,
         regenerate,
@@ -290,6 +292,8 @@ export class ChatController extends BaseController {
         excludeVariants,
         continueFromAssistant
       } = req.body;
+
+      const provider = requestedProvider === undefined ? undefined : normalizeProviderName(requestedProvider);
 
       if (!charId || typeof charId !== 'string') {
         throw new ValidationError('Character ID is required', 'charId');
@@ -402,7 +406,7 @@ export class ChatController extends BaseController {
       ]);
 
       const aiOptions = {
-        provider: provider || session.provider || config.AI_PROVIDER,
+        provider: normalizeProviderName(provider ?? session.provider ?? config.AI_PROVIDER),
         persona: activePersona ? activePersona.toJSON() : null,
         pinnedMessages,
         memories: relevantMemories,

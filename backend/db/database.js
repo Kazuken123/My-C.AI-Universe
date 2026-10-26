@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { DB_DIR } from '../config/index.js';
 import { compileCharacterSystemPrompt } from '../ai/prompt/characterPrompt.js';
+import { applyMemoryPrivacyMigration } from './migrations/20261027-memory-privacy.js';
 
 const DEFAULT_SQLITE_PATH = path.join(DB_DIR, 'universe.sqlite');
 const SCHEMA_SQL_PATH = path.join(DB_DIR, 'schema.sql');
@@ -258,6 +259,14 @@ export class DatabaseConnection {
         console.warn('[SQL DB] Chat sessions column migration notice:', sessColErr.message);
       }
 
+    } catch (err) {
+      console.warn('[SQL DB] Schema migration notice:', err.message);
+    }
+
+    // Privacy must be ready before seeding or serving data; never suppress its failure.
+    await applyMemoryPrivacyMigration(raw);
+
+    try {
       // Check if characters table is empty
       const countRes = await raw.execute('SELECT COUNT(*) AS count FROM characters');
       const count = Number(countRes.rows[0]?.count || 0);

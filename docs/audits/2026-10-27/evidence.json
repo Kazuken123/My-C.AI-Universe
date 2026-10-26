@@ -1,0 +1,222 @@
+{
+  "reviewDate": "2026-10-27",
+  "repository": "Kazuken123/My-C.AI-Universe",
+  "publishedSha": "84f39dfb7899abe802a4805e4fc9532f87afdd46",
+  "localHead": "133d7e484b31ec56c11db40f8df7b1950a8918e1",
+  "mode": "source audit and isolated local reproduction; no live exploit or production mutation",
+  "commands": [
+    {
+      "command": "node docs/audits/2026-10-27/verify-findings.mjs",
+      "exitCode": 0,
+      "ids": [
+        "A02",
+        "A03",
+        "A04",
+        "A05",
+        "A06",
+        "A07",
+        "A09"
+      ]
+    },
+    {
+      "command": "python docs/audits/2026-10-27/verify-schema.py",
+      "exitCode": 0,
+      "ids": [
+        "A01",
+        "A08"
+      ]
+    }
+  ],
+  "observations": [
+    {
+      "id": "A01",
+      "probe": "real schema in SQLite :memory:",
+      "result": "Public fixture query changed from [] to private fixture after both chat_sessions and users deletion."
+    },
+    {
+      "id": "A02",
+      "probe": "exact source class with mock providers",
+      "result": "provider={} raised toLowerCase TypeError; isProcessing=true; one later valid request queued; both requests unsettled."
+    },
+    {
+      "id": "A03",
+      "probe": "exact wrapper with commit-then-ECONNRESET executor",
+      "result": "One requested mutation applied twice."
+    },
+    {
+      "id": "A04",
+      "probe": "exact repository method with SQL recorder",
+      "result": "Only chat_messages/content and chat_sessions/updated_at updated; no message_variants write.",
+      "limit": "Full edit/reload HTTP flow not executed."
+    },
+    {
+      "id": "A05",
+      "probe": "actual ChatMessage model, two snapshots",
+      "result": "Both new variants got msg_fixture_v2 with distinct texts.",
+      "limit": "Full concurrent HTTP races not executed."
+    },
+    {
+      "id": "A06",
+      "probe": "actual ChatSession model and exact scheduling condition",
+      "result": "Greeting + 60 ordinary turns yielded 121 messages and zero summary trigger counts."
+    },
+    {
+      "id": "A07",
+      "probe": "exact vanilla ApiClient with token-only mocked stream",
+      "result": "Promise resolved on EOF; partial token received; no done event.",
+      "limit": "Next.js analogous parser and retry chain inspected statically."
+    },
+    {
+      "id": "A08",
+      "probe": "actual schema; memory inserted before referenced session",
+      "result": "FOREIGN KEY constraint failed.",
+      "limit": "No remote migration script executed."
+    },
+    {
+      "id": "A09",
+      "probe": "exact DatabaseConnection class with failed executeMultiple",
+      "result": "Two ensureReady calls resolved despite schema failure; only one migration attempt."
+    }
+  ],
+  "github": {
+    "branch": {
+      "sha": "84f39dfb7899abe802a4805e4fc9532f87afdd46",
+      "protected": false,
+      "protection": {
+        "enabled": false,
+        "required_status_checks": {
+          "enforcement_level": "off",
+          "contexts": [],
+          "checks": []
+        }
+      }
+    },
+    "rulesets": [],
+    "runs": [
+      {
+        "id": 40368515279,
+        "name": "CI/CD Pipeline",
+        "head_sha": "84f39dfb7899abe802a4805e4fc9532f87afdd46",
+        "conclusion": "success",
+        "html_url": "https://github.com/Kazuken123/My-C.AI-Universe/actions/runs/40368515279"
+      },
+      {
+        "id": 40368514889,
+        "name": "Push on main",
+        "head_sha": "84f39dfb7899abe802a4805e4fc9532f87afdd46",
+        "conclusion": "success",
+        "html_url": "https://github.com/Kazuken123/My-C.AI-Universe/actions/runs/40368514889"
+      }
+    ],
+    "ciJobs": [
+      {
+        "name": "CI status",
+        "conclusion": "success",
+        "steps": [
+          {
+            "name": "Set up job",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1",
+            "conclusion": "success"
+          },
+          {
+            "name": "Install backend dependencies",
+            "conclusion": "success"
+          },
+          {
+            "name": "Install frontend dependencies",
+            "conclusion": "success"
+          },
+          {
+            "name": "Check JavaScript syntax",
+            "conclusion": "success"
+          },
+          {
+            "name": "Check optional Python memory-service syntax",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run all discovered regressions and isolated HTTP/SQLite tests",
+            "conclusion": "success"
+          },
+          {
+            "name": "Preserve test-file results",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run frontend unit tests",
+            "conclusion": "success"
+          },
+          {
+            "name": "Lint frontend",
+            "conclusion": "success"
+          },
+          {
+            "name": "Check TypeScript",
+            "conclusion": "success"
+          },
+          {
+            "name": "Build production frontend",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Run actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "conclusion": "success"
+          },
+          {
+            "name": "Complete job",
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "name": "Request Render deployment",
+        "conclusion": "success",
+        "steps": [
+          {
+            "name": "Set up job",
+            "conclusion": "success"
+          },
+          {
+            "name": "Check deploy-hook configuration",
+            "conclusion": "success"
+          },
+          {
+            "name": "Check that the tested commit is still main",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Request deployment of the tested commit",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Complete job",
+            "conclusion": "success"
+          }
+        ]
+      }
+    ]
+  },
+  "limitations": [
+    "No full local application test/build rerun.",
+    "No production database, deployment, email or AI call.",
+    "No complete CVE/history-secret scan.",
+    "Private alerts and administration settings partly inaccessible.",
+    "Inventory membership is not proof of exhaustive line-by-line review."
+  ],
+  "externalSources": [
+    "https://nextjs.org/support-policy",
+    "https://developers.google.com/identity/gsi/web/guides/verify-google-id-token",
+    "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets"
+  ]
+}

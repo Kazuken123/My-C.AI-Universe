@@ -1,5 +1,5 @@
 import { geminiProvider, ollamaProvider } from './providers/index.js';
-import { config } from '../config/index.js';
+import { normalizeProviderName } from './providerSelection.js';
 
 /**
  * AIOrchestrator Class (OOP Context & Queue Manager for AI Strategy Providers)
@@ -26,10 +26,15 @@ export class AIOrchestrator {
    * Enqueue a roleplay generation request
    */
   async chat(character, userMsg, memory = null, options = {}) {
+    // Validate before enqueueing and snapshot selection so callers cannot mutate it in flight.
+    const safeOptions = { ...options, provider: normalizeProviderName(options?.provider, [...this.providers.keys()]) };
     return new Promise((resolve, reject) => {
-      this.requestQueue.push({ character, userMsg, memory, options, resolve, reject });
+      this.requestQueue.push({ character, userMsg, memory, options: safeOptions, resolve, reject });
       if (!this.isProcessing) {
-        this.#processQueue();
+        this.#processQueue().catch(error => {
+          // No detached worker rejection may leave queued callers pending.
+          for (const pending of this.requestQueue.splice(0)) pending.reject(error);
+        });
       }
     });
   }
@@ -38,8 +43,8 @@ export class AIOrchestrator {
    * Stream roleplay tokens directly in real time
    */
   async *chatStream(character, userMsg, memory = null, options = {}) {
-    const preferredName = (options?.provider || config.AI_PROVIDER || 'gemini').toLowerCase();
-    const primaryProvider = this.providers.get(preferredName) || geminiProvider;
+    const preferredName = normalizeProviderName(options?.provider, [...this.providers.keys()]);
+    const primaryProvider = this.providers.get(preferredName);
     if (typeof primaryProvider.generateReplyStream === 'function') {
       for await (const token of primaryProvider.generateReplyStream(character, userMsg, memory, options)) {
         yield token;
@@ -54,34 +59,33 @@ export class AIOrchestrator {
     if (this.isProcessing || this.requestQueue.length === 0) return;
     this.isProcessing = true;
 
-    while (this.requestQueue.length > 0) {
-      const { character, userMsg, memory, options, resolve } = this.requestQueue.shift();
-      const preferredName = (options?.provider || config.AI_PROVIDER || 'gemini').toLowerCase();
-      const primaryProvider = this.providers.get(preferredName) || geminiProvider;
-      const fallbackProvider = preferredName === 'ollama' ? geminiProvider : ollamaProvider;
-
-      try {
-        let response;
+    try {
+      while (this.requestQueue.length > 0) {
+        const { character, userMsg, memory, options, resolve, reject } = this.requestQueue.shift();
         try {
-          response = await primaryProvider.generateReply(character, userMsg, memory, options);
-        } catch (primaryErr) {
-          console.warn(`[AI ORCHESTRATOR] ${primaryProvider.providerName} failed, trying fallback:`, primaryErr.message);
+          const preferredName = normalizeProviderName(options?.provider, [...this.providers.keys()]);
+          const primaryProvider = this.providers.get(preferredName);
+          const fallbackProvider = this.providers.get(preferredName === 'ollama' ? 'gemini' : 'ollama');
+          let response;
           try {
-            response = await fallbackProvider.generateReply(character, userMsg, memory, options);
-          } catch {
-            response = this.#buildInCharacterFallback(character, userMsg, options);
+            response = await primaryProvider.generateReply(character, userMsg, memory, options);
+          } catch (primaryErr) {
+            console.warn('[AI ORCHESTRATOR] Primary provider failed, trying fallback:', primaryErr?.message);
+            try {
+              response = await fallbackProvider.generateReply(character, userMsg, memory, options);
+            } catch {
+              response = this.#buildInCharacterFallback(character, userMsg, options);
+            }
           }
+          resolve(response);
+        } catch (error) {
+          reject(error);
         }
-
-        resolve(response);
         await new Promise(r => setTimeout(r, 50));
-      } catch (error) {
-        console.error('[AI ORCHESTRATOR ERROR]', error.message);
-        resolve(this.#buildInCharacterFallback(character, userMsg, options));
       }
+    } finally {
+      this.isProcessing = false;
     }
-
-    this.isProcessing = false;
   }
 
   #buildInCharacterFallback(character, userMsg, options = {}) {

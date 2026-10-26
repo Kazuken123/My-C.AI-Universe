@@ -1,5 +1,15 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-10-27 — Audit batch 1: memory privacy and AI queue recovery
+
+- Fixed A01: memory visibility is explicit; parent deletion cannot promote private facts to public lore. SQL validates cached Python results and rejects late private writes after parent deletion.
+- Added a transactional privacy migration that preserves verified public seed lore and retains ambiguous legacy records under quarantine for provenance review.
+- Fixed A02: provider input is validated before queueing, every worker item settles, and processing state resets after errors.
+- Validation: 38/38 backend test files passed, including 21 new regression cases; JavaScript syntax checks passed. Later audit batches remain outstanding.
+- Implementation details: [batch 1 results](docs/audits/2026-10-27/BATCH1.md). Rollout preparation: [memory privacy migration](docs/migrations/2026-10-27-memory-privacy.md).
+
+The version/status summary below predates this audit; it is not a claim that the remaining audit findings have been fixed.
+
 > **Current Version:** `v2.9.1`  
 > **Status:** Production-Ready & Hardened with Interactive System Architecture  
 > **Automated Test Coverage:** 49/49 E2E, unit & security regression tests passing (`npm test` 35 + `nextjs-frontend test` 14)  

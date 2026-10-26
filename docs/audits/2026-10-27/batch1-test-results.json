@@ -1,0 +1,313 @@
+{
+  "node": "v24.12.0",
+  "group": "all",
+  "total": 38,
+  "passed": 38,
+  "failed": 0,
+  "results": [
+    {
+      "file": "tests\\anti-inflation-v2.6.5.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 369,
+      "error": null
+    },
+    {
+      "file": "tests\\api.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 3593,
+      "error": null
+    },
+    {
+      "file": "tests\\batch1-ai-queue.test.mjs",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 1118,
+      "error": null
+    },
+    {
+      "file": "tests\\batch1-memory-migration.test.mjs",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 1253,
+      "error": null
+    },
+    {
+      "file": "tests\\batch1-memory-privacy.test.mjs",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 1064,
+      "error": null
+    },
+    {
+      "file": "tests\\character-demeanor-v2.6.4.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 206,
+      "error": null
+    },
+    {
+      "file": "tests\\ci-runner.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 1301,
+      "error": null
+    },
+    {
+      "file": "tests\\continuity-v2.5.5.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 474,
+      "error": null
+    },
+    {
+      "file": "tests\\delta-01-controller-and-cropper.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 853,
+      "error": null
+    },
+    {
+      "file": "tests\\delta-02-auth-css-dedup.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 361,
+      "error": null
+    },
+    {
+      "file": "tests\\delta-03-python-memory-hardening.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 288,
+      "error": null
+    },
+    {
+      "file": "tests\\delta-04-scripts-command-safety.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 243,
+      "error": null
+    },
+    {
+      "file": "tests\\delta-05-nextjs-ux-perf.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 195,
+      "error": null
+    },
+    {
+      "file": "tests\\hotfix-python-memory-session.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 249,
+      "error": null
+    },
+    {
+      "file": "tests\\m2-empirical-backend.test.mjs",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 1918,
+      "error": null
+    },
+    {
+      "file": "tests\\opt-01-admin-performance.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 884,
+      "error": null
+    },
+    {
+      "file": "tests\\opt-02-memory-client-async.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 387,
+      "error": null
+    },
+    {
+      "file": "tests\\opt-03-python-memory-perf.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 299,
+      "error": null
+    },
+    {
+      "file": "tests\\opt-04-cropper-perf.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 194,
+      "error": null
+    },
+    {
+      "file": "tests\\opt-05-batch-avatar-sync.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 339,
+      "error": null
+    },
+    {
+      "file": "tests\\relationship-v2.6.0.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 314,
+      "error": null
+    },
+    {
+      "file": "tests\\sec-01-entity-id.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 351,
+      "error": null
+    },
+    {
+      "file": "tests\\sec-02-admin-access.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 603,
+      "error": null
+    },
+    {
+      "file": "tests\\sec-03-ssrf-and-upstream.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 197,
+      "error": null
+    },
+    {
+      "file": "tests\\sec-04-python-memory-service.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 129,
+      "error": null
+    },
+    {
+      "file": "tests\\sec-05-open-redirect-and-avatar.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 138,
+      "error": null
+    },
+    {
+      "file": "tests\\sec-06-download-avatars-security.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 171,
+      "error": null
+    },
+    {
+      "file": "tests\\security-audit.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 1933,
+      "error": null
+    },
+    {
+      "file": "tests\\sidebar-history-v2.5.6.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 218,
+      "error": null
+    },
+    {
+      "file": "tests\\structure-admin-controller.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 416,
+      "error": null
+    },
+    {
+      "file": "tests\\structure-ai-provider.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 295,
+      "error": null
+    },
+    {
+      "file": "tests\\structure-create-route.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 189,
+      "error": null
+    },
+    {
+      "file": "tests\\structure-cropper.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 185,
+      "error": null
+    },
+    {
+      "file": "tests\\structure-css-dedup.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 147,
+      "error": null
+    },
+    {
+      "file": "tests\\structure-edge-cases.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 699,
+      "error": null
+    },
+    {
+      "file": "tests\\structure-memory-contract.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 229,
+      "error": null
+    },
+    {
+      "file": "tests\\structure-models-and-scripts.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 356,
+      "error": null
+    },
+    {
+      "file": "tests\\ui-navigation.test.js",
+      "passed": true,
+      "status": 0,
+      "signal": null,
+      "durationMs": 423,
+      "error": null
+    }
+  ]
+}

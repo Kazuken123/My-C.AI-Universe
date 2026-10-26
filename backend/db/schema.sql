@@ -130,6 +130,7 @@ CREATE TABLE IF NOT EXISTS character_memories (
     id TEXT PRIMARY KEY,
     character_id TEXT NOT NULL,
     session_id TEXT,
+    visibility TEXT NOT NULL DEFAULT 'quarantined' CHECK (visibility IN ('global', 'session', 'quarantined')),
     content TEXT NOT NULL,
     source TEXT NOT NULL DEFAULT 'conversation',
     created_at TEXT NOT NULL,

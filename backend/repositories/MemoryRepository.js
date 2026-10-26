@@ -1,5 +1,6 @@
 import { BaseRepository } from './BaseRepository.js';
 import { CharacterMemory } from '../models/CharacterMemory.js';
+import { ValidationError } from '../ai/errors.js';
 
 /**
  * MemoryRepository Class
@@ -22,8 +23,7 @@ export class MemoryRepository extends BaseRepository {
   }
 
   /**
-   * Retrieve memories scoped strictly to global character lore (session_id IS NULL)
-   * and the active chat session (session_id = ?), excluding rolling story_summary rows.
+   * Public lore must be explicitly global. Private memories require a live matching session.
    */
   async findForContext(characterId, sessionId = null, targetDb = null) {
     if (!characterId) return [];
@@ -32,7 +32,12 @@ export class MemoryRepository extends BaseRepository {
       ? await conn.prepare(`
           SELECT * FROM character_memories
           WHERE character_id = ?
-            AND (session_id IS NULL OR session_id = ?)
+            AND ((visibility = 'global' AND session_id IS NULL) OR
+              (visibility = 'session' AND session_id = ? AND EXISTS (
+                SELECT 1 FROM chat_sessions s
+                JOIN users u ON u.id = s.user_id JOIN characters c ON c.id = s.character_id
+                WHERE s.id = character_memories.session_id AND s.character_id = character_memories.character_id
+              )))
             AND source != 'story_summary'
           ORDER BY created_at ASC
         `).all(characterId, sessionId)
@@ -40,6 +45,7 @@ export class MemoryRepository extends BaseRepository {
           SELECT * FROM character_memories
           WHERE character_id = ?
             AND session_id IS NULL
+            AND visibility = 'global'
             AND source != 'story_summary'
           ORDER BY created_at ASC
         `).all(characterId);
@@ -56,6 +62,11 @@ export class MemoryRepository extends BaseRepository {
     const row = await conn.prepare(`
       SELECT * FROM character_memories
       WHERE session_id = ? AND source = 'story_summary'
+        AND visibility = 'session' AND EXISTS (
+          SELECT 1 FROM chat_sessions s
+          JOIN users u ON u.id = s.user_id JOIN characters c ON c.id = s.character_id
+          WHERE s.id = character_memories.session_id AND s.character_id = character_memories.character_id
+        )
       ORDER BY created_at DESC
       LIMIT 1
     `).get(sessionId);
@@ -93,20 +104,26 @@ export class MemoryRepository extends BaseRepository {
     const memory = memoryObj instanceof CharacterMemory ? memoryObj : new CharacterMemory(memoryObj);
     memory.validate();
 
-    await conn.prepare(`
-      INSERT INTO character_memories (id, character_id, session_id, content, source, created_at)
-      VALUES (?, ?, ?, ?, ?, ?)
+    const result = await conn.prepare(`
+      INSERT INTO character_memories (id, character_id, session_id, visibility, content, source, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         content = excluded.content,
         source = excluded.source
+      WHERE character_memories.character_id = excluded.character_id
+        AND character_memories.session_id IS excluded.session_id
+        AND character_memories.visibility = excluded.visibility
     `).run(
       memory.id,
       memory.characterId,
       memory.sessionId,
+      memory.visibility,
       memory.content,
       memory.source,
       memory.createdAt
     );
+
+    if (!result.changes) throw new ValidationError('Memory scope does not match the existing record', 'visibility');
 
     return memory;
   }

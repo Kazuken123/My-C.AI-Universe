@@ -199,9 +199,9 @@ Son Goku: "Ehehe~... my bad, my bad! My stomach started makin'' weird noises in 
 );
 
 -- Seed Initial Character Memories
-INSERT OR IGNORE INTO character_memories (id, character_id, session_id, content, source, created_at)
+INSERT OR IGNORE INTO character_memories (id, character_id, session_id, content, source, created_at, visibility)
 VALUES
-  ('mem_gojo_1', '1766160797313', NULL, 'Satoru Gojo loves sweet foods, especially Kikufuku mochi with edamame and whipped cream from Sendai.', 'wiki', '2026-01-01T00:00:00.000Z'),
-  ('mem_kana_1', '1766394139616', NULL, 'Kana Arima is 17 years old, the center of the idol group B-Komachi, and a former child prodigy actress.', 'wiki', '2026-01-01T00:00:00.000Z'),
-  ('mem_frieren_1', '1767000000001', NULL, 'Frieren traveled for ten years with the Hero Himmel, the Priest Heiter, and the Warrior Eisen to defeat the Demon King.', 'wiki', '2026-01-01T00:00:00.000Z'),
-  ('mem_goku_1', '1767000000003', NULL, 'Goku is married to Chi-Chi, loves eating enormous amounts of meat, and uses Instant Transmission to travel instantly.', 'wiki', '2026-01-01T00:00:00.000Z');
+  ('mem_gojo_1', '1766160797313', NULL, 'Satoru Gojo loves sweet foods, especially Kikufuku mochi with edamame and whipped cream from Sendai.', 'wiki', '2026-01-01T00:00:00.000Z', 'global'),
+  ('mem_kana_1', '1766394139616', NULL, 'Kana Arima is 17 years old, the center of the idol group B-Komachi, and a former child prodigy actress.', 'wiki', '2026-01-01T00:00:00.000Z', 'global'),
+  ('mem_frieren_1', '1767000000001', NULL, 'Frieren traveled for ten years with the Hero Himmel, the Priest Heiter, and the Warrior Eisen to defeat the Demon King.', 'wiki', '2026-01-01T00:00:00.000Z', 'global'),
+  ('mem_goku_1', '1767000000003', NULL, 'Goku is married to Chi-Chi, loves eating enormous amounts of meat, and uses Instant Transmission to travel instantly.', 'wiki', '2026-01-01T00:00:00.000Z', 'global');

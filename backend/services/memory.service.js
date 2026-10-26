@@ -108,6 +108,7 @@ export class SemanticMemoryService {
     const newMemory = new CharacterMemory({
       characterId,
       sessionId,
+      visibility: sessionId ? 'session' : 'global',
       content: cleanContent,
       source
     });
@@ -117,7 +118,8 @@ export class SemanticMemoryService {
       this.pyClient.addMemory(cleanContent, characterId, {
         id: newMemory.id,
         source,
-        sessionId
+        sessionId,
+        visibility: newMemory.visibility
       }).catch(() => {});
     }
 
@@ -140,11 +142,24 @@ export class SemanticMemoryService {
    */
   async retrieveRelevantMemories(query, characterId, topK = 4, sessionId = null) {
     const pyResults = await this.pyClient.retrieveMemories(query, characterId, topK, 0.25, sessionId);
-    if (pyResults && pyResults.length > 0) {
-      return pyResults;
+    // Python is a ranking cache, never an authority for existence, scope, or text.
+    // Read SQL after the upstream call so a deletion during retrieval is respected.
+    const charMemories = await this.repository.findForContext(characterId, sessionId);
+    if (Array.isArray(pyResults) && pyResults.length > 0) {
+      const allowed = new Map(charMemories.map(memory => [memory.id, memory]));
+      const ranked = [];
+      for (const result of pyResults) {
+        const memory = allowed.get(result?.id);
+        if (!memory) continue;
+        allowed.delete(memory.id);
+        const json = memory.toJSON();
+        if (Number.isFinite(result.similarity)) json.similarity = result.similarity;
+        ranked.push(json);
+        if (ranked.length >= topK) break;
+      }
+      if (ranked.length > 0) return ranked;
     }
 
-    const charMemories = await this.repository.findForContext(characterId, sessionId);
     if (charMemories.length === 0) return [];
 
     const scored = charMemories.map((mem, idx) => {
@@ -164,6 +179,8 @@ export class SemanticMemoryService {
    */
   async detectAndStoreFromTurn(userMessage, aiResponse, characterId, sessionId = null) {
     try {
+      // Extracted conversation facts must never be created as global lore.
+      if (!sessionId) return;
       if (!userMessage && !aiResponse) return;
 
       if (userMessage) {
