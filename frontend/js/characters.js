@@ -242,7 +242,7 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
               </div>
               <div class="card-actions">
                 <button class="btn-secondary btn-sm" data-edit-char="${escapeHtml(char.id)}" type="button" title="Edit Dossier">
-                  <i class="ph-light ph-Sliders"></i>
+                  <i class="ph-light ph-sliders"></i>
                 </button>
                 ${showManageActions ? `
                   <button class="btn-danger btn-sm" data-delete-char="${escapeHtml(char.id)}" type="button" title="Delete Character">
@@ -499,7 +499,7 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
         showToast('AI Generator error: ' + error.message);
       } finally {
         btnGenerateAI.disabled = false;
-        btnGenerateAI.innerHTML = '<i class="ph-light ph-wand"></i> <span>Synthesize</span>';
+        btnGenerateAI.innerHTML = '<i class="ph-light ph-magic-wand"></i> <span>Synthesize</span>';
       }
     });
   }

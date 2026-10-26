@@ -39,7 +39,7 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <script src="https://unpkg.com/@phosphor-icons/web@2.1.1" async></script>
+        <link rel="stylesheet" href="/assets/vendor/phosphor/2.1.1/style.css" />
         <script type="module" src="/js/ambient-canvas.js" async></script>
       </head>
       <body>

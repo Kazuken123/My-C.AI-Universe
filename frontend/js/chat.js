@@ -337,7 +337,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
   const STAGE_ICONS = {
     'Hatred / Nemesis': '<i class="ph-bold ph-skull"></i>',
-    'Hostile / Rival': '<i class="ph-bold ph-swords"></i>',
+    'Hostile / Rival': '<i class="ph-bold ph-sword"></i>',
     'Scared / Intimidated': '<i class="ph-bold ph-warning-circle"></i>',
     'Submissive / Dependent': '<i class="ph-bold ph-lock-key"></i>',
     'Cold / Guarded': '<i class="ph-bold ph-shield"></i>',

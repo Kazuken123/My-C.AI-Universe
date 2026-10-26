@@ -328,7 +328,7 @@ class StudioPageApp {
           showToast('AI synthesis failed: ' + err.message);
         } finally {
           this.btnGenerateAI.disabled = false;
-          this.btnGenerateAI.innerHTML = `<i class="ph-light ph-wand"></i> <span>Synthesize</span>`;
+          this.btnGenerateAI.innerHTML = `<i class="ph-light ph-magic-wand"></i> <span>Synthesize</span>`;
         }
       });
     }
