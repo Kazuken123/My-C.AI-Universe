@@ -1,7 +1,7 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
-> **Current Version:** `v2.9.0`  
-> **Status:** Production-Ready & Hardened (Zero-Vulnerability Release)  
+> **Current Version:** `v2.9.1`  
+> **Status:** Production-Ready & Hardened with Interactive System Architecture  
 > **Automated Test Coverage:** 49/49 E2E, unit & security regression tests passing (`npm test` 35 + `nextjs-frontend test` 14)  
 > **Primary Database:** Turso Cloud (LibSQL `@libsql/client`, AWS Tokyo `ap-northeast-1`)  
 > **Primary AI Engine:** Google Gemini (`gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`, `gemini-2.5-flash`) with native `systemInstruction` & fallback chain  
@@ -17,7 +17,23 @@ This document serves as the **single source of truth** for project history, rece
 
 ---
 
-### 🏷️ `v2.9.0` (Current) — Comprehensive Security Hardening & Zero-Vulnerability Release (15/15 Audit Remediations)
+### 🏷️ `v2.9.1` (Current) — Archify Integration & Standalone Interactive System Architecture
+- **Archify Skill Installation & Platform Adaptation**:
+  - Cloned and installed `tt-a1i/archify` skill into `.agents/skills/archify` for autonomous generation of validated architecture and workflow diagrams.
+  - **Root Cause & Fix (Windows / OneDrive Hard-Link Restriction)**: Diagnosed `EPERM` on `fs.linkSync()` in `renderers/shared/atomic-output.mjs`, `renderers/shared/cli.mjs`, and `renderers/explainer/render-explainer.mjs` caused by Windows NTFS / OneDrive storage virtual link restrictions. Patched safe direct regular file write fallback on `process.platform === 'win32'`, enabling 100% reliable execution of all Archify renderers without requiring elevated administrative privileges.
+- **Interactive System Architecture Visualization**:
+  - Authored and validated complete system architecture candidate `.archify/architecture-universe-20261026-100000/candidate.json`.
+  - Rendered standalone, interactive HTML artifact: [`how-my-website-works.html`](how-my-website-works.html) (mirrored in [`docs/how-my-website-works.html`](docs/how-my-website-works.html)).
+  - Architecture geometry highlights:
+    - 10 core components spanning the Browser Client, Express HTTP Gateway, OOP Controllers & Domain Models, SQL Repositories, AI Orchestrator, Python Semantic Memory Microservice, and External Cloud / Local Providers (Gemini & Ollama).
+    - Grouped under distinct runtime and security boundaries (`Node.js Application Runtime` and `External AI Providers`).
+    - 0 crossings, 0 detours, optimal compact canvas with interactive inspection cards, live flow animations, and light/dark theme toggle.
+- **Repomix Codebase Synchronization**:
+  - Re-packed repository package `repomix-output.xml` and `AUDIT_PROMPT.md` via `npm run audit:pack`.
+
+---
+
+### 🏷️ `v2.9.0` — Comprehensive Security Hardening & Zero-Vulnerability Release (15/15 Audit Remediations)
 - **Post-Review Hardening & Defect Elimination**:
   - **Fixed Avatar Cloud Persistence**: Resolved runtime `ReferenceError` by passing `dataBase64: base64Data` in `AuthService.saveBase64Avatar()`, guaranteeing durable asset storage in Turso Cloud `media_assets` table.
   - **Unified Avatar URL Validation**: Centralized avatar validation under `AuthService.isSafeAvatar()`, imported and enforced consistently across `CharacterController` (`createCharacter`, `updateCharacter`) and `auth.service.js`.

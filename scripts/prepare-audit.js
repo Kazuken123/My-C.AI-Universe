@@ -41,7 +41,7 @@ repomix-output_*.xml
 }
 
 try {
-  execSync('npx repomix', { stdio: 'inherit', cwd: projectRoot });
+  execSync('npx --yes repomix', { stdio: 'inherit', cwd: projectRoot });
 } catch (error) {
   console.error('Loi khi chay repomix:', error.message);
   process.exit(1);

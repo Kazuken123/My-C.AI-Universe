@@ -7,6 +7,8 @@ A full-stack **Character.AI (`c.ai`)** roleplay platform built with an **Object-
 > *My C.AI Universe* is an independent, educational, non-commercial open-source project created for technical portfolio and learning purposes. It is **not** affiliated with, endorsed by, sponsored by, or associated in any way with Character Technologies, Inc. or Character.AI. "Character.AI" and "c.ai" are trademarks of Character Technologies, Inc. All fictional characters, likenesses, and franchises belong to their respective copyright owners.
 
 > 📈 **Living Progress & Architecture Log:** Check [PROGRESS.md](PROGRESS.md) for version history, recent bug fixes, Turso database patterns, and active roadmap.
+> 
+> 🗺️ **Interactive System Architecture:** View [how-my-website-works.html](how-my-website-works.html) or [docs/how-my-website-works.html](docs/how-my-website-works.html) for an interactive visual explainer of how the entire system works with animated live flows, component inspection, and dark/light themes.
 
 > **CI and backend layers:** See [the CI guide](docs/CI.md) for isolated tests, frontend build checks, and deployment gates.
 

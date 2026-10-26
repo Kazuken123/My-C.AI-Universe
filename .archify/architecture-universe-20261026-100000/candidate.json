@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "My C.AI Universe — Full-Stack OOP & AI Architecture",
+    "output": "docs/how-my-website-works.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "User / Roleplayer",
+      "sublabel": "Browser / Mobile Client",
+      "pos": [40, 60],
+      "size": [130, 60],
+      "icon": "person"
+    },
+    {
+      "id": "frontend",
+      "type": "frontend",
+      "label": "Frontend SPA",
+      "sublabel": "Vanilla JS / Next.js UI",
+      "tag": "Optimistic UI (0ms)",
+      "pos": [230, 60],
+      "size": [140, 64],
+      "icon": "frontend"
+    },
+    {
+      "id": "wiki",
+      "type": "external",
+      "label": "Fandom / Wikipedia",
+      "sublabel": "Character Lore & Avatars",
+      "pos": [230, 200],
+      "size": [140, 60],
+      "icon": "external"
+    },
+    {
+      "id": "server",
+      "type": "security",
+      "label": "Express HTTP Gateway",
+      "sublabel": "Helmet / CORS / RateLimit",
+      "tag": "Node.js :3000",
+      "pos": [450, 60],
+      "size": [150, 64],
+      "icon": "security"
+    },
+    {
+      "id": "controllers",
+      "type": "backend",
+      "label": "OOP Controllers",
+      "sublabel": "BaseController Subclasses",
+      "tag": "Domain Logic",
+      "pos": [450, 200],
+      "size": [150, 64],
+      "icon": "backend"
+    },
+    {
+      "id": "db_repo",
+      "type": "database",
+      "label": "SQL Repositories",
+      "sublabel": "Turso Cloud / SQLite",
+      "tag": "6 Relational Tables",
+      "pos": [450, 340],
+      "size": [150, 64],
+      "icon": "database"
+    },
+    {
+      "id": "orchestrator",
+      "type": "backend",
+      "label": "AI Orchestrator",
+      "sublabel": "Provider Strategy Queue",
+      "tag": "Concurrency Control",
+      "pos": [680, 60],
+      "size": [150, 64],
+      "icon": "backend"
+    },
+    {
+      "id": "memory_svc",
+      "type": "backend",
+      "label": "Semantic Memory Service",
+      "sublabel": "FastAPI Vector Server :8000",
+      "tag": "all-MiniLM-L6-v2",
+      "pos": [680, 340],
+      "size": [150, 64],
+      "icon": "database"
+    },
+    {
+      "id": "gemini",
+      "type": "cloud",
+      "label": "Google Gemini Cloud",
+      "sublabel": "Gemini 2.5 / Pro LLM",
+      "tag": "BLOCK_NONE Safety",
+      "pos": [920, 60],
+      "size": [140, 64],
+      "icon": "cloud"
+    },
+    {
+      "id": "ollama",
+      "type": "backend",
+      "label": "Ollama Local LLM",
+      "sublabel": "Local Fallback Model",
+      "tag": "Offline Mode",
+      "pos": [920, 200],
+      "size": [140, 64],
+      "icon": "backend"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Node.js Application Runtime",
+      "wraps": ["server", "controllers", "db_repo"]
+    },
+    {
+      "kind": "security-group",
+      "label": "External AI Providers",
+      "wraps": ["gemini", "ollama"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "user-to-fe",
+      "from": "user",
+      "to": "frontend",
+      "label": "Roleplay / Swipes",
+      "variant": "emphasis"
+    },
+    {
+      "id": "fe-to-server",
+      "from": "frontend",
+      "to": "server",
+      "label": "REST API",
+      "variant": "emphasis"
+    },
+    {
+      "id": "server-to-controllers",
+      "from": "server",
+      "to": "controllers",
+      "label": "Route Dispatch",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "controllers-to-wiki",
+      "from": "controllers",
+      "to": "wiki",
+      "label": "Cheerio Scrape",
+      "variant": "dashed",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "controllers-to-repo",
+      "from": "controllers",
+      "to": "db_repo",
+      "label": "ACID CRUD",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "server-to-orchestrator",
+      "from": "server",
+      "to": "orchestrator",
+      "label": "Chat Request",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "orchestrator-to-gemini",
+      "from": "orchestrator",
+      "to": "gemini",
+      "label": "Roleplay Reply",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "orchestrator-to-ollama",
+      "from": "orchestrator",
+      "to": "ollama",
+      "label": "Local Fallback",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "orchestrator-to-memory",
+      "from": "orchestrator",
+      "to": "memory_svc",
+      "label": "Top-K Context",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "repo-to-memory",
+      "from": "db_repo",
+      "to": "memory_svc",
+      "label": "Persist Facts",
+      "fromSide": "right",
+      "toSide": "left"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Frontend & Chat Experience",
+      "items": [
+        "Single-Page App with Character.AI layout, dark/light themes, and audio playback",
+        "0ms Optimistic UI for turn swiping (<- / ->) with 250ms debounced database sync",
+        "Character Studio for automated lore scraping, manual editing, and avatar cropping"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Backend OOP Architecture",
+      "items": [
+        "Layered OOP hierarchy: BaseEntity -> Domain Models, BaseRepository -> SQL Repositories",
+        "AI Provider Strategy pattern with AIOrchestrator queue handling Gemini and Ollama",
+        "Dedicated Python microservice computing sentence embeddings for vector memory retrieval"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Database & Security Core",
+      "items": [
+        "6 normalized relational tables on Turso Cloud / SQLite (characters, sessions, messages, variants, memories, personas)",
+        "Strict BLOCK_NONE safety filter configuration to eliminate false-positive roleplay blocks",
+        "Full isolation ensuring internal prompt directives never leak into dialogue"
+      ]
+    }
+  ]
+}
