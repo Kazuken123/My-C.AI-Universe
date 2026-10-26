@@ -361,7 +361,7 @@ export function Sidebar({
         </div>
       </div>
     </aside>
-    {pathname === '/' && <div className="island-dock"><DynamicIsland sessions={sessions} personaName={activePersona.name} currentTheme={currentTheme} onCycleTheme={onCycleTheme} onToggleSidebar={onToggleCollapse} /></div>}
+    {pathname === '/' && <div className="island-dock"><DynamicIsland /></div>}
     </>
   );
 }

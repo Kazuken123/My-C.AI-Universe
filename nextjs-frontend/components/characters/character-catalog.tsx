@@ -67,7 +67,6 @@ export function CharacterCatalog() {
             <input ref={searchInputRef} type="search" id="discoverSearch" value={search} onChange={event => setSearch(event.target.value)} aria-label="Search characters" placeholder="Search characters, worlds, stories..." autoComplete="off" />
             <kbd className="search-kbd">/</kbd>
           </div>
-          <button className="orbit-motion-toggle" data-motion-toggle type="button" aria-label="Pause animations" aria-pressed="true">Ⅱ</button>
         </div>
       </header>
       {!hasFilters && <OrbitHero />}

@@ -43,9 +43,9 @@ export class AmbientMotionCanvas {
 
   #init() {
     // Keep ambient motion active in browser even when laptop/OS animations are turned off.
-    // Controlled independently via in-app preference (localStorage: 'ambient_motion_disabled').
-    const inAppDisabled = typeof localStorage !== 'undefined' && localStorage.getItem('ambient_motion_disabled') === 'true';
-    this.reducedMotion = inAppDisabled;
+    // The product keeps ambient motion on; older pause preferences are obsolete.
+    this.reducedMotion = false;
+    try { localStorage.removeItem('ambient_motion_disabled'); } catch {}
 
     this.#initDom();
     this.#updateTheme();
@@ -73,28 +73,11 @@ export class AmbientMotionCanvas {
       attributeFilter: ['data-theme']
     });
 
-    if (!this.reducedMotion) {
-      this.resume();
-      console.log(`%c[AmbientCanvas] 🌌 60fps kinetic motion running (${this.currentTheme})`, 'color: #ffa582; font-weight: bold;');
-    } else {
-      console.log('[AmbientCanvas] ⏸️ Motion paused by in-app preference. Call window.ambientCanvas.toggleMotion() to re-enable.');
-    }
+    this.resume();
   }
 
-  toggleMotion() {
-    this.reducedMotion = !this.reducedMotion;
-    try {
-      localStorage.setItem('ambient_motion_disabled', String(this.reducedMotion));
-    } catch {}
-    if (this.reducedMotion) {
-      this.pause();
-      console.log('[AmbientCanvas] ⏸️ Motion paused.');
-    } else {
-      this.resume();
-      console.log('[AmbientCanvas] ▶️ Motion resumed at 60fps.');
-    }
-    return !this.reducedMotion;
-  }
+  // Compatibility for old callers: this preference no longer disables motion.
+  toggleMotion() { this.forceStart(); return true; }
 
   forceStart() {
     this.reducedMotion = false;

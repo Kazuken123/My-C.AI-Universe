@@ -21,6 +21,16 @@ export function ChatInput({
   const [sending, setSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const opener = url.searchParams.get('opener')?.trim().slice(0, 1000);
+    if (!opener) return;
+    setText(current => current || opener);
+    // Remove the consumed draft from the URL without changing Next router state.
+    url.searchParams.delete('opener');
+    window.history.replaceState(window.history.state, '', url);
+  }, []);
+
   // Auto-resize textarea height
   useEffect(() => {
     if (textareaRef.current) {

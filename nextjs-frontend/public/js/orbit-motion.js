@@ -1,8 +1,108 @@
+/** Scene Spark uses curated writing prompts and the already loaded catalogue. */
+const SCENE_SPARKS = {
+  cozy: [
+    '*Rain taps against the window of the last cafe still open. There is only one free seat, across from you.* "Mind if I stay until the storm passes?"',
+    '*The power goes out just as dinner is ready. You find two candles and a very suspicious board game.* "We could make an evening of this."',
+    '*An exhausted stray cat has decided that both of you belong to it. Neither of you is willing to leave first.* "So... joint custody?"',
+  ],
+  mystery: [
+    '*A sealed letter arrives with tomorrow\'s date. Inside is a photograph of the two of you in a place you have never visited.* "Tell me you know what this means."',
+    '*At midnight, every clock in the city stops. Only the old payphone beside you keeps ringing.* "Should we answer it?"',
+    '*You find your own handwriting in a borrowed book. The final sentence says not to trust the person at the door. Someone knocks.* "Were you expecting anyone?"',
+  ],
+  adventure: [
+    '*The last train leaves in three minutes. In your pocket is a one-way ticket and a map that redraws itself.* "Are you coming, or am I doing something reckless alone?"',
+    '*A door appears where there was only a wall yesterday. Warm light spills out onto the pavement, and someone inside calls your name.* "One look. Then we leave. Deal?"',
+    '*Your ordinary shortcut ends at a floating market above the clouds. A merchant insists that you have already paid for something.* "I think our afternoon just got complicated."',
+  ],
+  tension: [
+    '*The elevator stops between floors just after an argument neither of you was ready to finish.* "Well. I suppose we have time to talk now."',
+    '*You both reach for the same envelope. Neither of you is supposed to be here, and footsteps are getting closer.* "We can explain this badly, or leave together."',
+    '*The truth finally comes out, five minutes before you are meant to say goodbye.* "Were you ever going to tell me?"',
+  ],
+};
+function nextSceneSpark(mood, previous = -1, random = Math.random) {
+  const prompts = SCENE_SPARKS[mood] || SCENE_SPARKS.cozy;
+  const index = previous >= 0 ? (previous + 1 + Math.floor(random() * (prompts.length - 1))) % prompts.length : Math.floor(random() * prompts.length);
+  return { index, text: prompts[index] };
+}
+function sceneSparkHref(base, characterId, prompt) {
+  if (!characterId || !prompt.trim() || !['/chat/', '/chat.html'].includes(base)) return '';
+  const params = new URLSearchParams({ opener: prompt.trim().slice(0, 1000) });
+  if (base === '/chat.html') { params.set('id', characterId); return base + '?' + params; }
+  return base + encodeURIComponent(characterId) + '?' + params;
+}
+function bindSceneSpark(island, signal) {
+  const prompt = island.querySelector('[data-spark-prompt]');
+  const select = island.querySelector('[data-spark-character]');
+  const start = island.querySelector('[data-spark-start]');
+  const status = island.querySelector('[data-spark-status]');
+  const grid = document.getElementById('discover-grid');
+  if (!prompt || !select || !start || !status) return () => {};
+  const moods = [...island.querySelectorAll('[data-spark-mood]')];
+  let mood = 'cozy';
+  let previous = 0;
+  let snapshot = '';
+  let copyVersion = 0;
+  function updateAction() {
+    const href = sceneSparkHref(island.dataset.chatBase, select.value, prompt.value);
+    start.href = href || '#character-roster';
+    start.querySelector('span').textContent = href ? 'Use this scene' : 'Browse characters';
+    start.setAttribute('aria-disabled', String(Boolean(select.value && !prompt.value.trim())));
+  }
+  function generate(nextMood = mood) {
+    const result = nextSceneSpark(nextMood, nextMood === mood ? previous : -1);
+    mood = nextMood; previous = result.index;
+    prompt.value = result.text;
+    moods.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.sparkMood === mood)));
+    status.textContent = 'New scene ready. Edit any part of it.';
+    updateAction();
+  }
+  function syncCharacters() {
+    const cards = grid ? [...grid.querySelectorAll('[data-char-card]')] : [];
+    const characters = cards.map(card => ({ id: card.dataset.charCard, name: card.querySelector('.cai-card-name')?.textContent.trim() || 'Character' })).filter(character => character.id);
+    const loading = grid?.getAttribute('aria-busy') === 'true';
+    const signature = JSON.stringify([loading, characters]);
+    if (signature === snapshot) return;
+    snapshot = signature;
+    const selected = select.value;
+    const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = loading ? 'Loading characters...' : characters.length ? 'Choose a character' : 'No characters in the current results';
+    select.replaceChildren(placeholder);
+    characters.forEach(character => { const option = document.createElement('option'); option.value = character.id; option.textContent = character.name; select.append(option); });
+    select.disabled = loading || !characters.length;
+    if (!loading && characters.some(character => character.id === selected)) select.value = selected;
+    status.textContent = loading ? 'Waiting for the character catalogue...' : characters.length ? 'Choose who joins your scene.' : 'Try clearing the catalogue filters, or copy the prompt for later.';
+    updateAction();
+  }
+  moods.forEach(button => button.addEventListener('click', () => generate(button.dataset.sparkMood), { signal }));
+  island.querySelector('[data-spark-reroll]')?.addEventListener('click', () => generate(), { signal });
+  prompt.addEventListener('input', () => { copyVersion++; updateAction(); }, { signal });
+  select.addEventListener('change', updateAction, { signal });
+  start.addEventListener('click', event => {
+    if (select.value && !prompt.value.trim()) { event.preventDefault(); status.textContent = 'Write an opening scene first.'; prompt.focus(); }
+  }, { signal });
+  island.querySelector('[data-spark-copy]')?.addEventListener('click', async () => {
+    const value = prompt.value.trim();
+    if (!value) { status.textContent = 'Write an opening scene first.'; prompt.focus(); return; }
+    const version = ++copyVersion;
+    try {
+      await navigator.clipboard.writeText(value);
+      if (!signal.aborted && version === copyVersion) status.textContent = 'Scene copied.';
+    } catch {
+      if (!signal.aborted && version === copyVersion) { prompt.focus(); prompt.select(); status.textContent = 'Copy is unavailable here. The scene is selected for manual copying.'; }
+    }
+  }, { signal });
+  const observer = grid ? new MutationObserver(syncCharacters) : null;
+  observer?.observe(grid, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-busy'] });
+  syncCharacters();
+  return () => observer?.disconnect();
+}
+
 /** Dashboard controls shared by Express and Next. No duplicate API requests. */
 function createUniverseControls() {
   const islands = new Map();
   const rails = new Map();
-  const motionAllowed = () => document.documentElement.dataset.orbitMotion !== 'paused';
+  const motionAllowed = () => true;
 
   function bindIsland(island) {
     const trigger = island.querySelector('.island-trigger');
@@ -16,17 +116,22 @@ function createUniverseControls() {
     let hideTimer;
     let ignoreFocus = false;
     const resize = () => {
-      if (open) island.style.setProperty('--island-height', `${Math.min(menu.scrollHeight, parseFloat(getComputedStyle(menu).maxHeight) || menu.scrollHeight) + (island.querySelector('.island-capsule') || trigger).offsetHeight + 2}px`);
+      const dockWidth = island.parentElement?.getBoundingClientRect?.().width || 440;
+      island.style.setProperty('--island-panel-width', `${Math.max(0, Math.min(440, dockWidth) - 2)}px`);
+      if (open) island.style.setProperty('--island-height', `${Math.min(menu.scrollHeight, parseFloat(getComputedStyle(menu).maxHeight) || menu.scrollHeight) + trigger.offsetHeight + 2}px`);
     };
     function setOpen(value, restoreFocus = false) {
       clearTimeout(closeTimer);
       clearTimeout(hideTimer);
+      if (value === open) { if (open) resize(); return; }
       open = value;
       trigger.setAttribute('aria-expanded', String(value));
-      trigger.setAttribute('aria-label', value ? 'Close universe navigation' : 'Open universe navigation');
+      trigger.setAttribute('aria-label', value ? 'Close Scene Spark' : 'Open Scene Spark');
       if (value) {
         menu.hidden = false;
         menu.inert = false;
+        // Commit the collapsed layout before changing geometry, including first hover.
+        void island.offsetHeight;
         island.classList.add('is-open');
         resize();
       } else {
@@ -45,7 +150,7 @@ function createUniverseControls() {
       if (event.pointerType === 'mouse') setOpen(true);
     }, { signal });
     island.addEventListener('pointerleave', () => {
-      if (!pinned && !menu.contains(document.activeElement) && !trigger.matches(':focus-visible') && !document.getElementById('personaQuickSwitcherPopover')) closeTimer = setTimeout(() => setOpen(false), 180);
+      if (!pinned && !menu.contains(document.activeElement) && !trigger.matches(':focus-visible')) closeTimer = setTimeout(() => setOpen(false), 180);
     }, { signal });
     trigger.addEventListener('click', () => {
       if (pinned) setOpen(false); else { pinned = true; setOpen(true); }
@@ -54,152 +159,27 @@ function createUniverseControls() {
       if (!ignoreFocus && (event.target !== trigger || trigger.matches(':focus-visible'))) setOpen(true);
     }, { signal });
     island.addEventListener('focusout', () => {
-      queueMicrotask(() => { if (!island.contains(document.activeElement) && !island.matches(':hover') && !document.getElementById('personaQuickSwitcherPopover')) setOpen(false); });
+      queueMicrotask(() => { if (!island.contains(document.activeElement) && !island.matches(':hover')) setOpen(false); });
     }, { signal });
     island.addEventListener('keydown', event => {
-      if (event.key === 'Escape' && !document.getElementById('personaQuickSwitcherPopover')) { event.preventDefault(); setOpen(false, true); }
+      if (event.key === 'Escape') { event.preventDefault(); setOpen(false, true); }
       if (event.key === 'ArrowDown' && event.target === trigger) {
-        event.preventDefault(); setOpen(true); menu.querySelector('a, button')?.focus();
+        event.preventDefault(); setOpen(true); menu.querySelector('button, textarea, select, a')?.focus();
       }
     }, { signal });
     document.addEventListener('pointerdown', event => {
-      if (open && !island.contains(event.target) && !event.target.closest?.('.persona-quick-switcher-popover')) setOpen(false);
+      if (open && !island.contains(event.target)) setOpen(false);
     }, { signal });
     menu.addEventListener('click', event => {
       const link = event.target.closest('a');
-      if (link && link.dataset.sourceKey !== 'sidebar-persona-pill') setOpen(false);
+      if (link && link.getAttribute('aria-disabled') !== 'true') setOpen(false);
     }, { signal });
     const observer = new ResizeObserver(resize);
     observer.observe(menu);
-    let stopMirror = () => {};
-    if (island.hasAttribute('data-mirror-sidebar')) stopMirror = mirrorSidebar(island, resize, signal);
-    return () => { controller.abort(); clearTimeout(closeTimer); clearTimeout(hideTimer); observer.disconnect(); stopMirror(); };
-  }
-
-  function mirrorSidebar(island, resize, signal) {
-    const sidebar = document.querySelector('.sidebar');
-    const host = island.querySelector('[data-island-content]');
-    if (!sidebar || !host) return () => {};
-    let frame;
-    let snapshot = '';
-    const sourceMap = new Map();
-    function makeControl(source, label, className = '') {
-      const element = document.createElement(source.tagName === 'A' ? 'a' : 'button');
-      if (element.tagName === 'A') element.href = source.href;
-      else element.type = 'button';
-      element.className = className;
-      element.dataset.sourceKey = source.id || source.getAttribute('href') || label;
-      sourceMap.set(element.dataset.sourceKey, source);
-      const iconSource = source.querySelector('i');
-      const iconPaths = {
-        'ph-compass': 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm4-16-2.5 7.5L6 16l2.5-7.5L16 6Z',
-        'ph-sparkle': 'm12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z',
-        'ph-chats-circle': 'M21 11a8 8 0 0 1-8 8H5l-3 3V11a9 9 0 0 1 19 0ZM7 10h10M7 14h6',
-        'ph-identification-card': 'M3 4h18v16H3V4Zm4 5a2 2 0 1 0 4 0 2 2 0 0 0-4 0Zm-1 7c0-4 6-4 6 0m3-7h3m-3 5h3',
-        'ph-user-circle': 'M22 12a10 10 0 1 0-20 0 10 10 0 0 0 20 0ZM8 9a4 4 0 1 0 8 0 4 4 0 0 0-8 0Zm-3 10c0-7 14-7 14 0',
-        'ph-gear': 'M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1 1-3Zm0 9a3 3 0 1 0 6 0 3 3 0 0 0-6 0Z',
-        'ph-sliders-horizontal': 'M3 6h6m4 0h8M3 12h12m4 0h2M3 18h2m4 0h12M9 3v6m6 0v6M5 15v6',
-        'ph-plus': 'M12 5v14M5 12h14',
-        'ph-sign-out': 'M9 3H3v18h6m5-16 7 7-7 7M8 12h13',
-      };
-      const iconKey = Object.keys(iconPaths).find(key => iconSource?.classList.contains(key));
-      const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      icon.setAttribute('viewBox', '0 0 24 24'); icon.setAttribute('width', '18'); icon.setAttribute('height', '18');
-      icon.setAttribute('fill', 'none'); icon.setAttribute('stroke', 'currentColor'); icon.setAttribute('stroke-width', '1.6'); icon.setAttribute('aria-hidden', 'true');
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', iconPaths[iconKey] || 'M5 7h14M5 12h14M5 17h14'); icon.append(path); element.append(icon);
-      const text = document.createElement('span');
-      text.textContent = label;
-      element.append(text);
-      element.setAttribute('aria-label', source.getAttribute('aria-label') || label);
-      element.title = source.title || label;
-      if (source.classList.contains('active')) element.setAttribute('aria-current', 'page');
-      return element;
-    }
-    function sync() {
-      frame = 0;
-      const nav = [...sidebar.querySelectorAll('.sidebar-nav a')];
-      const threads = [...sidebar.querySelectorAll('.recent-chat-item')];
-      const userView = sidebar.querySelector('#authUserView');
-      const signedIn = Boolean(userView && !userView.classList.contains('hidden'));
-      const userName = signedIn ? sidebar.querySelector('#authUserName')?.textContent : 'Sign in / Register';
-      const state = JSON.stringify([nav.map(a => [a.href, a.textContent, a.className]), threads.map(a => [a.href, a.textContent]), signedIn, userName, sidebar.querySelector('#sidebar-persona-name')?.textContent, sidebar.querySelector('#themeModeLabel')?.textContent]);
-      if (state === snapshot) return;
-      snapshot = state;
-      const focusKey = host.contains(document.activeElement) ? document.activeElement.dataset.sourceKey : null;
-      sourceMap.clear();
-      const fragment = document.createDocumentFragment();
-      const navigation = document.createElement('nav'); navigation.className = 'island-nav'; navigation.setAttribute('aria-label', 'Universe navigation');
-      const descriptions = { Discover: 'Find a character', Studio: 'Create a character', Threads: 'Your conversations', Personas: 'Choose your identity' };
-      nav.forEach(a => {
-        const label = a.querySelector('span')?.textContent.trim() || a.textContent.trim();
-        const control = makeControl(a, label);
-        const detail = document.createElement('small'); detail.textContent = descriptions[label] || 'Open workspace';
-        control.querySelector('span').append(detail); navigation.append(control);
-      });
-      fragment.append(navigation);
-      const cta = sidebar.querySelector('.sidebar-nav a[data-page=create]') || sidebar.querySelector('.sidebar-cta-wrap a');
-      const history = document.createElement('div'); history.className = 'island-history';
-      const heading = document.createElement('div'); heading.className = 'island-section-label'; heading.textContent = 'Pick up where you left off'; history.append(heading);
-      if (threads.length && signedIn) threads.slice(0, 3).forEach(a => {
-        const name = a.querySelector('.recent-chat-name')?.textContent.trim() || 'Continue story';
-        const control = makeControl(a, name, 'island-thread');
-        const copy = control.querySelector('span'); copy.className = 'island-thread-copy';
-        const title = document.createElement('strong'); title.textContent = name;
-        const preview = document.createElement('small'); preview.textContent = a.querySelector('.recent-chat-preview')?.textContent.trim() || 'Continue your story';
-        copy.replaceChildren(title, preview);
-        const avatar = document.createElement('span'); avatar.className = 'island-thread-avatar'; avatar.setAttribute('aria-hidden', 'true'); avatar.textContent = name.slice(0, 2).toUpperCase();
-        control.prepend(avatar); history.append(control);
-      });
-      else { const p = document.createElement('p'); p.textContent = signedIn ? 'Find a character to start your first story.' : 'Sign in to save and resume your conversations.'; history.append(p); }
-      const recent = signedIn ? threads[0] : null;
-      const context = island.querySelector('.island-context');
-      const contextName = island.querySelector('[data-island-context-name]');
-      const contextDetail = island.querySelector('[data-island-context-detail]');
-      const recentName = recent?.querySelector('.recent-chat-name')?.textContent.trim() || 'Your story';
-      if (context) { context.href = recent ? recent.href : '#character-roster'; context.setAttribute('aria-label', recent ? `Resume story with ${recentName}` : 'Discover characters'); }
-      if (contextName) contextName.textContent = recent ? recentName : 'Discover';
-      if (contextDetail) contextDetail.textContent = recent ? 'Resume your story' : 'Find your next story';
-      fragment.append(history);
-      const account = document.createElement('div'); account.className = 'island-account';
-      const userLink = sidebar.querySelector(signedIn ? '#sidebar-persona-pill' : '#authGuestView a');
-      if (userLink) account.append(makeControl(userLink, userName || 'Your profile'));
-      const signOut = sidebar.querySelector('#authSignOutBtn');
-      if (signedIn && signOut) account.append(makeControl(signOut, 'Sign out'));
-      fragment.append(account);
-      const tools = document.createElement('div'); tools.className = 'island-tools';
-      const settings = sidebar.querySelector('.sidebar-settings-link');
-      if (settings) tools.append(makeControl(settings, 'Settings'));
-      const theme = sidebar.querySelector('#themeToggleBtn');
-      if (theme) tools.append(makeControl(theme, 'Theme'));
-      if (signedIn && userLink) tools.append(makeControl(userLink, sidebar.querySelector('#sidebar-persona-name')?.textContent.trim() || 'Personas'));
-      fragment.append(tools);
-      if (cta) {
-        const create = makeControl(cta, 'Create a character', 'island-new-story');
-        const arrow = document.createElement('span'); arrow.textContent = '↗'; arrow.setAttribute('aria-hidden', 'true');
-        create.append(arrow); fragment.append(create);
-      }
-      host.replaceChildren(fragment);
-      if (focusKey) [...host.querySelectorAll('[data-source-key]')].find(el => el.dataset.sourceKey === focusKey)?.focus({ preventScroll: true });
-      resize();
-    }
-    host.addEventListener('click', event => {
-      const control = event.target.closest('[data-source-key]');
-      if (!control || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-      const source = sourceMap.get(control.dataset.sourceKey);
-      if (!source) return;
-      event.preventDefault();
-      // Keep the real persona switcher and anchor it to the visible island control.
-      if (source.id === 'sidebar-persona-pill') source.__popoverAnchor = control;
-      try { source.click(); } finally { delete source.__popoverAnchor; }
-    }, { signal });
-    island.querySelector('[data-island-sidebar]')?.addEventListener('click', () => {
-      document.getElementById(innerWidth <= 1024 ? 'mobileMenuBtn' : 'sidebarCollapseBtn')?.click();
-    }, { signal });
-    const observer = new MutationObserver(() => { if (!frame) frame = requestAnimationFrame(sync); });
-    observer.observe(sidebar, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class', 'href'] });
-    sync();
-    return () => { observer.disconnect(); cancelAnimationFrame(frame); };
+    const stopSpark = island.hasAttribute('data-scene-spark') ? bindSceneSpark(island, signal) : () => {};
+    const dockObserver = island.parentElement ? new ResizeObserver(resize) : null;
+    if (dockObserver) dockObserver.observe(island.parentElement);
+    return () => { controller.abort(); clearTimeout(closeTimer); clearTimeout(hideTimer); observer.disconnect(); dockObserver?.disconnect(); stopSpark(); };
   }
 
   function bindRail(rail) {
@@ -266,11 +246,11 @@ function initOrbitMotion() {
   window.__orbitMotion = true;
   const root = document.documentElement;
   const scanUniverseControls = createUniverseControls();
-  let paused = false;
-  try { paused = localStorage.getItem('ambient_motion_disabled') === 'true'; } catch {}
-  root.dataset.orbitMotion = paused ? 'paused' : 'running';
+  // Motion is always on. Discard the obsolete pause preference from older builds.
+  try { localStorage.removeItem('ambient_motion_disabled'); } catch {}
+  root.dataset.orbitMotion = 'running';
+  window.ambientCanvas?.forceStart();
   const observed = new WeakSet();
-  const buttons = new WeakSet();
   let scrollFrame = 0;
   function updateScroll() {
     scrollFrame = 0;
@@ -283,7 +263,7 @@ function initOrbitMotion() {
       bar?.classList.toggle('is-scrolled', source.scrollTop > 24);
       const max = source.scrollHeight - source.clientHeight;
       bar?.style.setProperty('--scroll-progress', String(max > 0 ? source.scrollTop / max : 0));
-      scroller.querySelector('.orbit-art')?.style.setProperty('--orbit-parallax', `${paused ? 0 : Math.min(source.scrollTop * .08, 28)}px`);
+      scroller.querySelector('.orbit-art')?.style.setProperty('--orbit-parallax', `${Math.min(source.scrollTop * .08, 28)}px`);
     });
   }
   function queueScrollUpdate() {
@@ -310,37 +290,11 @@ function initOrbitMotion() {
       el.classList.add('orbit-reveal');
       el.style.transitionDelay = `${Math.min(index % 4, 3) * 55}ms`;
       // Content remains visible if this enhancement cannot run.
-      el.dataset.reveal = observer && !paused ? 'waiting' : 'visible';
+      el.dataset.reveal = observer ? 'waiting' : 'visible';
       observer?.observe(el);
     });
     queueScrollUpdate();
-    document.querySelectorAll('[data-motion-toggle]').forEach(button => {
-      if (buttons.has(button)) return;
-      const update = () => {
-        button.setAttribute('aria-pressed', String(!paused));
-        button.setAttribute('aria-label', paused ? 'Enable animations' : 'Pause animations');
-        button.title = paused ? 'Enable animations' : 'Pause animations';
-        button.textContent = '';
-      };
-      update();
-      buttons.add(button);
-      button.addEventListener('click', () => {
-        paused = !paused;
-        root.dataset.orbitMotion = paused ? 'paused' : 'running';
-        queueScrollUpdate();
-        try { localStorage.setItem('ambient_motion_disabled', String(paused)); } catch {}
-        if (window.ambientCanvas) {
-          window.ambientCanvas.reducedMotion = paused;
-          if (paused) window.ambientCanvas.pause(); else window.ambientCanvas.resume();
-        }
-        document.querySelectorAll('[data-motion-toggle]').forEach(b => {
-          b.setAttribute('aria-pressed', String(!paused));
-          b.setAttribute('aria-label', paused ? 'Enable animations' : 'Pause animations');
-          b.title = paused ? 'Enable animations' : 'Pause animations';
-          b.textContent = '';
-        });
-      });
-    });
+
   }
 
   let scanPending = false;
@@ -352,7 +306,7 @@ function initOrbitMotion() {
   // One delegated listener, no per-card handlers or continuous animation loop.
   let pointerFrame = 0;
   document.addEventListener('pointermove', event => {
-    if (paused || event.pointerType !== 'mouse' || pointerFrame) return;
+    if (event.pointerType !== 'mouse' || pointerFrame) return;
     const card = event.target.closest?.('.orbit-discover .card-shell');
     if (!card) return;
     pointerFrame = requestAnimationFrame(() => {

@@ -71,7 +71,7 @@ function harness({ withIsland = false, withRail = false, withCapsule = false } =
   menu.scrollHeight = 300;
   menu.hidden = true;
   menu.children = [link];
-  menu.selectors.set('a, button', link);
+  menu.selectors.set('button, textarea, select, a', link);
   island.children = [trigger, menu];
   island.selectors.set('.island-trigger', trigger);
   island.selectors.set('.island-menu', menu);
@@ -182,11 +182,11 @@ test('carousel advances by visible cards and hides arrows at its boundaries', ()
   assert.equal(h.previous.hidden, true);
 });
 
-test('carousel respects pause, loading, resize, and detached-page cleanup', () => {
+test('carousel keeps motion on despite legacy pause state and handles loading, resize and cleanup', () => {
   const h = harness({ withRail: true });
   h.document.documentElement.dataset.orbitMotion = 'paused';
   h.next.fire('click');
-  assert.equal(h.track.lastScrollBehavior, 'instant');
+  assert.equal(h.track.lastScrollBehavior, 'smooth');
   h.track.setAttribute('aria-busy', 'true');
   h.observations.forEach(observer => observer.callback());
   h.flush();
@@ -202,22 +202,22 @@ test('carousel respects pause, loading, resize, and detached-page cleanup', () =
   assert.equal(h.observations.every(observer => observer.disconnected), true);
 });
 
-test('expanded island measures the full capsule, including the resume action', () => {
+test('expanded island uses a fixed panel width and clamps height to the viewport', () => {
   const h = harness({ withIsland: true, withCapsule: true });
   h.island.fire('pointerenter', { pointerType: 'mouse' });
-  assert.equal(h.island.style['--island-height'], '360px');
+  assert.equal(h.island.style['--island-height'], '348px');
   h.menu.scrollHeight = 900;
   h.observations[0].callback();
-  assert.equal(h.island.style['--island-height'], '660px');
+  assert.equal(h.island.style['--island-height'], '648px');
 });
 
-test('touch does not trigger hover; navigation closes and detached islands release handlers', () => {
+test('touch pins the island; starting a scene closes it and detached islands release handlers', () => {
   const h = harness({ withIsland: true, withCapsule: true });
   h.island.fire('pointerenter', { pointerType: 'touch' });
   assert.equal(h.island.classList.contains('is-open'), false);
   h.trigger.fire('click');
   const navigation = new h.Element();
-  navigation.closest = () => ({ dataset: {} });
+  navigation.closest = () => ({ getAttribute: () => null });
   h.menu.fire('click', { target: navigation });
   h.flush();
   assert.equal(h.menu.hidden, true);
@@ -225,4 +225,105 @@ test('touch does not trigger hover; navigation closes and detached islands relea
   h.scan();
   assert.equal(h.observations[0].disconnected, true);
   assert.equal(h.trigger.listeners.get('click').size, 0);
+});
+
+test('scene moods reroll without immediately repeating and encode draft URLs safely', () => {
+  const context = vm.createContext({ URLSearchParams });
+  vm.runInContext(controlsSource, context);
+  const first = vm.runInContext("nextSceneSpark('mystery', -1, () => 0)", context);
+  const next = vm.runInContext("nextSceneSpark('mystery', 0, () => 0)", context);
+  assert.notEqual(first.text, next.text);
+  assert.match(first.text, /letter/);
+  const href = vm.runInContext("sceneSparkHref('/chat/', 'name/&?', 'Keep <this> & that?')", context);
+  const url = new URL(href, 'https://example.test');
+  assert.equal(url.pathname, '/chat/name%2F%26%3F');
+  assert.equal(url.searchParams.get('opener'), 'Keep <this> & that?');
+  const staticHref = vm.runInContext("sceneSparkHref('/chat.html', 'char&1', 'hello')", context);
+  assert.equal(new URL(staticHref, 'https://example.test').searchParams.get('id'), 'char&1');
+  assert.equal(vm.runInContext("sceneSparkHref('/chat/', 'char', '   ')", context), '');
+  assert.equal(vm.runInContext("sceneSparkHref('https://external.test', 'char', 'hello')", context), '');
+});
+
+test('legacy pause preference is cleared and ambient motion is resumed on initialization', () => {
+  const fullSource = fs.readFileSync(new URL('../frontend/js/orbit-motion.js', import.meta.url), 'utf8');
+  const removed = [];
+  let resumed = 0;
+  const document = {
+    readyState: 'complete', documentElement: { dataset: { orbitMotion: 'paused' } },
+    body: {}, querySelectorAll: () => [], addEventListener() {},
+  };
+  vm.runInNewContext(fullSource, {
+    document,
+    window: { addEventListener() {}, ambientCanvas: { forceStart() { resumed++; } } },
+    localStorage: { removeItem(key) { removed.push(key); } },
+    MutationObserver: class { observe() {} }, requestAnimationFrame() { return 1; },
+  });
+  assert.equal(document.documentElement.dataset.orbitMotion, 'running');
+  assert.deepEqual(removed, ['ambient_motion_disabled']);
+  assert.equal(resumed, 1);
+});
+
+test('Scene Spark uses loaded characters, edits a draft, handles copy failure and cleans up', async () => {
+  class Control {
+    constructor() { this.listeners = {}; this.attributes = {}; this.dataset = {}; this.value = ''; this.children = []; }
+    addEventListener(type, handler) { this.listeners[type] = handler; }
+    setAttribute(key, value) { this.attributes[key] = value; }
+    getAttribute(key) { return this.attributes[key] || null; }
+    querySelector(selector) { return this.selectors?.[selector] || null; }
+    querySelectorAll() { return this.children; }
+    replaceChildren(...children) { this.children = children; this.value = ''; }
+    append(child) { this.children.push(child); }
+    focus() { this.focused = true; }
+    select() { this.selected = true; }
+  }
+  const island = new Control(), prompt = new Control(), select = new Control(), start = new Control(), status = new Control(), reroll = new Control(), copy = new Control(), grid = new Control();
+  const label = new Control();
+  start.selectors = { span: label };
+  prompt.value = 'Opening draft';
+  island.dataset.chatBase = '/chat/';
+  island.selectors = { '[data-spark-prompt]': prompt, '[data-spark-character]': select, '[data-spark-start]': start, '[data-spark-status]': status, '[data-spark-reroll]': reroll, '[data-spark-copy]': copy };
+  const cozy = new Control(), mystery = new Control();
+  cozy.dataset.sparkMood = 'cozy'; mystery.dataset.sparkMood = 'mystery'; island.children = [cozy, mystery];
+  const card = new Control(), name = new Control();
+  card.dataset.charCard = 'character-1'; name.textContent = 'Character One'; card.selectors = { '.cai-card-name': name }; grid.children = [card];
+  let onMutation, disconnected = false;
+  const context = vm.createContext({
+    URLSearchParams, Math, navigator: { clipboard: { async writeText() { throw Error('clipboard unavailable'); } } },
+    document: { getElementById: () => grid, createElement: () => new Control() },
+    MutationObserver: class { constructor(callback) { onMutation = callback; } observe() {} disconnect() { disconnected = true; } },
+  });
+  vm.runInContext(controlsSource, context);
+  context.island = island; context.signal = new AbortController().signal;
+  const cleanup = vm.runInContext('bindSceneSpark(island, signal)', context);
+  assert.equal(select.children.length, 2);
+  select.value = 'character-1'; select.listeners.change();
+  assert.equal(label.textContent, 'Use this scene');
+  assert.equal(new URL(start.href, 'https://example.test').searchParams.get('opener'), 'Opening draft');
+  prompt.value = 'My custom opener'; prompt.listeners.input();
+  assert.equal(new URL(start.href, 'https://example.test').searchParams.get('opener'), 'My custom opener');
+  mystery.listeners.click();
+  assert.equal(mystery.attributes['aria-pressed'], 'true');
+  assert.equal(cozy.attributes['aria-pressed'], 'false');
+  const before = prompt.value; reroll.listeners.click(); assert.notEqual(prompt.value, before);
+  await copy.listeners.click();
+  assert.equal(prompt.selected, true);
+  assert.match(status.textContent, /manual copying/);
+  prompt.value = ' '; prompt.listeners.input();
+  let prevented = false;
+  start.listeners.click({ preventDefault() { prevented = true; } });
+  assert.equal(prevented, true);
+  grid.children = []; onMutation();
+  assert.equal(select.disabled, true);
+  assert.equal(start.href, '#character-roster');
+  cleanup(); assert.equal(disconnected, true);
+});
+
+test('pointer return during the closing morph cancels the hide timer', () => {
+  const h = harness({ withIsland: true });
+  h.trigger.fire('click');
+  h.island.fire('keydown', { key: 'Escape' });
+  h.island.fire('pointerenter', { pointerType: 'mouse' });
+  h.flush();
+  assert.equal(h.menu.hidden, false);
+  assert.equal(h.trigger.getAttribute('aria-expanded'), 'true');
 });

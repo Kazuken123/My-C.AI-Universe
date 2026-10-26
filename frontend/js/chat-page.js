@@ -81,6 +81,16 @@ class ChatPageApp {
     const charId = params.get('id');
     const sessionId = params.get('session');
 
+    const opener = params.get('opener')?.trim().slice(0, 1000);
+    const input = document.getElementById('chatInput');
+    if (opener && input && !input.value) {
+      input.value = opener;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      const url = new URL(window.location.href);
+      url.searchParams.delete('opener');
+      window.history.replaceState(window.history.state, '', url);
+    }
+
     if (charId) {
       await this.chatController.openChatWithCharacter(charId, sessionId);
     } else {
