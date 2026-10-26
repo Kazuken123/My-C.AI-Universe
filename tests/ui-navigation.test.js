@@ -6,7 +6,7 @@ import vm from 'node:vm';
 const controlsSource = fs.readFileSync(new URL('../frontend/js/orbit-motion.js', import.meta.url), 'utf8')
   .split('/** Shared progressive enhancement.')[0];
 
-function harness({ withIsland = false, withRail = false } = {}) {
+function harness({ withIsland = false, withRail = false, withCapsule = false } = {}) {
   let nextId = 1;
   const timers = new Map();
   const frames = new Map();
@@ -67,6 +67,7 @@ function harness({ withIsland = false, withRail = false } = {}) {
   const menu = new Element();
   const link = new Element();
   trigger.offsetHeight = 46;
+  if (withCapsule) { const capsule = new Element(); capsule.offsetHeight = 58; island.selectors.set('.island-capsule', capsule); }
   menu.scrollHeight = 300;
   menu.hidden = true;
   menu.children = [link];
@@ -199,4 +200,29 @@ test('carousel respects pause, loading, resize, and detached-page cleanup', () =
   h.rail.isConnected = false;
   h.scan();
   assert.equal(h.observations.every(observer => observer.disconnected), true);
+});
+
+test('expanded island measures the full capsule, including the resume action', () => {
+  const h = harness({ withIsland: true, withCapsule: true });
+  h.island.fire('pointerenter', { pointerType: 'mouse' });
+  assert.equal(h.island.style['--island-height'], '360px');
+  h.menu.scrollHeight = 900;
+  h.observations[0].callback();
+  assert.equal(h.island.style['--island-height'], '660px');
+});
+
+test('touch does not trigger hover; navigation closes and detached islands release handlers', () => {
+  const h = harness({ withIsland: true, withCapsule: true });
+  h.island.fire('pointerenter', { pointerType: 'touch' });
+  assert.equal(h.island.classList.contains('is-open'), false);
+  h.trigger.fire('click');
+  const navigation = new h.Element();
+  navigation.closest = () => ({ dataset: {} });
+  h.menu.fire('click', { target: navigation });
+  h.flush();
+  assert.equal(h.menu.hidden, true);
+  h.island.isConnected = false;
+  h.scan();
+  assert.equal(h.observations[0].disconnected, true);
+  assert.equal(h.trigger.listeners.get('click').size, 0);
 });

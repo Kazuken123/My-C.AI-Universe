@@ -16,7 +16,7 @@ function createUniverseControls() {
     let hideTimer;
     let ignoreFocus = false;
     const resize = () => {
-      if (open) island.style.setProperty('--island-height', `${Math.min(menu.scrollHeight, parseFloat(getComputedStyle(menu).maxHeight) || menu.scrollHeight) + trigger.offsetHeight + 2}px`);
+      if (open) island.style.setProperty('--island-height', `${Math.min(menu.scrollHeight, parseFloat(getComputedStyle(menu).maxHeight) || menu.scrollHeight) + (island.querySelector('.island-capsule') || trigger).offsetHeight + 2}px`);
     };
     function setOpen(value, restoreFocus = false) {
       clearTimeout(closeTimer);
@@ -90,12 +90,29 @@ function createUniverseControls() {
       element.className = className;
       element.dataset.sourceKey = source.id || source.getAttribute('href') || label;
       sourceMap.set(element.dataset.sourceKey, source);
-      const icon = source.querySelector('i')?.cloneNode(true);
-      if (icon) element.append(icon);
+      const iconSource = source.querySelector('i');
+      const iconPaths = {
+        'ph-compass': 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm4-16-2.5 7.5L6 16l2.5-7.5L16 6Z',
+        'ph-sparkle': 'm12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z',
+        'ph-chats-circle': 'M21 11a8 8 0 0 1-8 8H5l-3 3V11a9 9 0 0 1 19 0ZM7 10h10M7 14h6',
+        'ph-identification-card': 'M3 4h18v16H3V4Zm4 5a2 2 0 1 0 4 0 2 2 0 0 0-4 0Zm-1 7c0-4 6-4 6 0m3-7h3m-3 5h3',
+        'ph-user-circle': 'M22 12a10 10 0 1 0-20 0 10 10 0 0 0 20 0ZM8 9a4 4 0 1 0 8 0 4 4 0 0 0-8 0Zm-3 10c0-7 14-7 14 0',
+        'ph-gear': 'M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1 1-3Zm0 9a3 3 0 1 0 6 0 3 3 0 0 0-6 0Z',
+        'ph-sliders-horizontal': 'M3 6h6m4 0h8M3 12h12m4 0h2M3 18h2m4 0h12M9 3v6m6 0v6M5 15v6',
+        'ph-plus': 'M12 5v14M5 12h14',
+        'ph-sign-out': 'M9 3H3v18h6m5-16 7 7-7 7M8 12h13',
+      };
+      const iconKey = Object.keys(iconPaths).find(key => iconSource?.classList.contains(key));
+      const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      icon.setAttribute('viewBox', '0 0 24 24'); icon.setAttribute('width', '18'); icon.setAttribute('height', '18');
+      icon.setAttribute('fill', 'none'); icon.setAttribute('stroke', 'currentColor'); icon.setAttribute('stroke-width', '1.6'); icon.setAttribute('aria-hidden', 'true');
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', iconPaths[iconKey] || 'M5 7h14M5 12h14M5 17h14'); icon.append(path); element.append(icon);
       const text = document.createElement('span');
       text.textContent = label;
       element.append(text);
       element.setAttribute('aria-label', source.getAttribute('aria-label') || label);
+      element.title = source.title || label;
       if (source.classList.contains('active')) element.setAttribute('aria-current', 'page');
       return element;
     }
@@ -103,7 +120,8 @@ function createUniverseControls() {
       frame = 0;
       const nav = [...sidebar.querySelectorAll('.sidebar-nav a')];
       const threads = [...sidebar.querySelectorAll('.recent-chat-item')];
-      const signedIn = !sidebar.querySelector('#authUserView')?.classList.contains('hidden');
+      const userView = sidebar.querySelector('#authUserView');
+      const signedIn = Boolean(userView && !userView.classList.contains('hidden'));
       const userName = signedIn ? sidebar.querySelector('#authUserName')?.textContent : 'Sign in / Register';
       const state = JSON.stringify([nav.map(a => [a.href, a.textContent, a.className]), threads.map(a => [a.href, a.textContent]), signedIn, userName, sidebar.querySelector('#sidebar-persona-name')?.textContent, sidebar.querySelector('#themeModeLabel')?.textContent]);
       if (state === snapshot) return;
@@ -112,14 +130,36 @@ function createUniverseControls() {
       sourceMap.clear();
       const fragment = document.createDocumentFragment();
       const navigation = document.createElement('nav'); navigation.className = 'island-nav'; navigation.setAttribute('aria-label', 'Universe navigation');
-      nav.forEach(a => navigation.append(makeControl(a, a.querySelector('span')?.textContent.trim() || a.textContent.trim())));
+      const descriptions = { Discover: 'Find a character', Studio: 'Create a character', Threads: 'Your conversations', Personas: 'Choose your identity' };
+      nav.forEach(a => {
+        const label = a.querySelector('span')?.textContent.trim() || a.textContent.trim();
+        const control = makeControl(a, label);
+        const detail = document.createElement('small'); detail.textContent = descriptions[label] || 'Open workspace';
+        control.querySelector('span').append(detail); navigation.append(control);
+      });
       fragment.append(navigation);
-      const cta = sidebar.querySelector('.sidebar-cta-wrap a');
-      if (cta) fragment.append(makeControl(cta, cta.querySelector('span')?.textContent.trim() || 'New story', 'island-new-story'));
+      const cta = sidebar.querySelector('.sidebar-nav a[data-page=create]') || sidebar.querySelector('.sidebar-cta-wrap a');
       const history = document.createElement('div'); history.className = 'island-history';
-      const heading = document.createElement('div'); heading.className = 'island-section-label'; heading.textContent = `Active storylines · ${threads.length}`; history.append(heading);
-      if (threads.length) threads.forEach(a => history.append(makeControl(a, a.querySelector('.recent-chat-name')?.textContent.trim() || 'Continue story', 'island-thread')));
-      else { const p = document.createElement('p'); p.textContent = signedIn ? 'Your next story starts with a hello.' : 'Sign in to pick up your stories.'; history.append(p); }
+      const heading = document.createElement('div'); heading.className = 'island-section-label'; heading.textContent = 'Pick up where you left off'; history.append(heading);
+      if (threads.length && signedIn) threads.slice(0, 3).forEach(a => {
+        const name = a.querySelector('.recent-chat-name')?.textContent.trim() || 'Continue story';
+        const control = makeControl(a, name, 'island-thread');
+        const copy = control.querySelector('span'); copy.className = 'island-thread-copy';
+        const title = document.createElement('strong'); title.textContent = name;
+        const preview = document.createElement('small'); preview.textContent = a.querySelector('.recent-chat-preview')?.textContent.trim() || 'Continue your story';
+        copy.replaceChildren(title, preview);
+        const avatar = document.createElement('span'); avatar.className = 'island-thread-avatar'; avatar.setAttribute('aria-hidden', 'true'); avatar.textContent = name.slice(0, 2).toUpperCase();
+        control.prepend(avatar); history.append(control);
+      });
+      else { const p = document.createElement('p'); p.textContent = signedIn ? 'Find a character to start your first story.' : 'Sign in to save and resume your conversations.'; history.append(p); }
+      const recent = signedIn ? threads[0] : null;
+      const context = island.querySelector('.island-context');
+      const contextName = island.querySelector('[data-island-context-name]');
+      const contextDetail = island.querySelector('[data-island-context-detail]');
+      const recentName = recent?.querySelector('.recent-chat-name')?.textContent.trim() || 'Your story';
+      if (context) { context.href = recent ? recent.href : '#character-roster'; context.setAttribute('aria-label', recent ? `Resume story with ${recentName}` : 'Discover characters'); }
+      if (contextName) contextName.textContent = recent ? recentName : 'Discover';
+      if (contextDetail) contextDetail.textContent = recent ? 'Resume your story' : 'Find your next story';
       fragment.append(history);
       const account = document.createElement('div'); account.className = 'island-account';
       const userLink = sidebar.querySelector(signedIn ? '#sidebar-persona-pill' : '#authGuestView a');
@@ -134,6 +174,11 @@ function createUniverseControls() {
       if (theme) tools.append(makeControl(theme, 'Theme'));
       if (signedIn && userLink) tools.append(makeControl(userLink, sidebar.querySelector('#sidebar-persona-name')?.textContent.trim() || 'Personas'));
       fragment.append(tools);
+      if (cta) {
+        const create = makeControl(cta, 'Create a character', 'island-new-story');
+        const arrow = document.createElement('span'); arrow.textContent = '↗'; arrow.setAttribute('aria-hidden', 'true');
+        create.append(arrow); fragment.append(create);
+      }
       host.replaceChildren(fragment);
       if (focusKey) [...host.querySelectorAll('[data-source-key]')].find(el => el.dataset.sourceKey === focusKey)?.focus({ preventScroll: true });
       resize();
@@ -275,7 +320,7 @@ function initOrbitMotion() {
         button.setAttribute('aria-pressed', String(!paused));
         button.setAttribute('aria-label', paused ? 'Enable animations' : 'Pause animations');
         button.title = paused ? 'Enable animations' : 'Pause animations';
-        button.textContent = paused ? '▷' : 'Ⅱ';
+        button.textContent = '';
       };
       update();
       buttons.add(button);
@@ -292,7 +337,7 @@ function initOrbitMotion() {
           b.setAttribute('aria-pressed', String(!paused));
           b.setAttribute('aria-label', paused ? 'Enable animations' : 'Pause animations');
           b.title = paused ? 'Enable animations' : 'Pause animations';
-          b.textContent = paused ? '▷' : 'Ⅱ';
+          b.textContent = '';
         });
       });
     });

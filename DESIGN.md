@@ -31,7 +31,7 @@ Manrope handles controls, names and prose. Newsreader italic gives the main disc
 ## Layout
 
 - Desktop navigation: 256px sidebar, collapsing to a 72px icon rail. Mobile drawers restore full labels regardless of the saved desktop preference.
-- Discover only: a fixed 202px Dynamic Island capsule expands to 440px (bounded by the viewport), with navigation, storylines, account, persona, settings, theme and motion controls. Search remains in the page. The asymmetric hero contains a perspective WebGL universe with a spiral galaxy, two distant galaxies, nebulae and stars.
+- Discover only: a fixed 318px Dynamic Island capsule expands to 460px (bounded by the viewport), with navigation, storylines, account, persona, settings, theme and motion controls. Search remains in the page. The asymmetric hero contains a perspective WebGL universe with a spiral galaxy, two distant galaxies, nebulae and stars.
 - Characters: compact 330px horizontal cards with scroll snapping. Previous/next arrows appear on hover or focus, remain visible on touch screens, and disappear at boundaries. Touch swiping and Arrow/Home/End keys also browse the row.
 - Mobile: existing off-canvas menu and bottom navigation, stacked hero, horizontally scrollable genres.
 - Chat, character studio, threads, personas and account pages share the new tokens, typography and interaction treatment.
@@ -75,3 +75,11 @@ The Dynamic Island is rendered only on the dashboard. It exposes navigation, act
 The character shelf supports swipe, previous/next, Arrow Left/Right and Home/End. Arrows disappear at the beginning/end and while results load. Search/category/sort changes reset the shelf to its first card. Screen readers receive the visible character range. Existing like, edit and chat actions retain their accessible names.
 
 Validation: run `node --test tests/ui-navigation.test.js tests/universe-scene.test.js` for island interaction and carousel boundary regressions, alongside the Next.js TypeScript/lint/unit checks.
+
+## Story companion island
+
+The dashboard island is a persistent story shortcut. Its compact state shows the most recent character with a direct resume link, or Discover with a character-roster link for guests and users without conversations. Hover reveals navigation; click pins the panel. Touch, keyboard entry, Escape and outside dismissal remain supported.
+
+The expanded panel groups four destinations, up to three recent conversations with message previews, account and persona controls, appearance controls, and character creation. It reuses existing sidebar data and actions without another API request. SVG icons and CSS pause/play marks remain visible when the icon font is unavailable. The capsule morphs between 318px and 460px with viewport bounds, internal scrolling and reduced-motion support.
+
+Alternative purposes considered: a command center for navigation and creation; an activity island for real background-task progress. The story companion is the default because returning to conversations is already supported by the app.

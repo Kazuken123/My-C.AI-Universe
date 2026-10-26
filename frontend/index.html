@@ -183,11 +183,14 @@
 
     <div class="island-dock">
       <div class="universe-island" data-universe-island data-mirror-sidebar>
-        <button class="island-trigger" type="button" aria-expanded="false" aria-controls="island-menu" aria-label="Open universe navigation"><span class="island-orb" aria-hidden="true"></span><span>My universe</span><span class="island-trigger-hint" aria-hidden="true">✦</span></button>
+        <div class="island-capsule">
+          <a class="island-context" href="#character-roster" aria-label="Discover characters"><span class="island-orb" aria-hidden="true"></span><span class="island-context-copy"><strong data-island-context-name>Discover</strong><small data-island-context-detail>Find your next story</small></span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
+          <button class="island-trigger" type="button" aria-expanded="false" aria-controls="island-menu" aria-label="Open universe navigation" title="Hover to explore. Click to keep open."><span class="island-trigger-label">Explore</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+        </div>
         <div class="island-menu" id="island-menu" hidden>
-          <div class="island-menu-heading"><span>YOUR UNIVERSE</span><span>Make yourself at home.</span></div>
+          <div class="island-menu-heading"><span>YOUR UNIVERSE</span><span>Jump back in.</span></div>
           <div data-island-content></div>
-          <div class="island-tools"><button type="button" data-island-sidebar aria-label="Toggle sidebar" title="Toggle sidebar"><i class="ph-light ph-sidebar-simple"></i></button><button class="orbit-motion-toggle" data-motion-toggle type="button" aria-label="Pause animations" aria-pressed="true">Ⅱ</button></div>
+          <div class="island-tools"><button type="button" data-island-sidebar aria-label="Toggle sidebar" title="Toggle sidebar"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 4h18v16H3V4Zm5 0v16"/></svg></button><button class="orbit-motion-toggle" data-motion-toggle type="button" aria-label="Pause animations" aria-pressed="true"></button></div>
         </div>
       </div>
     </div>
@@ -208,7 +211,7 @@
               <input type="text" id="discoverSearch" aria-label="Search characters" placeholder="Search characters, worlds, stories..." autocomplete="off" />
               <kbd class="search-kbd">/</kbd>
             </div>
-<button class="orbit-motion-toggle" data-motion-toggle type="button" aria-label="Pause animations" aria-pressed="true">Ⅱ</button>
+<button class="orbit-motion-toggle" data-motion-toggle type="button" aria-label="Pause animations" aria-pressed="true"></button>
           </div>
         </header>
 
