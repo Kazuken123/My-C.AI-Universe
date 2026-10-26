@@ -35,7 +35,7 @@ Used in desktop and mobile web browsers across two primary modes:
 
 - **Brand Name**: My C.AI Universe (Orbit Studio)
 - **Brand Mark**: `/favicon.svg`
-- **Visual Direction**: Cinematic editorial discovery, portrait cards, a CSS 3D orbital sculpture and quiet green reading surfaces. See DESIGN.md for the current tokens and motion system.
+- **Visual Direction**: Cinematic editorial discovery, portrait cards, a procedural 3D universe with galaxies and nebulae and quiet green reading surfaces. See DESIGN.md for the current tokens and motion system.
 - **Typography**: Manrope for UI and prose, Newsreader for editorial headings, JetBrains Mono for numeric metadata.
 
 ## Evidence on Hand

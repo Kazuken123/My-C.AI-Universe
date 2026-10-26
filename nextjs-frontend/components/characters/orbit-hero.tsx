@@ -14,13 +14,15 @@ export function OrbitHero() {
           </div>
           <div className="orbit-hero-note"><span><i className="ph-light ph-infinity" aria-hidden="true" />Endless possibilities</span><span><i className="ph-light ph-fingerprint" aria-hidden="true" />Entirely your story</span></div>
         </div>
-        <div className="orbit-art" aria-hidden="true">
-          <span className="orbit-coordinate">IMAGINATION, IN ORBIT</span>
-          <div className="orbit-shadow" />
-          <div className="orbit-sculpture"><div className="orbit-ring" /><div className="orbit-ring" /><div className="orbit-ring" /><div className="orbit-ring" /><div className="orbit-ring" /><div className="orbit-core" /></div>
+        <div className="orbit-art universe-art" aria-hidden="true">
+          <span className="orbit-coordinate">YOUR IMAGINATION, EXPANDING</span>
+          <div className="universe-scene" data-universe-scene>
+            <div className="universe-fallback"><span className="universe-fallback-galaxy" /><span className="universe-fallback-core" /></div>
+            <canvas className="universe-canvas" aria-hidden="true" />
+          </div>
           <div className="orbit-floating-label memory"><i className="ph-light ph-sparkle" /><div><strong>A connection that stays</strong><small>Characters with memory</small></div></div>
-          <div className="orbit-floating-label story"><i className="ph-light ph-planet" /><div><strong>Your world. Your rules.</strong><small>Let the story unfold</small></div></div>
-          <span className="orbit-art-caption">ONE CONVERSATION. INFINITE DIRECTIONS.</span>
+          <div className="orbit-floating-label story"><i className="ph-light ph-infinity" /><div><strong>Worlds within worlds.</strong><small>Let your universe unfold</small></div></div>
+          <span className="orbit-art-caption">COUNTLESS WORLDS. ONE PLACE TO BEGIN.</span>
         </div>
       </section>
       <div className="orbit-strip"><span><i className="ph-light ph-brain" aria-hidden="true" />Memories that last</span><span><i className="ph-light ph-git-branch" aria-hidden="true" />Stories that branch</span><span><i className="ph-light ph-heart" aria-hidden="true" />Connections that grow</span></div>
