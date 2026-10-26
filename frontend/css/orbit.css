@@ -94,30 +94,28 @@
 .orbit-hero-note span { display: flex; align-items: center; gap: 6px; }
 .orbit-hero-note i { color: var(--accent); font-size: .9rem; }
 
-/* A real CSS 3D armillary: intersecting planes, rotating independently in depth. */
-.orbit-art { height: 440px; min-width: 0; position: relative; isolation: isolate; perspective: 1000px; transform: translateY(var(--orbit-parallax, 0px)); }
+/* Perspective galaxies, volumetric dust and layered starlight. */
+.orbit-art { height: 440px; min-width: 0; position: relative; isolation: isolate; transform: translateY(var(--orbit-parallax, 0px)); }
 .orbit-art::before { content: ''; position: absolute; inset: 8% 0; border-radius: 50%; background: radial-gradient(ellipse, #9570ef15, transparent 65%); }
-.orbit-coordinate { position: absolute; top: 30px; right: 3%; color: var(--text-muted); font: .61rem var(--font-mono); letter-spacing: .12em; }
+.orbit-coordinate { position: absolute; z-index: 2; top: 18px; right: 3%; color: var(--text-muted); font: .61rem var(--font-mono); letter-spacing: .12em; }
 .orbit-coordinate::before { content: '+'; color: var(--accent); margin-right: 12px; }
-.orbit-sculpture { position: absolute; width: 300px; height: 300px; top: 48%; left: 50%; margin: -150px; transform-style: preserve-3d; transform: rotateX(-18deg) rotateY(-24deg); animation: orbit-turn 28s linear infinite; }
-.orbit-ring { position: absolute; inset: 0; border: 2px solid #c4b5fd80; border-radius: 50%; transform-style: preserve-3d; box-shadow: inset 0 0 0 1px #e6d9ff33, 0 0 0 1px #6561b022; }
-.orbit-ring:nth-child(1) { transform: rotateY(65deg); }
-.orbit-ring:nth-child(2) { transform: rotateX(70deg); }
-.orbit-ring:nth-child(3) { transform: rotateY(-45deg) rotateX(35deg); border-width: 6px; border-color: #8976ce99 #e9e3ffbb #4f4f9199 #c4b5fd; }
-.orbit-ring:nth-child(4) { transform: rotateY(30deg) rotateX(-55deg); inset: -25px; border-color: #79c9ef44; }
-.orbit-ring:nth-child(5) { transform: rotateX(30deg) rotateY(80deg); inset: 28px; border-color: #eae7ffaa; }
-.orbit-ring::after { content: ''; position: absolute; width: 9px; height: 9px; border-radius: 50%; top: 14%; left: 14%; background: #e0d6ff; box-shadow: 0 0 12px #c4b5fd44; }
-.orbit-core { position: absolute; width: 110px; height: 110px; border-radius: 50%; left: calc(50% - 55px); top: calc(50% - 55px); background: radial-gradient(circle at 33% 27%, #e8e5ff 0, #baa5ed 16%, #7660b7 38%, #30234f 66%, #131026 80%); box-shadow: inset -10px -8px 20px #080c2199, 0 20px 30px #0003; animation: orbit-counterturn 28s linear infinite; }
-.orbit-shadow { position: absolute; width: 220px; height: 22px; border-radius: 50%; background: #0005; filter: blur(13px); bottom: 45px; left: calc(50% - 110px); }
-.orbit-floating-label { position: absolute; display: flex; align-items: center; gap: 10px; padding: 11px 15px; border: 1px solid #d9d5ff26; border-radius: 12px; background: #17162ce6; backdrop-filter: blur(10px); color: #ebe6ff; box-shadow: 0 14px 34px #0003; font-size: .7rem; animation: orbit-float 7s ease-in-out infinite; }
+.universe-scene { position: absolute; inset: 18px -28px 20px; overflow: hidden; pointer-events: none; mask-image: radial-gradient(ellipse at 50% 50%, #000 42%, transparent 73%); }
+.universe-canvas, .universe-fallback { position: absolute; inset: 0; width: 100%; height: 100%; }
+.universe-canvas { display: block; opacity: 0; transition: opacity .65s; }
+.universe-scene[data-universe-ready="true"] .universe-canvas { opacity: 1; }
+.universe-fallback { transition: opacity .65s; background: radial-gradient(ellipse at 38% 65%, #4e3d912c, transparent 48%), radial-gradient(ellipse at 70% 36%, #356b9b22, transparent 44%); }
+.universe-scene[data-universe-ready="true"] .universe-fallback { opacity: 0; }
+.universe-fallback::before { content: ''; position: absolute; inset: 0; opacity: .55; background-image: radial-gradient(circle, #e5dfff 0 .7px, transparent 1.3px), radial-gradient(circle, #89bfe5 0 .6px, transparent 1.2px), radial-gradient(circle, #e5dfff 0 1px, transparent 1.8px); background-size: 43px 61px, 71px 47px, 137px 113px; background-position: 7px 17px, 29px 3px, 51px 37px; }
+.universe-fallback::after { content: ''; position: absolute; width: 16%; height: 8%; right: 10%; top: 19%; border-radius: 50%; transform: rotate(32deg); background: radial-gradient(ellipse, #fff4de 0, #c4b5fd80 9%, #7973c83b 30%, transparent 70%); }
+.universe-fallback-galaxy { position: absolute; width: 78%; height: 52%; left: 11%; top: 24%; border-radius: 50%; transform: rotate(-24deg); background: repeating-conic-gradient(from 12deg, #8e81de00 0deg, #8e81de55 18deg, #99c8f08c 35deg, #6855b010 58deg, #8e81de00 90deg); mask-image: radial-gradient(ellipse, transparent 3%, #000 15%, #0008 40%, transparent 70%); filter: blur(3px); }
+.universe-fallback-core { position: absolute; width: 30%; height: 16%; top: 42%; left: 35%; border-radius: 50%; transform: rotate(-24deg); background: radial-gradient(ellipse, #fff8e6 0, #f4dfbbcc 4%, #ddbdf16b 19%, transparent 68%); }
+.orbit-floating-label { position: absolute; z-index: 2; pointer-events: none; display: flex; align-items: center; gap: 10px; padding: 11px 15px; border: 1px solid #d9d5ff26; border-radius: 12px; background: #17162cb8; backdrop-filter: blur(10px); color: #ebe6ff; box-shadow: 0 14px 34px #0003; font-size: .7rem; animation: orbit-float 7s ease-in-out infinite; }
 .orbit-floating-label i { color: #c4b5fd; font-size: 1.2rem; }
 .orbit-floating-label strong { display: block; font-weight: 500; }
-.orbit-floating-label small { display: block; color: #9695b3; font-size: .6rem; margin-top: 3px; }
+.orbit-floating-label small { display: block; color: #b7b6ce; font-size: .6rem; margin-top: 3px; }
 .orbit-floating-label.memory { left: 1%; top: 26%; }
 .orbit-floating-label.story { right: 0; bottom: 22%; animation-delay: -3s; }
 .orbit-art-caption { position: absolute; bottom: 3px; left: 0; right: 0; text-align: center; font: .6rem var(--font-mono); color: var(--text-muted); letter-spacing: .14em; }
-@keyframes orbit-turn { to { transform: rotateX(-18deg) rotateY(336deg); } }
-@keyframes orbit-counterturn { to { transform: rotateY(-360deg); } }
 @keyframes orbit-float { 50% { transform: translateY(-10px); } }
 .orbit-strip { display: flex; justify-content: space-between; gap: 20px; padding: 21px 0; border-top: 1px solid var(--border-hairline); border-bottom: 1px solid var(--border-hairline); color: var(--text-secondary); font-size: .72rem; }
 .orbit-strip span { display: flex; align-items: center; gap: 9px; }
@@ -180,7 +178,6 @@
 .composer-shell:focus-within { border-color: var(--accent-border); box-shadow: 0 0 0 3px var(--accent-soft); }
 :where(.studio-card, .persona-card, .auth-card) { animation: orbit-enter .5s var(--orbit-ease) both; }
 @keyframes orbit-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-[data-orbit-motion="paused"] .orbit-sculpture, [data-orbit-motion="paused"] .orbit-core,
 [data-orbit-motion="paused"] .orbit-floating-label { animation-play-state: paused; }
 [data-orbit-motion="paused"] .orbit-reveal { transition: none; }
 [data-orbit-motion="paused"] .orbit-reveal[data-reveal="waiting"] { opacity: 1; translate: none; }
@@ -188,14 +185,13 @@
 [data-orbit-motion="paused"] :where(.msg-row, .studio-card, .persona-card, .auth-card, .drawer-pane.active, .orbit-skeleton) { animation: none; }
 [data-orbit-motion="paused"] .orbit-discover .card-shell:hover { transform: none; }
 .orbit-art[data-in-view="false"] *, .orbit-page-hidden .orbit-art * { animation-play-state: paused; }
-@media (min-width: 1600px) { .orbit-title { font-size: 5.2rem; } .orbit-art { height: 490px; } .orbit-sculpture { width: 350px; height: 350px; margin: -175px; } }
+@media (min-width: 1600px) { .orbit-title { font-size: 5.2rem; } .orbit-art { height: 490px; } }
 @media (max-width: 1200px) {
   .orbit-discover { padding: 0 28px 36px; }
   .orbit-topbar::before { inset-inline: -28px; }
   .orbit-topbar.is-scrolled::after { left: -28px; right: -28px; }
   .orbit-discover .bento-character-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
   .orbit-title { font-size: clamp(3rem, 4.7vw, 4rem); }
-  .orbit-sculpture { width: 240px; height: 240px; margin: -120px; }
   .orbit-floating-label { padding: 10px; }
   .orbit-hero { min-height: 500px; }
   .orbit-topbar .topbar-index { display: none; }
@@ -224,8 +220,6 @@
   .orbit-hero-note { margin-top: 22px; }
   .orbit-art { height: 310px; max-width: 430px; width: 100%; justify-self: center; }
   .orbit-coordinate { top: 5px; }
-  .orbit-sculpture { width: 220px; height: 220px; margin: -110px; }
-  .orbit-core { width: 85px; height: 85px; top: calc(50% - 42.5px); left: calc(50% - 42.5px); }
   .orbit-floating-label.memory { top: 20%; }
   .orbit-floating-label.story { bottom: 22%; }
   .orbit-strip { font-size: .63rem; gap: 16px; flex-wrap: wrap; padding: 19px 0; }
@@ -419,3 +413,25 @@
 }
 
 .island-tools button span { display: none; }
+
+/* Expand the universe without changing the discovery layout. */
+.orbit-art.universe-art { height: 430px; }
+.universe-art .orbit-floating-label.memory { top: 20%; }
+.universe-art .orbit-floating-label.story { bottom: 16%; }
+[data-orbit-motion="paused"] :is(.universe-canvas, .universe-fallback) { transition: none; }
+@media (min-width: 1600px) { .orbit-art.universe-art { height: 460px; } }
+@media (max-width: 1000px) and (min-width: 769px) {
+  .orbit-art.universe-art { height: 360px; }
+  .universe-art .orbit-floating-label { font-size: .62rem; gap: 7px; padding: 9px; }
+  .universe-art .orbit-floating-label.memory { top: 16%; }
+  .universe-art .orbit-floating-label.story { bottom: 12%; }
+}
+@media (max-width: 768px) {
+  .orbit-art.universe-art { height: 320px; max-width: 480px; }
+  .universe-scene { inset: 8px -14px 18px; }
+  .universe-art .orbit-coordinate { top: 2px; font-size: .56rem; }
+  .universe-art .orbit-floating-label { padding: 9px 11px; font-size: .64rem; }
+  .universe-art .orbit-floating-label.memory { top: 16%; }
+  .universe-art .orbit-floating-label.story { bottom: 13%; }
+  .universe-art .orbit-art-caption { font-size: .53rem; letter-spacing: .1em; }
+}

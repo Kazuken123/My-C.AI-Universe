@@ -44,6 +44,7 @@ export default function RootLayout({
       </head>
       <body>
         <Script src="/js/orbit-motion.js" strategy="afterInteractive" />
+        <Script src="/js/universe-scene.js" strategy="afterInteractive" />
         <AuthProvider>
           <AmbientCanvas />
           <div className="ambient-grain" aria-hidden="true" />
