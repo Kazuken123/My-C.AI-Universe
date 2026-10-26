@@ -2,53 +2,143 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # ─── 1. Continuous Integration: Run Automated Test Suite ───
-  test:
-    name: Run Automated Tests (CI)
+  backend:
+    name: Backend (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
-
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22', '24']
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          node-version: 22
-          cache: 'npm'
-
-      - name: Install Dependencies
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install backend dependencies
         run: npm ci
-
-      - name: Run Full Test Suite
+      - name: Check JavaScript syntax
+        run: npm run check
+      - name: Check optional Python memory-service syntax
+        run: python3 -c "import ast, pathlib; ast.parse(pathlib.Path('memory-service/memory_service.py').read_text(encoding='utf-8'))"
+      - name: Run all discovered regressions and isolated HTTP/SQLite tests
         run: npm test
         env:
-          PORT: 3000
-          NODE_ENV: test
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'ci-test-key' }}
+          TEST_REPORT_PATH: ${{ runner.temp }}/backend-results.json
+      - name: Preserve test-file results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: backend-results-node-${{ matrix.node }}
+          path: ${{ runner.temp }}/backend-results.json
+          if-no-files-found: warn
+          retention-days: 7
 
-  # ─── 2. Continuous Deployment: Trigger Render ONLY if tests pass ───
+  frontend:
+    name: Frontend (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22', '24']
+    defaults:
+      run:
+        working-directory: nextjs-frontend
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: nextjs-frontend/package-lock.json
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Run frontend unit tests
+        run: npm test
+      - name: Lint frontend
+        run: npm run lint
+      - name: Check TypeScript
+        run: npm run typecheck
+      - name: Build production frontend
+        run: npm run build
+
+  ci:
+    name: CI status
+    if: always()
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require every matrix job to pass
+        env:
+          BACKEND_RESULT: ${{ needs.backend.result }}
+          FRONTEND_RESULT: ${{ needs.frontend.result }}
+        run: |
+          test "$BACKEND_RESULT" = success
+          test "$FRONTEND_RESULT" = success
+
   deploy:
-    name: Trigger Render Deployment (CD)
-    needs: test
+    name: Request Render deployment
+    needs: ci
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
-
+    timeout-minutes: 5
+    concurrency:
+      group: render-production
+      cancel-in-progress: false
     steps:
-      - name: Trigger Render Deploy Hook (Optional)
+      - name: Check deploy-hook configuration
+        id: config
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
           if [ -z "$RENDER_DEPLOY_HOOK" ]; then
-            echo "ℹ️ RENDER_DEPLOY_HOOK secret is not configured in GitHub."
-            echo "ℹ️ Render will auto-deploy via 'After CI Checks Pass' setting because tests succeeded! 🎉"
-            exit 0
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Deployment skipped: RENDER_DEPLOY_HOOK is not configured. No deployment was requested." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
-          echo "🚀 Triggering Render Deploy Hook..."
-          curl -f -X POST "$RENDER_DEPLOY_HOOK"
-          echo "✅ Deploy hook triggered successfully!"
+      - name: Check that the tested commit is still main
+        if: steps.config.outputs.enabled == 'true'
+        id: head
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          CURRENT_HEAD=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)
+          if [ "$CURRENT_HEAD" = "$GITHUB_SHA" ]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "Deployment skipped: main has advanced beyond this tested commit." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Request deployment of the tested commit
+        if: steps.config.outputs.enabled == 'true' && steps.head.outputs.current == 'true'
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          curl --fail --silent --show-error --connect-timeout 10 --max-time 60 \
+            --get --data-urlencode "ref=$GITHUB_SHA" \
+            --output "$RUNNER_TEMP/render-deploy-response.json" \
+            "$RENDER_DEPLOY_HOOK"
+          echo "Render accepted a deployment request for commit $GITHUB_SHA. Deployment health is not verified by this workflow." >> "$GITHUB_STEP_SUMMARY"

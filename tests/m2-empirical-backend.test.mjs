@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { authService } from '../backend/services/auth.service.js';
 import { getDatabase, closeDatabase } from '../backend/db/database.js';
-import { ValidationError, AuthenticationError, NotFoundError } from '../backend/ai/errors.js';
+import { ValidationError, AuthenticationError } from '../backend/ai/errors.js';
 
 test('Backend M2 Empirical: Register boundary validations (reserved handles, lengths, charsets)', async () => {
   const ts = Date.now();
@@ -84,11 +84,16 @@ test('Backend M2 Empirical: 3-step Password Reset State Machine & Lifecycle', as
   assert.ok(user.id);
 
   // --- Step 1: Request Password Reset ---
-  // Non-existent email
-  await assert.rejects(
-    async () => authService.requestPasswordReset({ email: 'nonexistent_account@universe.ai' }),
-    (err) => err instanceof NotFoundError
-  );
+  // Unknown accounts return a generic success without creating a reset code.
+  const unknownEmail = 'missing_' + ts + '@example.invalid';
+  const unknownAccount = await authService.requestPasswordReset({ email: unknownEmail });
+  assert.equal(unknownAccount.success, true);
+  assert.equal(unknownAccount.previewCode, undefined);
+  assert.notEqual(unknownAccount.email, unknownEmail);
+  const unknownResets = await getDatabase().prepare(
+    'SELECT COUNT(*) AS count FROM password_resets WHERE email = ?'
+  ).get(unknownEmail);
+  assert.equal(Number(unknownResets.count), 0);
 
   // Valid account request
   const requestRes = await authService.requestPasswordReset({ email: testEmail });
@@ -106,7 +111,7 @@ test('Backend M2 Empirical: 3-step Password Reset State Machine & Lifecycle', as
   );
 
   // B. Expired OTP code verification
-  const expiredCode = '999888';
+  const expiredCode = validOtp === '999888' ? '999887' : '999888';
   const db = getDatabase();
   const pastExpiration = new Date(Date.now() - 3600 * 1000).toISOString(); // 1 hour ago
   await db.prepare(`

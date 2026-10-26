@@ -1,39 +1,47 @@
 /**
  * Automated end-to-end API verification suite for My C.AI Universe
  */
-process.env.NODE_ENV = process.env.NODE_ENV || 'test';
-const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000';
+if (process.env.NODE_ENV !== 'test' || !process.env.SQLITE_PATH ||
+    process.env.TURSO_DATABASE_URL?.trim() || !process.env.DOTENV_CONFIG_PATH) {
+  throw new Error('Run this suite with npm run test:api to provision an isolated database and environment.');
+}
+let BASE_URL;
+let serverInstance = null;
 
 async function assertResponse(res, stepName) {
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(`[${stepName}] HTTP ${res.status}: ${JSON.stringify(data)}`);
-  }
+  if (!res.ok) throw new Error('[' + stepName + '] HTTP ' + res.status + ': ' + JSON.stringify(data));
   return data;
 }
 
-let inProcessServer = null;
-let closeDbFn = null;
-
 async function ensureServerRunning() {
-  try {
-    const res = await fetch(`${BASE_URL}/api/health`);
-    if (res.ok) return false;
-  } catch {
-    // Server not running yet; start it in-process for testing
-    const srvMod = await import('../server.js');
-    const dbMod = await import('../backend/db/database.js');
-    inProcessServer = srvMod.httpServer;
-    closeDbFn = dbMod.closeDatabase;
-    await new Promise(r => setTimeout(r, 600));
-    return true;
+  // Exercise the real HTTP routes and SQLite; replace only the external AI provider.
+  const { aiOrchestrator } = await import('../backend/ai/index.js');
+  const testProvider = {
+    providerName: 'ci-test',
+    async generateReply(character) {
+      return character.name + ': A deterministic reply for the API integration test.';
+    },
+    async *generateReplyStream(character) {
+      yield character.name + ': ';
+      yield 'A deterministic streamed reply for the API integration test.';
+    }
+  };
+  aiOrchestrator.registerProvider('gemini', testProvider);
+  aiOrchestrator.registerProvider('ollama', testProvider);
+  const serverModule = await import('../server.js');
+  serverInstance = serverModule.serverInstance;
+  const httpServer = serverModule.httpServer;
+  if (!httpServer.listening) {
+    const { once } = await import('node:events');
+    await once(httpServer, 'listening');
   }
-  return false;
+  BASE_URL = 'http://127.0.0.1:' + httpServer.address().port;
 }
 
 async function runTests() {
   console.log('🧪 Running My C.AI Universe End-to-End SQL & API Tests...\n');
-  const startedInProcess = await ensureServerRunning();
+  await ensureServerRunning();
 
   // 1. Health Check
   const healthRes = await fetch(`${BASE_URL}/api/health`);
@@ -941,21 +949,13 @@ async function runTests() {
   }
 
   console.log('\n✨ All automated SQL, Security & API tests passed and test data cleaned up!');
-  if (startedInProcess) {
-    if (inProcessServer) {
-      await new Promise(resolve => inProcessServer.close(resolve));
-    }
-    if (closeDbFn) {
-      closeDbFn();
-    }
-  }
 }
 
 runTests()
-  .then(() => {
-    process.exit(0);
+  .catch(error => {
+    console.error('API test failed:', error);
+    process.exitCode = 1;
   })
-  .catch(err => {
-    console.error('❌ Test failed:', err.message);
-    process.exit(1);
+  .finally(async () => {
+    if (serverInstance) await serverInstance.stop();
   });

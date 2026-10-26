@@ -8,6 +8,8 @@ A full-stack **Character.AI (`c.ai`)** roleplay platform built with an **Object-
 
 > 📈 **Living Progress & Architecture Log:** Check [PROGRESS.md](PROGRESS.md) for version history, recent bug fixes, Turso database patterns, and active roadmap.
 
+> **CI and backend layers:** See [the CI guide](docs/CI.md) for isolated tests, frontend build checks, and deployment gates.
+
 ---
 
 ## 🏛️ Object-Oriented Programming (OOP) & SQL Architecture

@@ -13,7 +13,7 @@ export const DB_DIR = path.join(PROJECT_ROOT, 'backend', 'db');
  */
 export const config = {
   // Server
-  PORT: Number(process.env.PORT) || 3000,
+  PORT: process.env.PORT === '0' ? 0 : (Number(process.env.PORT) || 3000),
   PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL || 'http://localhost:3000',
   IS_TEST: process.env.NODE_ENV === 'test',
   ROOT_DIR: PROJECT_ROOT,
