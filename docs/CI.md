@@ -11,9 +11,13 @@ been refactored or that layer boundaries are statically enforced.
 
 ## Required checks
 
-The workflow in ../.github/workflows/ci-cd.yml runs on pushes, pull requests to
-main, and manual dispatch. Backend and frontend jobs run on Node 22 and Node 24.
-The final check is named **CI status**, suitable for a required branch check.
+The workflow in ../.github/workflows/ci-cd.yml runs on pushes to main, pull
+requests targeting main, and manual dispatch. Feature-branch pushes do not run
+it separately, avoiding duplicate push/PR checks. Backend and frontend checks
+share one **CI status** job on Node 24, suitable for a required branch check.
+Node 22 can be selected for a manual compatibility run. Superseded CI jobs on
+the same ref are cancelled; deployment requests remain serialized separately.
+
 Adding a required branch check in repository settings is a separate operation.
 
 - Backend: install from the lockfile, check all project JavaScript syntax, parse
@@ -71,7 +75,7 @@ needed. A failing or timed-out file returns a nonzero overall status.
 ## Deployment gate
 
 Only a push to main can request deployment, after all backend and frontend
-matrix checks pass. The existing RENDER_DEPLOY_HOOK repository secret is used;
+checks pass. The existing RENDER_DEPLOY_HOOK repository secret is used;
 no live AI, email, or database secrets are required by the test jobs.
 
 If the hook is absent, the workflow explicitly records that no deployment was
@@ -88,3 +92,7 @@ https://render.com/docs/deploy-hooks before configuring the hook.
 
 GitHub Actions are pinned to verified release commit SHAs. The current versions
 are noted beside each action for intentional future updates.
+
+GitHub-managed CodeQL runs appear separately in Actions. They are security
+analysis, not duplicate application test jobs, and this workflow does not
+change or disable that repository setting.
