@@ -31,7 +31,7 @@ Manrope handles controls, names and prose. Newsreader italic gives the main disc
 ## Layout
 
 - Desktop navigation: 256px sidebar, collapsing to a 72px icon rail. Mobile drawers restore full labels regardless of the saved desktop preference.
-- Discover only: a fixed 202px Dynamic Island capsule expands to 440px (bounded by the viewport), with Scene Spark mood choices, editable roleplay openers and a character selector. Search remains in the page. The asymmetric hero contains a perspective WebGL universe with a spiral galaxy, two distant galaxies, nebulae and stars.
+- Discover only: a fixed 202px Dynamic Island capsule expands to 440px (bounded by the viewport), with Scene Spark mood choices, editable roleplay openers and a character selector. Search remains in the page. The full-width hero places its text over a deep space panorama with many distant galaxies, curved cosmic filaments, nebular rivers, a ringed world, a shaded planet and an artistic black hole.
 - Characters: compact 330px horizontal cards with scroll snapping. Previous/next arrows appear on hover or focus, remain visible on touch screens, and disappear at boundaries. Touch swiping and Arrow/Home/End keys also browse the row.
 - Mobile: existing off-canvas menu and bottom navigation, stacked hero, horizontally scrollable genres.
 - Chat, character studio, threads, personas and account pages share the new tokens, typography and interaction treatment.
@@ -41,14 +41,14 @@ Manrope handles controls, names and prose. Newsreader italic gives the main disc
 
 Motion stays on. There are no pause controls, and old saved pause preferences are cleared. Rendering can suspend in hidden tabs or offscreen.
 
-- A slowly rotating spiral galaxy, distant galaxies, layered stars and nebula dust. Pointer movement gently changes camera perspective. A static CSS galaxy remains visible when WebGL is unavailable.
+- A slowly drifting 3D camera, multiple rotating galaxies, a cosmic web of clusters, nebular rivers and foreground celestial bodies. Pointer movement changes perspective across the whole hero. A layered CSS space scene remains visible when WebGL is unavailable.
 - Floating annotations, paused when the artwork leaves the viewport.
 - Scroll entrance reveals with a small stagger, plus gentle hero parallax.
 - The floating capsule gains a brighter violet rim after 24px of scrolling. Its width and height animate while retaining rounded corners; tap pins it open and Escape or an outside click dismisses it.
 - Gentle lift and portrait scaling on compact cards; rotating violet and blue starfield accents.
 - Short press feedback, visible keyboard focus, form and message entrance transitions.
 - Passive scroll/pointer listeners, requestAnimationFrame batching and one shared observer; no additional animation dependency.
-- The universe renders at up to 30fps with capped pixel density and fewer particles on compact layouts. It pauses offscreen, in a hidden tab, or through the motion toggle, and releases GPU resources when its route unmounts.
+- The universe renders at up to 30fps with a backing canvas capped near 1.6 million pixels and fewer particles on compact layouts. It suspends offscreen or in a hidden tab and releases GPU resources when its route unmounts.
 
 ## Usability
 
@@ -84,3 +84,14 @@ The 202px capsule expands to 440px with one continuous width and height morph. T
 Its purpose is writing a roleplay opener: choose Cozy, Mystery, Adventure or Tension, reroll a curated prompt, edit or copy it, select a character from the loaded catalogue, and open the chat with the text in the composer. The user reviews and sends the draft. The island has no navigation, recent-chat list, account settings or animation controls.
 
 Old pause preferences are discarded. Ambient effects and the island animation remain enabled. Rendering still suspends when invisible to avoid unnecessary GPU work.
+
+
+## Vast Discover panorama
+
+Discover uses an edge-to-edge 3D scene across the workspace, with a desktop hero between 650px and 920px tall and a taller mobile composition. The left side carries readable copy over a directional dark veil; the right and lower scene remain open. A continuous deep-field background extends beneath character shelves and remains visible when search hides the hero.
+
+The procedural renderer combines a distant galaxy field, three particle galaxies, curved filaments and clusters, textured nebular rivers, a shaded planet, a ringed world and an artistic black hole. Camera drift and pointer parallax reveal their different depths. This deliberately mixes astronomical scales for atmosphere; it is not a map or a simulation of the observable universe.
+
+Light-emitting particles render additively. Foreground bodies use normal alpha blending so their dark sides occlude distant stars. The scene draws at up to 30fps, caps its backing canvas near 1.6 million pixels, reduces geometry on mobile, suspends when invisible and releases resources on route removal. No new dependency, external texture download or animation toggle is introduced.
+
+Inspiration: [Webb's First Deep Field](https://science.nasa.gov/asset/webb/webbs-first-deep-field-nircam-image/) for depth and varied galaxy silhouettes; [NASA large-scale structures](https://science.nasa.gov/universe/galaxies/large-scale-structures/) for clusters, filaments and dark voids. The artwork is original procedural geometry and shaders.

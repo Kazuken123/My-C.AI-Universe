@@ -407,24 +407,122 @@
 }
 
 
-/* Expand the universe without changing the discovery layout. */
-.orbit-art.universe-art { height: 430px; }
-.universe-art .orbit-floating-label.memory { top: 20%; }
-.universe-art .orbit-floating-label.story { bottom: 16%; }
-[data-orbit-motion="paused"] :is(.universe-canvas, .universe-fallback) { transition: none; }
-@media (min-width: 1600px) { .orbit-art.universe-art { height: 460px; } }
-@media (max-width: 1000px) and (min-width: 769px) {
-  .orbit-art.universe-art { height: 360px; }
-  .universe-art .orbit-floating-label { font-size: .62rem; gap: 7px; padding: 9px; }
-  .universe-art .orbit-floating-label.memory { top: 16%; }
-  .universe-art .orbit-floating-label.story { bottom: 12%; }
+/* Discover is an open space, with a continuous deep field behind the workspace. */
+body:has(.orbit-discover) .main-workspace { background: #050610; }
+body:has(.orbit-discover) .ambient-grain { opacity: .035; }
+.orbit-discover {
+  --bg-canvas: #050610; --bg-core: #0c1020; --bg-core-elevated: #13182c;
+  --text-primary: #f4f1ff; --text-secondary: #bbc1d4; --text-muted: #939db7;
+  --border-hairline: #acbbf313; --border-subtle: #acbbf326;
+  position: relative; isolation: isolate; max-width: none; overflow: clip; color: var(--text-primary);
+  padding-inline: clamp(28px, 4vw, 72px); padding-bottom: 52px;
+  background: #050610;
+}
+.orbit-discover::before {
+  content: ''; position: absolute; z-index: -2; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 86% 15%, #1e25522e, transparent 40%),
+    radial-gradient(ellipse at 8% 76%, #42264a22, transparent 35%),
+    radial-gradient(ellipse at 78% 85%, #15414e22, transparent 38%),
+    radial-gradient(circle at 11px 19px, #dce2ff66 0 .6px, transparent 1px),
+    radial-gradient(circle at 41px 37px, #869cd955 0 .5px, transparent 1px);
+  background-size: auto, auto, auto, 137px 163px, 211px 179px;
+}
+.orbit-discover .universe-searchbar { z-index: 5; margin-bottom: 0; }
+.orbit-discover .universe-searchbar .search-box { background: #0b1020ba; border-color: #acbbf32b; backdrop-filter: blur(16px); }
+.orbit-discover .universe-searchbar .search-box:focus-within { border-color: #c4b5fd88; }
+.orbit-discover .topbar-heading { color: #eae8f8; }
+.orbit-discover .topbar-index { color: #939db7; }
+.orbit-hero.universe-hero {
+  display: flex; align-items: center; gap: 0; position: relative;
+  min-height: clamp(650px, calc(100svh - 156px), 920px); padding: 70px 0 120px;
+}
+.universe-hero .orbit-hero-copy { width: min(47%, 540px); margin: 0; padding-bottom: 16px; }
+.universe-hero .orbit-eyebrow { color: #b7bfd5; font-size: .61rem; letter-spacing: .19em; margin-bottom: 26px; line-height: 1.7; }
+.universe-hero .orbit-eyebrow::before { background: #98b3e8; box-shadow: 0 0 12px #98b3e866; flex-shrink: 0; }
+.universe-hero .orbit-title { color: #f4f1ff; font-size: clamp(3.7rem, 5.9vw, 6.4rem); line-height: 1.01; letter-spacing: -.065em; margin-bottom: 26px; }
+.universe-hero .orbit-title em { color: #c4c7f5; white-space: nowrap; }
+.universe-hero .orbit-description { color: #b6bfd5; max-width: 35ch; font-size: .88rem; line-height: 1.95; text-wrap: pretty; }
+.universe-hero .hero-actions { margin-top: 30px; gap: 18px; }
+.universe-hero .btn-ghost { color: #d6d8e8; }
+.universe-hero-note { display: flex; align-items: center; gap: 9px; color: #8f9db8; font: .62rem var(--font-sans); margin-top: 29px; }
+.universe-live-dot { height: 5px; width: 5px; border-radius: 50%; background: #83a8d2; box-shadow: 0 0 10px #83a8d244; flex-shrink: 0; }
+.orbit-art.universe-art {
+  position: absolute; z-index: 0; inset: -150px calc(clamp(28px, 4vw, 72px) * -1) -70px;
+  width: auto; height: auto; max-width: none; margin: 0; transform: none; perspective: none;
+  pointer-events: none; isolation: isolate;
+}
+.universe-art::before { display: none; }
+.universe-art::after {
+  content: ''; position: absolute; z-index: 1; inset: 0; pointer-events: none;
+  background: linear-gradient(90deg, #050610ee 0%, #050610af 26%, #05061015 54%, transparent 74%),
+    linear-gradient(0deg, #050610 0%, #05061022 21%, transparent 45%, transparent 83%, #05061077 100%);
+}
+.universe-art .universe-scene { inset: 0; overflow: hidden; mask-image: linear-gradient(#000 0%, #000 82%, transparent 100%); }
+.universe-art .universe-canvas, .universe-art .universe-fallback { width: 100%; height: 100%; }
+.universe-coordinate { position: absolute; z-index: 2; top: 130px; right: 5%; font: .54rem var(--font-mono); letter-spacing: .18em; color: #8d9bbc; }
+.universe-coordinate::before { content: '+'; margin-right: 12px; color: #b9c6eb; }
+.universe-waypoint { position: absolute; z-index: 2; color: #a5b4d1; font: .59rem var(--font-sans); letter-spacing: .03em; display: flex; align-items: center; gap: 9px; }
+.universe-waypoint > span { width: 4px; height: 4px; background: #c1c9ed; border-radius: 50%; box-shadow: 0 0 9px #aebce788; }
+.universe-waypoint.far { top: 34%; right: 23%; }
+.universe-waypoint.near { bottom: 23%; right: 5%; }
+.universe-horizon-line { position: absolute; z-index: 2; right: 8%; bottom: 16%; width: 30%; height: 1px; background: linear-gradient(90deg,transparent,#a1b2e330,transparent); }
+.universe-scroll-cue { position: absolute; bottom: 32px; left: 0; display: flex; align-items: center; gap: 14px; min-height: 44px; color: #8e9bb6; font: .54rem var(--font-mono); letter-spacing: .12em; text-decoration: none; z-index: 3; }
+.universe-scroll-cue > :last-child { color: #c4c7f5; font-size: 1rem; animation: universe-cue 3s ease-in-out infinite; }
+@keyframes universe-cue { 50% { transform: translateY(5px); } }
+.universe-strip { position: relative; z-index: 2; background: #080b16a8; backdrop-filter: blur(10px); border-color: #acbbf318; }
+.orbit-discover .orbit-roster, .orbit-discover .orbit-continue { position: relative; z-index: 2; }
+.orbit-discover .card-shell { background: #0c1020e8; border-color: #a4b4e91c; }
+.orbit-discover .card-shell:hover { border-color: #b6c4f14d; }
+.orbit-discover .category-pill { color: #a4b0c9; }
+.orbit-discover .category-pill.active { color: #d7d6fa; background: #8c88d71a; border-color: #bcb5f23b; }
+
+/* The fallback remains a layered space scene on devices without WebGL. */
+.universe-art .universe-fallback {
+  background: radial-gradient(ellipse at 64% 42%, #263c6038, transparent 36%), radial-gradient(ellipse at 82% 68%, #63366832, transparent 38%);
+}
+.universe-art .universe-fallback::before { opacity: .8; background-size: 67px 101px, 113px 79px, 191px 157px; }
+.universe-art .universe-fallback::after { width: 8%; height: 5%; right: 13%; top: 22%; }
+.universe-art .universe-fallback-nebula { position: absolute; inset: 8% -10% 10%; transform: rotate(-21deg); filter: blur(18px); background: radial-gradient(ellipse at 30% 50%,#19607336,transparent 24%),radial-gradient(ellipse at 60% 55%,#5d3f7a44,transparent 28%),radial-gradient(ellipse at 80% 40%,#82472a30,transparent 21%); }
+.universe-art .universe-fallback-galaxy { width: 30%; height: 27%; left: 55%; top: 34%; filter: blur(1px); transform: rotate(-26deg); }
+.universe-art .universe-fallback-core { width: 10%; height: 7%; top: 44%; left: 65%; }
+.universe-art .universe-fallback-world { position: absolute; width: 115px; height: 115px; right: 12%; bottom: 24%; border-radius: 50%; background: radial-gradient(circle at 24% 25%,#9caeb8,#435f78 29%,#142030 52%,#050710 74%); box-shadow: inset 2px 1px 3px #a6ccf573,-5px -1px 14px #77b1d01c; }
+.universe-art .universe-fallback-world::after { content: ''; position: absolute; inset: 25% -48%; border: 7px solid #b7a99448; border-left-color: #d4c3a2bb; border-bottom-color: #d4c3a299; border-radius: 50%; transform: rotate(-22deg); }
+.universe-art .universe-fallback-horizon { position: absolute; width: 78px; height: 78px; left: 57%; top: 24%; border-radius: 50%; background: radial-gradient(circle,#03040b 0 26%,#f8cc7b 28%,#a45a2b80 32%,transparent 42%); filter: drop-shadow(0 0 15px #d58b3c44); }
+
+@media (min-width: 1700px) {
+  .universe-hero .orbit-title { font-size: 6.5rem; }
+  .orbit-hero.universe-hero { min-height: min(860px, calc(100svh - 150px)); }
+}
+@media (max-width: 1100px) and (min-width: 769px) {
+  .universe-hero .orbit-hero-copy { width: 54%; }
+  .universe-hero .orbit-title { font-size: clamp(3.4rem, 6vw, 4.5rem); }
+  .universe-hero .hero-actions { gap: 12px; }
+  .universe-waypoint.far { right: 12%; top: 32%; }
 }
 @media (max-width: 768px) {
-  .orbit-art.universe-art { height: 320px; max-width: 480px; }
-  .universe-scene { inset: 8px -14px 18px; }
-  .universe-art .orbit-coordinate { top: 2px; font-size: .56rem; }
-  .universe-art .orbit-floating-label { padding: 9px 11px; font-size: .64rem; }
-  .universe-art .orbit-floating-label.memory { top: 16%; }
-  .universe-art .orbit-floating-label.story { bottom: 13%; }
-  .universe-art .orbit-art-caption { font-size: .53rem; letter-spacing: .1em; }
+  .orbit-discover { padding-inline: 22px; }
+  .orbit-hero.universe-hero { min-height: 820px; align-items: flex-start; padding: 46px 0 110px; }
+  .universe-hero .orbit-hero-copy { width: 100%; max-width: 430px; padding: 0; }
+  .universe-hero .orbit-title { font-size: clamp(3.65rem, 12vw, 5.3rem); }
+  .universe-hero .orbit-description { max-width: 33ch; font-size: .82rem; }
+  .universe-hero .orbit-eyebrow { font-size: .56rem; margin-bottom: 24px; }
+  .universe-hero .hero-actions { margin-top: 24px; gap: 14px; }
+  .universe-hero-note { margin-top: 20px; font-size: .59rem; }
+  .orbit-art.universe-art { inset: -145px -22px -25px; width: auto; height: auto; max-width: none; }
+  .universe-art::after { background: linear-gradient(180deg,#050610d9 0%,#050610b5 30%,#05061026 57%,transparent 70%,#050610 100%); }
+  .universe-coordinate { display: none; }
+  .universe-waypoint.far { display: none; }
+  .universe-waypoint.near { right: 8%; bottom: 20%; font-size: .56rem; }
+  .universe-horizon-line { bottom: 14%; width: 55%; right: 12%; }
+  .universe-scroll-cue { bottom: 20px; font-size: .5rem; letter-spacing: .07em; }
+  .universe-art .universe-fallback-galaxy { width: 70%; height: 26%; left: 18%; top: 49%; }
+  .universe-art .universe-fallback-core { width: 20%; height: 6%; left: 43%; top: 60%; }
+  .universe-art .universe-fallback-world { width: 84px; height: 84px; right: 12%; bottom: 20%; }
+  .universe-art .universe-fallback-horizon { left: 12%; top: 52%; width: 62px; height: 62px; }
+  .universe-strip { gap: 12px; padding-block: 18px; font-size: .59rem; }
+}
+@media (max-width: 380px) {
+  .universe-hero .orbit-title { font-size: 3.45rem; }
+  .universe-hero .hero-actions { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .orbit-hero.universe-hero { min-height: 870px; }
 }

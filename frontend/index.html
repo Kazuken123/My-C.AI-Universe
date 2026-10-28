@@ -226,29 +226,36 @@
         </header>
 
 
-        <section class="orbit-hero" aria-labelledby="orbit-title">
-          <div class="orbit-hero-copy">
-            <div class="orbit-eyebrow">A space for your imagination</div>
-            <h1 id="orbit-title" class="orbit-title">Every character.<em>A new universe.</em></h1>
-            <p class="orbit-description">Meet someone unforgettable. Build a world together. Write stories with characters who remember you.</p>
-            <div class="hero-actions">
-              <a class="btn-island" href="#character-roster"><span>Find your next story</span><span class="btn-island-icon" aria-hidden="true">↗</span></a>
-              <a class="btn-ghost" href="/create.html" id="hero-create-btn"><span>Create a character</span><span aria-hidden="true">↗</span></a>
+      <section class="orbit-hero universe-hero" aria-labelledby="orbit-title">
+        <div class="orbit-art universe-art" aria-hidden="true">
+          <div class="universe-scene" data-universe-scene>
+            <div class="universe-fallback">
+              <span class="universe-fallback-nebula"></span>
+              <span class="universe-fallback-galaxy"></span>
+              <span class="universe-fallback-core"></span>
+              <span class="universe-fallback-world"></span>
+              <span class="universe-fallback-horizon"></span>
             </div>
-            <div class="orbit-hero-note"><span><i class="ph-light ph-infinity" aria-hidden="true"></i>Endless possibilities</span><span><i class="ph-light ph-fingerprint" aria-hidden="true"></i>Entirely your story</span></div>
+            <canvas class="universe-canvas" aria-hidden="true"></canvas>
           </div>
-          <div class="orbit-art universe-art" aria-hidden="true">
-            <span class="orbit-coordinate">YOUR IMAGINATION, EXPANDING</span>
-            <div class="universe-scene" data-universe-scene>
-              <div class="universe-fallback"><span class="universe-fallback-galaxy"></span><span class="universe-fallback-core"></span></div>
-              <canvas class="universe-canvas" aria-hidden="true"></canvas>
-            </div>
-            <div class="orbit-floating-label memory"><i class="ph-light ph-sparkle"></i><div><strong>A connection that stays</strong><small>Characters with memory</small></div></div>
-            <div class="orbit-floating-label story"><i class="ph-light ph-infinity"></i><div><strong>Worlds within worlds.</strong><small>Let your universe unfold</small></div></div>
-            <span class="orbit-art-caption">COUNTLESS WORLDS. ONE PLACE TO BEGIN.</span>
+          <span class="universe-coordinate">BEYOND THE EDGE OF THE FAMILIAR</span>
+          <div class="universe-waypoint far"><span></span>A thousand worlds away.</div>
+          <div class="universe-waypoint near"><span></span>Somewhere, your story begins.</div>
+          <span class="universe-horizon-line"></span>
+        </div>
+        <div class="orbit-hero-copy">
+          <div class="orbit-eyebrow">Your imagination has no edge</div>
+          <h1 id="orbit-title" class="orbit-title">A universe.<em>Of your own.</em></h1>
+          <p class="orbit-description">Beyond every star, another world. Behind every character, a story only you can tell. Find a connection and see how far it takes you.</p>
+          <div class="hero-actions">
+            <a class="btn-island" href="#character-roster"><span>Explore the universe</span><span class="btn-island-icon" aria-hidden="true">&#8599;</span></a>
+            <a class="btn-ghost" href="/create.html" id="hero-create-btn"><span>Create a character</span><span aria-hidden="true">&#8599;</span></a>
           </div>
-        </section>
-        <div class="orbit-strip"><span><i class="ph-light ph-brain" aria-hidden="true"></i>Memories that last</span><span><i class="ph-light ph-git-branch" aria-hidden="true"></i>Stories that branch</span><span><i class="ph-light ph-heart" aria-hidden="true"></i>Connections that grow</span></div>
+          <div class="universe-hero-note"><span class="universe-live-dot"></span>One small hello. Endless possibilities.</div>
+        </div>
+        <a class="universe-scroll-cue" href="#character-roster"><span>YOUR NEXT CONNECTION IS OUT THERE</span><span aria-hidden="true">&#8595;</span></a>
+      </section>
+      <div class="orbit-strip universe-strip"><span><i class="ph-light ph-brain" aria-hidden="true"></i>Memories that stay</span><span><i class="ph-light ph-git-branch" aria-hidden="true"></i>Stories that unfold</span><span><i class="ph-light ph-infinity" aria-hidden="true"></i>A universe to make your own</span></div>
         <section class="orbit-continue" id="continue-chatting-section" style="display:none" aria-labelledby="continue-heading">
           <div class="orbit-section-heading"><h2 id="continue-heading">Pick up where you left off</h2><a class="btn-ghost" href="/chats.html">All threads ↗</a></div>
           <div class="orbit-continue-grid" id="continue-chatting-row"></div>
