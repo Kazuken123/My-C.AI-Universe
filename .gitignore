@@ -29,6 +29,10 @@ yarn-error.log*
 Thumbs.db
 .vscode/
 .idea/
+.codex/
+
+# Local visual QA browser profile (contains cookies/session data)
+.universe-qa/
 
 # Test temporary files & local agent skills
 memory-service/test_memories.json

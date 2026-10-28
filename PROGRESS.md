@@ -1,5 +1,24 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-10-28 — Phase 1 verified and committed
+
+- Full suite rerun outside the sandbox: 40/40 backend test files pass, including the HTTP integration file (`tests/api.test.js`) that was previously blocked by loopback EACCES. Next.js typecheck clean, 14/14 frontend tests pass, syntax check 137/137.
+- Committed in three parts: Phase 1 chat turn-state, procedural 3D universe hero, repository hygiene.
+- Hygiene: `.universe-qa/` (local Chrome QA profile with cookies/session data) and `.codex/` added to `.gitignore` so they cannot be committed.
+- Next: run the live quality gate from [Phase 1 implementation](docs/phase1-chat-implementation.md) (3 characters × 2 sessions, latency + 1–5 human scores) before further prompt tuning. Audit findings A03–A22 remain outstanding.
+
+## 2026-10-27 — Phase 1 response, memory, emotion and closeness implementation
+
+- Added validated pre-response appraisal for Gemini/Ollama, source-backed typed session memories, corrections/forgetting, independent mood/intensity, and guarded deterministic relationship progression.
+- Added atomic revisioned turn commits and relationship snapshots; corrected rewind/edit/variant persistence; preserved targeted SQL mutations for message edits and Director changes.
+- Removed automatic replay after interrupted streams; incomplete generation cannot commit a partial turn. Fixed odd-count rolling-summary checkpoints and stale-summary writes.
+- Unified relationship labels across clients, centered the closeness bar on neutral, exposed change explanations, and resynchronized Director state.
+- Validation: 17 new Phase 1 checks pass; full suite 39/40 files pass (HTTP integration blocked by sandbox loopback EACCES). Next.js build, typecheck and 14 frontend tests pass. Graphify refreshed. Browser visual review blocked by local-file URL policy.
+- Live model quality/latency and production rollout remain unverified. Do not mark the Phase 1 experience goal complete from deterministic tests alone.
+- Audit repack blocked by npm registry DNS (ENOTFOUND). Full HTTP verification was completed on 2026-10-28 (see entry above).
+- Details and release scenarios: [Phase 1 implementation](docs/phase1-chat-implementation.md).
+
+
 ## 2026-10-27 — Audit batch 1: memory privacy and AI queue recovery
 
 - Fixed A01: memory visibility is explicit; parent deletion cannot promote private facts to public lore. SQL validates cached Python results and rejects late private writes after parent deletion.
