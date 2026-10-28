@@ -51,6 +51,8 @@ export function ChatView({
 
   // Relationship metrics
   const relationship: RelationshipMetrics = session?.relationship || {
+    changeReason: session?.narrativeState?.lastChange,
+    emotionIntensity: session?.narrativeState?.emotion?.intensity,
     affinity: session?.affinity ?? character?.initialAffinity ?? character?.initial_affinity ?? 0,
     trust: session?.trust ?? session?.affinity ?? character?.initialAffinity ?? character?.initial_affinity ?? 0,
     strain: session?.strain ?? 0,
@@ -339,74 +341,11 @@ export function ChatView({
         }
       );
     } catch (streamErr) {
-      console.warn('Streaming failed, falling back to standard REST POST:', streamErr);
-      try {
-        const fallbackRes = await api.sendChatMessage({
-          charId: character.id,
-          sessionId: session.id,
-          personaId: activePersonaId,
-          provider: aiProvider,
-          message: text,
-          memory: memoryPayload,
-        });
-
-        const finalResponse = fallbackRes.response || '';
-        const finalAiMsg: ChatMessage = fallbackRes.aiMessage || {
-          id: `msg_model_${Date.now()}`,
-          role: 'model',
-          content: finalResponse,
-          selectedVariantIndex: 0,
-          variants: [
-            {
-              id: `v_${Date.now()}`,
-              text: finalResponse,
-              createdAt: new Date().toISOString(),
-            },
-          ],
-          isPinned: false,
-          rating: 0,
-          createdAt: new Date().toISOString(),
-        };
-
-        const finalUserMsg: ChatMessage = fallbackRes.userMessage || userMsg;
-
-        setSession((prev) => {
-          if (!prev) return prev;
-          const updatedMessages = prev.messages.map((m) =>
-            m.id === tempUserMsgId ? finalUserMsg : m
-          );
-          if (!updatedMessages.some((m) => m.id === finalAiMsg.id)) {
-            updatedMessages.push(finalAiMsg);
-          }
-          return {
-            ...prev,
-            id: fallbackRes.sessionId || prev.id,
-            messages: updatedMessages,
-            affinity: fallbackRes.relationship?.affinity ?? prev.affinity,
-            trust: fallbackRes.relationship?.trust ?? prev.trust,
-            strain: fallbackRes.relationship?.strain ?? prev.strain,
-            relationshipStage: fallbackRes.relationship?.relationshipStage ?? prev.relationshipStage,
-            relationshipMood: fallbackRes.relationship?.relationshipMood ?? prev.relationshipMood,
-            relationship: fallbackRes.relationship || prev.relationship,
-          };
-        });
-
-        if (autoTTS && finalResponse) {
-          speakText(finalResponse);
-        }
-      } catch (postErr: unknown) {
-        // Rollback optimistic user message from state
-        setSession((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            messages: prev.messages.filter((m) => m.id !== tempUserMsgId),
-          };
-        });
-        const msg = postErr instanceof Error ? postErr.message : 'Message failed to send';
-        alert(msg);
-        throw postErr;
-      }
+      // An interrupted stream may already have committed. Read before allowing a manual retry.
+      try { setSession(await api.getChatSession(session.id)); }
+      catch { setSession(prev => prev ? {...prev,messages:prev.messages.filter(m=>m.id!==tempUserMsgId)} : prev); }
+      alert('Connection interrupted. Review the conversation before sending again.');
+      throw streamErr;
     } finally {
       setIsStreaming(false);
       setStreamingBuffer('');

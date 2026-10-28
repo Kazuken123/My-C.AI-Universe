@@ -360,6 +360,7 @@ export class ApiClient {
     const reader = response.body.getReader();
     const decoder = new TextDecoder('utf-8');
     let buffer = '';
+      let receivedDone = false;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -373,19 +374,16 @@ export class ApiClient {
         const trimmed = event.trim();
         if (!trimmed.startsWith('data:')) continue;
         const jsonStr = trimmed.slice(5).trim();
-        try {
           const parsed = JSON.parse(jsonStr);
-          if (parsed.token && typeof onToken === 'function') {
-            onToken(parsed.token);
+          if (parsed.error) throw new Error(typeof parsed.error === 'string' ? parsed.error : parsed.error.message);
+          if (parsed.token) onToken(parsed.token);
+          if (parsed.done) {
+            receivedDone = true;
+            if (typeof onDone === 'function') await onDone(parsed);
           }
-          if (parsed.done && typeof onDone === 'function') {
-            await onDone(parsed as ChatStreamDoneChunk);
-          }
-        } catch {
-          // ignore corrupted SSE JSON slice
-        }
       }
     }
+    if (!receivedDone) throw new Error('Stream ended before the turn was saved');
   }
 
   updateChatMessage(

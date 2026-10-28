@@ -36,6 +36,7 @@ export class OllamaProvider extends BaseAIProvider {
       }
 
       const data = await res.json();
+      if (options.requireComplete && (data.done !== true || data.done_reason === 'length')) throw new AIError('Character response did not complete',503);
       const response = (data.response || '').trim();
 
       if (!response) {

@@ -1,3 +1,4 @@
+import { activeMemories, memoryKey, snapshot } from '../services/turn-state.js';
 import { BaseController } from './BaseController.js';
 import { memoryService } from '../services/memory.service.js';
 import { characterRepository, chatSessionRepository } from '../repositories/index.js';
@@ -22,27 +23,33 @@ export class MemoryController extends BaseController {
   async getMemories(req, res) {
     try {
       const { characterId, sessionId } = req.query;
-      if (!characterId && !sessionId && (!req.user || !req.user.isAdmin())) {
+      const isAdmin = typeof req.user?.isAdmin === 'function' ? req.user.isAdmin() : req.user?.role === 'admin';
+      if (!characterId && !sessionId && !isAdmin) {
         throw new ValidationError('characterId or sessionId parameter is required to retrieve memories', 'characterId');
       }
 
       let verifiedSessionId = null;
+      let verifiedSession = null;
       if (sessionId && req.user?.id) {
         const session = await this.sessionRepo.findById(sessionId, req.user.id);
         if (session && (!characterId || session.characterId === characterId)) {
           verifiedSessionId = session.id;
+          verifiedSession = session;
         }
       }
 
       let memories = [];
       if (characterId) {
         memories = await this.service.getMemories(characterId, verifiedSessionId);
-      } else if (req.user && req.user.isAdmin()) {
+      } else if (isAdmin) {
         memories = await this.service.getMemories(null);
       }
 
+      if (verifiedSession) memories = [...memories,...activeMemories(verifiedSession.narrativeState).map(item=>({
+        ...item,id:`state:${verifiedSession.id}:${memoryKey(item)}`,characterId:verifiedSession.characterId,sessionId:verifiedSession.id,source:item.kind,visibility:'session'
+      }))];
       let storySummary = '';
-      if (verifiedSessionId || (sessionId && req.user?.isAdmin())) {
+      if (verifiedSessionId || (sessionId && isAdmin)) {
         const targetSid = verifiedSessionId || sessionId;
         storySummary = await this.service.getSessionStorySummary(targetSid);
       }
@@ -93,6 +100,18 @@ export class MemoryController extends BaseController {
 
   async deleteMemory(req, res) {
     try {
+      if (req.params.id.startsWith('state:')) {
+        const [, sessionId, key] = req.params.id.split(':');
+        const session = await this.sessionRepo.findById(sessionId,req.user?.id);
+        if (!session || !activeMemories(session.narrativeState).some(m=>memoryKey(m)===key)) throw new NotFoundError('Memory not found');
+        const before = snapshot(session);
+        session.narrativeState.forgottenMemoryKeys = [...new Set([...(session.narrativeState.forgottenMemoryKeys || []),key])];
+        session.narrativeState.memories = activeMemories(session.narrativeState);
+        session.invalidateSummary = true;
+        session.pendingEvent = {kind:'forget',position:session.messages.length-1,messageId:session.messages.at(-1)?.id || null,before};
+        await this.sessionRepo.updateRelationshipState(sessionId,{},session);
+        return this.sendJson(res,{success:true,deletedId:req.params.id});
+      }
       const memory = await this.service.repository.findById(req.params.id);
       if (!memory) {
         throw new NotFoundError('Memory not found');

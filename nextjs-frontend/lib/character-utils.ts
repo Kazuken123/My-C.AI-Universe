@@ -34,15 +34,7 @@ export const CHARACTER_CATEGORIES = [
 
 export type CharacterCategoryType = typeof CHARACTER_CATEGORIES[number];
 
-export const RELATIONSHIP_STAGE_PRESETS = [
-  { label: 'Stranger / Neutral', affinity: 0, stage: 'Stranger / Neutral' },
-  { label: 'Acquaintance (+15)', affinity: 15, stage: 'Acquaintance' },
-  { label: 'Allies / Comrades (+35)', affinity: 35, stage: 'Allies' },
-  { label: 'Confidant (+60)', affinity: 60, stage: 'Confidant' },
-  { label: 'Admiration / Romance (+85)', affinity: 85, stage: 'Admiration / Romance' },
-  { label: 'Rivalry / Tense (-25)', affinity: -25, stage: 'Rivalry / Tense' },
-  { label: 'Hostile / Adversary (-60)', affinity: -60, stage: 'Hostile / Adversary' },
-] as const;
+export { RELATIONSHIP_PRESETS as RELATIONSHIP_STAGE_PRESETS } from '../../frontend/js/relationship-contract.js';
 
 export const PRESET_AVATAR_SEEDS = [
   'CyberKnight',

@@ -222,6 +222,7 @@ export function ChatDrawerMemories({
                         </p>
                         <span className="font-mono text-[10px] text-text-muted block">
                           Source: {mem.source || 'auto-turn'}
+                          {mem.evidence && <span className="block normal-case">From your message: “{mem.evidence}”</span>}
                         </span>
                       </div>
                       <button

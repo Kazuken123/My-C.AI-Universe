@@ -101,7 +101,7 @@ export class GeminiProvider extends BaseAIProvider {
     // the active stage in spoken dialogue rather than copying past cold turns.
     if (mergedTurns.length > 0 && options.relationship) {
       const targetName = options.persona?.name || 'User';
-      const stageNote = buildRecencyStageNote(options.relationship, character, targetName);
+      const stageNote = buildRecencyStageNote(options.relationship, character, targetName, options.appraisalManaged);
       if (stageNote) {
         const lastTurn = mergedTurns[mergedTurns.length - 1];
         if (lastTurn.role === 'user') {
@@ -154,6 +154,7 @@ export class GeminiProvider extends BaseAIProvider {
           }
 
           const candidate = response.candidates?.[0];
+          if (options.requireComplete && candidate?.finishReason !== 'STOP') throw new AIError('Character response did not complete', 503);
           if (candidate?.finishReason && !['STOP', 'MAX_TOKENS'].includes(candidate.finishReason)) {
             if (['SAFETY', 'PROHIBITED_CONTENT', 'BLOCKLIST', 'SPII'].includes(candidate.finishReason)) {
               console.warn(`[GEMINI PROVIDER] Candidate blocked by safety filter: ${candidate.finishReason}`);
@@ -246,13 +247,20 @@ export class GeminiProvider extends BaseAIProvider {
             }
           });
 
+          let finished = false;
           for await (const chunk of stream) {
+            const reason = chunk.candidates?.[0]?.finishReason;
+            if (reason) {
+              if (options.requireComplete && reason !== 'STOP') throw new AIError('Character response did not complete',503);
+              finished = reason === 'STOP';
+            }
             const text = chunk.text;
             if (text) {
               hasYielded = true;
               yield text;
             }
           }
+          if (options.requireComplete && !finished) throw new AIError('Stream ended without a completion marker',503);
           return;
         } catch (err) {
           lastError = err;

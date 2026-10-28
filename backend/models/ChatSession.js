@@ -1,3 +1,4 @@
+import { normalizeRelationshipStage } from '../../frontend/js/relationship-contract.js';
 import crypto from 'node:crypto';
 import { BaseEntity } from './BaseEntity.js';
 
@@ -75,7 +76,7 @@ export class ChatMessage extends BaseEntity {
    */
   addVariant(text) {
     const newVar = new MessageVariant({
-      id: `${this.id}_v${this.variants.length + 1}`,
+      id: `${this.id}_v_${crypto.randomBytes(8).toString('hex')}`,
       messageId: this.id,
       variantIndex: this.variants.length,
       text,
@@ -156,7 +157,9 @@ export class ChatSession extends BaseEntity {
     this.affinity = Number(props.affinity ?? 0);
     this.trust = Number(props.trust ?? this.affinity);
     this.strain = Number(props.strain ?? 0);
-    this.relationshipStage = props.relationshipStage || props.relationship_stage || 'Stranger / Neutral';
+    this.relationshipStage = normalizeRelationshipStage(props.relationshipStage || props.relationship_stage);
+    this.revision = Number.isInteger(props.revision) ? props.revision : null;
+    this.narrativeState = props.narrativeState || {};
     this.relationshipMood = props.relationshipMood || props.relationship_mood || 'Calm';
     this.messages = Array.isArray(props.messages)
       ? props.messages.map((m, idx) =>
@@ -205,6 +208,8 @@ export class ChatSession extends BaseEntity {
       affinity: row.affinity,
       trust: row.trust,
       strain: row.strain,
+      revision: Number(row.revision ?? 0),
+      narrativeState: JSON.parse(row.narrative_state || '{}'),
       relationshipStage: row.relationship_stage,
       relationshipMood: row.relationship_mood,
       createdAt: row.created_at,
@@ -226,6 +231,8 @@ export class ChatSession extends BaseEntity {
       strain: this.strain,
       relationshipStage: this.relationshipStage,
       relationshipMood: this.relationshipMood,
+      revision: this.revision,
+      narrativeState: this.narrativeState,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       messages: this.messages.map(m => m.toJSON())

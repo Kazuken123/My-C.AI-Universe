@@ -73,7 +73,8 @@ export class AIOrchestrator {
             console.warn('[AI ORCHESTRATOR] Primary provider failed, trying fallback:', primaryErr?.message);
             try {
               response = await fallbackProvider.generateReply(character, userMsg, memory, options);
-            } catch {
+            } catch (fallbackError) {
+              if (options.requireComplete) throw fallbackError;
               response = this.#buildInCharacterFallback(character, userMsg, options);
             }
           }

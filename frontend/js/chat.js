@@ -1,3 +1,4 @@
+import { normalizeRelationshipStage, RELATIONSHIP_MOODS, RELATIONSHIP_PRESETS } from './relationship-contract.js';
 import { api } from './api.js';
 import { escapeHtml, formatCount, bindSpotlightHover } from './characters.js';
 import { deduplicateSessionsByCharacter } from './common.js';
@@ -337,7 +338,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
   const STAGE_ICONS = {
     'Hatred / Nemesis': '<i class="ph-bold ph-skull"></i>',
-    'Hostile / Rival': '<i class="ph-bold ph-sword"></i>',
+    'Hostile / Bitter': '<i class="ph-bold ph-sword"></i>',
     'Scared / Intimidated': '<i class="ph-bold ph-warning-circle"></i>',
     'Submissive / Dependent': '<i class="ph-bold ph-lock-key"></i>',
     'Cold / Guarded': '<i class="ph-bold ph-shield"></i>',
@@ -358,7 +359,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     cold: { affinity: -20, stage: 'Cold / Guarded', mood: 'Guarded' },
     submissive: { affinity: -20, stage: 'Submissive / Dependent', mood: 'Submissive' },
     scared: { affinity: -40, stage: 'Scared / Intimidated', mood: 'Afraid' },
-    hostile: { affinity: -45, stage: 'Hostile / Rival', mood: 'Quarreling / Heated' },
+    hostile: { affinity: -45, stage: 'Hostile / Bitter', mood: 'Quarreling / Heated' },
     nemesis: { affinity: -85, stage: 'Hatred / Nemesis', mood: 'Quarreling / Heated' },
     obsessed: { affinity: 95, stage: 'Obsessed / Possessive', mood: 'Possessive' }
   };
@@ -375,7 +376,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     const affinity = Number(sess?.affinity ?? char?.initial_affinity ?? 0);
     const trust = Number(sess?.trust ?? sess?.affinity ?? char?.initial_affinity ?? 0);
     const strain = Number(sess?.strain ?? 0);
-    const stage = sess?.relationshipStage || char?.initial_relationship_stage || 'Stranger / Neutral';
+    const stage = normalizeRelationshipStage(sess?.relationshipStage || char?.initial_relationship_stage || 'Stranger / Neutral');
     const mood = sess?.relationshipMood || 'Calm';
     const dynamic = char?.relationship_dynamic || '';
 
@@ -394,7 +395,20 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       chatRelMoodPill.textContent = mood;
     }
     if (chatRelProgressFill) {
-      chatRelProgressFill.style.width = `${percent}%`;
+      chatRelProgressFill.style.width = `${Math.abs(percent-50)}%`;
+      chatRelProgressFill.style.marginLeft = `${Math.min(percent,50)}%`;
+      chatRelProgressFill.style.background = affinity < 0 ? '#fb7185' : '#34d399';
+      const track = chatRelProgressFill.parentElement;
+      track.removeAttribute('aria-hidden');
+      track.setAttribute('role','meter');
+      track.setAttribute('aria-label', 'Closeness: hostile -100, neutral 0, close +100');
+      track.setAttribute('aria-valuemin','-100'); track.setAttribute('aria-valuemax','100'); track.setAttribute('aria-valuenow',String(affinity));
+      track.style.backgroundImage = 'linear-gradient(to right, transparent 49.5%, #aaa 49.5%, #aaa 50.5%, transparent 50.5%)';
+      let explanation = document.getElementById('relationship-change-reason');
+      if (!explanation && chatRelationshipPopover) { explanation=document.createElement('p'); explanation.id='relationship-change-reason'; explanation.style.cssText='padding: 10px 14px; font-size: 11px; line-height: 1.5; color: var(--text-secondary);'; chatRelationshipPopover.appendChild(explanation); }
+      const detail = `Trust ${trust} · Strain ${strain} · ${sess?.narrativeState?.lastChange || 'No verified relationship change.'}`;
+      chatRelationshipBar.title = detail;
+      if (explanation) explanation.textContent = `Closeness: hostile −100 / neutral 0 / close +100. ${detail}`;
     }
 
     if (relMetricAffinity) relMetricAffinity.textContent = (affinity > 0 ? '+' : '') + affinity;
@@ -409,6 +423,10 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       relAffinitySliderBadge.textContent = (affinity > 0 ? '+' : '') + affinity;
     }
     if (relMoodSelect) {
+      if (relMoodSelect.dataset.canonical !== 'true') {
+        relMoodSelect.replaceChildren(...RELATIONSHIP_MOODS.map(m=>{const option=document.createElement('option');option.value=m;option.textContent=m;return option;}));
+        relMoodSelect.dataset.canonical='true';
+      }
       relMoodSelect.value = mood;
     }
 
@@ -453,6 +471,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
   if (relAffinitySlider && relAffinitySliderBadge) {
     relAffinitySlider.addEventListener('input', () => {
       const val = parseInt(relAffinitySlider.value, 10) || 0;
+      if (relOverridePreset) relOverridePreset.value = '';
       relAffinitySliderBadge.textContent = (val > 0 ? '+' : '') + val;
     });
   }
@@ -512,7 +531,10 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
           affinity: affinityVal,
           relationshipMood: moodVal
         };
-        if (stageVal) payload.relationshipStage = stageVal;
+        if (stageVal) {
+          payload.relationshipStage = stageVal;
+          payload.trust = RELATIONSHIP_PRESETS.find(p=>p.stage===stageVal)?.trust ?? affinityVal;
+        }
 
         const updated = await api.updateSessionRelationship(appState.activeSession.id, payload);
         if (updated && updated.session) {
@@ -1302,44 +1324,13 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         }
       }
     } catch (streamError) {
-      console.warn('[CHAT] Stream fallback:', streamError.message);
       try {
-        const fallbackRes = await api.sendChatMessage({
-          charId: character.id,
-          sessionId: session.id,
-          personaId: chatPersonaSelect?.value || appState.activePersona?.id,
-          provider: aiProviderSelect?.value || 'gemini',
-          message: text,
-          memory: (session.messages || []).slice(-60).map(m => ({ role: m.role, content: m.content }))
-        });
-
-        const updatedSession = await api.getChatSession(fallbackRes.sessionId || session.id);
-        if (Date.now() - lastDirectorOverrideTime < 4000 && appState.activeSession) {
-          updatedSession.affinity = appState.activeSession.affinity;
-          updatedSession.trust = appState.activeSession.trust;
-          updatedSession.strain = appState.activeSession.strain;
-          updatedSession.relationshipStage = appState.activeSession.relationshipStage;
-          updatedSession.relationshipMood = appState.activeSession.relationshipMood;
-        }
+        const updatedSession = await api.getChatSession(session.id);
         appState.activeSession = updatedSession;
         renderChatStream(appState.activeCharacter, updatedSession);
         renderRelationshipBar(updatedSession, appState.activeCharacter);
-        updateLocalSessionPreview(updatedSession.id, fallbackRes.response || text);
-        refreshRightDrawer(appState.activeCharacter, updatedSession).catch(() => {});
-
-        const lastFallbackRow = streamInner?.querySelector('.msg-row.model:last-of-type');
-        const lastFallbackBubble = lastFallbackRow?.querySelector('.msg-bubble');
-        if (lastFallbackBubble) {
-          lastFallbackBubble.classList.add('take-reveal');
-        }
-
-        if (autoSpeakTTS && fallbackRes.response) {
-          speakText(fallbackRes.response);
-        }
-      } catch (fallbackErr) {
-        modelRow.remove();
-        showToast('Chat error: ' + fallbackErr.message);
-      }
+      } catch { modelRow.remove(); }
+      showToast('Connection interrupted. Review the conversation before sending again.');
     } finally {
       isSending = false;
     }
@@ -1613,7 +1604,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
             <div class="memory-item">
               <div>
                 <div>${escapeHtml(m.content)}</div>
-                <div style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); margin-top: 3px;">SOURCE: ${escapeHtml((m.source || 'conversation').toUpperCase())}</div>
+                <div style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); margin-top: 3px;">SOURCE: ${escapeHtml((m.source || 'conversation').toUpperCase())}${m.evidence ? `<br>From your message: ${escapeHtml(m.evidence)}` : ''}</div>
               </div>
               <button class="msg-tool-btn" data-del-mem="${escapeHtml(m.id)}" type="button" title="Delete memory">
                 <i class="ph-light ph-x"></i>

@@ -1,3 +1,4 @@
+import { textFingerprint } from './turn-state.js';
 /**
  * RelationshipService Class
  * Implements Psychological Appraisal + Dual-Timescale Emotional Inertia & Stage Hysteresis:
@@ -283,6 +284,36 @@ export function createStreamTailFilter(emit) {
 }
 
 export class RelationshipService {
+  // Production scoring uses a validated appraisal created BEFORE response generation.
+  evaluateAppraisal({ userText = '', session = {}, character = {}, appraisal = null }) {
+    const current = {
+      affinity: Number(session.affinity ?? 0), trust: Number(session.trust ?? 0),
+      strain: Number(session.strain ?? 0), relationshipStage: session.relationshipStage || 'Stranger / Neutral',
+      relationshipMood: session.relationshipMood || 'Calm'
+    };
+    if (!appraisal) return current;
+    const repeated = (session.narrativeState?.recentActions || []).includes(textFingerprint(userText));
+    const passive = repeated || isPassiveOrMaintenanceTurn(appraisal, userText);
+    const progression = computeContextualProgression({
+      characterId: character.id, currentAffinity: current.affinity, currentTrust: current.trust,
+      relState: appraisal, userMessageText: userText
+    });
+    const clamp = (n,min,max) => Math.max(min,Math.min(max,Math.round(n)));
+    let delta = passive ? Math.min(0,appraisal.affinityDelta) : progression.affinityDelta;
+    // Repair restores safety; conflict is not a shortcut to romance.
+    if (appraisal.intent === 'rupture_repair') delta = Math.min(0,delta);
+    const trustDelta = passive ? Math.min(0,appraisal.trustDelta) : clamp(appraisal.trustDelta + progression.trustBonus,-8,6);
+    current.affinity = clamp(current.affinity + delta,-100,100);
+    current.trust = clamp(current.trust + trustDelta,-100,100);
+    current.strain = clamp(current.strain + appraisal.strainDelta,0,100);
+    current.relationshipMood = appraisal.mood;
+    current.relationshipStage = this.resolveStage({
+      affinity:current.affinity,trust:current.trust,strain:current.strain,
+      mood:appraisal.mood,character,currentStage:session.relationshipStage
+    });
+    return current;
+  }
+
   static PRESETS = {
     nemesis: { affinity: -85, trust: -80, stage: 'Hatred / Nemesis', mood: 'Hostile' },
     hostile: { affinity: -45, trust: -40, stage: 'Hostile / Rival', mood: 'Guarded' },
@@ -332,7 +363,7 @@ export class RelationshipService {
       .replace(/\[\[REL_STATE:[\s\S]*$/gi, '')
       .trim();
 
-    return { cleanText: cleanText || text.trim(), llmState };
+    return { cleanText, llmState };
   }
 
   /**
@@ -458,7 +489,8 @@ export class RelationshipService {
   }
 
   /**
-   * Evaluate a conversation turn using Psychological Appraisal + Catharsis + Stage Hysteresis
+   * Legacy response-tag evaluator retained for historical fixtures.
+   * @deprecated Production chat uses evaluateAppraisal before generating dialogue.
    */
   evaluateTurn({ userText = '', aiText = '', session = {}, character = {}, llmState = null }) {
     let affinity = Number(session.affinity ?? character.initialAffinity ?? 0);

@@ -144,8 +144,8 @@ Satoru Gojo: "Throughout heaven and earth, I alone am the honored one. Did you r
   const gojoCompiled = compileCharacterSystemPrompt(mockGojo);
   assert.match(
     gojoCompiled,
-    /80\/20/i,
-    'Gojo compiled prompt must enforce 80/20 baseline'
+    /Character-Specific Natural Baseline/i,
+    'Gojo compiled prompt must preserve his own baseline instead of a universal ratio'
   );
   console.log('✅ 5. Gojo Character Dynamics: Goofy baseline with gated combat arrogance verified');
 }

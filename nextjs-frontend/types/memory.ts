@@ -3,6 +3,8 @@ export interface CharacterMemory {
   characterId: string;
   sessionId?: string | null;
   content: string;
+  evidence?: string;
+  messageId?: string;
   source?: string;
   createdAt: string;
 }

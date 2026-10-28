@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Sliders, Heart, Shield, AlertTriangle, Sparkles, RefreshCw } from 'lucide-react';
 import type { RelationshipMetrics } from '@/types/chat';
 import { DoubleBezel } from '@/components/ui/double-bezel';
@@ -37,6 +37,15 @@ export function RelationshipDirectorModal({
   const [mood, setMood] = useState(relationship.relationshipMood || 'Calm');
   const [isSaving, setIsSaving] = useState(false);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setAffinity(relationship.affinity ?? 0);
+    setTrust(relationship.trust ?? 0);
+    setStrain(relationship.strain ?? 0);
+    setStage(relationship.relationshipStage || 'Stranger / Neutral');
+    setMood(relationship.relationshipMood || 'Calm');
+  }, [isOpen, relationship.affinity, relationship.trust, relationship.strain, relationship.relationshipStage, relationship.relationshipMood]);
+
   if (!isOpen) return null;
 
   const handleStagePresetSelect = (presetStage: string) => {
@@ -44,7 +53,7 @@ export function RelationshipDirectorModal({
     const matched = RELATIONSHIP_STAGE_PRESETS.find((p) => p.stage === presetStage);
     if (matched) {
       setAffinity(matched.affinity);
-      setTrust(Math.max(0, matched.affinity));
+      setTrust(matched.trust);
     }
   };
 
@@ -153,6 +162,7 @@ export function RelationshipDirectorModal({
                 onChange={(e) => handleStagePresetSelect(e.target.value)}
                 className="w-full rounded-lg border border-border-hairline bg-input px-3 py-2 text-xs text-text-primary focus:border-accent focus:outline-none cursor-pointer"
               >
+                <option value="">Infer from current scores</option>
                 {RELATIONSHIP_STAGE_PRESETS.map((preset) => (
                   <option key={preset.stage} value={preset.stage}>
                     {preset.label}
@@ -176,7 +186,7 @@ export function RelationshipDirectorModal({
                 min="-100"
                 max="100"
                 value={affinity}
-                onChange={(e) => setAffinity(Number(e.target.value))}
+                onChange={(e) => { setAffinity(Number(e.target.value)); setStage(''); }}
                 className="w-full accent-accent cursor-pointer"
               />
             </div>

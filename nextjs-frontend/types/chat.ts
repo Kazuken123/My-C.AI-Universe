@@ -18,6 +18,8 @@ export interface ChatMessage {
 }
 
 export interface RelationshipMetrics {
+  changeReason?: string;
+  emotionIntensity?: number;
   affinity: number;
   trust: number;
   strain: number;
@@ -62,6 +64,8 @@ export interface ChatSession {
   relationshipStage?: string;
   relationshipMood?: string;
   relationship?: RelationshipMetrics;
+  narrativeState?: { lastChange?: string; emotion?: { intensity?: number }; memories?: Array<{kind:string;content:string;evidence:string;messageId:string}> };
+  revision?: number;
   createdAt: string;
   updatedAt?: string;
   messages: ChatMessage[];

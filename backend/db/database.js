@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { DB_DIR } from '../config/index.js';
 import { compileCharacterSystemPrompt } from '../ai/prompt/characterPrompt.js';
+import { applyTurnStateMigration } from './migrations/20261028-turn-state.js';
 import { applyMemoryPrivacyMigration } from './migrations/20261027-memory-privacy.js';
 
 const DEFAULT_SQLITE_PATH = path.join(DB_DIR, 'universe.sqlite');
@@ -76,7 +77,7 @@ export class LibsqlStatementWrapper {
   async run(...args) {
     if (this.dbConnection) await this.dbConnection.ensureReady();
     const flat = this.#flattenArgs(args);
-    const res = await this.#executeWithRetry({ sql: this.sql, args: flat });
+    const res = await this.executor.execute({ sql: this.sql, args: flat });
     return {
       changes: res.rowsAffected || 0,
       lastInsertRowid: res.lastInsertRowid
@@ -265,6 +266,7 @@ export class DatabaseConnection {
 
     // Privacy must be ready before seeding or serving data; never suppress its failure.
     await applyMemoryPrivacyMigration(raw);
+    await applyTurnStateMigration(raw);
 
     try {
       // Check if characters table is empty

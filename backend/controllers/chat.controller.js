@@ -1,3 +1,6 @@
+import { appraisalService } from '../services/appraisal.service.js';
+import { snapshot, prepareNarrativeState, narrativeContext } from '../services/turn-state.js';
+import { RELATIONSHIP_MOODS, normalizeRelationshipStage } from '../../frontend/js/relationship-contract.js';
 import { BaseController } from './BaseController.js';
 import { ChatSession, ChatMessage } from '../models/ChatSession.js';
 import {
@@ -24,7 +27,8 @@ export class ChatController extends BaseController {
     personasRepo = personaRepository,
     memService = memoryService,
     orchestrator = aiOrchestrator,
-    relService = relationshipService
+    relService = relationshipService,
+    appraiser = appraisalService
   ) {
     super();
     this.sessionsRepo = sessionsRepo;
@@ -33,6 +37,7 @@ export class ChatController extends BaseController {
     this.memoryService = memService;
     this.orchestrator = orchestrator;
     this.relationshipService = relService;
+    this.appraiser = appraiser;
 
     this.getChatSessions = this.getChatSessions.bind(this);
     this.createChatSession = this.createChatSession.bind(this);
@@ -69,6 +74,7 @@ export class ChatController extends BaseController {
       position: 0
     }));
 
+    session.pendingEvent = { kind: 'initial', position: 0, messageId: session.messages[0].id, before: snapshot(session) };
     return session;
   }
 
@@ -82,7 +88,7 @@ export class ChatController extends BaseController {
     });
 
     setImmediate(() => {
-      if (aiText) {
+      if (aiText && !session.narrativeState?.version) {
         this.memoryService.detectAndStoreFromTurn(userText, aiText, character.id, session.id).catch(err => {
           console.warn('[CHAT CONTROLLER] Background memory extraction warning:', err.message);
         });
@@ -241,7 +247,11 @@ export class ChatController extends BaseController {
       }
 
       session.touch();
-      await this.sessionsRepo.updateMessageFields(sessionId, messageId, updateFields);
+      if ('content' in updateFields) {
+        const position = session.messages.indexOf(msg);
+        await this.sessionsRepo.restoreStateAt(session, msg.role === 'user' ? position - 1 : position);
+      }
+      await this.sessionsRepo.updateMessageFields(sessionId, messageId, updateFields, session);
 
       return this.sendJson(res, {
         message: msg.toJSON(),
@@ -267,6 +277,7 @@ export class ChatController extends BaseController {
         throw new NotFoundError('Target message not found in session');
       }
 
+      await this.sessionsRepo.restoreStateAt(session, session.messages.length - 1);
       await this.sessionsRepo.save(session);
       return this.sendJson(res, session.toJSON());
     } catch (error) {
@@ -308,7 +319,7 @@ export class ChatController extends BaseController {
           throw new ValidationError('Message or sessionId is required for regeneration', 'message');
         }
       } else {
-        if (!message && (!clientMemory || clientMemory.length === 0)) {
+        if (typeof message !== 'string' || !message.trim()) {
           throw new ValidationError('Message is required', 'message');
         }
       }
@@ -352,6 +363,8 @@ export class ChatController extends BaseController {
         });
       }
 
+      if (sessionId && !sessionLookup) throw new NotFoundError('Chat session not found');
+      if (sessionLookup && sessionLookup.characterId !== charId) throw new ValidationError('Session belongs to a different character', 'charId');
       let session = sessionLookup;
       let activePersona = preloadedPersona;
       if (!activePersona && session?.personaId) {
@@ -377,7 +390,7 @@ export class ChatController extends BaseController {
       if (provider) session.provider = provider;
 
       const pinnedMessages = session.getPinnedMessages().map(m => m.toJSON());
-      const effectiveHistory = Array.isArray(clientMemory) && clientMemory.length > 0
+      const effectiveHistory = isNewSession && Array.isArray(clientMemory) && clientMemory.length > 0
         ? clientMemory.slice(-config.MAX_MEMORY_MESSAGES)
         : session.messages
             .slice(-config.MAX_MEMORY_MESSAGES)
@@ -405,18 +418,28 @@ export class ChatController extends BaseController {
           : Promise.resolve('')
       ]);
 
+      const beforeState = snapshot(session);
+      const context = narrativeContext(session, queryForMemory);
+      const appraisal = !regenerate && !isContinue
+        ? await this.appraiser.appraise({ character, session, userText: message.trim(), history: effectiveHistory, memories: context.memories })
+        : null;
+      const evaluatedState = this.relationshipService.evaluateAppraisal({userText:message || '',session,character,appraisal});
       const aiOptions = {
+        requireComplete: true,
+        appraisalManaged: true,
+        narrativeContext: {...context,scene:appraisal?.scene || context.scene},
+        appraisal,
         provider: normalizeProviderName(provider ?? session.provider ?? config.AI_PROVIDER),
         persona: activePersona ? activePersona.toJSON() : null,
         pinnedMessages,
         memories: relevantMemories,
         storySummary,
         relationship: {
-          affinity: session.affinity,
-          trust: session.trust,
-          strain: session.strain,
-          stage: session.relationshipStage,
-          mood: session.relationshipMood,
+          affinity: evaluatedState.affinity,
+          trust: evaluatedState.trust,
+          strain: evaluatedState.strain,
+          stage: evaluatedState.relationshipStage,
+          mood: evaluatedState.relationshipMood,
           dynamic: character.relationshipDynamic
         }
       };
@@ -428,10 +451,11 @@ export class ChatController extends BaseController {
           ? sessionMsgs.findIndex(m => m.id === messageId)
           : sessionMsgs.map(m => m.role).lastIndexOf('model');
         const targetModelMsg = targetModelIdx !== -1 ? sessionMsgs[targetModelIdx] : null;
-        if (!targetModelMsg) {
+        if (!targetModelMsg || targetModelMsg.role !== 'model') {
           throw new ValidationError('No character message found to regenerate', 'regenerate');
         }
 
+        if (targetModelIdx !== sessionMsgs.length - 1) throw new ValidationError('Rewind to this message before regenerating it', 'messageId');
         const isContinuationTurn = Boolean(req.body.isContinuation) ||
           (targetModelIdx > 0 && sessionMsgs[targetModelIdx - 1].role === 'model');
 
@@ -514,18 +538,11 @@ ${existingVariants.length > 0 ? `- Do NOT repeat previous takes:\n${existingVari
         }
         session.touch();
 
-        // Idempotency guard: resolve variant mood cleanly without altering affinity, trust, strain, or stage
-        session.relationshipMood = this.relationshipService.resolveRegenerateMood({
-          aiText: cleanText,
-          session,
-          llmState
-        });
+        // Alternate wording reuses the same appraisal and never earns relationship points.
+        if (!cleanText.trim()) throw new Error('Empty character response');
 
         if (targetModelMsg && newVar) {
-          await Promise.all([
-            this.sessionsRepo.appendVariant(session, targetModelMsg, newVar),
-            this.sessionsRepo.updateRelationshipState(session.id, { relationshipMood: session.relationshipMood })
-          ]);
+          await this.sessionsRepo.appendVariant(session, targetModelMsg, newVar);
         } else {
           await this.sessionsRepo.save(session);
         }
@@ -568,12 +585,14 @@ Rules:
         const rawReply = await this.orchestrator.chat(character.toJSON(), continuationPrompt, effectiveHistory, aiOptions);
         const { cleanText } = this.relationshipService.extractAndStripStateTag(rawReply);
 
+        if (!cleanText.trim()) throw new Error('Empty character response');
         const newAiMsg = session.addMessage({
           role: 'model',
           content: cleanText
         });
         session.touch();
-        await this.sessionsRepo.appendMessages(session, [newAiMsg]);
+        session.pendingEvent = {kind:'continuation',position:session.messages.length-1,messageId:newAiMsg.id,before:beforeState};
+        await this.sessionsRepo.appendMessages(session, isNewSession ? session.messages : [newAiMsg]);
 
         this.#schedulePostTurnTasks({ userText: '', aiText: cleanText, character, session });
 
@@ -594,6 +613,19 @@ Rules:
 
       // Case 3: Standard User Chat Turn
       const isStreaming = req.query.stream === 'true' || req.headers.accept === 'text/event-stream';
+
+      const commitState = (userMsgObj, aiMsgObj) => {
+        Object.assign(session, evaluatedState);
+        session.narrativeState = prepareNarrativeState(session, appraisal, userMsgObj);
+        session.narrativeState.version = 1;
+        session.narrativeState.appraisalStatus = appraisal ? 'verified' : 'unavailable';
+        if (appraisal) {
+          const signed = n=>n>0?`+${n}`:String(n);
+          session.narrativeState.lastChange += ` Bond ${signed(session.affinity-beforeState.affinity)}; trust ${signed(session.trust-beforeState.trust)}; strain ${signed(session.strain-beforeState.strain)}.`;
+        }
+        session.pendingEvent = {kind:'turn',position:session.messages.length-1,messageId:aiMsgObj.id,before:beforeState};
+        return {...evaluatedState,changeReason:session.narrativeState.lastChange,emotionIntensity:session.narrativeState.emotion?.intensity};
+      };
 
       if (isStreaming) {
         res.setHeader('Content-Type', 'text/event-stream');
@@ -619,6 +651,7 @@ Rules:
           tailFilter.flush();
         } catch (streamErr) {
           console.warn('[CHAT CONTROLLER] Streaming fallback:', streamErr.message);
+          if (fullReply) throw streamErr;
           if (!fullReply) {
             fullReply = await this.orchestrator.chat(character.toJSON(), message.trim(), effectiveHistory, aiOptions);
             const { cleanText: fallbackClean } = this.relationshipService.extractAndStripStateTag(fullReply);
@@ -628,15 +661,7 @@ Rules:
 
         const { cleanText, llmState } = this.relationshipService.extractAndStripStateTag(fullReply);
 
-        const newRelState = this.relationshipService.evaluateTurn({
-          userText: message,
-          aiText: cleanText,
-          session,
-          character,
-          llmState
-        });
-        Object.assign(session, newRelState);
-        await this.sessionsRepo.updateRelationshipState(session.id, newRelState);
+        if (!cleanText.trim()) throw new Error("Empty character response");
 
         const aiMsgObj = session.addMessage({
           role: 'model',
@@ -644,6 +669,7 @@ Rules:
         });
         session.touch();
 
+        const newRelState = commitState(userMsgObj, aiMsgObj);
         const newlyAdded = isNewSession ? session.messages : [userMsgObj, aiMsgObj];
         await this.sessionsRepo.appendMessages(session, newlyAdded);
 
@@ -668,15 +694,7 @@ Rules:
       const rawReply = await this.orchestrator.chat(character.toJSON(), message.trim(), effectiveHistory, aiOptions);
       const { cleanText, llmState } = this.relationshipService.extractAndStripStateTag(rawReply);
 
-      const newRelState = this.relationshipService.evaluateTurn({
-        userText: message,
-        aiText: cleanText,
-        session,
-        character,
-        llmState
-      });
-      Object.assign(session, newRelState);
-      await this.sessionsRepo.updateRelationshipState(session.id, newRelState);
+      if (!cleanText.trim()) throw new Error("Empty character response");
 
       const aiMsgObj = session.addMessage({
         role: 'model',
@@ -684,6 +702,7 @@ Rules:
       });
       session.touch();
 
+      const newRelState = commitState(userMsgObj, aiMsgObj);
       const newlyAdded = isNewSession ? session.messages : [userMsgObj, aiMsgObj];
       await this.sessionsRepo.appendMessages(session, newlyAdded);
 
@@ -694,10 +713,14 @@ Rules:
         sessionId: session.id,
         userMessage: userMsgObj.toJSON(),
         aiMessage: aiMsgObj.toJSON(),
-        memoriesUsed: relevantMemories.length,
+        memoriesUsed: relevantMemories.length + context.memories.length,
         relationship: newRelState
       });
     } catch (error) {
+      if (res.headersSent) {
+        res.write(`data: ${JSON.stringify({error: 'Turn could not be saved. Reload the conversation before retrying.'})}\n\n`);
+        return res.end();
+      }
       return this.handleError(res, error, 'Chat service temporarily unavailable');
     }
   }
@@ -713,12 +736,18 @@ Rules:
         throw new NotFoundError('Chat session not found');
       }
 
+      for (const value of [affinity, trust, strain]) if (value !== undefined && !Number.isFinite(value)) throw new ValidationError('Relationship scores must be finite numbers');
+      if (relationshipStage !== undefined && typeof relationshipStage !== 'string') throw new ValidationError('Relationship stage must be a string');
+      if (relationshipMood !== undefined && typeof relationshipMood !== 'string') throw new ValidationError('Relationship mood must be a string');
+      if (relationshipMood && !RELATIONSHIP_MOODS.includes(relationshipMood)) throw new ValidationError('Unknown relationship mood');
+      if (relationshipStage && normalizeRelationshipStage(relationshipStage)==='Stranger / Neutral' && relationshipStage!=='Stranger / Neutral') throw new ValidationError('Unknown relationship stage');
+      const before = snapshot(session);
       const targetAffinity = typeof affinity === 'number' ? Math.max(-100, Math.min(100, affinity)) : session.affinity;
       const targetTrust = typeof trust === 'number' ? Math.max(-100, Math.min(100, trust)) : session.trust;
       const targetStrain = typeof strain === 'number' ? Math.max(0, Math.min(100, strain)) : session.strain;
       const targetMood = typeof relationshipMood === 'string' && relationshipMood.trim() ? relationshipMood.trim() : session.relationshipMood;
 
-      let targetStage = typeof relationshipStage === 'string' && relationshipStage.trim() ? relationshipStage.trim() : null;
+      let targetStage = typeof relationshipStage === 'string' && relationshipStage.trim() ? normalizeRelationshipStage(relationshipStage.trim()) : null;
       if (!targetStage) {
         const character = await this.charsRepo.findById(session.characterId);
         targetStage = this.relationshipService.resolveStage({
@@ -740,7 +769,9 @@ Rules:
       };
 
       Object.assign(session, updatedState);
-      await this.sessionsRepo.updateRelationshipState(sessionId, updatedState);
+      session.narrativeState = {...session.narrativeState,lastChange:'Relationship adjusted by Director.',emotion:{mood:targetMood,intensity:0.5,cause:'Director override'}};
+      session.pendingEvent = {kind:'director',position:Math.max(0,session.messages.length-1),messageId:session.messages.at(-1)?.id || null,before};
+      await this.sessionsRepo.updateRelationshipState(sessionId, updatedState, session);
 
       return this.sendJson(res, {
         success: true,

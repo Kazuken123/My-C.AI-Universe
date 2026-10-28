@@ -242,16 +242,17 @@ export class SemanticMemoryService {
   /**
    * Automatically generate a rolling story checkpoint summarizing earlier conversation turns
    */
-  async updateRollingStorySummary(session, character, apiKey = process.env.GEMINI_API_KEY) {
+  async updateRollingStorySummary(session, character, apiKey = process.env.GEMINI_API_KEY, generate = null) {
     if (!session || !session.messages || session.messages.length < 24) return null;
     if (this.activeSummaryLocks.has(session.id)) return null;
 
     const totalMsgs = session.messages.length;
-    // Trigger update roughly every 12 messages
-    if (totalMsgs % 12 !== 0 && totalMsgs !== 24) return null;
-
     this.activeSummaryLocks.add(session.id);
     try {
+      // Checkpoints work for greeting + paired turns (25, 37, ...) as well as even histories.
+      const checkpoint = await this.repository.db.prepare('SELECT message_count FROM chat_summary_checkpoints WHERE session_id = ?').get(session.id);
+      if (checkpoint && totalMsgs - Number(checkpoint.message_count) < 12) return null;
+
       const existingSummary = await this.getSessionStorySummary(session.id);
       const olderMsgs = session.messages.slice(0, totalMsgs - 10);
       if (olderMsgs.length < 8) return null;
@@ -262,9 +263,9 @@ export class SemanticMemoryService {
         return `${speaker}: ${text.slice(0, 300)}`;
       }).join('\n');
 
-      if (!apiKey) return null;
+      if (!apiKey && !generate) return null;
       const { GoogleGenAI } = await import('@google/genai');
-      const ai = new GoogleGenAI({ apiKey });
+      const ai = generate ? null : new GoogleGenAI({ apiKey });
 
       const summaryPrompt = `You are a story chronicler for an ongoing roleplay narrative. Summarize the following earlier events between User and ${character.name} into a cohesive narrative recap (3-5 sentences).
 Preserve:
@@ -289,7 +290,7 @@ Output ONLY the distilled narrative summary text:`;
       let summaryText = '';
       for (const modelName of modelsToTry) {
         try {
-          const res = await ai.models.generateContent({
+          const res = generate ? await generate(summaryPrompt) : await ai.models.generateContent({
             model: modelName,
             contents: summaryPrompt
           });
@@ -301,7 +302,13 @@ Output ONLY the distilled narrative summary text:`;
       }
 
       if (!summaryText) return null;
-      const saved = await this.repository.upsertStorySummary(character.id, session.id, summaryText);
+      const saved = await this.repository.runInTransaction(async db => {
+        const current = await db.prepare('SELECT revision FROM chat_sessions WHERE id = ?').get(session.id);
+        if (!current || Number(current.revision) !== session.revision) return null;
+        const memory = await this.repository.upsertStorySummary(character.id, session.id, summaryText, db);
+        await db.prepare('INSERT INTO chat_summary_checkpoints (session_id,message_count,revision) VALUES (?,?,?) ON CONFLICT(session_id) DO UPDATE SET message_count=excluded.message_count,revision=excluded.revision').run(session.id,totalMsgs,session.revision);
+        return memory;
+      });
       return saved ? saved.toJSON() : null;
     } catch (err) {
       console.warn('[MEMORY SERVICE] Rolling summary warning:', err.message);

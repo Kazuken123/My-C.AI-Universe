@@ -212,13 +212,17 @@ export function ChatHeader({
             </div>
           </div>
 
-          {/* Micro Progress Bar */}
-          <div className="h-1 w-full rounded-full bg-white/5 overflow-hidden">
+          <div className="flex justify-between text-[10px] text-text-muted"><span>Trust {relationship.trust} · Strain {relationship.strain}</span><span>{relationship.emotionIntensity !== undefined ? `Emotion ${Math.round(relationship.emotionIntensity * 100)}%` : ""}</span></div>
+          {/* Neutral is the center; only distance from neutral is filled. */}
+          <div className="relative h-1.5 w-full rounded-full bg-white/5 overflow-hidden" role="meter" aria-label="Closeness" aria-valuemin={-100} aria-valuemax={100} aria-valuenow={affinityVal} aria-valuetext={`${stage}, ${affinityVal}`}>
             <div
-              className="h-full bg-gradient-to-r from-accent to-emerald-400 transition-all duration-500 rounded-full"
-              style={{ width: `${percent}%` }}
+              className={cn("absolute h-full transition-all duration-500 rounded-full", affinityVal < 0 ? "bg-rose-400" : "bg-emerald-400")}
+              style={{ left: `${Math.min(50, percent)}%`, width: `${Math.abs(percent - 50)}%` }}
             />
+            <span className="absolute left-1/2 top-0 h-full w-px bg-white/60" />
           </div>
+          <div className="flex justify-between text-[9px] text-text-muted"><span>Hostile −100</span><span>Neutral 0</span><span>Close +100</span></div>
+          {relationship.changeReason && <p className="text-[10px] text-text-secondary">{relationship.changeReason}</p>}
         </div>
       </div>
     </header>

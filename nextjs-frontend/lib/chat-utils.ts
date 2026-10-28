@@ -59,18 +59,7 @@ export const AI_PROVIDERS = [
   { id: 'ollama', label: 'Ollama Local' },
 ] as const;
 
-export const RELATIONSHIP_MOODS = [
-  'Calm',
-  'Joyful',
-  'Warm',
-  'Flustered',
-  'Thoughtful',
-  'Protective',
-  'Playful',
-  'Tense',
-  'Melancholic',
-  'Stern',
-] as const;
+export { RELATIONSHIP_MOODS } from '../../frontend/js/relationship-contract.js';
 
 import type { ChatSessionSummary } from '@/types/chat';
 

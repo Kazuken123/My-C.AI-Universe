@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+import { snapshot, activeMemories } from '../services/turn-state.js';
 import { BaseRepository } from './BaseRepository.js';
 import { ChatSession, ChatMessage } from '../models/ChatSession.js';
 
@@ -8,6 +10,60 @@ import { ChatSession, ChatMessage } from '../models/ChatSession.js';
 export class ChatSessionRepository extends BaseRepository {
   constructor() {
     super('chat_sessions');
+  }
+
+
+  async claimRevision(db, session) {
+    if (session.revision === null) {
+      if (await db.prepare('SELECT id FROM chat_sessions WHERE id = ?').get(session.id)) {
+        const error = new Error('Session changed; reload before trying again.'); error.statusCode = 409; throw error;
+      }
+      return;
+    }
+    const result = await db.prepare('UPDATE chat_sessions SET revision = revision + 1 WHERE id = ? AND revision = ?').run(session.id, session.revision);
+    if (result.changes !== 1) {
+      const error = new Error('Session changed or was deleted; reload before trying again.'); error.statusCode = 409; throw error;
+    }
+  }
+
+  async writeState(db, session) {
+    await db.prepare('UPDATE chat_sessions SET narrative_state = ?, affinity = ?, trust = ?, strain = ?, relationship_stage = ?, relationship_mood = ? WHERE id = ?')
+      .run(JSON.stringify(session.narrativeState || {}),session.affinity,session.trust,session.strain,session.relationshipStage,session.relationshipMood,session.id);
+    if (session.invalidateEventsFrom !== undefined) {
+      await db.prepare('DELETE FROM chat_state_events WHERE session_id = ? AND position >= ?').run(session.id,session.invalidateEventsFrom);
+      await db.prepare("DELETE FROM character_memories WHERE session_id = ? AND source IN ('conversation','story_summary')").run(session.id);
+      await db.prepare('DELETE FROM chat_summary_checkpoints WHERE session_id = ?').run(session.id);
+    }
+    if (session.invalidateSummary) {
+      await db.prepare("DELETE FROM character_memories WHERE session_id = ? AND source = 'story_summary'").run(session.id);
+      await db.prepare('DELETE FROM chat_summary_checkpoints WHERE session_id = ?').run(session.id);
+    }
+    if (session.pendingEvent) {
+      const event=session.pendingEvent;
+      await db.prepare('INSERT INTO chat_state_events (id,session_id,message_id,position,kind,before_state,after_state,created_at) VALUES (?,?,?,?,?,?,?,?)')
+        .run(randomUUID(),session.id,event.messageId,event.position,event.kind,JSON.stringify(event.before),JSON.stringify(snapshot(session)),new Date().toISOString());
+    }
+  }
+
+  committed(session) {
+    session.revision = session.revision === null ? 0 : session.revision + 1;
+    delete session.pendingEvent;
+    delete session.invalidateSummary;
+    delete session.invalidateEventsFrom;
+  }
+
+  async restoreStateAt(session, position) {
+    const forgotten = session.narrativeState?.forgottenMemoryKeys || [];
+    const event = await this.db.prepare('SELECT after_state FROM chat_state_events WHERE session_id = ? AND position <= ? ORDER BY position DESC, rowid DESC LIMIT 1').get(session.id,position);
+    if (event) Object.assign(session,JSON.parse(event.after_state));
+    else {
+      const first = await this.db.prepare('SELECT before_state FROM chat_state_events WHERE session_id = ? ORDER BY position, rowid LIMIT 1').get(session.id);
+      if (first) Object.assign(session,JSON.parse(first.before_state));
+      else session.narrativeState = { lastChange: 'Earlier relationship snapshots are unavailable for this legacy chat.' };
+    }
+    session.narrativeState.forgottenMemoryKeys = [...new Set([...(session.narrativeState.forgottenMemoryKeys || []),...forgotten])];
+    session.narrativeState.memories = activeMemories(session.narrativeState);
+    session.invalidateEventsFrom = position + 1;
   }
 
   /**
@@ -163,6 +219,7 @@ export class ChatSessionRepository extends BaseRepository {
     const session = sessionObj instanceof ChatSession ? sessionObj : new ChatSession(sessionObj);
 
     const persistInConn = async (db) => {
+      await this.claimRevision(db, session);
       await db.prepare(`
         INSERT INTO chat_sessions (
           id, user_id, character_id, persona_id, title, provider,
@@ -253,6 +310,7 @@ export class ChatSessionRepository extends BaseRepository {
           }
         }
       }
+      await this.writeState(db, session);
     };
 
     if (targetDb) {
@@ -263,6 +321,7 @@ export class ChatSessionRepository extends BaseRepository {
       });
     }
 
+    this.committed(session);
     return session;
   }
 
@@ -278,6 +337,7 @@ export class ChatSessionRepository extends BaseRepository {
     }
 
     await this.runInTransaction(async (db) => {
+      await this.claimRevision(db, session);
       await db.prepare(`
         INSERT INTO chat_sessions (
           id, user_id, character_id, persona_id, title, provider,
@@ -362,8 +422,10 @@ export class ChatSessionRepository extends BaseRepository {
           }
         }
       }
+      await this.writeState(db, session);
     });
 
+    this.committed(session);
     return session;
   }
 
@@ -375,6 +437,7 @@ export class ChatSessionRepository extends BaseRepository {
    */
   async appendVariant(session, message, newVariant) {
     await this.runInTransaction(async (db) => {
+      await this.claimRevision(db, session);
       await db.prepare(`
         INSERT INTO message_variants (id, message_id, variant_index, text, created_at)
         VALUES (?, ?, ?, ?, ?)
@@ -398,7 +461,9 @@ export class ChatSessionRepository extends BaseRepository {
       await db.prepare(`
         UPDATE chat_sessions SET updated_at = ? WHERE id = ?
       `).run(session.updatedAt, session.id);
+      await this.writeState(db, session);
     });
+    this.committed(session);
   }
 
   /**
@@ -408,7 +473,7 @@ export class ChatSessionRepository extends BaseRepository {
    * @param {Object} fields
    * @returns {Promise<boolean>}
    */
-  async updateMessageFields(sessionId, messageId, fields = {}) {
+  async updateMessageFields(sessionId, messageId, fields = {}, session = null) {
     const sets = [];
     const params = [];
 
@@ -432,8 +497,18 @@ export class ChatSessionRepository extends BaseRepository {
     if (sets.length === 0) return false;
 
     params.push(messageId, sessionId);
-    await this.db.prepare(`UPDATE chat_messages SET ${sets.join(', ')} WHERE id = ? AND session_id = ?`).run(...params);
-    await this.db.prepare('UPDATE chat_sessions SET updated_at = ? WHERE id = ?').run(new Date().toISOString(), sessionId);
+    await this.runInTransaction(async db => {
+      if (session) await this.claimRevision(db,session);
+      else await db.prepare('UPDATE chat_sessions SET revision = revision + 1 WHERE id = ?').run(sessionId);
+      await db.prepare(`UPDATE chat_messages SET ${sets.join(', ')} WHERE id = ? AND session_id = ?`).run(...params);
+      if (typeof fields.content === 'string') {
+        await db.prepare('UPDATE message_variants SET text = ? WHERE message_id = ? AND variant_index = (SELECT selected_variant_index FROM chat_messages WHERE id = ? AND session_id = ?)')
+          .run(fields.content,messageId,messageId,sessionId);
+      }
+      await db.prepare('UPDATE chat_sessions SET updated_at = ? WHERE id = ?').run(new Date().toISOString(),sessionId);
+      if (session) await this.writeState(db,session);
+    });
+    if (session) this.committed(session);
     return true;
   }
 
@@ -442,9 +517,12 @@ export class ChatSessionRepository extends BaseRepository {
    * @param {string} sessionId
    * @param {Object} state
    */
-  async updateRelationshipState(sessionId, state = {}) {
+  async updateRelationshipState(sessionId, state = {}, session = null) {
     if (!sessionId) return false;
-    await this.db.prepare(`
+    await this.runInTransaction(async db => {
+    if (session) await this.claimRevision(db,session);
+    else await db.prepare("UPDATE chat_sessions SET revision = revision + 1 WHERE id = ?").run(sessionId);
+    await db.prepare(`
       UPDATE chat_sessions
       SET affinity = COALESCE(?, affinity),
           trust = COALESCE(?, trust),
@@ -462,6 +540,9 @@ export class ChatSessionRepository extends BaseRepository {
       new Date().toISOString(),
       sessionId
     );
+    if (session) await this.writeState(db,session);
+    });
+    if (session) this.committed(session);
     return true;
   }
 
