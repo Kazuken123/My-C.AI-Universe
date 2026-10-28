@@ -58,7 +58,7 @@ Search has an accessible name and a slash-key shortcut. Genre filters expose the
 
 The island and carousel use the shared motion script, with listener and observer cleanup on Next route changes. Scene Spark reads characters from the rendered catalogue, with no extra API requests and no sidebar mirroring. Hidden menu content is inert and removed from keyboard navigation.
 
-`frontend/css/orbit.css` and `frontend/js/orbit-motion.js` are mirrored into `nextjs-frontend/app/orbit.css` and `nextjs-frontend/public/js/orbit-motion.js`. The WebGL renderer `frontend/js/universe-scene.js` is mirrored into `nextjs-frontend/public/js/universe-scene.js`. Keep each pair byte-identical. The Express hero lives in `frontend/index.html`; React uses `components/characters/orbit-hero.tsx`.
+`frontend/css/orbit.css` and `frontend/js/orbit-motion.js` are mirrored into `nextjs-frontend/app/orbit.css` and `nextjs-frontend/public/js/orbit-motion.js`. The WebGL renderer frontend/js/universe-scene.js is mirrored into nextjs-frontend/public/js/universe-scene.js. Keep each pair byte-identical. The Express hero lives in `frontend/index.html`; React uses `components/characters/orbit-hero.tsx`.
 
 ## Design research and reference
 
@@ -74,7 +74,7 @@ The Dynamic Island is rendered only on the dashboard. Hover opens Scene Spark; t
 
 The character shelf supports swipe, previous/next, Arrow Left/Right and Home/End. Arrows disappear at the beginning/end and while results load. Search/category/sort changes reset the shelf to its first card. Screen readers receive the visible character range. Existing like, edit and chat actions retain their accessible names.
 
-Validation: run `node --test tests/ui-navigation.test.js tests/universe-scene.test.js` for island interaction and carousel boundary regressions, alongside the Next.js TypeScript/lint/unit checks.
+Validation: run `node --test tests/ui-navigation.test.js` for island interaction and carousel boundary regressions, alongside the Next.js TypeScript/lint/unit checks.
 
 
 ## Scene Spark island
