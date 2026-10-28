@@ -198,3 +198,37 @@ test('panoramic high-density displays stay inside the backing-pixel budget', () 
   h.detach();
   assert.equal(h.frames.size, 0);
 });
+
+test('the distant black hole retains its projected size and placement on desktop and mobile', () => {
+  for (const [width, x, y, size] of [[1200, 1.9, 3.3, 106], [340, -1.65, -.45, 72]]) {
+    const h = harness({ width });
+    const rows = Array.from({ length: h.calls.geometry.length / 15 }, (_, i) => h.calls.geometry.slice(i * 15, i * 15 + 15));
+    const hole = rows.find(row => row[14] === 4);
+    const worlds = rows.filter(row => row[14] === 3 || row[14] === 5);
+    assert.ok(hole[5] < -8, 'black hole is in the deep field');
+    assert.ok(worlds.every(world => world[5] > hole[5]), 'worlds remain closer than the hole');
+    const depth = 16 - hole[5];
+    assert.ok(Math.abs(hole[3] / depth - x / 14.4) < 1e-6);
+    assert.ok(Math.abs(hole[4] / depth - y / 14.4) < 1e-6);
+    assert.ok(Math.abs(hole[13] / depth - size / 14.4) < 1e-6);
+    assert.equal(rows[h.calls.batches[1].first][14], 4, 'distant body is composited before foreground worlds');
+  }
+});
+
+test('each particle galaxy has a visible orbit with a fixed centre', () => {
+  for (const width of [1200, 340]) {
+    const h = harness({ width });
+    const orbits = new Map();
+    for (let i = 0; i < h.calls.geometry.length; i += 15) {
+      const row = h.calls.geometry.slice(i, i + 15);
+      if (row[6]) orbits.set(Array.from(row.slice(3, 6)).join(','), row[6]);
+    }
+    assert.equal(orbits.size, 3);
+    for (const speed of orbits.values()) {
+      const orbitSeconds = Math.PI * 2 / Math.abs(speed);
+      assert.ok(orbitSeconds >= 60 && orbitSeconds <= 140, 'one orbit takes about one to two minutes');
+      assert.ok(Math.abs(speed * 3) > .13, 'several degrees of motion are visible within three seconds');
+    }
+    h.detach();
+  }
+});

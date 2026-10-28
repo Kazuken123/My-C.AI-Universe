@@ -18,15 +18,19 @@
     varying mediump float vKind;
     varying mediump vec2 vShape;
     void main() {
+      // Orbit in the galaxy's own plane, preserving its fixed sky inclination.
       float spin = uTime * aCenter.w;
       vec3 p = aPosition;
       p.xy = mat2(cos(spin), sin(spin), -sin(spin), cos(spin)) * p.xy;
       p.yz = mat2(cos(aTilt.x), sin(aTilt.x), -sin(aTilt.x), cos(aTilt.x)) * p.yz;
       p.xy = mat2(cos(aTilt.y), sin(aTilt.y), -sin(aTilt.y), cos(aTilt.y)) * p.xy;
       p += aCenter.xyz;
+      vec3 skyPosition = p;
       vec2 look = uPointer + vec2(sin(uTime * .028) * .022, cos(uTime * .021) * .013);
       p.xz = mat2(cos(look.x), sin(look.x), -sin(look.x), cos(look.x)) * p.xz;
       p.yz = mat2(cos(look.y), sin(look.y), -sin(look.y), cos(look.y)) * p.yz;
+      // The distant black hole is anchored in the deep field, with restrained parallax.
+      if (aSize.y > 3.5 && aSize.y < 4.5) p = mix(skyPosition, p, .12);
       float depth = max(1.0, 16.0 - p.z);
       gl_Position = vec4(p.x * 2.0 / uAspect, p.y * 2.0, depth - .2, depth);
       gl_PointSize = clamp(aSize.x * uPixelRatio * 16.0 / depth, 1.0, uMaxPointSize);
@@ -52,6 +56,57 @@
       f = f * f * (3.0 - 2.0 * f);
       return mix(mix(hash(cell), hash(cell + vec2(1., 0.)), f.x),
                  mix(hash(cell + vec2(0., 1.)), hash(cell + vec2(1.)), f.x), f.y);
+    }
+    // Advect a periodic texture around the disc. No time seam at atan's +/-PI.
+    float accretionFlow(float radius, float angle) {
+      float speed = .48 + .24 / pow(max(radius, .28), 1.35);
+      float phase = angle - uTime * speed;
+      vec2 orbit = vec2(cos(phase), sin(phase));
+      float turbulence = noise(orbit * (6. + radius * 11.) + radius * vec2(9., 4.));
+      float bands = .78 + .12 * sin(radius * 95. + turbulence * 3.5);
+      float streams = .7 + .22 * sin(phase * 3. + radius * 19.)
+                            + .08 * sin(phase * 7. - radius * 31.);
+      return bands * streams * (.65 + turbulence * .5);
+    }
+    vec4 blackHole(vec2 p) {
+      float tilt = vShape.y;
+      vec2 q = mat2(cos(tilt), sin(tilt), -sin(tilt), cos(tilt)) * p;
+      float r = length(q);
+      // Almost edge-on: a thin ellipse in front, a lensed image behind the shadow.
+      vec2 plane = vec2(q.x, q.y / vShape.x);
+      float discRadius = length(plane);
+      float discAngle = atan(plane.y, plane.x);
+      float discMask = smoothstep(.26, .34, discRadius) * (1. - smoothstep(.72, .94, discRadius));
+      float shadow = 1. - smoothstep(.266, .279, r);
+      float front = smoothstep(-.008, .012, q.y);
+      float discVisibility = 1. - shadow * (1. - front);
+      float flow = accretionFlow(discRadius, discAngle);
+      float beaming = 1.12 - .4 * smoothstep(-.85, .85, q.x);
+      float disc = discMask * discVisibility * flow * beaming;
+      float heat = 1. - smoothstep(.28, .9, discRadius);
+      vec3 discColor = mix(vec3(.37, .16, .055), vec3(1., .76, .4), heat);
+      discColor = mix(discColor, vec3(1., .94, .76), pow(heat, 3.));
+      // A broad upper arc and a much fainter lower image, connected to the disc.
+      vec2 lens = vec2(q.x, q.y / .92);
+      float lensRadius = length(lens);
+      float lensAngle = atan(lens.y, lens.x);
+      float arcMask = smoothstep(.282, .305, lensRadius) * (1. - smoothstep(.365, .445, lensRadius));
+      float upper = smoothstep(.015, .16, -q.y);
+      float lower = smoothstep(.015, .14, q.y) * .12;
+      float lensedFlow = accretionFlow(.38 + (lensRadius - .3) * 2.8, lensAngle);
+      float lensBands = .83 + .17 * sin(lensRadius * 160. + lensedFlow * 2.);
+      float arc = arcMask * (upper + lower) * lensBands * lensedFlow * beaming;
+      float photon = exp(-abs(r - .28) * 250.) * (.38 + upper * .34);
+      float bloom = exp(-abs(lensRadius - .33) * 28.) * upper * .065;
+      bloom += exp(-abs(q.y) * 65.) * exp(-q.x * q.x * 3.) * .055;
+      bloom *= 1. - shadow;
+      vec3 light = discColor * disc * 1.65 + vec3(1., .81, .49) * arc * 1.7;
+      light += vec3(1., .88, .65) * photon + vec3(.8, .48, .22) * bloom;
+      // Keep a crisp dark silhouette, with a restrained atmospheric glow.
+      light *= 1. - smoothstep(.91, 1., r);
+      vec3 mapped = 1. - exp(-light * 1.4);
+      float alpha = max(shadow, max(mapped.r, max(mapped.g, mapped.b)));
+      return vec4(mapped / max(alpha, .001), alpha);
     }
     vec4 planet(vec2 p, float radius) {
       vec2 q = p / radius;
@@ -84,24 +139,15 @@
         vec2 q = mat2(cos(angle), sin(angle), -sin(angle), cos(angle)) * p;
         q.y /= max(.22, vShape.x);
         float r = length(q);
-        float arm = .65 + .35 * sin(atan(q.y, q.x) * 2. + r * 12.);
+        // Rotate the spiral light within its fixed projected ellipse.
+        float orbit = atan(q.y, q.x) - uTime * (.07 + vShape.x * .035);
+        float arm = .65 + .35 * sin(orbit * 2. + r * 12.);
         float alpha = (exp(-r * r * 16.) + exp(-r * 4.) * arm * .55) * (1. - smoothstep(.65, 1., r));
         gl_FragColor = vec4(mix(vColor.rgb, vec3(1., .87, .66), exp(-r * 8.)), vColor.a * alpha);
       } else if (vKind < 3.5) {
         gl_FragColor = planet(p, .87);
       } else if (vKind < 4.5) {
-        // Artistic black hole: dark center, photon glow and a tilted accretion disk.
-        vec2 q = mat2(.94, .342, -.342, .94) * p;
-        float r = length(p);
-        float disk = length(vec2(q.x, q.y * 3.5));
-        float band = exp(-pow((disk - .56) * 15., 2.));
-        float photon = exp(-pow((r - .29) * 32., 2.));
-        float halo = exp(-r * 4.) * .2;
-        float cut = smoothstep(.24, .3, r);
-        vec3 glow = mix(vec3(.7, .24, .12), vec3(1., .85, .57), clamp(band + photon, 0., 1.));
-        float alpha = clamp(band * .9 + photon * .9 + halo, 0., 1.) * (1. - smoothstep(.84, 1., r));
-        if (r < .285) gl_FragColor = vec4(vec3(.003, .004, .012), 1.);
-        else gl_FragColor = vec4(glow * cut, alpha);
+        gl_FragColor = blackHole(p);
       } else {
         vec2 q = mat2(.94, .342, -.342, .94) * p;
         float r = length(vec2(q.x / .96, q.y / .26));
@@ -158,9 +204,9 @@
       point([0, 0, 0], center, tilt, [...gold, .55], 27, 1);
       point([0, 0, .03], center, tilt, [...white, .95], 4);
     }
-    galaxy([compact ? 1.3 : 4.6, compact ? -1.8 : .9, .3, .009], [.78, -.45], 2.2, compact ? 1250 : 2850, 4);
-    galaxy([compact ? -2 : -4.6, compact ? -3.8 : 4.2, -4, -.007], [1.12, .65], 1.4, compact ? 240 : 650, 3);
-    galaxy([compact ? 2.4 : 8.1, compact ? 2.4 : -3.7, -7.5, .011], [.42, .3], 1.1, compact ? 180 : 420, 3);
+    galaxy([compact ? 1.3 : 4.6, compact ? -1.8 : .9, .3, .065], [.78, -.45], 2.2, compact ? 1250 : 2850, 4);
+    galaxy([compact ? -2 : -4.6, compact ? -3.8 : 4.2, -4, -.047], [1.12, .65], 1.4, compact ? 240 : 650, 3);
+    galaxy([compact ? 2.4 : 8.1, compact ? 2.4 : -3.7, -7.5, .08], [.42, .3], 1.1, compact ? 180 : 420, 3);
 
     // Sparse, curved filaments join clusters across dark voids.
     const nodes = [[-11,5,-12],[-6,2,-8],[-2,5,-13],[3,4,-9],[8,6,-16],[11,1,-10],[6,-2,-7],[1,-5,-14],[-5,-3,-10],[-10,-6,-17]];
@@ -196,8 +242,12 @@
     }
     // Draw opaque foreground bodies last so their unlit sides occlude the star field.
     const opaqueOffset = particles.length / 15;
+    // Move the black hole from z=1.6 to z=-9 and scale x/y/size by the same
+    // depth ratio: it keeps its apparent size and position, but sits behind worlds.
+    const blackHoleDepthScale = 25 / 14.4;
+    point([0, 0, 0], [(compact ? -1.65 : 1.9) * blackHoleDepthScale, (compact ? -.45 : 3.3) * blackHoleDepthScale, -9, 0],
+      [.17, -.08], [...gold, 1], (compact ? 72 : 106) * blackHoleDepthScale, 4);
     point([0, 0, 0], [compact ? 1.45 : 6.7, compact ? -2.55 : -3.15, 5.5, 0], [0, 0], [.35, .52, .66, 1], compact ? 115 : 150, 5);
-    point([0, 0, 0], [compact ? -1.65 : 1.9, compact ? -.45 : 3.3, 1.6, 0], [0, 0], [...gold, 1], compact ? 72 : 106, 4);
     point([0, 0, 0], [compact ? -1.65 : -8, compact ? -4.1 : -4.8, 6.5, 0], [0, 0], [.48, .36, .58, 1], compact ? 58 : 76, 3);
     counts.worlds = 3;
     return { data: new Float32Array(particles), opaqueOffset, counts };

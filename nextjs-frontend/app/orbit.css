@@ -487,7 +487,11 @@ body:has(.orbit-discover) .ambient-grain { opacity: .035; }
 .universe-art .universe-fallback-core { width: 10%; height: 7%; top: 44%; left: 65%; }
 .universe-art .universe-fallback-world { position: absolute; width: 115px; height: 115px; right: 12%; bottom: 24%; border-radius: 50%; background: radial-gradient(circle at 24% 25%,#9caeb8,#435f78 29%,#142030 52%,#050710 74%); box-shadow: inset 2px 1px 3px #a6ccf573,-5px -1px 14px #77b1d01c; }
 .universe-art .universe-fallback-world::after { content: ''; position: absolute; inset: 25% -48%; border: 7px solid #b7a99448; border-left-color: #d4c3a2bb; border-bottom-color: #d4c3a299; border-radius: 50%; transform: rotate(-22deg); }
-.universe-art .universe-fallback-horizon { position: absolute; width: 78px; height: 78px; left: 57%; top: 24%; border-radius: 50%; background: radial-gradient(circle,#03040b 0 26%,#f8cc7b 28%,#a45a2b80 32%,transparent 42%); filter: drop-shadow(0 0 15px #d58b3c44); }
+/* The no-WebGL silhouette shares the thin disc and lensed crown. */
+.universe-art .universe-fallback-horizon { position: absolute; width: 78px; height: 78px; left: 57%; top: 24%; border-radius: 50%; isolation: isolate; transform: rotate(-5deg); background: radial-gradient(circle,#03040b 0 26%,#ffe6b3 27%,#bd894b99 29%,transparent 34%); filter: drop-shadow(0 0 5px #d58b3c33); }
+.universe-fallback-horizon::before { content: ''; position: absolute; z-index: -1; inset: 4%; border-radius: 50%; background: repeating-conic-gradient(from 0deg,#f9dba9 0deg,#a36a31 24deg,#ffedc8 58deg,#674021 90deg); mask-image: radial-gradient(circle,transparent 26%,#000 32%,#0009 67%,transparent 71%); animation: universe-accretion 16s linear infinite; }
+.universe-fallback-horizon::after { content: ''; position: absolute; inset: 18% 17% 20%; border-radius: 50%; border: 3px solid #edc58a99; border-top-color: #ffe6b3; border-bottom-color: #c28b4722; mask-image: linear-gradient(#000 0 36%,transparent 51%); }
+@keyframes universe-accretion { from { transform: scaleY(.17) rotate(0deg); } to { transform: scaleY(.17) rotate(360deg); } }
 
 @media (min-width: 1700px) {
   .universe-hero .orbit-title { font-size: 6.5rem; }
