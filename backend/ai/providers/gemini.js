@@ -2,7 +2,7 @@ import { GoogleGenAI } from '@google/genai';
 import { BaseAIProvider } from './BaseAIProvider.js';
 import { AIError } from '../errors.js';
 import { config } from '../../config/index.js';
-import { buildRecencyStageNote } from '../prompt/characterPrompt.js';
+import { buildRecencyStageNote, buildVariationNote } from '../prompt/characterPrompt.js';
 
 export const PERMISSIVE_SAFETY_SETTINGS = [
   { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
@@ -95,13 +95,14 @@ export class GeminiProvider extends BaseAIProvider {
       });
     }
 
-    // Anti-Recency Bias Seam Injection:
-    // Append the targeted relationship stage mandate directly to the final user turn in contents.
-    // This sits at Depth 0 immediately before token generation and guarantees the model adopts
-    // the active stage in spoken dialogue rather than copying past cold turns.
-    if (mergedTurns.length > 0 && options.relationship) {
+    // Put current stage and variety guidance beside the active turn for both reply modes.
+    // Variety also applies to callers that do not supply a relationship.
+    if (mergedTurns.length > 0) {
       const targetName = options.persona?.name || 'User';
-      const stageNote = buildRecencyStageNote(options.relationship, character, targetName, options.appraisalManaged);
+      const stageNote = [
+        options.relationship ? buildRecencyStageNote(options.relationship, character, targetName, options.appraisalManaged) : '',
+        buildVariationNote(memory, character.name)
+      ].filter(Boolean).join('\n');
       if (stageNote) {
         const lastTurn = mergedTurns[mergedTurns.length - 1];
         if (lastTurn.role === 'user') {

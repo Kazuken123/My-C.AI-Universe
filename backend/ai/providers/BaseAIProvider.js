@@ -1,4 +1,4 @@
-import { generateCharacterPrompt, generateConversationHistory } from '../prompt/characterPrompt.js';
+import { generateCharacterPrompt, generateConversationHistory, buildVariationNote } from '../prompt/characterPrompt.js';
 import { config } from '../../config/index.js';
 
 /**
@@ -39,8 +39,9 @@ export class BaseAIProvider {
     const userName = safeOptions.persona?.name || 'User';
     const conversationHistory = this.buildHistoryText(memory, charName, userName);
     const systemPrompt = this.buildSystemPrompt(character, safeOptions);
+    const variationNote = buildVariationNote(memory, charName);
 
-    return `${systemPrompt}\n\n${conversationHistory}${userName}: ${userMsg}\n\n${charName}:`;
+    return `${systemPrompt}\n\n${conversationHistory}${userName}: ${userMsg}\n\n${variationNote ? variationNote + '\n\n' : ''}${charName}:`;
   }
 
   /**

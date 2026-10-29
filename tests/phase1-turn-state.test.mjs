@@ -160,7 +160,34 @@ test('memory corrections replace only a known sourced memory', () => {
     const correction = validateAppraisal({ ...base, evidence: 'I prefer tea now', memories: [{ kind: 'fact', content: 'User now prefers tea', evidence: 'I prefer tea now', replaces: existing[0].key }] }, 'I prefer tea now', existing);
     const s = new ChatSession({ characterId: 'test', narrativeState: { memories: [old] } }), m = s.addMessage({ role: 'user', content: 'I prefer tea now' });
     const state = prepareNarrativeState(s, correction, m);
-    assert.deepEqual(state.memories.map(x => x.content), ['User now prefers tea']);
+    assert.deepEqual(state.memories.map(x => x.content), ['I prefer tea now']);
+});
+
+test('an appraisal cannot turn an intended exit into generation direction or persisted history', async () => {
+    const text = 'Anyway, I need to get going. Talk later.';
+    const invented = 'The user leaves after their work shift, as they did last week.';
+    const service = new AppraisalService(async () => JSON.stringify({ ...base, evidence: text, reason: invented,
+        memories: [{ kind: 'episode', content: invented, evidence: text }],
+        scene: { location: 'office', goal: 'User leaves', unresolved: '', evidence: text } }));
+    const appraisal = await service.appraise({ character: {}, session: {}, userText: text });
+    assert.equal(appraisal.scene, null);
+    assert.equal(appraisal.reason, `User said: ${JSON.stringify(text)}`);
+    const f = await fixture();
+    const c = controller(f, { chat: async (character, message, history, options) => {
+        const prompt = generateCharacterPrompt(character, options);
+        assert.ok(prompt.includes(text));
+        assert.ok(!prompt.includes(invented));
+        return 'Talk later. Take care.';
+    } }, appraisal);
+    const res = response();
+    await c.sendChatMessage(request(f, { message: text }), res);
+    assert.equal(res.statusCode, 200);
+    const saved = await repo.findById(f.session.id, f.user);
+    assert.equal(saved.narrativeState.emotion.cause, appraisal.reason);
+    assert.equal(saved.narrativeState.memories[0].content, text);
+    assert.ok(!JSON.stringify(saved.narrativeState).includes(invented));
+    const completed = validateAppraisal({ ...base, evidence: 'I left the office.' }, 'I left the office.');
+    assert.equal(completed.reason, 'User said: "I left the office."');
 });
 test('session memories are private and forgotten notes stay forgotten after rewind', async () => {
     const { MemoryController } = await import('../backend/controllers/memory.controller.js');

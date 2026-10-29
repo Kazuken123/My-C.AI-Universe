@@ -15,7 +15,9 @@
     "audit:pack": "node scripts/prepare-audit.js",
     "check": "node scripts/check-syntax.js",
     "test:unit": "node scripts/run-tests.js --unit",
-    "test:api": "node scripts/run-tests.js --api"
+    "test:api": "node scripts/run-tests.js --api",
+    "eval:chat": "node scripts/eval/run-eval.mjs",
+    "eval:rescore": "node scripts/eval/rescore.mjs"
   },
   "engines": {
     "node": ">=22.0.0"
