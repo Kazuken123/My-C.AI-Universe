@@ -56,7 +56,7 @@ export function ChatDrawerHistory({
 
   const handleDelete = async (e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();
-    if (!confirm('Are you sure you want to delete this storyline thread?')) return;
+    if (!confirm('Are you sure you want to delete this chat?')) return;
 
     try {
       await api.deleteChatSession(sessionId);
@@ -90,7 +90,7 @@ export function ChatDrawerHistory({
           <div className="flex items-center gap-2">
             <History className="h-4 w-4 text-accent" />
             <h2 className="font-display text-sm font-bold text-text-primary">
-              Narrative Threads
+              Narrative Chats
             </h2>
           </div>
           <button
@@ -125,7 +125,7 @@ export function ChatDrawerHistory({
             </div>
           ) : sessions.length === 0 ? (
             <div className="rounded-xl border border-border-hairline bg-white/[0.02] p-6 text-center text-xs text-text-muted">
-              No previous threads recorded for this character yet.
+              No previous chats recorded for this character yet.
             </div>
           ) : (
             sessions.map((sess) => {
@@ -148,13 +148,13 @@ export function ChatDrawerHistory({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="font-display font-bold text-text-primary truncate">
-                      {sess.title || 'Conversation Thread'}
+                      {sess.title || 'Conversation Chat'}
                     </span>
                     <button
                       type="button"
                       onClick={(e) => handleDelete(e, sess.id)}
                       className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-rose-400 p-0.5 transition-opacity"
-                      title="Delete thread"
+                      title="Delete chat"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>

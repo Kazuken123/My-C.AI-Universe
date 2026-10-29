@@ -162,12 +162,12 @@ export function Sidebar({
           href="/chats"
           onClick={onMobileClose}
           className={cn('nav-item', pathname.startsWith('/chats') && 'active')}
-          title="Threads"
-          aria-label="Threads"
+          title="Chats"
+          aria-label="Chats"
           data-page="chats"
         >
           <i className="ph-light ph-chats-circle" />
-          <span>Threads</span>
+          <span>Chats</span>
           <kbd className="nav-kbd">3</kbd>
         </Link>
         <Link

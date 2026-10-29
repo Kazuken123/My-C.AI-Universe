@@ -97,19 +97,53 @@ export function initTheme() {
   }
 }
 
+const ACTIVE_SESSION_STORAGE_KEY = 'cai_active_session_by_char';
+
+export function getActiveSessionForCharacter(characterId) {
+  if (!characterId || typeof localStorage === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(ACTIVE_SESSION_STORAGE_KEY);
+    if (!raw) return null;
+    const map = JSON.parse(raw);
+    return map && typeof map === 'object' ? (map[characterId] || null) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setActiveSessionForCharacter(characterId, sessionId) {
+  if (!characterId || !sessionId || typeof localStorage === 'undefined') return;
+  try {
+    const raw = localStorage.getItem(ACTIVE_SESSION_STORAGE_KEY);
+    const map = raw ? JSON.parse(raw) : {};
+    map[characterId] = sessionId;
+    localStorage.setItem(ACTIVE_SESSION_STORAGE_KEY, JSON.stringify(map));
+  } catch {
+    // ignore storage error
+  }
+}
+
 /**
- * Deduplicate chat sessions by characterId while keeping the most recent session
- * and counting total thread branches per character.
+ * Deduplicate chat sessions by characterId while keeping the current (active or most recent) session
+ * and counting total chats per character.
  */
 export function deduplicateSessionsByCharacter(sessions = []) {
   if (!Array.isArray(sessions)) return [];
   const map = new Map();
   for (const s of sessions) {
     if (!s || !s.characterId) continue;
+    const activeSessionId = getActiveSessionForCharacter(s.characterId);
     if (!map.has(s.characterId)) {
-      map.set(s.characterId, { ...s, threadCount: 1 });
+      map.set(s.characterId, { ...s, threadCount: 1, chatCount: 1 });
     } else {
-      map.get(s.characterId).threadCount += 1;
+      const existing = map.get(s.characterId);
+      const nextCount = (existing.threadCount || 1) + 1;
+      if (activeSessionId && s.id === activeSessionId && existing.id !== activeSessionId) {
+        map.set(s.characterId, { ...s, threadCount: nextCount, chatCount: nextCount });
+      } else {
+        existing.threadCount = nextCount;
+        existing.chatCount = nextCount;
+      }
     }
   }
   return Array.from(map.values());
@@ -444,7 +478,7 @@ export function initMobileNavigation(activePage = 'discover') {
         </a>
         <a href="/chats.html" class="mobile-nav-tab ${activePage === 'chats' ? 'active' : ''}" data-page="chats">
           <i class="ph-light ph-chats-circle"></i>
-          <span>Threads</span>
+          <span>Chats</span>
         </a>
         <a href="/personas.html" class="mobile-nav-tab ${activePage === 'personas' ? 'active' : ''}" data-page="personas">
           <i class="ph-light ph-identification-card"></i>

@@ -602,7 +602,7 @@ export function ChatView({
       {/* Guest Mode Banner */}
       {!user && (
         <div className="flex items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs text-amber-300">
-          <span>Guest mode active. Sign in to persist narrative threads, long-term memories, and custom personas.</span>
+          <span>Guest mode active. Sign in to persist chats, long-term memories, and custom personas.</span>
           <Link href="/auth" className="underline font-semibold hover:text-white shrink-0">
             Sign In
           </Link>

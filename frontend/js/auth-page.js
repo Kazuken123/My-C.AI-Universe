@@ -48,7 +48,7 @@ class AuthPageController {
         if (this.tabSignIn) { this.tabSignIn.classList.remove('active'); this.tabSignIn.setAttribute('aria-selected', 'false'); }
         if (this.tabSignUp) { this.tabSignUp.classList.add('active'); this.tabSignUp.setAttribute('aria-selected', 'true'); }
         if (this.title) this.title.textContent = 'Create Universe Account';
-        if (pageSub) pageSub.textContent = 'Create an account to store custom personas and branching storyline threads.';
+        if (pageSub) pageSub.textContent = 'Create an account to store custom personas and branching storyline chats.';
         if (this.submitText) this.submitText.textContent = 'Create Account';
         if (this.nameWrapper) this.nameWrapper.classList.add('expanded');
         if (this.nameInput) setTimeout(() => this.nameInput.focus(), 150);
@@ -56,7 +56,7 @@ class AuthPageController {
         if (this.tabSignIn) { this.tabSignIn.classList.add('active'); this.tabSignIn.setAttribute('aria-selected', 'true'); }
         if (this.tabSignUp) { this.tabSignUp.classList.remove('active'); this.tabSignUp.setAttribute('aria-selected', 'false'); }
         if (this.title) this.title.textContent = 'Sign In to Universe';
-        if (pageSub) pageSub.textContent = 'Access your custom personas and branching storyline threads.';
+        if (pageSub) pageSub.textContent = 'Access your custom personas and branching storyline chats.';
         if (this.submitText) this.submitText.textContent = 'Sign In';
         if (this.nameWrapper) this.nameWrapper.classList.remove('expanded');
         if (this.usernameInput) setTimeout(() => this.usernameInput.focus(), 150);

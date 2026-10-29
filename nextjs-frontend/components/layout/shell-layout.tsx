@@ -162,7 +162,7 @@ export function ShellLayout({ children }: { children: React.ReactNode }) {
         </Link>
         <Link href="/chats" className={cn('mobile-nav-tab', pathname.startsWith('/chats') && 'active')} data-page="chats">
           <i className="ph-light ph-chats-circle" />
-          <span>Threads</span>
+          <span>Chats</span>
         </Link>
         <Link href="/personas" className={cn('mobile-nav-tab', pathname.startsWith('/personas') && 'active')} data-page="personas">
           <i className="ph-light ph-identification-card" />

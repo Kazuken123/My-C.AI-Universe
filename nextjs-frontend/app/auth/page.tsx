@@ -187,8 +187,8 @@ function AuthContent() {
               </h1>
               <p className="text-xs text-text-secondary leading-relaxed transition-all duration-200">
                 {activeTab === 'signin'
-                  ? 'Access your custom personas and branching storyline threads.'
-                  : 'Create an account to store custom personas and branching storyline threads.'}
+                  ? 'Access your custom personas and branching storyline chats.'
+                  : 'Create an account to store custom personas and branching storyline chats.'}
               </p>
             </header>
 

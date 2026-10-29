@@ -1,5 +1,5 @@
 import { api } from './api.js';
-import { initSidebar, showToast, escapeHtml, formatCount, bindSpotlightHover } from './common.js';
+import { initSidebar, showToast, escapeHtml, formatCount, bindSpotlightHover, deduplicateSessionsByCharacter } from './common.js';
 
 class DashboardApp {
   constructor() {
@@ -218,7 +218,8 @@ class DashboardApp {
       return;
     }
     try {
-      const sessions = await api.getChatSessions();
+      const rawSessions = await api.getChatSessions();
+      const sessions = deduplicateSessionsByCharacter(rawSessions);
       if (!sessions || sessions.length === 0) {
         this.continueSection.style.display = 'none';
         return;

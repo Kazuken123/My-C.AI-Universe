@@ -14,7 +14,7 @@ import {
 import type { ChatSessionSummary } from '@/types/chat';
 import { api } from '@/lib/api';
 import { resolveAvatarUrl } from '@/lib/character-utils';
-import { formatRelativeTime } from '@/lib/chat-utils';
+import { formatRelativeTime, deduplicateSessionsByCharacter } from '@/lib/chat-utils';
 import { DoubleBezel } from '@/components/ui/double-bezel';
 
 export function SavedChatsList() {
@@ -27,9 +27,9 @@ export function SavedChatsList() {
     setError(null);
     try {
       const data = await api.getChatSessions();
-      setSessions(Array.isArray(data) ? data : []);
+      setSessions(Array.isArray(data) ? deduplicateSessionsByCharacter(data) : []);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to load conversation threads';
+      const msg = err instanceof Error ? err.message : 'Failed to load chats';
       setError(msg);
     } finally {
       setLoading(false);
@@ -43,13 +43,13 @@ export function SavedChatsList() {
   const handleDeleteSession = async (e: React.MouseEvent, sessionId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!confirm('Are you sure you want to delete this storyline thread?')) return;
+    if (!confirm('Are you sure you want to delete this chat?')) return;
 
     try {
       await api.deleteChatSession(sessionId);
       setSessions((prev) => prev.filter((s) => s.id !== sessionId));
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to delete thread';
+      const msg = err instanceof Error ? err.message : 'Failed to delete chat';
       alert(msg);
     }
   };
@@ -98,7 +98,7 @@ export function SavedChatsList() {
           <Inbox className="h-6 w-6" />
         </div>
         <h3 className="font-display text-lg font-bold text-text-primary">
-          No Saved Storyline Threads
+          No Saved Storyline Chats
         </h3>
         <p className="text-sm text-text-muted max-w-sm mx-auto">
           You haven&apos;t started any narrative scenes yet. Pick an archetype from the directory to begin!

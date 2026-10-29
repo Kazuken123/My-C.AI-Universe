@@ -1,5 +1,23 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-10-29 - Terminology alignment (Threads -> Chats) and character conversation deduplication
+
+- **Context & User Request**:
+  - Replaced all user-facing terminology of "threads" / "narrative threads" with "Chats" / "narrative chats" across both vanilla frontend (`frontend/`) and Next.js frontend (`nextjs-frontend/`).
+  - Addressed multi-card clutter where characters with multiple conversation sessions (e.g. Kana Arima) produced duplicate cards in "Pick up where you left off" (`/`), Saved Chats (`/chats.html`, Next.js `/chats`), and the sidebar active storylines list.
+  - A character can have multiple branching chats, but high-level overview views must display only one card per character representing their current active chat.
+- **Architectural & Frontend Changes**:
+  - `frontend/js/common.js`: Added `getActiveSessionForCharacter(characterId)` and `setActiveSessionForCharacter(characterId, sessionId)` backed by `localStorage` (`cai_active_session_by_char`). Updated `deduplicateSessionsByCharacter(sessions)` to prioritize the designated active session per character while recording `threadCount` and `chatCount`.
+  - `frontend/js/dashboard.js`: Deduplicated `rawSessions` in `loadActiveStorylines()` using `deduplicateSessionsByCharacter` so "Pick up where you left off" renders exactly 1 current chat card per character.
+  - `frontend/js/chats-page.js`: Deduplicated session lists in `loadSessions()` and updated all UI copy, modal confirm dialogs, and button labels from "Thread" to "Chat".
+  - `frontend/js/chat.js`: Wired `setActiveSessionForCharacter` and `getActiveSessionForCharacter` into chat room lifecycle (`openChatWithCharacter`, new chat generation, session switching in the History Drawer). Overview rows in the chat room deduplicate characters while preserving multi-chat history in the right-side History Drawer (`renderCharacterHistory`).
+  - Next.js frontend (`nextjs-frontend/components/chat/saved-chats-list.tsx`, `chat-drawer-history.tsx`, `chat-header.tsx`, `sidebar.tsx`, `mobile-nav.tsx`, `shell-layout.tsx`): Updated UI labels from "Threads" to "Chats" and wrapped `/chats` session rendering with `deduplicateSessionsByCharacter`.
+  - Navigation & Static HTML: Updated `index.html`, `chats.html`, `create.html`, `personas.html`, `auth.html`, `chat.html`.
+- **Verification**:
+  - Executed automated test suite `npm test`: 42/42 test files passed (0 failures).
+  - Executed Next.js unit tests `npm test` inside `nextjs-frontend`: 14/14 tests passed (0 failures).
+  - Updated Graphify knowledge graph (`graphify update .`) and repacked Repomix bundle (`npm run audit:pack`).
+
 ## 2026-10-29 - Release preparation at user direction
 
 - Retain Gemini 3.5 Flash Lite as the primary model and end this tuning/comparison pass at the user's request. Prepare the response-variety changes, appraisal grounding fix, regression tests, evaluator and review notes for publication.

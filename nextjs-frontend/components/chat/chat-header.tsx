@@ -161,7 +161,7 @@ export function ChatHeader({
               type="button"
               onClick={onOpenHistoryDrawer}
               className="icon-btn h-8 w-8 text-text-muted hover:text-text-primary"
-              title="Narrative Threads"
+              title="Saved Chats &amp; History"
             >
               <History className="h-4 w-4" />
             </button>

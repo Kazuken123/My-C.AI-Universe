@@ -16,7 +16,7 @@ export function MobileNav({ onOpenMenu }: MobileNavProps) {
   const tabs = [
     { label: 'Discover', href: '/', icon: Compass },
     { label: 'Studio', href: '/create', icon: Sparkles },
-    { label: 'Threads', href: '/chats', icon: MessagesSquare },
+    { label: 'Chats', href: '/chats', icon: MessagesSquare },
     { label: 'Personas', href: '/personas', icon: Contact2 },
   ];
 

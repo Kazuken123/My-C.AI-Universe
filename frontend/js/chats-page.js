@@ -1,5 +1,5 @@
 import { api } from './api.js';
-import { initSidebar, showToast, escapeHtml, bindSpotlightHover } from './common.js';
+import { initSidebar, showToast, escapeHtml, bindSpotlightHover, deduplicateSessionsByCharacter } from './common.js';
 
 class ChatsPageApp {
   constructor() {
@@ -9,13 +9,14 @@ class ChatsPageApp {
   async loadSessions() {
     if (!this.grid) return;
     try {
-      const sessions = await api.getChatSessions();
+      const rawSessions = await api.getChatSessions();
+      const sessions = deduplicateSessionsByCharacter(rawSessions);
       if (!sessions || sessions.length === 0) {
         this.grid.innerHTML = `
           <div class="bento-cell" style="grid-column: 1 / -1;">
             <div class="double-bezel-shell">
               <div class="double-bezel-core studio-card" style="text-align: center; padding: 56px 24px;">
-                <h3 class="card-heading">No saved narrative threads yet</h3>
+                <h3 class="card-heading">No saved narrative chats yet</h3>
                 <p class="hint" style="margin: 8px auto 20px; max-width: 44ch;">
                   Pick any character from the Discovery roster to initiate an active storyline persisted in SQLite.
                 </p>
@@ -41,7 +42,7 @@ class ChatsPageApp {
                   </div>
                   <div class="cai-card-info">
                     <div class="cai-card-name">${escapeHtml(s.characterName)}</div>
-                    <div class="cai-card-creator">Branch ID: ${escapeHtml(s.id.slice(0, 16))}</div>
+                    <div class="cai-card-creator">Chat ID: ${escapeHtml(s.id.slice(0, 16))}</div>
                     <div class="cai-card-tagline" style="margin-top: 4px;">Last active: ${new Date(s.updatedAt || s.createdAt).toLocaleDateString()}</div>
                   </div>
                 </div>
@@ -54,7 +55,7 @@ class ChatsPageApp {
               <div class="cai-card-footer" style="margin-top: 10px;">
                 <span class="mono-tag">${s.messageCount || 1} Turns</span>
                 <div class="cai-card-actions">
-                  <button class="icon-btn" data-del-session="${escapeHtml(s.id)}" type="button" title="Delete Saved Thread">
+                  <button class="icon-btn" data-del-session="${escapeHtml(s.id)}" type="button" title="Delete Saved Chat">
                     <i class="ph-light ph-trash"></i>
                   </button>
                   <a href="/chat.html?id=${encodeURIComponent(s.characterId)}&session=${encodeURIComponent(s.id)}" class="btn-secondary btn-sm" style="text-decoration: none;">
@@ -80,10 +81,10 @@ class ChatsPageApp {
       this.grid.querySelectorAll('[data-del-session]').forEach(btn => {
         btn.addEventListener('click', async (e) => {
           e.stopPropagation();
-          if (!confirm('Permanently delete this saved dialogue thread?')) return;
+          if (!confirm('Permanently delete this saved chat?')) return;
           try {
             await api.deleteChatSession(btn.dataset.delSession);
-            showToast('Thread removed from database.');
+            showToast('Chat removed from database.');
             await this.loadSessions();
             await initSidebar('chats');
           } catch (err) {
@@ -92,7 +93,7 @@ class ChatsPageApp {
         });
       });
     } catch (err) {
-      showToast('Could not load saved threads: ' + err.message);
+      showToast('Could not load saved chats: ' + err.message);
     }
   }
 

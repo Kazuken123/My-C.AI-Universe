@@ -1,7 +1,7 @@
 import { normalizeRelationshipStage, RELATIONSHIP_MOODS, RELATIONSHIP_PRESETS } from './relationship-contract.js';
 import { api } from './api.js';
 import { escapeHtml, formatCount, bindSpotlightHover } from './characters.js';
-import { deduplicateSessionsByCharacter } from './common.js';
+import { deduplicateSessionsByCharacter, setActiveSessionForCharacter, getActiveSessionForCharacter } from './common.js';
 
 /**
  * Strips complete [[REL_STATE: ...]] tags AND any partial trailing tag
@@ -576,7 +576,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         appState.sessions = sessions;
         lastSessionsFetchTime = Date.now();
         if (sidebarSessionCount) {
-          sidebarSessionCount.textContent = String(sessions.length);
+          sidebarSessionCount.textContent = String(deduplicateSessionsByCharacter(sessions).length);
         }
         renderSidebarRecentChats(sessions);
         renderSavedChatsView(sessions);
@@ -649,12 +649,13 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
   function renderContinueChattingRow(sessions) {
     if (!continueRow || !continueSection) return;
-    if (!sessions || sessions.length === 0) {
+    const dedupedSessions = deduplicateSessionsByCharacter(sessions);
+    if (!dedupedSessions || dedupedSessions.length === 0) {
       continueSection.style.display = 'none';
       return;
     }
     continueSection.style.display = 'block';
-    continueRow.innerHTML = sessions.slice(0, 3).map(s => `
+    continueRow.innerHTML = dedupedSessions.slice(0, 3).map(s => `
       <div class="double-bezel-shell card-shell" data-cont-session="${escapeHtml(s.id)}" data-cont-char="${escapeHtml(s.characterId)}">
         <div class="double-bezel-core cai-card">
           <div class="cai-card-top">
@@ -680,12 +681,13 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
   function renderSavedChatsView(sessions) {
     if (!savedChatsGrid) return;
-    if (!sessions || sessions.length === 0) {
+    const dedupedSessions = deduplicateSessionsByCharacter(sessions);
+    if (!dedupedSessions || dedupedSessions.length === 0) {
       savedChatsGrid.innerHTML = `
         <div class="bento-cell" style="grid-column: 1 / -1;">
           <div class="double-bezel-shell">
             <div class="double-bezel-core studio-card" style="text-align: center; padding: 48px 24px;">
-              <h3 class="card-heading">No saved narrative threads yet</h3>
+              <h3 class="card-heading">No saved narrative chats yet</h3>
               <p class="hint" style="margin-top: 6px;">Select any character from the Directory to initiate a persisted SQL storyline.</p>
             </div>
           </div>
@@ -694,7 +696,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       return;
     }
 
-    savedChatsGrid.innerHTML = sessions.map(s => `
+    savedChatsGrid.innerHTML = dedupedSessions.map(s => `
       <div class="bento-cell bento-half">
         <div class="double-bezel-shell card-shell" data-saved-session="${escapeHtml(s.id)}" data-saved-char="${escapeHtml(s.characterId)}">
           <div class="double-bezel-core cai-card">
@@ -709,7 +711,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
             <div class="cai-card-footer">
               <span class="card-stats">Engine: ${escapeHtml(s.provider || 'gemini')}</span>
               <div class="card-actions">
-                <button class="btn-danger btn-sm" data-del-session="${escapeHtml(s.id)}" type="button" title="Delete Thread">
+                <button class="btn-danger btn-sm" data-del-session="${escapeHtml(s.id)}" type="button" title="Delete Chat">
                   <i class="ph-light ph-trash"></i>
                 </button>
                 <button class="btn-primary btn-sm" data-resume-session="${escapeHtml(s.id)}" data-resume-char="${escapeHtml(s.characterId)}" type="button">
@@ -737,7 +739,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         e.stopPropagation();
         try {
           await api.deleteChatSession(btn.dataset.delSession);
-          showToast('Narrative thread deleted.');
+          showToast('Chat deleted.');
           await loadAllSessions();
         } catch (err) {
           showToast(err.message);
@@ -770,7 +772,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       if (!charSessions || charSessions.length === 0) {
         chatHistoryList.innerHTML = `
           <div style="padding: 32px 16px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
-            No conversation threads found for ${escapeHtml(appState.activeCharacter.name)}.
+            No chats found for ${escapeHtml(appState.activeCharacter.name)}.
           </div>
         `;
         return;
@@ -790,7 +792,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
             ${isCurrent ? '<span class="history-current-label">Current conversation</span>' : ''}
             <div class="history-thread-meta">
               <span class="history-thread-time">${escapeHtml(timeStr)}</span>
-              <button class="history-thread-del" data-del-history-session="${escapeHtml(s.id)}" type="button" title="Delete Thread" aria-label="Delete Thread">
+              <button class="history-thread-del" data-del-history-session="${escapeHtml(s.id)}" type="button" title="Delete Chat" aria-label="Delete Chat">
                 <i class="ph-light ph-trash"></i>
               </button>
             </div>
@@ -823,10 +825,10 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
           e.stopPropagation();
           const targetId = btn.dataset.delHistorySession;
           if (!targetId) return;
-          if (!confirm('Are you sure you want to delete this storyline thread?')) return;
+          if (!confirm('Are you sure you want to delete this chat?')) return;
           try {
             await api.deleteChatSession(targetId);
-            showToast('Thread deleted.');
+            showToast('Chat deleted.');
 
             if (Array.isArray(appState.sessions)) {
               appState.sessions = appState.sessions.filter(s => s.id !== targetId);
@@ -844,7 +846,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
               await loadAllSessions(true);
             }
           } catch (err) {
-            showToast(err.message || 'Failed to delete thread');
+            showToast(err.message || 'Failed to delete chat');
           }
         });
       });
@@ -872,8 +874,10 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
       let session;
 
-      if (sessionId) {
-        session = await api.getChatSession(sessionId);
+      const activeStoredSessionId = getActiveSessionForCharacter(character.id);
+      const targetSessionId = sessionId || (charSessions.some(s => s.id === activeStoredSessionId) ? activeStoredSessionId : null);
+      if (targetSessionId) {
+        session = await api.getChatSession(targetSessionId);
       } else if (charSessions.length > 0) {
         session = await api.getChatSession(charSessions[0].id);
       } else {
@@ -885,6 +889,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       }
 
       appState.activeSession = session;
+      setActiveSessionForCharacter(character.id, session.id);
 
       const url = `/chat.html?id=${encodeURIComponent(character.id)}${session?.id ? `&session=${encodeURIComponent(session.id)}` : ''}`;
       if (window.location.pathname + window.location.search !== url) {
@@ -1001,7 +1006,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
                 <button class="msg-tool-btn" data-edit-msg="${escapeHtml(msg.id)}" type="button" title="Edit Turn">
                   <i class="ph-light ph-pencil-simple"></i>
                 </button>
-                <button class="msg-tool-btn" data-rewind-msg="${escapeHtml(msg.id)}" type="button" title="Rewind thread to here">
+                <button class="msg-tool-btn" data-rewind-msg="${escapeHtml(msg.id)}" type="button" title="Rewind chat to here">
                   <i class="ph-light ph-clock-counter-clockwise"></i>
                 </button>
                 <button class="msg-tool-btn" data-copy-msg="${escapeHtml(msg.id)}" type="button" title="Copy text">
@@ -1556,7 +1561,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
           const blob = new Blob([JSON.stringify({ character, session }, null, 2)], { type: 'application/json' });
           const a = document.createElement('a');
           a.href = URL.createObjectURL(blob);
-          a.download = `${character.name.replace(/\s+/g, '_')}_thread.json`;
+          a.download = `${character.name.replace(/\s+/g, '_')}_chat.json`;
           a.click();
         };
       }
@@ -1712,7 +1717,8 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         if (chatHistoryDrawer && !chatHistoryDrawer.classList.contains('hidden')) {
           await renderCharacterHistory();
         }
-        showToast('Started a fresh narrative thread.');
+        setActiveSessionForCharacter(appState.activeCharacter.id, fresh.id);
+        showToast('Started a fresh chat.');
       } catch (err) {
         showToast(err.message);
       }
