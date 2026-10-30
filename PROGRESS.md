@@ -1,5 +1,17 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-10-30 - Live EBAP Audit Trial (`84f39dfb..b1a9550`) & Targeted TDD Fixes
+
+- **Context & Live Protocol Verification**:
+  - Executed a live, bounded **Evidence-Based Audit Protocol (EBAP)** pass against `b1a9550` (`84f39dfb..b1a9550` commit window) using an independent clean-room auditor governed by [`docs/audit-history.md`](docs/audit-history.md), [`.agents/rules/evidence_based_audit.md`](.agents/rules/evidence_based_audit.md), and [`AUDIT_PROMPT.md`](AUDIT_PROMPT.md).
+  - **Protocol Effectiveness**: The clean-room auditor produced **0 speculative security vulnerabilities**, respected all resolved findings (`A01`, `A02`, `A04`–`A07`, `Appraisal-01`), architectural invariants (`BLOCK_NONE`, `updateMessageFields`), and tracked backlog items (`A03`, `A08`–`A22`), filtered out 5 candidate false positives in Pass 2, and surfaced **3 deterministic functional/tooling defects** (`EBAP-01`, `EBAP-02`, `EBAP-03`).
+- **Confirmed Findings & Red-Green TDD Fixes**:
+  - **`EBAP-01` (Next.js `/chats` multi-chat deletion)**: `SavedChatsList` (`nextjs-frontend/components/chat/saved-chats-list.tsx`) previously stored already-deduplicated sessions in React state and filtered on delete, hiding remaining secondary chats for that character until a manual reload. Updated `SavedChatsList` to retain `rawSessions`, remove deleted IDs via `removeSessionById`, and derive `deduplicateSessionsByCharacter(rawSessions)` via `useMemo`.
+  - **`EBAP-02` (Next.js provider mismatch & legacy session fallback)**: `AI_PROVIDERS` (`nextjs-frontend/lib/chat-utils.ts`) previously exposed `'claude'` and `'groq'` options that failed `A02`'s strict `normalizeProviderName` (`400 Bad Request`), and `ChatController.sendChatMessage` threw `400` when resuming any legacy session persisted with an unsupported `session.provider` even when `req.body.provider` was omitted. Aligned `AI_PROVIDERS` with `['gemini', 'ollama']`, added `resolveSupportedProvider` hydration in `chat-view.tsx`, and added `resolveStoredProviderName` fallback in `backend/ai/providerSelection.js` & `chat.controller.js:432` while preserving strict `400` rejection on invalid `req.body.provider`.
+  - **`EBAP-03` (`npm run check` scanning gitignored eval results)**: `scripts/check-syntax.js` previously walked gitignored `scripts/eval/results/` output directories and exited `1` on scratch evaluation artifacts. Excluded `scripts/eval/results` inside `collectSyntaxFiles()`.
+- **Verification**:
+  - Reproduced all 3 defects with failing tests first (Red), then verified Green across `npm test` (`42/42` backend test files, `0` failures), `npm --prefix nextjs-frontend test` (`16/16` unit tests, `0` failures), `npm --prefix nextjs-frontend run typecheck` (`0` errors), and `npm run check` (`143/143` JS files, `0` failures).
+
 ## 2026-10-30 - Evidence-Based Audit Protocol (EBAP) & Persistent Audit History
 
 - **Context & Rationale**:

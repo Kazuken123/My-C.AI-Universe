@@ -83,3 +83,27 @@ test('a stalled test is terminated and reported as failed', t => {
 test('an empty suite cannot produce a passing report', t => {
   assert.throws(() => runTests({ root: fixture(t) }), /No tests found/);
 });
+
+test('EBAP-03: scripts/check-syntax.js skips gitignored scripts/eval/results artifacts', async t => {
+  const { fileURLToPath } = await import('node:url');
+  const { collectSyntaxFiles, runSyntaxCheck } = await import('../scripts/check-syntax.js');
+  const repoRoot = fileURLToPath(new URL('../', import.meta.url));
+
+  const root = fixture(t);
+  mkdirSync(path.join(root, 'scripts', 'eval', 'results', 'run-1'), { recursive: true });
+  writeFileSync(path.join(root, 'scripts', 'valid.mjs'), 'export const ok = 1;\n');
+  writeFileSync(path.join(root, 'scripts', 'eval', 'results', 'run-1', 'broken-artifact.mjs'), 'const x = "unterminated;\n');
+
+  const collected = collectSyntaxFiles(root);
+  assert.deepEqual(collected, [path.join('scripts', 'valid.mjs')]);
+
+  const checkResult = runSyntaxCheck(root);
+  assert.equal(checkResult.checked, 1);
+  assert.equal(checkResult.failures, 0);
+
+  const repoFiles = collectSyntaxFiles(repoRoot);
+  assert.equal(
+    repoFiles.some(f => path.normalize(f).startsWith(path.normalize('scripts/eval/results'))),
+    false
+  );
+});

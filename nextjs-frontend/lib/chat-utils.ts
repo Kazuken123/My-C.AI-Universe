@@ -1,3 +1,5 @@
+import type { ChatSessionSummary } from '@/types/chat';
+
 /**
  * Strips complete [[REL_STATE: ...]] tags AND any partial trailing tag
  * currently being streamed (e.g. "[[", "[[REL_", "[[REL_STATE: {...").
@@ -53,15 +55,25 @@ export function calculateAffinityPercent(affinity = 0): number {
 }
 
 export const AI_PROVIDERS = [
-  { id: 'gemini', label: 'Gemini Flash 2.0 (Fast)' },
-  { id: 'claude', label: 'Claude 3.5 Sonnet' },
-  { id: 'groq', label: 'Groq Llama 3.3 (Ultra Fast)' },
+  { id: 'gemini', label: 'Gemini 3.5 Flash Lite' },
   { id: 'ollama', label: 'Ollama Local' },
 ] as const;
 
-export { RELATIONSHIP_MOODS } from '../../frontend/js/relationship-contract.js';
+export function resolveSupportedProvider(provider?: string | null): 'gemini' | 'ollama' {
+  const normalized = typeof provider === 'string' ? provider.trim().toLowerCase() : '';
+  return normalized === 'ollama' ? 'ollama' : 'gemini';
+}
 
-import type { ChatSessionSummary } from '@/types/chat';
+export function removeSessionById<T extends { id?: string }>(
+  sessions?: T[] | null,
+  sessionId?: string
+): T[] {
+  if (!Array.isArray(sessions)) return [];
+  if (!sessionId) return [...sessions];
+  return sessions.filter((s) => s && s.id !== sessionId);
+}
+
+export { RELATIONSHIP_MOODS } from '../../frontend/js/relationship-contract.js';
 
 export type DedupedChatSession = ChatSessionSummary & {
   threadCount: number;
@@ -87,4 +99,3 @@ export function deduplicateSessionsByCharacter<T extends { characterId?: string 
   }
   return Array.from(map.values());
 }
-

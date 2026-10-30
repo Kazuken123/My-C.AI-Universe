@@ -14,7 +14,7 @@ import { relationshipService, createStreamTailFilter } from '../services/relatio
 import { generateDefaultGreeting } from '../ai/prompt/characterPrompt.js';
 import { ValidationError, NotFoundError } from '../ai/errors.js';
 import { config } from '../config/index.js';
-import { normalizeProviderName } from '../ai/providerSelection.js';
+import { normalizeProviderName, resolveStoredProviderName } from '../ai/providerSelection.js';
 
 /**
  * ChatController Class (extends BaseController)
@@ -429,7 +429,7 @@ export class ChatController extends BaseController {
         appraisalManaged: true,
         narrativeContext: {...context,scene:appraisal?.scene || context.scene},
         appraisal,
-        provider: normalizeProviderName(provider ?? session.provider ?? config.AI_PROVIDER),
+        provider: provider ?? resolveStoredProviderName(session.provider),
         persona: activePersona ? activePersona.toJSON() : null,
         pinnedMessages,
         memories: relevantMemories,

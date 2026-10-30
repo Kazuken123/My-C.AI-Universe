@@ -84,3 +84,61 @@ test('HTTP handlers reject malformed providers before storage, memory, or AI cal
     }
   }
 });
+
+test('EBAP-02: resuming a legacy session with unsupported stored provider falls back cleanly when req.body.provider is omitted', async () => {
+  const { ChatSession } = await import('../backend/models/ChatSession.js');
+  const { Character } = await import('../backend/models/Character.js');
+  const { RelationshipService } = await import('../backend/services/relationship.service.js');
+
+  const character = new Character({ id: 'char_1', name: 'Mara', greeting: 'Hello.' });
+  const legacySession = new ChatSession({
+    id: 'sess_legacy',
+    userId: 'u_1',
+    characterId: 'char_1',
+    provider: 'claude',
+    messages: [{ id: 'm_1', role: 'model', content: 'Hello.' }]
+  });
+
+  let capturedOptions = null;
+  const controller = new ChatController(
+    {
+      findById: async () => legacySession,
+      appendMessages: async () => {}
+    },
+    { findById: async () => character, incrementInteractions: async () => {} },
+    { findById: async () => null, findDefault: async () => null },
+    {
+      retrieveRelevantMemories: async () => [],
+      getSessionStorySummary: async () => '',
+      detectAndStoreFromTurn: async () => {},
+      updateRollingStorySummary: async () => {}
+    },
+    {
+      chat: async (_char, _msg, _hist, opts) => {
+        capturedOptions = opts;
+        return '*Nods.* Mara: "Still here."';
+      }
+    },
+    new RelationshipService(),
+    { appraise: async () => null }
+  );
+
+  const res = {
+    statusCode: 200,
+    status(n) { this.statusCode = n; return this; },
+    json(body) { this.body = body; return this; }
+  };
+
+  await controller.sendChatMessage(
+    {
+      user: { id: 'u_1' },
+      body: { charId: 'char_1', sessionId: 'sess_legacy', message: 'Hi again' },
+      query: {},
+      headers: {}
+    },
+    res
+  );
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(capturedOptions?.provider, 'gemini');
+});

@@ -7,6 +7,7 @@ import type { Character } from '@/types/character';
 import type { ChatSession, ChatMessage, RelationshipMetrics } from '@/types/chat';
 import type { UserPersona } from '@/types/persona';
 import { api } from '@/lib/api';
+import { resolveSupportedProvider } from '@/lib/chat-utils';
 import { useAuth } from '@/context/auth-context';
 import { ChatHeader } from './chat-header';
 import { ChatMessages } from './chat-messages';
@@ -175,7 +176,7 @@ export function ChatView({
       }
 
       if (activeSess?.provider) {
-        setAiProvider(activeSess.provider);
+        setAiProvider(resolveSupportedProvider(activeSess.provider));
       }
       if (activeSess?.personaId) {
         setActivePersonaId(activeSess.personaId);
@@ -198,6 +199,7 @@ export function ChatView({
   const handleSelectSession = async (sessionId: string) => {
     try {
       const s = await api.getChatSession(sessionId);
+      setAiProvider(resolveSupportedProvider(s.provider));
       setSession(s);
     } catch (err: unknown) {
       console.warn('Failed to switch session:', err);

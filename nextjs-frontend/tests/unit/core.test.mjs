@@ -211,3 +211,51 @@ test('M4: deduplicateSessionsByCharacter groups sessions by character and counts
   assert.equal(result[1].threadCount, 1);
 });
 
+test('EBAP-01: deleting the displayed session from raw history surfaces the next remaining chat for that character', async () => {
+  const { deduplicateSessionsByCharacter, removeSessionById } = await import('../../lib/chat-utils.ts');
+  const { readFileSync } = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+
+  assert.equal(typeof removeSessionById, 'function');
+
+  const rawSessions = [
+    { id: 'sess_newest', characterId: 'char_kana', characterName: 'Kana Arima', lastMessage: 'Latest chat' },
+    { id: 'sess_older', characterId: 'char_kana', characterName: 'Kana Arima', lastMessage: 'Older chat' },
+    { id: 'sess_gojo', characterId: 'char_gojo', characterName: 'Satoru Gojo', lastMessage: 'Infinity' },
+  ];
+
+  const remainingRaw = removeSessionById(rawSessions, 'sess_newest');
+  const dedupedAfterDelete = deduplicateSessionsByCharacter(remainingRaw);
+
+  assert.equal(dedupedAfterDelete.length, 2);
+  assert.equal(dedupedAfterDelete[0].characterId, 'char_kana');
+  assert.equal(dedupedAfterDelete[0].id, 'sess_older');
+  assert.equal(dedupedAfterDelete[0].threadCount, 1);
+
+  const componentPath = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    '../../components/chat/saved-chats-list.tsx'
+  );
+  const source = readFileSync(componentPath, 'utf8');
+  assert.match(source, /rawSessions/, 'SavedChatsList must retain rawSessions so deleting one chat reveals remaining character chats');
+});
+
+test('EBAP-02: every Next.js AI_PROVIDERS option is accepted by backend normalizeProviderName and legacy providers normalize safely', async () => {
+  process.env.NODE_ENV ||= 'test';
+  process.env.DOTENV_CONFIG_PATH ||= '__unused__.env';
+  const { AI_PROVIDERS, resolveSupportedProvider } = await import('../../lib/chat-utils.ts');
+  const { normalizeProviderName } = await import('../../../backend/ai/providerSelection.js');
+
+  assert.ok(AI_PROVIDERS.length >= 2);
+  for (const option of AI_PROVIDERS) {
+    assert.equal(normalizeProviderName(option.id), option.id);
+  }
+
+  assert.equal(typeof resolveSupportedProvider, 'function');
+  assert.equal(resolveSupportedProvider('ollama'), 'ollama');
+  assert.equal(resolveSupportedProvider('gemini'), 'gemini');
+  assert.equal(resolveSupportedProvider('claude'), 'gemini');
+  assert.equal(resolveSupportedProvider('groq'), 'gemini');
+  assert.equal(resolveSupportedProvider(''), 'gemini');
+});

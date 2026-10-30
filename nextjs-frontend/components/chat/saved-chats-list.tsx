@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import {
   MessageSquare,
@@ -14,20 +14,29 @@ import {
 import type { ChatSessionSummary } from '@/types/chat';
 import { api } from '@/lib/api';
 import { resolveAvatarUrl } from '@/lib/character-utils';
-import { formatRelativeTime, deduplicateSessionsByCharacter } from '@/lib/chat-utils';
+import {
+  formatRelativeTime,
+  deduplicateSessionsByCharacter,
+  removeSessionById,
+} from '@/lib/chat-utils';
 import { DoubleBezel } from '@/components/ui/double-bezel';
 
 export function SavedChatsList() {
-  const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
+  const [rawSessions, setRawSessions] = useState<ChatSessionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const sessions = useMemo(
+    () => deduplicateSessionsByCharacter(rawSessions),
+    [rawSessions]
+  );
 
   const fetchAllSessions = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const data = await api.getChatSessions();
-      setSessions(Array.isArray(data) ? deduplicateSessionsByCharacter(data) : []);
+      setRawSessions(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to load chats';
       setError(msg);
@@ -47,7 +56,7 @@ export function SavedChatsList() {
 
     try {
       await api.deleteChatSession(sessionId);
-      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+      setRawSessions((prev) => removeSessionById(prev, sessionId));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to delete chat';
       alert(msg);
