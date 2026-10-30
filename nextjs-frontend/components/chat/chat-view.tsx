@@ -65,8 +65,8 @@ export function ChatView({
     relationshipMood: session?.relationshipMood || 'Calm',
   };
 
-    // Character Voice & Web Speech API synthesis
-  const speakText = useCallback(async (rawText: string, messageId?: string, variantIndex?: number) => {
+  // Character Voice & Web Speech API synthesis
+  const speakText = useCallback(async (rawText: string, messageId?: string, variantIndex?: number, sessionIdOverride?: string) => {
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
@@ -80,12 +80,20 @@ export function ChatView({
     }
 
     const currentVoiceId = session?.voiceIdOverride || session?.voice_id_override || character?.voiceId || character?.voice_id;
+    const targetSessionId = sessionIdOverride || session?.id;
+    const isPersistedTurn = Boolean(
+      targetSessionId &&
+      !targetSessionId.startsWith('session_local_') &&
+      messageId &&
+      !messageId.startsWith('msg_greet_') &&
+      !messageId.startsWith('msg_model_')
+    );
 
-    if (currentVoiceId && session?.id && messageId) {
+    if (currentVoiceId && isPersistedTurn && targetSessionId && messageId) {
       try {
         setIsSpeaking(true);
         const audioBlob = await api.synthesizeMessageVoice({
-          sessionId: session.id,
+          sessionId: targetSessionId,
           messageId,
           variantIndex: variantIndex ?? 0
         });
@@ -119,9 +127,12 @@ export function ChatView({
     }
 
     const clean = (rawText || '')
+      .replace(/\[\[REL_STATE:[\s\S]*?\]\]/gi, '')
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/__([^_]+)__/g, '$1')
       .replace(/\*[^*]+\*/g, '')
       .replace(/^[^:\n]{1,40}:\s*/gm, '')
-      .replace(/"/g, '')
+      .replace(/["“”«»]/g, '')
       .trim();
 
     if (!clean) {
@@ -406,7 +417,7 @@ export function ChatView({
           });
 
           if (autoTTS && finalResponse) {
-            speakText(finalResponse);
+            speakText(finalResponse, finalAiMsg.id, finalAiMsg.selectedVariantIndex ?? 0, doneChunk.sessionId || session.id);
           }
         }
       );
@@ -466,7 +477,7 @@ export function ChatView({
       });
 
       if (autoTTS && res.response) {
-        speakText(res.response);
+        speakText(res.response, finalAiMsg.id, finalAiMsg.selectedVariantIndex ?? 0, res.sessionId || session.id);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to continue scene';
@@ -532,7 +543,7 @@ export function ChatView({
       }
 
       if (autoTTS && res.response) {
-        speakText(res.response);
+        speakText(res.response, res.message?.id || messageId, res.message?.selectedVariantIndex ?? 0, res.sessionId || session.id);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to regenerate take';

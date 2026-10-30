@@ -1,5 +1,33 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-10-30 - EBAP Audit & Full Dual-Frontend Remediation for Anime Voice Roleplay (`VOICE-01`..`VOICE-05`)
+
+- **Context & Audit Scope**:
+  - Conducted an **Evidence-Based Audit Protocol (EBAP)** review of `292d0f2..e7b64fb` (Anime Voice Roleplay & Fish Audio Model Discovery).
+  - Security controls (`requireAuth`, per-user rate limiters, SQL-authoritative `sessionId`+`messageId` ownership checks, binary audio magic-byte validation, `SAFE_VOICE_ID_REGEX`, CSP `media-src`, R2 content-addressed caching, and `s2.1-pro-free` free-tier gating) verified clean with **0 security vulnerabilities**.
+  - Identified and remediated **5 confirmed functional/UI wiring bugs** (`VOICE-01`..`VOICE-05`) using vertical Red-Green TDD across Backend, `nextjs-frontend/`, and the primary Express `frontend/`:
+- **Confirmed Bugs & Fixes**:
+  1. **`VOICE-01` (`CharacterController` & `Character.validate()` voice persistence)**:
+     - *Root Cause*: `CharacterController.createCharacter` and `updateCharacter` (`backend/controllers/character.controller.js`) omitted `voice_provider`/`voiceProvider`, `voice_id`/`voiceId`, and `voice_name`/`voiceName`, silently dropping character voice bindings on save, while `Character.validate()` (`backend/models/Character.js`) did not enforce `ALLOWED_VOICE_PROVIDERS`.
+     - *Fix*: Mapped snake_case and camelCase voice fields in both `createCharacter` and `updateCharacter`, enforced `character.validate()` on creation, and added `ALLOWED_VOICE_PROVIDERS` + control-character sanitization in `Character.validate()`.
+  2. **`VOICE-02` (Missing Voice Picker UI in `nextjs-frontend` Character Studio & Primary Express `frontend/`)**:
+     - *Root Cause*: `nextjs-frontend/components/characters/character-studio.tsx` declared `voiceId`/`voiceName`/`isVoicePickerOpen` state without mounting `<VoicePickerModal>` or rendering any selector card, and `frontend/` (served by `server.js`) had zero Fish Audio UI or API methods.
+     - *Fix*: Mounted `<VoicePickerModal>` + "Anime Seiyuu / Voice Model" selector card & dossier preview readout in `character-studio.tsx`; built reusable `frontend/js/voice-picker.js` + `frontend/css/voice-picker.css` and wired Fish Audio model search, custom voice upload, Studio persistence, session voice switcher (`#btnSelectVoice`), and cached TTS playback into `frontend/js/api.js`, `frontend/create.html`, `frontend/js/studio-page.js`, `frontend/chat.html`, and `frontend/js/chat.js`.
+  3. **`VOICE-03` (`autoTTS` bypassing Fish Audio)**:
+     - *Root Cause*: `autoTTS` in `nextjs-frontend/components/chat/chat-view.tsx` called `speakText(text)` with 1 argument instead of `(text, messageId, variantIndex, sessionId)`, skipping `/api/voice/synthesize` and falling back to robotic browser speech.
+     - *Fix*: Forwarded `(text, messageId, variantIndex, sessionId)` across `handleSendMessage`, `handleContinueScene`, and `handleRegenerate` in both `nextjs-frontend/components/chat/chat-view.tsx` and `frontend/js/chat.js`.
+  4. **`VOICE-04` (`VoiceService.extractSpokenDialogue` deleting `**bold**` spoken words)**:
+     - *Root Cause*: `.replace(/\*[^*]+\*/g, '')` executed before unwrapping `**bold**` / `__bold__`, turning `"What are you **doing** here?!"` into `"What are you ** here?!"` and leaving `[]` from `[[REL_STATE: ...]]`.
+     - *Fix*: Stripped `[[REL_STATE: ...]]` first and unwrapped `**bold**` & `__bold__` into `$1` before stripping `*italic*` stage actions.
+  5. **`VOICE-05` (`ApiClient.synthesizeMessageVoice` `Error: [object Object]`)**:
+     - *Root Cause*: `nextjs-frontend/lib/api.ts` passed `errData?.error` (`{ message, code, field }`) directly into `new ApiError(...)`.
+     - *Fix*: Added `ApiError.fromResponse()` in `nextjs-frontend/types/api.ts` and wired it into `ApiClient.synthesizeMessageVoice`.
+- **Verification**:
+  - `npm test`: **44/44 backend & frontend structural test suites passed (`0 failures`)** (`8/8` in `tests/voice-roleplay.test.mjs`).
+  - `npm --prefix nextjs-frontend test`: **18/18 unit tests passed (`0 failures`)**.
+  - `npx --prefix nextjs-frontend tsc -p nextjs-frontend/tsconfig.json --noEmit`: **0 TypeScript errors**.
+  - `node scripts/check-syntax.js`: **151/151 JS files passed (`0 failures`)**.
+
 ## 2026-10-30 - Anime Voice Roleplay Engine & Fish Audio Model Discovery
 
 - **Context & Architecture**:

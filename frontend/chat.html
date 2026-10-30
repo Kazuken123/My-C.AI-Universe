@@ -24,6 +24,7 @@
   <!-- Dedicated Modular CSS -->
   <link rel="stylesheet" href="/css/base.css?v=2.6.3" />
   <link rel="stylesheet" href="/css/chat.css?v=2.6.3" />
+  <link rel="stylesheet" href="/css/voice-picker.css" />
   <script type="module" src="/js/loading-bar.js"></script>
   <script type="module" src="/js/ambient-canvas.js"></script>
   <link rel="stylesheet" href="/css/orbit.css" />
@@ -216,6 +217,10 @@
                   <option value="ollama">Ollama Local</option>
                 </select>
               </div>
+              <button class="btn-secondary btn-sm" id="btnSelectVoice" type="button" title="Select Character Seiyuu Voice (Fish Audio)">
+                <i class="ph-light ph-microphone"></i>
+                <span id="chatVoiceBtnLabel">Seiyuu</span>
+              </button>
               <button class="btn-secondary btn-sm" id="btnToggleTTS" type="button" title="Toggle Voice Read-Aloud">
                 <i class="ph-light ph-speaker-high"></i>
                 <span>Voice</span>

@@ -85,12 +85,15 @@ export class CharacterController extends BaseController {
         appearance: (req.body.appearance && req.body.appearance.trim()) || wikiData.appearance || '',
         abilities: (req.body.abilities && req.body.abilities.trim()) || wikiData.abilities || '',
         background: (req.body.background && req.body.background.trim()) || wikiData.background || '',
-        speaking_style: (req.body.speaking_style && req.body.speaking_style.trim()) || wikiData.speaking_style || '',
-        example_dialogues: (req.body.example_dialogues && req.body.example_dialogues.trim()) || '',
-        initial_memory: (req.body.initial_memory && req.body.initial_memory.trim()) || wikiData.initial_memory || '',
+        speaking_style: (req.body.speaking_style && req.body.speaking_style.trim()) || (req.body.speakingStyle && req.body.speakingStyle.trim()) || wikiData.speaking_style || '',
+        example_dialogues: (req.body.example_dialogues && req.body.example_dialogues.trim()) || (req.body.exampleDialogues && req.body.exampleDialogues.trim()) || '',
+        initial_memory: (req.body.initial_memory && req.body.initial_memory.trim()) || (req.body.initialMemory && req.body.initialMemory.trim()) || wikiData.initial_memory || '',
         initial_affinity: req.body.initial_affinity ?? req.body.initialAffinity,
         initial_relationship_stage: req.body.initial_relationship_stage || req.body.initialRelationshipStage,
         relationship_dynamic: (req.body.relationship_dynamic && req.body.relationship_dynamic.trim()) || (req.body.relationshipDynamic && req.body.relationshipDynamic.trim()) || '',
+        voiceProvider: req.body.voice_provider ?? req.body.voiceProvider,
+        voiceId: req.body.voice_id ?? req.body.voiceId,
+        voiceName: req.body.voice_name ?? req.body.voiceName,
         categories: Array.isArray(req.body.categories) && req.body.categories.length > 0 ? req.body.categories : ['Roleplay', 'Original'],
         wiki: (wiki && wiki.trim()) || '',
         wikiUrl: wikiData.wikiUrl || (wiki && wiki.trim()) || '',
@@ -99,6 +102,7 @@ export class CharacterController extends BaseController {
         isLiked: false
       });
 
+      character.validate();
       character.recompilePrompt();
       await this.repository.save(character);
 
@@ -152,7 +156,10 @@ export class CharacterController extends BaseController {
         'example_dialogues', 'initial_memory', 'wiki', 'categories',
         'initial_affinity', 'initialAffinity',
         'initial_relationship_stage', 'initialRelationshipStage',
-        'relationship_dynamic', 'relationshipDynamic'
+        'relationship_dynamic', 'relationshipDynamic',
+        'voice_provider', 'voiceProvider',
+        'voice_id', 'voiceId',
+        'voice_name', 'voiceName'
       ];
 
       for (const field of updatableFields) {

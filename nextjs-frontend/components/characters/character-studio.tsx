@@ -14,11 +14,14 @@ import {
   User,
   Radio,
   Sliders,
+  Mic,
+  X,
 } from 'lucide-react';
 import type { CharacterCreatePayload } from '@/types/character';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/auth-context';
 import { DoubleBezel } from '@/components/ui/double-bezel';
+import { VoicePickerModal } from '@/components/characters/voice-picker-modal';
 import {
   resolveAvatarUrl,
   CHARACTER_CATEGORIES,
@@ -457,6 +460,60 @@ export function CharacterStudio() {
 
             <div className="space-y-1.5">
               <label className="font-mono text-xs text-text-secondary">
+                Anime Seiyuu / Voice Model (Fish Audio)
+              </label>
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border-hairline bg-core-elevated px-3.5 py-2.5">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span
+                    className={cn(
+                      'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border',
+                      voiceId
+                        ? 'border-accent/40 bg-accent/10 text-accent'
+                        : 'border-border-hairline bg-white/5 text-text-muted'
+                    )}
+                  >
+                    <Mic className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold text-text-primary truncate">
+                      {voiceId ? voiceName || voiceId : 'Default Browser Speech'}
+                    </div>
+                    <div className="font-mono text-[10px] text-text-muted truncate">
+                      {voiceId
+                        ? `Fish Audio S2.1 · ID: ${voiceId}`
+                        : 'Select a Japanese anime seiyuu or upload a custom voice sample'}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {voiceId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVoiceId('');
+                        setVoiceName('');
+                      }}
+                      className="inline-flex items-center gap-1 rounded-lg border border-border-hairline bg-white/5 px-2.5 py-1.5 font-mono text-[11px] text-text-muted hover:text-text-primary transition-colors"
+                      title="Reset to Default Browser Speech"
+                    >
+                      <X className="h-3 w-3" />
+                      <span>Clear</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsVoicePickerOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-accent/35 bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent/20 transition-colors"
+                  >
+                    <Mic className="h-3.5 w-3.5" />
+                    <span>{voiceId ? 'Change Voice' : 'Browse Voices'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="font-mono text-xs text-text-secondary">
                 Opening Scene / Greeting <span className="text-accent">*</span>
               </label>
               <textarea
@@ -726,6 +783,12 @@ export function CharacterStudio() {
                   {initialRelationshipStage} ({initialAffinity >= 0 ? `+${initialAffinity}` : initialAffinity})
                 </span>
               </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-text-muted">Voice Engine:</span>
+                <span className="font-mono font-semibold text-text-primary truncate max-w-[160px]">
+                  {voiceId ? voiceName || 'Fish Audio' : 'Browser Speech'}
+                </span>
+              </div>
               {relationshipDynamic && (
                 <p className="text-[11px] text-text-secondary italic">
                   {relationshipDynamic}
@@ -735,6 +798,17 @@ export function CharacterStudio() {
           </DoubleBezel>
         </div>
       </div>
+
+      <VoicePickerModal
+        isOpen={isVoicePickerOpen}
+        onClose={() => setIsVoicePickerOpen(false)}
+        selectedVoiceId={voiceId}
+        selectedVoiceName={voiceName}
+        onSelectVoice={(id, vName) => {
+          setVoiceId(id);
+          setVoiceName(vName);
+        }}
+      />
     </div>
   );
 }

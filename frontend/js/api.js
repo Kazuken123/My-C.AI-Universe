@@ -245,6 +245,58 @@ export class ApiClient {
     });
   }
 
+  updateSessionVoice(sessionId, payload) {
+    return this.request(`/api/chats/${encodeURIComponent(sessionId)}/voice`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+      silent: true
+    });
+  }
+
+  // Fish Audio Voice Discovery, Custom Upload & Cached Synthesis
+  searchVoiceModels(params = {}) {
+    const qs = new URLSearchParams();
+    if (params.search) qs.set('search', params.search);
+    if (params.page) qs.set('page', String(params.page));
+    if (params.pageSize) qs.set('pageSize', String(params.pageSize));
+    const queryStr = qs.toString();
+    return this.request(`/api/voice/models${queryStr ? `?${queryStr}` : ''}`, {
+      silent: true
+    });
+  }
+
+  createCustomVoice(payload) {
+    return this.request('/api/voice/models/custom', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  async synthesizeMessageVoice(payload) {
+    const token = this.getToken();
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}`, 'x-auth-token': token } : {})
+    };
+
+    const response = await fetch(`${this.baseUrl}/api/voice/synthesize`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      const message =
+        data?.error?.message ||
+        (typeof data?.error === 'string' && data.error) ||
+        `Voice synthesis failed (${response.status})`;
+      throw new Error(message);
+    }
+
+    return await response.blob();
+  }
+
   sendChatMessage(payload) {
     return this.request('/api/chat', {
       method: 'POST',

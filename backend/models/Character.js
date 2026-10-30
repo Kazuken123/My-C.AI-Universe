@@ -39,9 +39,14 @@ export class Character extends BaseEntity {
     this.initialAffinity = Math.max(-100, Math.min(100, Number(props.initialAffinity ?? props.initial_affinity ?? 0)));
     this.initialRelationshipStage = (props.initialRelationshipStage || props.initial_relationship_stage || 'Stranger / Neutral').trim();
     this.relationshipDynamic = (props.relationshipDynamic || props.relationship_dynamic || '').trim();
-    this.voiceProvider = (props.voiceProvider || props.voice_provider || 'fish_audio').trim();
-    this.voiceId = (props.voiceId || props.voice_id || '').trim();
-    this.voiceName = (props.voiceName || props.voice_name || '').trim();
+    const rawVoiceProvider = props.voiceProvider ?? props.voice_provider;
+    this.voiceProvider = rawVoiceProvider !== undefined && rawVoiceProvider !== null
+      ? String(rawVoiceProvider).trim()
+      : 'fish_audio';
+    this.voiceId = String(props.voiceId ?? props.voice_id ?? '').trim();
+    this.voiceName = String(props.voiceName ?? props.voice_name ?? '')
+      .replace(/[\x00-\x1F\x7F]/g, '')
+      .trim();
     this.wiki = (props.wiki || '').trim();
     this.wikiUrl = (props.wikiUrl || props.wiki_url || this.wiki || '').trim();
     this.categories = Array.isArray(props.categories) && props.categories.length > 0
@@ -59,11 +64,15 @@ export class Character extends BaseEntity {
   }
 
   get voice_provider() { return this.voiceProvider; }
-  set voice_provider(val) { this.voiceProvider = (val || 'fish_audio').trim(); }
+  set voice_provider(val) {
+    this.voiceProvider = val !== undefined && val !== null ? String(val).trim() : 'fish_audio';
+  }
   get voice_id() { return this.voiceId; }
-  set voice_id(val) { this.voiceId = (val || '').trim(); }
+  set voice_id(val) { this.voiceId = String(val ?? '').trim(); }
   get voice_name() { return this.voiceName; }
-  set voice_name(val) { this.voiceName = (val || '').trim(); }
+  set voice_name(val) {
+    this.voiceName = String(val ?? '').replace(/[\x00-\x1F\x7F]/g, '').trim();
+  }
 
   get initial_affinity() {
     return this.initialAffinity;
@@ -148,11 +157,17 @@ export class Character extends BaseEntity {
     if (this.initial_memory && this.initial_memory.length > 3000) {
       throw new ValidationError('Initial memory too long (max 3000 characters)', 'initial_memory');
     }
+    if (!ALLOWED_VOICE_PROVIDERS.has(this.voiceProvider)) {
+      throw new ValidationError('Unsupported voice provider', 'voice_provider');
+    }
     if (this.voiceId && !SAFE_VOICE_ID_REGEX.test(this.voiceId)) {
       throw new ValidationError('Invalid voice ID format', 'voice_id');
     }
-    if (this.voiceName && this.voiceName.length > 120) {
-      throw new ValidationError('Voice name too long (max 120 characters)', 'voice_name');
+    if (this.voiceName) {
+      this.voiceName = String(this.voiceName).replace(/[\x00-\x1F\x7F]/g, '').trim();
+      if (this.voiceName.length > 120) {
+        throw new ValidationError('Voice name too long (max 120 characters)', 'voice_name');
+      }
     }
     if (this.example_dialogues && this.example_dialogues.length > 5000) {
       throw new ValidationError('Example dialogues too long (max 5000 characters)', 'example_dialogues');

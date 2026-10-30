@@ -1,6 +1,7 @@
 import { api } from './api.js';
 import { initSidebar, showToast, escapeHtml } from './common.js';
 import { openImageCropper } from './cropper.js';
+import { openVoicePickerModal } from './voice-picker.js';
 
 class StudioPageApp {
   constructor() {
@@ -24,6 +25,14 @@ class StudioPageApp {
     this.initialAffinityInput = document.getElementById('charInitialAffinity');
     this.initialAffinityBadge = document.getElementById('charInitialAffinityBadge');
     this.relationshipDynamicInput = document.getElementById('charRelationshipDynamic');
+    this.voiceIdInput = document.getElementById('charVoiceIdInput');
+    this.voiceNameInput = document.getElementById('charVoiceNameInput');
+    this.voiceBadge = document.getElementById('charVoiceBadge');
+    this.voiceSummaryLabel = document.getElementById('charVoiceSummaryLabel');
+    this.voiceSummarySub = document.getElementById('charVoiceSummarySub');
+    this.btnBrowseVoice = document.getElementById('btnBrowseStudioVoice');
+    this.btnBrowseVoiceText = document.getElementById('btnBrowseStudioVoiceText');
+    this.btnClearVoice = document.getElementById('btnClearStudioVoice');
 
     // Wiki & AI synthesis
     this.wikiUrlInput = document.getElementById('charWikiInput');
@@ -43,6 +52,13 @@ class StudioPageApp {
     this.previewTags = document.getElementById('preview-tags');
     this.previewGreeting = document.getElementById('preview-greeting');
     this.previewRelationshipText = document.getElementById('preview-relationship-text');
+    this.previewVoiceText = document.getElementById('preview-voice-text');
+  }
+
+  setVoiceSelection(voiceId = '', voiceName = '') {
+    if (this.voiceIdInput) this.voiceIdInput.value = voiceId || '';
+    if (this.voiceNameInput) this.voiceNameInput.value = voiceName || '';
+    this.updatePreview();
   }
 
   updatePreview() {
@@ -76,6 +92,33 @@ class StudioPageApp {
 
     if (this.previewRelationshipText) {
       this.previewRelationshipText.textContent = `${stageName} (${affinityVal >= 0 ? '+' : ''}${affinityVal})${dynText ? ' • ' + dynText : ''}`;
+    }
+
+    const activeVoiceId = this.voiceIdInput?.value?.trim() || '';
+    const activeVoiceName = this.voiceNameInput?.value?.trim() || '';
+    if (this.voiceBadge) {
+      this.voiceBadge.classList.toggle('active', Boolean(activeVoiceId));
+    }
+    if (this.voiceSummaryLabel) {
+      this.voiceSummaryLabel.textContent = activeVoiceId
+        ? (activeVoiceName || activeVoiceId)
+        : 'Default Browser Speech';
+    }
+    if (this.voiceSummarySub) {
+      this.voiceSummarySub.textContent = activeVoiceId
+        ? `Fish Audio S2.1 · ID: ${activeVoiceId}`
+        : 'Select a Japanese anime seiyuu or upload a custom voice sample';
+    }
+    if (this.btnClearVoice) {
+      this.btnClearVoice.style.display = activeVoiceId ? 'inline-flex' : 'none';
+    }
+    if (this.btnBrowseVoiceText) {
+      this.btnBrowseVoiceText.textContent = activeVoiceId ? 'Change Voice' : 'Browse Voices';
+    }
+    if (this.previewVoiceText) {
+      this.previewVoiceText.textContent = activeVoiceId
+        ? `Seiyuu: ${activeVoiceName || activeVoiceId}`
+        : 'Default Browser Speech';
     }
   }
 
@@ -137,6 +180,8 @@ class StudioPageApp {
   resetDraft() {
     if (this.form) this.form.reset();
     if (this.charIdInput) this.charIdInput.value = '';
+    if (this.voiceIdInput) this.voiceIdInput.value = '';
+    if (this.voiceNameInput) this.voiceNameInput.value = '';
     if (this.heading) this.heading.textContent = 'Character Architecture Studio';
     const btnSaveText = document.getElementById('btnSaveText');
     if (btnSaveText) btnSaveText.textContent = 'Commit to SQL & Launch Scene';
@@ -187,7 +232,13 @@ class StudioPageApp {
         if (match) this.relationshipPresetSelect.value = match.value;
       }
       if (this.relationshipDynamicInput) {
-        this.relationshipDynamicInput.value = char.relationshipDynamic || '';
+        this.relationshipDynamicInput.value = char.relationshipDynamic || char.relationship_dynamic || '';
+      }
+      if (this.voiceIdInput) {
+        this.voiceIdInput.value = char.voiceId || char.voice_id || '';
+      }
+      if (this.voiceNameInput) {
+        this.voiceNameInput.value = char.voiceName || char.voice_name || '';
       }
 
       this.updatePreview();
@@ -219,6 +270,27 @@ class StudioPageApp {
 
     if (this.btnUploadAvatar) {
       this.btnUploadAvatar.addEventListener('click', () => this.launchPortraitCropper());
+    }
+
+    if (this.btnBrowseVoice) {
+      this.btnBrowseVoice.addEventListener('click', () => {
+        openVoicePickerModal({
+          selectedVoiceId: this.voiceIdInput?.value?.trim() || '',
+          selectedVoiceName: this.voiceNameInput?.value?.trim() || '',
+          title: 'Character Seiyuu & Voice Studio',
+          onSelect: ({ voiceId, voiceName }) => {
+            this.setVoiceSelection(voiceId, voiceName);
+            showToast(voiceId ? `Selected voice: ${voiceName || voiceId}` : 'Reset to Browser Speech.');
+          }
+        });
+      });
+    }
+
+    if (this.btnClearVoice) {
+      this.btnClearVoice.addEventListener('click', () => {
+        this.setVoiceSelection('', '');
+        showToast('Reset to Browser Speech.');
+      });
     }
 
     if (this.previewAvatarFrame) {
@@ -363,6 +435,12 @@ class StudioPageApp {
           initialRelationshipStage: this.relationshipPresetSelect?.selectedOptions?.[0]?.dataset?.stage ||
             this.relationshipPresetSelect?.selectedOptions?.[0]?.text?.split('(')[0]?.trim() || 'Stranger / Neutral',
           relationshipDynamic: this.relationshipDynamicInput?.value?.trim() || '',
+          voice_provider: (this.voiceIdInput?.value?.trim() || '') ? 'fish_audio' : 'browser',
+          voiceProvider: (this.voiceIdInput?.value?.trim() || '') ? 'fish_audio' : 'browser',
+          voice_id: this.voiceIdInput?.value?.trim() || '',
+          voiceId: this.voiceIdInput?.value?.trim() || '',
+          voice_name: this.voiceNameInput?.value?.trim() || '',
+          voiceName: this.voiceNameInput?.value?.trim() || '',
           creator: (api.getCurrentUser()?.username ? `@${api.getCurrentUser().username}` : undefined)
         };
 

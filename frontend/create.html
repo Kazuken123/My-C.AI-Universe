@@ -25,6 +25,7 @@
   <link rel="stylesheet" href="/css/base.css" />
   <link rel="stylesheet" href="/css/studio.css" />
   <link rel="stylesheet" href="/css/cropper.css" />
+  <link rel="stylesheet" href="/css/voice-picker.css" />
   <script type="module" src="/js/loading-bar.js"></script>
   <script type="module" src="/js/ambient-canvas.js"></script>
   <link rel="stylesheet" href="/css/orbit.css" />
@@ -275,6 +276,33 @@
                 </div>
 
                 <div class="form-group">
+                  <label>Anime Seiyuu / Voice Model (Fish Audio)</label>
+                  <input type="hidden" id="charVoiceIdInput" value="" />
+                  <input type="hidden" id="charVoiceNameInput" value="" />
+                  <div class="studio-voice-selector">
+                    <div class="studio-voice-info">
+                      <span class="studio-voice-badge" id="charVoiceBadge">
+                        <i class="ph-light ph-microphone"></i>
+                      </span>
+                      <div style="min-width: 0;">
+                        <div class="studio-voice-name" id="charVoiceSummaryLabel">Default Browser Speech</div>
+                        <div class="studio-voice-sub" id="charVoiceSummarySub">Select a Japanese anime seiyuu or upload a custom voice sample</div>
+                      </div>
+                    </div>
+                    <div class="studio-voice-actions">
+                      <button type="button" class="btn-secondary btn-sm" id="btnClearStudioVoice" style="display: none;" title="Reset to Browser Speech">
+                        <i class="ph-light ph-x"></i>
+                        <span>Clear</span>
+                      </button>
+                      <button type="button" class="btn-secondary btn-sm" id="btnBrowseStudioVoice">
+                        <i class="ph-light ph-microphone"></i>
+                        <span id="btnBrowseStudioVoiceText">Browse Voices</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group">
                   <label for="charGreetingInput">Opening Scene &amp; First Line</label>
                   <textarea class="form-textarea" id="charGreetingInput" rows="4" placeholder="*He lowers his dark sunglasses slightly, infinite blue eyes locking onto you.*&#10;&#10;Satoru Gojo: &quot;Yo! You must be the new transfer student.&quot;"></textarea>
                 </div>
@@ -393,6 +421,10 @@
                     <div class="preview-dossier-relationship" id="preview-relationship" style="margin-top: 8px; font-size: 0.78rem; color: var(--accent); display: flex; align-items: center; gap: 6px;">
                       <i class="ph-light ph-heart"></i>
                       <span id="preview-relationship-text">Stranger / Neutral (0)</span>
+                    </div>
+                    <div class="preview-dossier-voice" id="preview-voice" style="margin-top: 4px; font-size: 0.75rem; color: var(--text-secondary); display: flex; align-items: center; gap: 6px;">
+                      <i class="ph-light ph-microphone"></i>
+                      <span id="preview-voice-text">Default Browser Speech</span>
                     </div>
                   </div>
 

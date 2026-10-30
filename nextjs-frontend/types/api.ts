@@ -32,6 +32,28 @@ export class ApiError extends Error {
     this.data = data;
     Object.setPrototypeOf(this, ApiError.prototype);
   }
+
+  static fromResponse(data: unknown, status = 500, fallbackMessage = `HTTP ${status}: Request failed`): ApiError {
+    if (typeof data === 'object' && data !== null && 'error' in data) {
+      const rawError = (data as { error?: unknown }).error;
+      if (typeof rawError === 'object' && rawError !== null) {
+        const detail = rawError as Partial<ApiErrorDetail>;
+        const message = typeof detail.message === 'string' && detail.message.trim()
+          ? detail.message
+          : fallbackMessage;
+        const code = typeof detail.code === 'number' ? detail.code : status;
+        const field = typeof detail.field === 'string' ? detail.field : undefined;
+        return new ApiError(message, status, code, field, data);
+      }
+      if (typeof rawError === 'string' && rawError.trim()) {
+        return new ApiError(rawError, status, status, undefined, data);
+      }
+    }
+    if (typeof data === 'string' && data.trim()) {
+      return new ApiError(data, status, status, undefined, data);
+    }
+    return new ApiError(fallbackMessage, status, status, undefined, data);
+  }
 }
 
 /**

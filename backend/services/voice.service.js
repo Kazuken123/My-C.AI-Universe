@@ -53,13 +53,17 @@ export class VoiceService {
     }
 
     let cleaned = rawText
-      // Strip internal relationship & directive tags
+      // Strip internal relationship & directive tags (both [[REL_STATE: ...]] and [REL_STATE:...])
+      .replace(/\[\[REL_STATE:[\s\S]*?\]\]/gi, '')
       .replace(/\[REL_STATE:[^\]]*\]/gi, '')
       .replace(/\[Scene[^\]]*\]/gi, '')
       .replace(/\[Directive[^\]]*\]/gi, '')
+      // Unwrap bold spoken emphasis (**word** / __word__) before stripping italic stage actions
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/__([^_]+)__/g, '$1')
       // Strip markdown italic actions (*...* or _..._)
       .replace(/\*[^*]+\*/g, '')
-      .replace(/_[^_]+_/g, '')
+      .replace(/(^|[\s"“”«»(])_[^_]+_(?=$|[\s"“”«»).,!?])/g, '$1')
       // Strip speaker prefixes like "Kana: " or "Character Name:"
       .replace(/^[^:\n]{1,40}:\s*/gm, '')
       // Strip stray surrounding quotation marks

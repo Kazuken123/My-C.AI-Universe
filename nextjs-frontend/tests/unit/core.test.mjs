@@ -259,3 +259,65 @@ test('EBAP-02: every Next.js AI_PROVIDERS option is accepted by backend normaliz
   assert.equal(resolveSupportedProvider('groq'), 'gemini');
   assert.equal(resolveSupportedProvider(''), 'gemini');
 });
+
+test('VOICE-01: ApiError.fromResponse and ApiClient.synthesizeMessageVoice extract nested error.message instead of [object Object]', async () => {
+  const { ApiError } = await import('../../types/api.ts');
+  const { readFileSync } = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+
+  assert.equal(typeof ApiError.fromResponse, 'function');
+
+  const structuredErr = ApiError.fromResponse(
+    {
+      error: {
+        message: 'No spoken dialogue found in message (only actions/silent notes)',
+        code: 400,
+        field: 'text',
+      },
+    },
+    400,
+    'Voice synthesis failed'
+  );
+  assert.ok(structuredErr instanceof ApiError);
+  assert.equal(structuredErr.message, 'No spoken dialogue found in message (only actions/silent notes)');
+  assert.equal(structuredErr.status, 400);
+  assert.equal(structuredErr.code, 400);
+  assert.equal(structuredErr.field, 'text');
+
+  const stringErr = ApiError.fromResponse({ error: 'Rate limit exceeded' }, 429, 'Voice synthesis failed');
+  assert.equal(stringErr.message, 'Rate limit exceeded');
+  assert.equal(stringErr.status, 429);
+
+  const apiSrc = readFileSync(
+    path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../lib/api.ts'),
+    'utf8'
+  );
+  assert.match(apiSrc, /ApiError\.fromResponse\(/, 'ApiClient.synthesizeMessageVoice must construct errors via ApiError.fromResponse');
+});
+
+test('VOICE-02: CharacterStudio renders VoicePickerModal and ChatView autoTTS forwards messageId & variantIndex', async () => {
+  const { readFileSync } = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const baseDir = path.dirname(fileURLToPath(import.meta.url));
+
+  const studioSrc = readFileSync(
+    path.resolve(baseDir, '../../components/characters/character-studio.tsx'),
+    'utf8'
+  );
+  assert.match(studioSrc, /VoicePickerModal/, 'CharacterStudio must import and mount VoicePickerModal');
+  assert.match(studioSrc, /setIsVoicePickerOpen\(true\)/, 'CharacterStudio must provide a trigger to open VoicePickerModal');
+
+  const chatViewSrc = readFileSync(
+    path.resolve(baseDir, '../../components/chat/chat-view.tsx'),
+    'utf8'
+  );
+  // Every autoTTS speakText call must pass messageId & variantIndex (no bare 1-arg speakText calls)
+  const bareSpeakCalls = chatViewSrc.match(/speakText\([^,)]+\)\s*;/g) || [];
+  assert.equal(
+    bareSpeakCalls.length,
+    0,
+    `ChatView must pass messageId and variantIndex to speakText for Fish Audio synthesis, found bare calls: ${bareSpeakCalls.join(', ')}`
+  );
+});

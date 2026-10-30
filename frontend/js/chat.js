@@ -2,6 +2,7 @@ import { normalizeRelationshipStage, RELATIONSHIP_MOODS, RELATIONSHIP_PRESETS } 
 import { api } from './api.js';
 import { escapeHtml, formatCount, bindSpotlightHover } from './characters.js';
 import { deduplicateSessionsByCharacter, setActiveSessionForCharacter, getActiveSessionForCharacter } from './common.js';
+import { openVoicePickerModal } from './voice-picker.js';
 
 /**
  * Strips complete [[REL_STATE: ...]] tags AND any partial trailing tag
@@ -74,6 +75,8 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
   const btnChatHistory = document.getElementById('btnChatHistory');
   const toggleDrawerBtn = document.getElementById('btnToggleDrawer');
   const memoryNotebookBtn = document.getElementById('btnMemoryNotebook');
+  const selectVoiceBtn = document.getElementById('btnSelectVoice');
+  const selectVoiceLabel = document.getElementById('chatVoiceBtnLabel');
   const ttsAutoBtn = document.getElementById('btnToggleTTS');
   const aiProviderSelect = document.getElementById('aiProvider');
   const chatPersonaSelect = document.getElementById('chatPersonaSelect');
@@ -146,37 +149,142 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
   }
 
   /**
-   * Speak dialogue aloud using browser Web Speech API
+   * Stop any active Fish Audio HTMLAudioElement or Browser Speech playback
    */
-  function speakText(text) {
+  let activeVoiceAudio = null;
+  let activeVoiceBlobUrl = null;
+
+  function setSpeakingIndicator(isActive) {
+    const chatVisualizer = document.getElementById('chat-voice-visualizer');
+    if (headerAvatar) headerAvatar.classList.toggle('speaking', Boolean(isActive));
+    if (chatVisualizer) chatVisualizer.classList.toggle('active', Boolean(isActive));
+  }
+
+  function stopActiveVoicePlayback() {
+    if (activeVoiceAudio) {
+      try {
+        activeVoiceAudio.pause();
+      } catch {}
+      activeVoiceAudio = null;
+    }
+    if (activeVoiceBlobUrl) {
+      URL.revokeObjectURL(activeVoiceBlobUrl);
+      activeVoiceBlobUrl = null;
+    }
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setSpeakingIndicator(false);
+  }
+
+  /**
+   * Speak dialogue aloud using Fish Audio S2.1 + Gemini 3.1 Emotional Japanese TTS
+   * (with automatic Cloudflare R2 caching and Browser Web Speech fallback)
+   */
+  async function speakText(text, messageId = null, variantIndex = 0, sessionIdOverride = null) {
+    stopActiveVoicePlayback();
+
+    const sess = appState.activeSession;
+    const char = appState.activeCharacter;
+    const currentVoiceId =
+      sess?.voiceIdOverride || sess?.voice_id_override || char?.voiceId || char?.voice_id || '';
+    const targetSessionId = sessionIdOverride || sess?.id || '';
+
+    if (currentVoiceId && targetSessionId && messageId) {
+      try {
+        setSpeakingIndicator(true);
+        const audioBlob = await api.synthesizeMessageVoice({
+          sessionId: targetSessionId,
+          messageId,
+          variantIndex: variantIndex ?? 0
+        });
+        const blobUrl = URL.createObjectURL(audioBlob);
+        activeVoiceBlobUrl = blobUrl;
+        const audio = new Audio(blobUrl);
+        activeVoiceAudio = audio;
+
+        const resetSpeakingState = () => {
+          if (activeVoiceAudio === audio) {
+            activeVoiceAudio = null;
+          }
+          if (activeVoiceBlobUrl === blobUrl) {
+            URL.revokeObjectURL(blobUrl);
+            activeVoiceBlobUrl = null;
+          }
+          setSpeakingIndicator(false);
+        };
+
+        audio.onended = resetSpeakingState;
+        audio.onerror = resetSpeakingState;
+        await audio.play();
+        return;
+      } catch (voiceErr) {
+        console.warn('[Chat] Fish Audio synthesis fallback to browser speech:', voiceErr.message);
+        setSpeakingIndicator(false);
+      }
+    }
+
     if (!('speechSynthesis' in window)) {
       showToast('Speech synthesis is not supported in this browser.');
       return;
     }
-    window.speechSynthesis.cancel();
+
     const clean = (text || '')
+      .replace(/\[\[REL_STATE:[\s\S]*?\]\]/gi, '')
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/__([^_]+)__/g, '$1')
       .replace(/\*[^*]+\*/g, '')
       .replace(/^[^:\n]{1,40}:\s*/gm, '')
-      .replace(/"/g, '')
+      .replace(/["“”«»]/g, '')
       .trim();
 
     if (!clean) return;
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.rate = 1.02;
 
-    const chatVisualizer = document.getElementById('chat-voice-visualizer');
-    if (headerAvatar) headerAvatar.classList.add('speaking');
-    if (chatVisualizer) chatVisualizer.classList.add('active');
-
-    const resetSpeakingState = () => {
-      if (headerAvatar) headerAvatar.classList.remove('speaking');
-      if (chatVisualizer) chatVisualizer.classList.remove('active');
-    };
+    setSpeakingIndicator(true);
+    const resetSpeakingState = () => setSpeakingIndicator(false);
 
     utterance.onend = resetSpeakingState;
     utterance.onerror = resetSpeakingState;
 
     window.speechSynthesis.speak(utterance);
+  }
+
+  if (selectVoiceBtn) {
+    selectVoiceBtn.addEventListener('click', () => {
+      const char = appState.activeCharacter;
+      const sess = appState.activeSession;
+      if (!char || !sess) return;
+
+      const activeId = sess.voiceIdOverride || sess.voice_id_override || char.voiceId || char.voice_id || '';
+      const activeName = sess.voiceNameOverride || sess.voice_name_override || char.voiceName || char.voice_name || '';
+
+      openVoicePickerModal({
+        selectedVoiceId: activeId,
+        selectedVoiceName: activeName,
+        title: `Voice Studio — ${char.name}`,
+        onSelect: async ({ voiceId, voiceName }) => {
+          try {
+            const res = await api.updateSessionVoice(sess.id, {
+              voiceIdOverride: voiceId,
+              voiceNameOverride: voiceName
+            });
+            appState.activeSession = res.session || {
+              ...sess,
+              voiceIdOverride: voiceId,
+              voice_id_override: voiceId,
+              voiceNameOverride: voiceName,
+              voice_name_override: voiceName
+            };
+            renderChatHeader(appState.activeCharacter, appState.activeSession);
+            showToast(voiceId ? `Active voice set to ${voiceName || voiceId}` : 'Reset session voice override.');
+          } catch (err) {
+            showToast('Failed to update session voice: ' + err.message);
+          }
+        }
+      });
+    });
   }
 
   if (ttsAutoBtn) {
@@ -186,8 +294,8 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       ttsAutoBtn.innerHTML = autoSpeakTTS
         ? '<i class="ph-fill ph-speaker-high"></i> <span>Voice ON</span>'
         : '<i class="ph-light ph-speaker-high"></i> <span>Voice</span>';
-      if (!autoSpeakTTS && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
+      if (!autoSpeakTTS) {
+        stopActiveVoicePlayback();
       }
     });
   }
@@ -865,6 +973,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
    */
   async function openChatWithCharacter(characterId, sessionId = null) {
     isSending = false;
+    stopActiveVoicePlayback();
     try {
       const [character, charSessions] = await Promise.all([
         api.getCharacter(characterId),
@@ -931,6 +1040,17 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     }
     if (aiProviderSelect && session?.provider) {
       aiProviderSelect.value = session.provider;
+    }
+    if (selectVoiceBtn && selectVoiceLabel) {
+      const activeVoiceId =
+        session?.voiceIdOverride || session?.voice_id_override || character?.voiceId || character?.voice_id || '';
+      const activeVoiceName =
+        session?.voiceNameOverride || session?.voice_name_override || character?.voiceName || character?.voice_name || '';
+      selectVoiceBtn.classList.toggle('has-voice', Boolean(activeVoiceId));
+      selectVoiceLabel.textContent = activeVoiceId ? (activeVoiceName || 'Fish Voice') : 'Seiyuu';
+      selectVoiceBtn.title = activeVoiceId
+        ? `Active Seiyuu: ${activeVoiceName || activeVoiceId} (Click to switch)`
+        : 'Select Character Seiyuu Voice (Fish Audio)';
     }
   }
 
@@ -1085,8 +1205,13 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
     streamInner.querySelectorAll('[data-tts-msg]').forEach(btn => {
       btn.addEventListener('click', () => {
-        const msg = session.messages.find(m => m.id === btn.dataset.ttsMsg);
-        if (msg) speakText(msg.content);
+        const activeSess = appState.activeSession || session;
+        const msg = activeSess.messages?.find(m => m.id === btn.dataset.ttsMsg) || session.messages?.find(m => m.id === btn.dataset.ttsMsg);
+        if (msg) {
+          const variantIdx = msg.selectedVariantIndex || 0;
+          const variantText = (Array.isArray(msg.variants) && msg.variants[variantIdx]?.text) || msg.content;
+          speakText(variantText, msg.id, variantIdx, activeSess.id);
+        }
       });
     });
 
@@ -1302,7 +1427,9 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
           }
 
           if (autoSpeakTTS && donePayload.response) {
-            speakText(donePayload.response);
+            const latestMsgs = updatedSession.messages || [];
+            const lastAiMsg = donePayload.aiMessage || latestMsgs[latestMsgs.length - 1];
+            speakText(donePayload.response, lastAiMsg?.id || null, lastAiMsg?.selectedVariantIndex ?? 0, updatedSession.id);
           }
         }
       );
@@ -1432,7 +1559,12 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       }
 
       if (autoSpeakTTS && result.response) {
-        speakText(result.response);
+        speakText(
+          result.response,
+          result.message?.id || targetModelMsg.id,
+          result.message?.selectedVariantIndex ?? 0,
+          updatedSession.id
+        );
       }
     } catch (error) {
       clearTimeout(watchdogTimer);
@@ -1514,7 +1646,9 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       }
 
       if (autoSpeakTTS && result.response) {
-        speakText(result.response);
+        const latestMsgs = updatedSession.messages || [];
+        const contMsg = result.message || latestMsgs[latestMsgs.length - 1];
+        speakText(result.response, contMsg?.id || null, contMsg?.selectedVariantIndex ?? 0, updatedSession.id);
       }
     } catch (error) {
       clearTimeout(watchdogTimer);

@@ -560,13 +560,13 @@ export class ApiClient {
     });
 
     if (!res.ok) {
-      let errData: any;
+      let errData: unknown;
       try {
         errData = await res.json();
       } catch {
         errData = { error: `Voice synthesis failed (${res.status})` };
       }
-      throw new ApiError(errData?.error || 'Voice synthesis failed', res.status, errData);
+      throw ApiError.fromResponse(errData, res.status, 'Voice synthesis failed');
     }
 
     return await res.blob();
