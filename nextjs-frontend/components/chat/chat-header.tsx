@@ -12,6 +12,7 @@ import {
   Cpu,
   UserCheck,
   Radio,
+  Mic,
 } from 'lucide-react';
 import type { Character } from '@/types/character';
 import type { RelationshipMetrics } from '@/types/chat';
@@ -34,6 +35,8 @@ export interface ChatHeaderProps {
   onOpenMemoriesDrawer: () => void;
   onOpenHistoryDrawer: () => void;
   isSpeaking?: boolean;
+  activeVoiceName?: string;
+  onOpenVoiceModal?: () => void;
 }
 
 export function ChatHeader({
@@ -50,6 +53,8 @@ export function ChatHeader({
   onOpenMemoriesDrawer,
   onOpenHistoryDrawer,
   isSpeaking = false,
+  activeVoiceName,
+  onOpenVoiceModal,
 }: ChatHeaderProps) {
   const affinityVal = Number(relationship.affinity ?? 0);
   const stage = relationship.relationshipStage || 'Stranger / Neutral';
@@ -155,6 +160,27 @@ export function ChatHeader({
             >
               {autoTTS ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </button>
+
+            {/* Voice Model Switcher */}
+            {onOpenVoiceModal && (
+              <button
+                type="button"
+                onClick={onOpenVoiceModal}
+                className={cn(
+                  'icon-btn h-8 px-2 flex items-center gap-1.5 text-xs transition-colors rounded-lg border',
+                  activeVoiceName
+                    ? 'border-purple-500/30 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20'
+                    : 'border-border-hairline text-text-muted hover:text-text-primary'
+                )}
+                title={activeVoiceName ? `Voice: ${activeVoiceName} (Click to swap)` : 'Select Character Voice'}
+              >
+                <Mic className="h-3.5 w-3.5 text-purple-400" />
+                <span className="hidden md:inline max-w-[90px] truncate font-mono text-[11px]">
+                  {activeVoiceName || 'Voice'}
+                </span>
+              </button>
+            )}
+
 
             {/* Thread History Drawer Button */}
             <button

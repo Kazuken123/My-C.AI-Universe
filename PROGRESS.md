@@ -1,5 +1,29 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-10-30 - Anime Voice Roleplay Engine & Fish Audio Model Discovery
+
+- **Context & Architecture**:
+  - Implemented an anime voice roleplay engine supporting community model search from Fish Audio, custom private voice sample uploads, and in-chat character speech.
+  - Enforced a strict **quota-isolated dual-model architecture**:
+    1. **Gemini 3.5 Flash Lite** (`500 RPD`): Dedicated entirely to character roleplay chat, narrative generation, and conversation memory.
+    2. **Gemini 3.1 Flash Lite** (`500 RPD`): Dedicated entirely to extracting spoken dialogue and translating it into natural Japanese with Fish Audio emotion tags (`[pout]`, `[sigh]`, `[gasp]`, `[chuckle]`, `[whisper]`, etc.).
+  - Integrated **Cloudflare R2** (`r2StorageService`) zero-egress audio caching: synthesized clips are content-addressed by `sha256(voiceProvider + voiceId + spokenText)` under `voices/cache/${hash}.mp3`. Replaying a line or swiping between takes costs **0 Fish Audio credits** and **0 Gemini tokens**.
+- **Security Hardening (Remediated 6 Vulnerabilities from Initial Plan)**:
+  - **S1**: Enforced `requireAuth` across all voice routes plus dedicated per-user rate limiters (`voiceSynthesizeLimiter` 12 req/min, `voiceUploadLimiter` 5 req/10 min) to protect free tier quotas from bot exhaustion.
+  - **S2**: Prevented arbitrary text proxy abuse, cross-user audio IDOR, and cache poisoning by accepting `{ sessionId, messageId, variantIndex }` only, enforcing `session.userId === req.user.id`, verifying `message.role === 'model'`, and loading authoritative text directly from SQL.
+  - **S3**: Added audio binary magic-byte verification (`RIFF/WAVE`, MP3 `ID3`/frame sync, `OggS`, WebM) and a strict 4MB ceiling, forcing `visibility: 'private'` on custom voice uploads.
+  - **S4**: Enforced `SAFE_VOICE_ID_REGEX = /^[a-zA-Z0-9_-]{0,64}$/`, isolated untrusted dialogue in `<dialogue_to_translate>` tags with `PERMISSIVE_SAFETY_SETTINGS` (`BLOCK_NONE`), allowlisted emotion bracket tags, and capped streams at 10MB with 15s timeouts.
+  - **S5**: Sanitized external cover/preview URLs to strict `https:` protocol and updated Content-Security-Policy with `media-src 'self' blob: https:;` to allow seamless HTML5 audio playback.
+  - **S6**: Created `backend/db/migrations/20261030-character-voice.js` to add voice columns to `characters` and per-session overrides (`voice_id_override`, `voice_name_override`) to `chat_sessions`, adding `PUT /api/chats/:sessionId/voice` so users can test voices mid-conversation without mutating public character records.
+- **Frontend & Tactile UI**:
+  - `nextjs-frontend/components/characters/voice-picker-modal.tsx`: Search bar with popular chips (Kana Arima, Furina, Megumin, Han Megumi), instant preview audio player, custom audio uploader, and clear-to-default option.
+  - `character-studio.tsx`: Added "Character Voice & Seiyuu" configuration card.
+  - `chat-header.tsx`: Added session voice badge and switcher button.
+  - `chat-view.tsx` & `chat-messages.tsx`: Upgraded `speakText` to stream synthesized voice with low-latency caching, object URL lifecycle management (0 memory leaks), and graceful fallback to Web Speech API.
+- **Verification**:
+  - Added unit test suite `tests/voice-roleplay.test.mjs` (6/6 passed).
+  - Executed full test suite: **44/44 backend test files passed (`0 failures`)**, **16/16 Next.js tests passed (`0 failures`)**, TypeScript check **0 errors**, syntax check **150/150 JS files passed (`0 failures`)**.
+
 ## 2026-10-30 - Cloudflare R2 Object Storage Integration (Resolves A15)
 
 - **Context & Architecture**:

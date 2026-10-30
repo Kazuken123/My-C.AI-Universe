@@ -8,11 +8,14 @@ import { RESERVED_USERNAMES } from '../config/index.js';
  * Character Domain Entity Class
  * Inherits from BaseEntity and encapsulates Character attributes, lore compilation, and interaction state.
  */
+export const SAFE_VOICE_ID_REGEX = /^[a-zA-Z0-9_-]{0,64}$/;
+export const ALLOWED_VOICE_PROVIDERS = new Set(['', 'fish_audio', 'browser']);
+
 export class Character extends BaseEntity {
   static ALLOWED_UPDATE_FIELDS = [
     'name', 'tagline', 'greeting', 'personality', 'appearance',
     'abilities', 'background', 'summary', 'speaking_style', 'initial_memory',
-    'initial_affinity', 'initial_relationship_stage', 'relationship_dynamic'
+    'initial_affinity', 'initial_relationship_stage', 'relationship_dynamic', 'voice_provider', 'voice_id', 'voice_name'
   ];
 
   constructor(props = {}) {
@@ -36,6 +39,9 @@ export class Character extends BaseEntity {
     this.initialAffinity = Math.max(-100, Math.min(100, Number(props.initialAffinity ?? props.initial_affinity ?? 0)));
     this.initialRelationshipStage = (props.initialRelationshipStage || props.initial_relationship_stage || 'Stranger / Neutral').trim();
     this.relationshipDynamic = (props.relationshipDynamic || props.relationship_dynamic || '').trim();
+    this.voiceProvider = (props.voiceProvider || props.voice_provider || 'fish_audio').trim();
+    this.voiceId = (props.voiceId || props.voice_id || '').trim();
+    this.voiceName = (props.voiceName || props.voice_name || '').trim();
     this.wiki = (props.wiki || '').trim();
     this.wikiUrl = (props.wikiUrl || props.wiki_url || this.wiki || '').trim();
     this.categories = Array.isArray(props.categories) && props.categories.length > 0
@@ -51,6 +57,13 @@ export class Character extends BaseEntity {
     this.greeting = generateDefaultGreeting(this);
     this.systemPrompt = props.systemPrompt || props.system_prompt || compileCharacterSystemPrompt(this);
   }
+
+  get voice_provider() { return this.voiceProvider; }
+  set voice_provider(val) { this.voiceProvider = (val || 'fish_audio').trim(); }
+  get voice_id() { return this.voiceId; }
+  set voice_id(val) { this.voiceId = (val || '').trim(); }
+  get voice_name() { return this.voiceName; }
+  set voice_name(val) { this.voiceName = (val || '').trim(); }
 
   get initial_affinity() {
     return this.initialAffinity;
@@ -135,6 +148,12 @@ export class Character extends BaseEntity {
     if (this.initial_memory && this.initial_memory.length > 3000) {
       throw new ValidationError('Initial memory too long (max 3000 characters)', 'initial_memory');
     }
+    if (this.voiceId && !SAFE_VOICE_ID_REGEX.test(this.voiceId)) {
+      throw new ValidationError('Invalid voice ID format', 'voice_id');
+    }
+    if (this.voiceName && this.voiceName.length > 120) {
+      throw new ValidationError('Voice name too long (max 120 characters)', 'voice_name');
+    }
     if (this.example_dialogues && this.example_dialogues.length > 5000) {
       throw new ValidationError('Example dialogues too long (max 5000 characters)', 'example_dialogues');
     }
@@ -210,6 +229,9 @@ export class Character extends BaseEntity {
       initialAffinity: row.initial_affinity,
       initialRelationshipStage: row.initial_relationship_stage,
       relationshipDynamic: row.relationship_dynamic,
+      voiceProvider: row.voice_provider,
+      voiceId: row.voice_id,
+      voiceName: row.voice_name,
       systemPrompt: row.system_prompt,
       wiki: row.wiki,
       wikiUrl: row.wiki_url,
@@ -244,6 +266,12 @@ export class Character extends BaseEntity {
       initial_relationship_stage: this.initialRelationshipStage,
       relationshipDynamic: this.relationshipDynamic,
       relationship_dynamic: this.relationshipDynamic,
+      voice_provider: this.voiceProvider,
+      voiceProvider: this.voiceProvider,
+      voice_id: this.voiceId,
+      voiceId: this.voiceId,
+      voice_name: this.voiceName,
+      voiceName: this.voiceName,
       systemPrompt: this.systemPrompt,
       wiki: this.wiki,
       wikiUrl: this.wikiUrl,

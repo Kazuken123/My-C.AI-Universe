@@ -13,6 +13,7 @@ import { memoryService } from '../services/memory.service.js';
 import { relationshipService, createStreamTailFilter } from '../services/relationship.service.js';
 import { generateDefaultGreeting } from '../ai/prompt/characterPrompt.js';
 import { ValidationError, NotFoundError } from '../ai/errors.js';
+import { SAFE_VOICE_ID_REGEX } from '../models/Character.js';
 import { config } from '../config/index.js';
 import { normalizeProviderName, resolveStoredProviderName } from '../ai/providerSelection.js';
 
@@ -47,6 +48,7 @@ export class ChatController extends BaseController {
     this.rewindChatSession = this.rewindChatSession.bind(this);
     this.sendChatMessage = this.sendChatMessage.bind(this);
     this.updateSessionRelationship = this.updateSessionRelationship.bind(this);
+    this.updateSessionVoice = this.updateSessionVoice.bind(this);
   }
 
   /**
@@ -782,6 +784,45 @@ Rules:
       return this.handleError(res, error, 'Failed to update relationship state');
     }
   }
+  async updateSessionVoice(req, res) {
+    try {
+      const { sessionId } = req.params;
+      const userId = req.user ? req.user.id : null;
+      const { voiceIdOverride, voiceNameOverride } = req.body || {};
+
+      const session = await this.sessionsRepo.findById(sessionId, userId);
+      if (!session) {
+        throw new NotFoundError('Chat session not found');
+      }
+
+      const voiceId = typeof voiceIdOverride === 'string' ? voiceIdOverride.trim() : '';
+      const voiceName = typeof voiceNameOverride === 'string' ? voiceNameOverride.trim() : '';
+
+      if (voiceId && !SAFE_VOICE_ID_REGEX.test(voiceId)) {
+        throw new ValidationError('Invalid voice ID format', 'voice_id_override');
+      }
+      if (voiceName.length > 120) {
+        throw new ValidationError('Voice name too long (max 120 characters)', 'voice_name_override');
+      }
+
+      await this.sessionsRepo.updateVoiceOverride(sessionId, {
+        voiceIdOverride: voiceId,
+        voiceNameOverride: voiceName
+      });
+
+      session.voiceIdOverride = voiceId;
+      session.voiceNameOverride = voiceName;
+
+      return this.sendJson(res, {
+        success: true,
+        voiceIdOverride: voiceId,
+        voiceNameOverride: voiceName,
+        session: session.toJSON()
+      });
+    } catch (error) {
+      return this.handleError(res, error, 'Failed to update session voice');
+    }
+  }
 }
 
 export const chatController = new ChatController();
@@ -794,5 +835,6 @@ export const {
   updateChatMessage,
   rewindChatSession,
   sendChatMessage,
-  updateSessionRelationship
+  updateSessionRelationship,
+  updateSessionVoice
 } = chatController;

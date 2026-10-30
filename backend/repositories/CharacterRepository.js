@@ -88,9 +88,10 @@ export class CharacterRepository extends BaseRepository {
         id, name, tagline, avatar, greeting, personality, appearance, abilities,
         background, speaking_style, example_dialogues, initial_memory,
         initial_affinity, initial_relationship_stage, relationship_dynamic,
+        voice_provider, voice_id, voice_name,
         system_prompt, wiki, wiki_url, categories_json, creator, owner_user_id,
         interactions, likes, is_liked, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         name = excluded.name,
         tagline = excluded.tagline,
@@ -106,6 +107,9 @@ export class CharacterRepository extends BaseRepository {
         initial_affinity = excluded.initial_affinity,
         initial_relationship_stage = excluded.initial_relationship_stage,
         relationship_dynamic = excluded.relationship_dynamic,
+        voice_provider = excluded.voice_provider,
+        voice_id = excluded.voice_id,
+        voice_name = excluded.voice_name,
         system_prompt = excluded.system_prompt,
         wiki = excluded.wiki,
         wiki_url = excluded.wiki_url,
@@ -134,6 +138,9 @@ export class CharacterRepository extends BaseRepository {
       char.initialAffinity,
       char.initialRelationshipStage,
       char.relationshipDynamic,
+      char.voiceProvider,
+      char.voiceId,
+      char.voiceName,
       char.systemPrompt,
       char.wiki,
       char.wikiUrl,

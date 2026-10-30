@@ -161,6 +161,8 @@ export class ChatSession extends BaseEntity {
     this.revision = Number.isInteger(props.revision) ? props.revision : null;
     this.narrativeState = props.narrativeState || {};
     this.relationshipMood = props.relationshipMood || props.relationship_mood || 'Calm';
+    this.voiceIdOverride = (props.voiceIdOverride || props.voice_id_override || '').trim();
+    this.voiceNameOverride = (props.voiceNameOverride || props.voice_name_override || '').trim();
     this.messages = Array.isArray(props.messages)
       ? props.messages.map((m, idx) =>
           m instanceof ChatMessage ? m : new ChatMessage({ ...m, sessionId: this.id, position: idx })
@@ -212,6 +214,8 @@ export class ChatSession extends BaseEntity {
       narrativeState: JSON.parse(row.narrative_state || '{}'),
       relationshipStage: row.relationship_stage,
       relationshipMood: row.relationship_mood,
+      voiceIdOverride: row.voice_id_override,
+      voiceNameOverride: row.voice_name_override,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       messages
@@ -231,6 +235,10 @@ export class ChatSession extends BaseEntity {
       strain: this.strain,
       relationshipStage: this.relationshipStage,
       relationshipMood: this.relationshipMood,
+      voice_id_override: this.voiceIdOverride,
+      voiceIdOverride: this.voiceIdOverride,
+      voice_name_override: this.voiceNameOverride,
+      voiceNameOverride: this.voiceNameOverride,
       revision: this.revision,
       narrativeState: this.narrativeState,
       createdAt: this.createdAt,

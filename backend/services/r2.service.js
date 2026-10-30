@@ -148,6 +148,97 @@ export class R2StorageService {
       return false;
     }
   }
+  /**
+   * Retrieve cached synthesized voice audio by SHA-256 hash
+   * @param {string} sha256Hex
+   * @returns {Promise<{ buffer: Buffer, mimeType: string } | null>}
+   */
+  async getCachedVoiceAudio(sha256Hex) {
+    if (!this.#client || !/^[a-f0-9]{64}$/.test(sha256Hex)) return null;
+
+    try {
+      const command = new GetObjectCommand({
+        Bucket: this.#bucketName,
+        Key: `voices/cache/${sha256Hex}.mp3`,
+      });
+
+      const response = await this.#client.send(command);
+      if (!response || !response.Body) return null;
+
+      const chunks = [];
+      for await (const chunk of response.Body) {
+        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+      }
+      return {
+        buffer: Buffer.concat(chunks),
+        mimeType: response.ContentType || 'audio/mpeg',
+      };
+    } catch (err) {
+      if (err.name !== 'NoSuchKey') {
+        console.warn(`[R2StorageService] Voice cache fetch notice for ${sha256Hex}:`, err.message);
+      }
+      return null;
+    }
+  }
+
+  /**
+   * Save synthesized voice audio to Cloudflare R2 cache
+   * @param {string} sha256Hex
+   * @param {Buffer} buffer
+   * @returns {Promise<boolean>}
+   */
+  async putCachedVoiceAudio(sha256Hex, buffer) {
+    if (!this.#client || !/^[a-f0-9]{64}$/.test(sha256Hex) || !Buffer.isBuffer(buffer)) {
+      return false;
+    }
+
+    try {
+      const command = new PutObjectCommand({
+        Bucket: this.#bucketName,
+        Key: `voices/cache/${sha256Hex}.mp3`,
+        Body: buffer,
+        ContentType: 'audio/mpeg',
+      });
+
+      await this.#client.send(command);
+      return true;
+    } catch (err) {
+      console.warn(`[R2StorageService] Voice cache write notice for ${sha256Hex}:`, err.message);
+      return false;
+    }
+  }
+
+  /**
+   * Save uploaded custom voice audio sample to Cloudflare R2
+   * @param {Object} params
+   * @param {string} params.filename
+   * @param {Buffer} params.buffer
+   * @param {string} params.mimeType
+   * @returns {Promise<{ success: boolean, publicUrl?: string, error?: string }>}
+   */
+  async uploadCustomVoiceSample({ filename, buffer, mimeType }) {
+    if (!this.#client) {
+      return { success: false, error: 'R2 storage client is not configured' };
+    }
+    if (!/^voice_[0-9]+_[a-f0-9]{16}.(wav|mp3|ogg|webm)$/.test(filename) || !Buffer.isBuffer(buffer)) {
+      return { success: false, error: 'Invalid custom voice sample filename or buffer' };
+    }
+
+    try {
+      const command = new PutObjectCommand({
+        Bucket: this.#bucketName,
+        Key: `voices/custom/${filename}`,
+        Body: buffer,
+        ContentType: mimeType || 'audio/wav',
+      });
+
+      await this.#client.send(command);
+      return { success: true };
+    } catch (err) {
+      console.warn(`[R2StorageService] Custom voice upload notice for ${filename}:`, err.message);
+      return { success: false, error: err.message };
+    }
+  }
 }
 
 export const r2StorageService = new R2StorageService();

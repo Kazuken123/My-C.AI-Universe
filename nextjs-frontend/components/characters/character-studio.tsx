@@ -54,6 +54,9 @@ export function CharacterStudio() {
   const [initialRelationshipStage, setInitialRelationshipStage] = useState('Stranger / Neutral');
   const [relationshipDynamic, setRelationshipDynamic] = useState('');
   const [wikiUrl, setWikiUrl] = useState('');
+  const [voiceId, setVoiceId] = useState('');
+  const [voiceName, setVoiceName] = useState('');
+  const [isVoicePickerOpen, setIsVoicePickerOpen] = useState(false);
 
   // AI & Wiki toolbars
   const [aiConcept, setAiConcept] = useState('');
@@ -83,6 +86,8 @@ export function CharacterStudio() {
       setExampleDialogues(char.example_dialogues || char.exampleDialogues || '');
       setInitialMemory(char.initial_memory || char.initialMemory || '');
       setInitialAffinity(char.initialAffinity ?? char.initial_affinity ?? 0);
+      setVoiceId(char.voiceId || char.voice_id || '');
+      setVoiceName(char.voiceName || char.voice_name || '');
       setInitialRelationshipStage(
         char.initialRelationshipStage || char.initial_relationship_stage || 'Stranger / Neutral'
       );
@@ -223,6 +228,11 @@ export function CharacterStudio() {
       initial_relationship_stage: initialRelationshipStage,
       relationship_dynamic: relationshipDynamic.trim(),
       wiki: wikiUrl.trim() || undefined,
+      voice_provider: voiceId ? 'fish_audio' : 'browser',
+      voice_id: voiceId.trim(),
+      voiceId: voiceId.trim(),
+      voice_name: voiceName.trim(),
+      voiceName: voiceName.trim(),
     };
 
     try {

@@ -133,7 +133,7 @@ export function securityHeadersMiddleware() {
     // Baseline Content Security Policy
     res.setHeader(
       'Content-Security-Policy',
-      "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com; frame-src 'self' https://accounts.google.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
+      "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com; frame-src 'self' https://accounts.google.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; media-src 'self' blob: https:; form-action 'self';"
     );
     next();
   };
@@ -174,5 +174,24 @@ export const uploadRateLimiter = new MemoryRateLimiter({
   windowMs: 5 * 60 * 1000,
   maxRequests: process.env.NODE_ENV === 'test' ? 50 : 15,
   message: 'Too many image uploads. Please wait a few minutes.',
+  keyGenerator: (req) => (req.user?.id ? `user:${req.user.id}` : `ip:${extractClientIp(req)}`)
+});
+
+
+// Dedicated rate limiter for voice synthesis (12 req / minute per user/IP)
+export const voiceSynthesizeLimiter = new MemoryRateLimiter({
+  name: 'voice-synthesize',
+  windowMs: 60 * 1000,
+  maxRequests: process.env.NODE_ENV === 'test' ? 60 : 12,
+  message: 'Voice synthesis rate limit reached. Please wait a minute before requesting more audio.',
+  keyGenerator: (req) => (req.user?.id ? `user:${req.user.id}` : `ip:${extractClientIp(req)}`)
+});
+
+// Dedicated rate limiter for custom voice sample uploads (5 uploads / 10 minutes per user/IP)
+export const voiceUploadLimiter = new MemoryRateLimiter({
+  name: 'voice-upload',
+  windowMs: 10 * 60 * 1000,
+  maxRequests: process.env.NODE_ENV === 'test' ? 20 : 5,
+  message: 'Too many voice audio uploads. Please wait a few minutes.',
   keyGenerator: (req) => (req.user?.id ? `user:${req.user.id}` : `ip:${extractClientIp(req)}`)
 });

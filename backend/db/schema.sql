@@ -76,6 +76,9 @@ CREATE TABLE IF NOT EXISTS characters (
     initial_affinity INTEGER NOT NULL DEFAULT 0,
     initial_relationship_stage TEXT NOT NULL DEFAULT 'Stranger / Neutral',
     relationship_dynamic TEXT NOT NULL DEFAULT '',
+    voice_provider TEXT NOT NULL DEFAULT 'fish_audio',
+    voice_id TEXT NOT NULL DEFAULT '',
+    voice_name TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE SET NULL
@@ -94,6 +97,8 @@ CREATE TABLE IF NOT EXISTS chat_sessions (
     strain INTEGER NOT NULL DEFAULT 0,
     relationship_stage TEXT NOT NULL DEFAULT 'Stranger / Neutral',
     relationship_mood TEXT NOT NULL DEFAULT 'Calm',
+    voice_id_override TEXT NOT NULL DEFAULT '',
+    voice_name_override TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,

@@ -43,6 +43,12 @@ export interface Character {
   initial_relationship_stage?: string;
   relationshipDynamic?: string;
   relationship_dynamic?: string;
+  voice_provider?: string;
+  voiceProvider?: string;
+  voice_id?: string;
+  voiceId?: string;
+  voice_name?: string;
+  voiceName?: string;
   systemPrompt?: string;
   system_prompt?: string;
   wiki?: string;
@@ -81,6 +87,12 @@ export interface CharacterCreatePayload {
   initialRelationshipStage?: string;
   relationship_dynamic?: string;
   relationshipDynamic?: string;
+  voice_provider?: string;
+  voiceProvider?: string;
+  voice_id?: string;
+  voiceId?: string;
+  voice_name?: string;
+  voiceName?: string;
   wiki?: string;
   wikiUrl?: string;
   categories?: string[];

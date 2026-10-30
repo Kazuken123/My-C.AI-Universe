@@ -5,6 +5,7 @@ import personaRoutes from './persona.route.js';
 import memoryRoutes from './memory.route.js';
 import authRoutes from './auth.route.js';
 import adminRoutes from './admin.route.js';
+import voiceRoutes from './voice.route.js';
 
 const router = express.Router();
 
@@ -23,5 +24,6 @@ router.use(characterRoutes);
 router.use(chatRoutes);
 router.use(personaRoutes);
 router.use(memoryRoutes);
+router.use(voiceRoutes);
 
 export default router;

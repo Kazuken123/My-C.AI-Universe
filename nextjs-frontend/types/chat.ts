@@ -42,6 +42,10 @@ export interface ChatSessionSummary {
   strain: number;
   relationshipStage: string;
   relationshipMood: string;
+  voice_id_override?: string;
+  voiceIdOverride?: string;
+  voice_name_override?: string;
+  voiceNameOverride?: string;
   messageCount: number;
   lastMessage?: string;
   createdAt: string;
@@ -64,6 +68,10 @@ export interface ChatSession {
   relationshipStage?: string;
   relationshipMood?: string;
   relationship?: RelationshipMetrics;
+  voice_id_override?: string;
+  voiceIdOverride?: string;
+  voice_name_override?: string;
+  voiceNameOverride?: string;
   narrativeState?: { lastChange?: string; emotion?: { intensity?: number }; memories?: Array<{kind:string;content:string;evidence:string;messageId:string}> };
   revision?: number;
   createdAt: string;

@@ -140,6 +140,25 @@ export class ChatSessionRepository extends BaseRepository {
   }
 
   /**
+   * O(1) Atomic update for session voice override
+   * @param {string} sessionId
+   * @param {Object} param1
+   * @returns {Promise<boolean>}
+   */
+  async updateVoiceOverride(sessionId, { voiceIdOverride = '', voiceNameOverride = '' } = {}, targetDb = null) {
+    if (!sessionId) return false;
+    const conn = targetDb || this.db;
+    const res = await conn.prepare(`
+      UPDATE chat_sessions
+      SET voice_id_override = ?,
+          voice_name_override = ?,
+          updated_at = ?
+      WHERE id = ?
+    `).run(voiceIdOverride, voiceNameOverride, new Date().toISOString(), sessionId);
+    return res.changes > 0;
+  }
+
+  /**
    * Lightweight session listing: returns metadata (id, title, counts, last message)
    * without hydrating all messages and variants. Uses 1 SQL query total.
    * @param {string|null} characterId
@@ -224,9 +243,10 @@ export class ChatSessionRepository extends BaseRepository {
         INSERT INTO chat_sessions (
           id, user_id, character_id, persona_id, title, provider,
           affinity, trust, strain, relationship_stage, relationship_mood,
+          voice_id_override, voice_name_override,
           created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           user_id = COALESCE(excluded.user_id, chat_sessions.user_id),
           persona_id = excluded.persona_id,
@@ -237,6 +257,8 @@ export class ChatSessionRepository extends BaseRepository {
           strain = excluded.strain,
           relationship_stage = excluded.relationship_stage,
           relationship_mood = excluded.relationship_mood,
+          voice_id_override = excluded.voice_id_override,
+          voice_name_override = excluded.voice_name_override,
           updated_at = excluded.updated_at
       `).run(
         session.id,
@@ -250,6 +272,8 @@ export class ChatSessionRepository extends BaseRepository {
         Number(session.strain ?? 0),
         String(session.relationshipStage || 'Stranger / Neutral'),
         String(session.relationshipMood || 'Calm'),
+        String(session.voiceIdOverride || ''),
+        String(session.voiceNameOverride || ''),
         session.createdAt,
         session.updatedAt
       );

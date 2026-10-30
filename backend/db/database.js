@@ -5,6 +5,7 @@ import { DB_DIR } from '../config/index.js';
 import { compileCharacterSystemPrompt } from '../ai/prompt/characterPrompt.js';
 import { applyTurnStateMigration } from './migrations/20261028-turn-state.js';
 import { applyMemoryPrivacyMigration } from './migrations/20261027-memory-privacy.js';
+import { applyCharacterVoiceMigration } from './migrations/20261030-character-voice.js';
 
 const DEFAULT_SQLITE_PATH = path.join(DB_DIR, 'universe.sqlite');
 const SCHEMA_SQL_PATH = path.join(DB_DIR, 'schema.sql');
@@ -267,6 +268,7 @@ export class DatabaseConnection {
     // Privacy must be ready before seeding or serving data; never suppress its failure.
     await applyMemoryPrivacyMigration(raw);
     await applyTurnStateMigration(raw);
+    await applyCharacterVoiceMigration(raw);
 
     try {
       // Check if characters table is empty

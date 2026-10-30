@@ -31,7 +31,7 @@ export interface ChatMessagesProps {
   onPinMessage: (messageId: string) => void;
   onEditMessage: (messageId: string, newContent: string) => void;
   onRewindMessage: (messageId: string) => void;
-  onSpeakText: (text: string) => void;
+  onSpeakText: (text: string, messageId?: string, variantIndex?: number) => void;
 }
 
 /**
@@ -363,7 +363,7 @@ export function ChatMessages({
                   )}
                   <button
                     type="button"
-                    onClick={() => onSpeakText(displayContent)}
+                    onClick={() => onSpeakText(displayContent, msg.id, msg.selectedVariantIndex)}
                     className="hover:text-text-primary flex items-center gap-1"
                     title="Speak text aloud"
                   >

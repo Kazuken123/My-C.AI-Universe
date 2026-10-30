@@ -15,6 +15,7 @@ import { ChatInput } from './chat-input';
 import { ChatDrawerMemories } from './chat-drawer-memories';
 import { ChatDrawerHistory } from './chat-drawer-history';
 import { RelationshipDirectorModal } from './relationship-director-modal';
+import { VoicePickerModal } from '../characters/voice-picker-modal';
 import { DoubleBezel } from '@/components/ui/double-bezel';
 
 export interface ChatViewProps {
@@ -49,6 +50,9 @@ export function ChatView({
   const [isMemoriesOpen, setIsMemoriesOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isRelationshipModalOpen, setIsRelationshipModalOpen] = useState(false);
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const activeBlobUrlRef = useRef<string | null>(null);
 
   // Relationship metrics
   const relationship: RelationshipMetrics = session?.relationship || {
@@ -61,19 +65,69 @@ export function ChatView({
     relationshipMood: session?.relationshipMood || 'Calm',
   };
 
-  // Web Speech API Voice synthesis
-  const speakText = useCallback((rawText: string) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
+    // Character Voice & Web Speech API synthesis
+  const speakText = useCallback(async (rawText: string, messageId?: string, variantIndex?: number) => {
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+    if (activeBlobUrlRef.current) {
+      URL.revokeObjectURL(activeBlobUrlRef.current);
+      activeBlobUrlRef.current = null;
+    }
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
 
-    // Strip actions (*...*) and quotes for speech
+    const currentVoiceId = session?.voiceIdOverride || session?.voice_id_override || character?.voiceId || character?.voice_id;
+
+    if (currentVoiceId && session?.id && messageId) {
+      try {
+        setIsSpeaking(true);
+        const audioBlob = await api.synthesizeMessageVoice({
+          sessionId: session.id,
+          messageId,
+          variantIndex: variantIndex ?? 0
+        });
+
+        const blobUrl = URL.createObjectURL(audioBlob);
+        activeBlobUrlRef.current = blobUrl;
+        const audio = new Audio(blobUrl);
+        currentAudioRef.current = audio;
+
+        const onFinished = () => {
+          setIsSpeaking(false);
+          currentAudioRef.current = null;
+          if (activeBlobUrlRef.current) {
+            URL.revokeObjectURL(activeBlobUrlRef.current);
+            activeBlobUrlRef.current = null;
+          }
+        };
+
+        audio.onended = onFinished;
+        audio.onerror = onFinished;
+        await audio.play();
+        return;
+      } catch (voiceErr: any) {
+        console.warn('[ChatView] Fish Audio playback notice, falling back to browser speech:', voiceErr.message);
+      }
+    }
+
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      setIsSpeaking(false);
+      return;
+    }
+
     const clean = (rawText || '')
       .replace(/\*[^*]+\*/g, '')
       .replace(/^[^:\n]{1,40}:\s*/gm, '')
       .replace(/"/g, '')
       .trim();
 
-    if (!clean) return;
+    if (!clean) {
+      setIsSpeaking(false);
+      return;
+    }
 
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.rate = 1.0;
@@ -84,7 +138,21 @@ export function ChatView({
     utterance.onerror = onEnd;
 
     window.speechSynthesis.speak(utterance);
-  }, []);
+  }, [session, character]);
+
+  const handleSelectSessionVoice = async (voiceId: string, voiceName: string) => {
+    if (session?.id) {
+      try {
+        const res = await api.updateSessionVoice(session.id, {
+          voiceIdOverride: voiceId,
+          voiceNameOverride: voiceName
+        });
+        setSession(res.session);
+      } catch (err: any) {
+        console.warn('Failed to update session voice override:', err.message);
+      }
+    }
+  };
 
   // Initialize Character, Personas, and Session
   const initWorkspace = useCallback(async () => {
@@ -599,6 +667,8 @@ export function ChatView({
         onOpenMemoriesDrawer={() => setIsMemoriesOpen(true)}
         onOpenHistoryDrawer={() => setIsHistoryOpen(true)}
         isSpeaking={isSpeaking}
+        activeVoiceName={session?.voiceNameOverride || session?.voice_name_override || character?.voiceName || character?.voice_name || ''}
+        onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
       />
 
       {/* Guest Mode Banner */}
@@ -664,6 +734,15 @@ export function ChatView({
         characterName={character.name}
         relationshipDynamic={character.relationshipDynamic || character.relationship_dynamic}
         onSaveOverride={handleSaveRelationshipOverride}
+      />
+
+      <VoicePickerModal
+        isOpen={isVoiceModalOpen}
+        onClose={() => setIsVoiceModalOpen(false)}
+        selectedVoiceId={session?.voiceIdOverride || session?.voice_id_override || character?.voiceId || character?.voice_id || ''}
+        selectedVoiceName={session?.voiceNameOverride || session?.voice_name_override || character?.voiceName || character?.voice_name || ''}
+        onSelectVoice={handleSelectSessionVoice}
+        title="Swap Character Voice for this Chat"
       />
     </div>
   );

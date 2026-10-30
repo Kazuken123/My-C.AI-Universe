@@ -494,6 +494,83 @@ export class ApiClient {
   getPing(): Promise<SystemPingResponse> {
     return this.request<SystemPingResponse>('/api/system/ping', { silent: true });
   }
+
+  // ==========================================
+  // Voice & TTS Endpoints
+  // ==========================================
+
+  searchVoiceModels(params: { search?: string; page?: number; pageSize?: number } = {}): Promise<{
+    success: boolean;
+    total: number;
+    items: Array<{
+      id: string;
+      title: string;
+      description: string;
+      author: string;
+      coverImage: string | null;
+      tags: string[];
+      sampleAudio: string | null;
+    }>;
+    unconfigured?: boolean;
+  }> {
+    const sp = new URLSearchParams();
+    if (params.search) sp.set('search', params.search);
+    if (params.page) sp.set('page', String(params.page));
+    if (params.pageSize) sp.set('pageSize', String(params.pageSize));
+    const qs = sp.toString() ? `?${sp.toString()}` : '';
+    return this.request(`/api/voice/models${qs}`);
+  }
+
+  createCustomVoice(payload: { title: string; description?: string; audioDataUrl: string }): Promise<{
+    success: boolean;
+    voice: { id: string; title: string };
+  }> {
+    return this.request('/api/voice/custom', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  updateSessionVoice(sessionId: string, payload: { voiceIdOverride?: string; voiceNameOverride?: string }): Promise<{
+    success: boolean;
+    voiceIdOverride: string;
+    voiceNameOverride: string;
+    session: ChatSession;
+  }> {
+    return this.request(`/api/chats/${encodeURIComponent(sessionId)}/voice`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async synthesizeMessageVoice(payload: { sessionId: string; messageId: string; variantIndex?: number }): Promise<Blob> {
+    const token = getAuthToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+      headers['x-auth-token'] = token;
+    }
+
+    const res = await fetch(`${this.baseUrl}/api/voice/synthesize`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      let errData: any;
+      try {
+        errData = await res.json();
+      } catch {
+        errData = { error: `Voice synthesis failed (${res.status})` };
+      }
+      throw new ApiError(errData?.error || 'Voice synthesis failed', res.status, errData);
+    }
+
+    return await res.blob();
+  }
 }
 
 export const api = new ApiClient();
