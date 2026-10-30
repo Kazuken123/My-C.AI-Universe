@@ -5,6 +5,7 @@ import { User } from '../models/User.js';
 import { UserPersona } from '../models/UserPersona.js';
 import { userRepository, personaRepository, passwordResetRepository, mediaAssetRepository } from '../repositories/index.js';
 import { emailService } from './email.service.js';
+import { r2StorageService } from './r2.service.js';
 import { AuthenticationError, ConflictError, ValidationError, NotFoundError } from '../ai/errors.js';
 import { config, isAdminIdentity, RESERVED_USERNAMES } from '../config/index.js';
 
@@ -38,12 +39,14 @@ export class AuthService {
     userRepo = userRepository,
     personaRepo = personaRepository,
     passwordResetRepo = passwordResetRepository,
-    mediaAssetRepo = mediaAssetRepository
+    mediaAssetRepo = mediaAssetRepository,
+    storage = r2StorageService
   ) {
     this.userRepo = userRepo;
     this.personaRepo = personaRepo;
     this.passwordResetRepo = passwordResetRepo;
     this.mediaAssetRepo = mediaAssetRepo;
+    this.storage = storage;
     this.failedResetAttempts = new Map();
   }
 
@@ -703,6 +706,17 @@ export class AuthService {
     const filename = `avatar_${Date.now()}_${crypto.randomBytes(8).toString('hex')}.${ext}`;
     const publicUrl = `/assets/avatars/${filename}`;
 
+    // 1. Persist to Cloudflare R2 object storage (if configured)
+    let cloudResult = null;
+    if (this.storage && typeof this.storage.uploadAvatar === 'function') {
+      try {
+        cloudResult = await this.storage.uploadAvatar({ filename, buffer, mimeType });
+      } catch (cloudErr) {
+        console.warn('[AuthService] Cloudflare R2 upload notice:', cloudErr.message);
+      }
+    }
+
+    // 2. Cache to local filesystem for fast ~0ms edge delivery
     const avatarsDir = path.resolve('frontend', 'assets', 'avatars');
     if (!fs.existsSync(avatarsDir)) {
       try {
@@ -715,7 +729,7 @@ export class AuthService {
       console.warn('[AuthService] Local filesystem cache write notice:', fsErr.message);
     }
 
-    // Persist to relational SQL database (Turso libSQL / SQLite) for cloud durability
+    // 3. Persist to relational SQL database (Turso libSQL / SQLite) for cloud backup
     try {
       await this.mediaAssetRepo.saveAsset({
         id: `asset_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
@@ -729,7 +743,7 @@ export class AuthService {
     }
 
     return {
-      url: publicUrl,
+      url: cloudResult?.success && cloudResult?.publicUrl?.startsWith('http') ? cloudResult.publicUrl : publicUrl,
       filename,
       size: buffer.length
     };

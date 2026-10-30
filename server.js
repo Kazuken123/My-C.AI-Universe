@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { config, validateEnvironment } from './backend/config/index.js';
 import apiRoutes from './backend/routes/index.js';
 import { storage } from './backend/services/storage.service.js';
+import { r2StorageService } from './backend/services/r2.service.js';
 import { DatabaseConnection } from './backend/db/database.js';
 import {
   securityHeadersMiddleware,
@@ -129,6 +130,26 @@ export class ApplicationServer {
         return res.sendFile(localFilePath);
       }
 
+      // 1. Check Cloudflare R2 object storage
+      try {
+        const cloudAsset = await r2StorageService.getAvatar(rawFilename);
+        if (cloudAsset && cloudAsset.buffer) {
+          try {
+            const avatarsDir = path.join(frontendDir, 'assets', 'avatars');
+            if (!fs.existsSync(avatarsDir)) fs.mkdirSync(avatarsDir, { recursive: true });
+            fs.writeFileSync(localFilePath, cloudAsset.buffer);
+          } catch {}
+
+          const safeMime = ALLOWED_AVATAR_MIMES.has(cloudAsset.mimeType) ? cloudAsset.mimeType : 'image/png';
+          res.setHeader('Content-Type', safeMime);
+          res.setHeader('Cache-Control', 'public, max-age=86400');
+          return res.send(cloudAsset.buffer);
+        }
+      } catch (cloudErr) {
+        console.warn('[Server] Media asset R2 fetch notice:', cloudErr.message);
+      }
+
+      // 2. Dynamic Database Fallback for Media Assets
       try {
         const asset = await mediaAssetRepository.findByFilename(rawFilename);
         if (asset && asset.data_base64) {

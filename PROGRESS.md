@@ -1,5 +1,18 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-10-30 - Cloudflare R2 Object Storage Integration (Resolves A15)
+
+- **Context & Architecture**:
+  - Implemented Cloudflare R2 cloud object storage (`backend/services/r2.service.js`) using `@aws-sdk/client-s3` for durable, zero-egress avatar and media persistence on ephemeral cloud hosting (e.g. Render, Vercel).
+  - Integrated into `AuthService.saveBase64Avatar` and Express static route (`GET /assets/avatars/:filename` in `server.js`) with a 3-tier fallback architecture:
+    1. Fast local filesystem edge cache (`~0ms`).
+    2. Cloudflare R2 cloud bucket (`avatars/:filename`).
+    3. Relational SQL backup in Turso `media_assets` table.
+  - If R2 credentials are not configured, the system gracefully falls back to local disk and SQL with zero breaking changes or test failures.
+- **Verification**:
+  - Added unit test suite `tests/storage-service.test.mjs` verifying unconfigured rejection, mock S3 client uploads/downloads, and `AuthService` integration.
+  - Executed full test suite: **43/43 test files passed (`0 failures`)**, syntax check **144/144 JS files passed (`0 failures`)**.
+
 ## 2026-10-30 - Live EBAP Audit Trial (`84f39dfb..b1a9550`) & Targeted TDD Fixes
 
 - **Context & Live Protocol Verification**:
