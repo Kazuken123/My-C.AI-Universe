@@ -50,8 +50,10 @@ test('VoiceService: filterEmotionTags preserves allowlisted tags and removes for
   assert.ok(ALLOWED_EMOTION_TAGS.has('chuckle'));
 });
 
-test('VoiceService: sanitizeHttpsUrl strictly enforces https: protocol', () => {
+test('VoiceService: sanitizeHttpsUrl strictly enforces https: protocol and expands CDN prefixes', () => {
   assert.equal(VoiceService.sanitizeHttpsUrl('https://api.fish.audio/sample.mp3'), 'https://api.fish.audio/sample.mp3');
+  assert.equal(VoiceService.sanitizeHttpsUrl('coverimage/f72069f55cba460082fce8c649ec2708'), 'https://public-platform.r2.fish.audio/coverimage/f72069f55cba460082fce8c649ec2708');
+  assert.equal(VoiceService.sanitizeHttpsUrl('avatars/user123.jpg'), 'https://public-platform.r2.fish.audio/avatars/user123.jpg');
   assert.equal(VoiceService.sanitizeHttpsUrl('javascript:alert(1)'), null);
   assert.equal(VoiceService.sanitizeHttpsUrl('data:text/html;base64,xxx'), null);
   assert.equal(VoiceService.sanitizeHttpsUrl('http://insecure.site/audio.mp3'), null);

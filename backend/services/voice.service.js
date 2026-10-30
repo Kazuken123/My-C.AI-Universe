@@ -125,7 +125,11 @@ export class VoiceService {
   static sanitizeHttpsUrl(rawUrl) {
     if (!rawUrl || typeof rawUrl !== 'string') return null;
     try {
-      const parsed = new URL(rawUrl.trim());
+      const trimmed = rawUrl.trim();
+      if (/^(?:coverimage|avatars)\//i.test(trimmed)) {
+        return `https://public-platform.r2.fish.audio/${trimmed}`;
+      }
+      const parsed = new URL(trimmed);
       if (parsed.protocol === 'https:') {
         return parsed.toString();
       }
@@ -194,18 +198,24 @@ export class VoiceService {
       const rawItems = Array.isArray(data?.items) ? data.items : [];
 
       const items = rawItems
-        .filter(item => item && item.id && SAFE_VOICE_ID_REGEX.test(item.id))
-        .map(item => ({
-          id: item.id,
-          title: String(item.title || 'Untitled Voice').slice(0, 100),
-          description: String(item.description || '').slice(0, 300),
-          author: item.author ? String(item.author.nickname || item.author.username || 'Community') : 'Community',
-          coverImage: VoiceService.sanitizeHttpsUrl(item.cover_image),
-          tags: Array.isArray(item.tags) ? item.tags.slice(0, 10).map(t => String(t).slice(0, 30)) : [],
-          sampleAudio: Array.isArray(item.samples) && item.samples[0]
-            ? VoiceService.sanitizeHttpsUrl(item.samples[0].audio_url || item.samples[0].url)
-            : null
-        }));
+        .filter(item => {
+          const id = item && (item._id || item.id);
+          return id && SAFE_VOICE_ID_REGEX.test(id);
+        })
+        .map(item => {
+          const id = item._id || item.id;
+          const sample = Array.isArray(item.samples) && item.samples[0] ? item.samples[0] : null;
+          const sampleAudioRaw = sample ? (sample.audio || sample.audio_url || sample.url) : null;
+          return {
+            id,
+            title: String(item.title || 'Untitled Voice').slice(0, 100),
+            description: String(item.description || '').slice(0, 300),
+            author: item.author ? String(item.author.nickname || item.author.username || 'Community') : 'Community',
+            coverImage: VoiceService.sanitizeHttpsUrl(item.cover_image || item.image),
+            tags: Array.isArray(item.tags) ? item.tags.slice(0, 10).map(t => String(t).slice(0, 30)) : [],
+            sampleAudio: VoiceService.sanitizeHttpsUrl(sampleAudioRaw)
+          };
+        });
 
       return {
         total: Number(data?.total) || items.length,
@@ -434,11 +444,12 @@ Rules:
 
     // 6. Fish Audio TTS Request
     const ttsUrl = `${config.FISH_AUDIO_BASE_URL}/v1/tts`;
+    const ttsModel = config.FISH_AUDIO_MODEL || 's2.1-pro-free';
     const ttsPayload = {
       text: jaText,
       reference_id: activeVoiceId,
       format: 'mp3',
-      model: config.FISH_AUDIO_MODEL || 's2.1-pro-free'
+      model: ttsModel
     };
 
     let audioBuffer;
@@ -447,7 +458,8 @@ Rules:
         method: 'POST',
         headers: {
           Authorization: `Bearer ${(config.FISH_AUDIO_API_KEY || process.env.FISH_AUDIO_API_KEY)}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'model': ttsModel
         },
         body: JSON.stringify(ttsPayload),
         signal: AbortSignal.timeout(15000)

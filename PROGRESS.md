@@ -20,9 +20,13 @@
   - `character-studio.tsx`: Added "Character Voice & Seiyuu" configuration card.
   - `chat-header.tsx`: Added session voice badge and switcher button.
   - `chat-view.tsx` & `chat-messages.tsx`: Upgraded `speakText` to stream synthesized voice with low-latency caching, object URL lifecycle management (0 memory leaks), and graceful fallback to Web Speech API.
-- **Verification**:
+- **Verification & Live API Validation**:
   - Added unit test suite `tests/voice-roleplay.test.mjs` (6/6 passed).
   - Executed full test suite: **44/44 backend test files passed (`0 failures`)**, **16/16 Next.js tests passed (`0 failures`)**, TypeScript check **0 errors**, syntax check **150/150 JS files passed (`0 failures`)**.
+  - **Live Fish Audio API Probe & Zero-Cost Free Model Gating**:
+    - Validated user's active API key against Fish Audio live servers (`GET /model?title=Kana+Arima`), discovering 200 community models.
+    - Enhanced `VoiceService.searchVoices` to handle `item._id`, relative CDN assets (`coverimage/`, `avatars/` expanded to `https://public-platform.r2.fish.audio/`), and audio samples (`item.samples[0].audio`).
+    - Configured `model: 's2.1-pro-free'` in both headers and request body for `POST /v1/tts`, successfully unlocking unlimited free anime TTS generation without requiring paid credits (`200 OK`, 56KB audio stream received and verified).
 
 ## 2026-10-30 - Cloudflare R2 Object Storage Integration (Resolves A15)
 
