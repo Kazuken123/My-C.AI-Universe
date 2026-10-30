@@ -69,3 +69,8 @@ Whenever working on this codebase in any session, you **MUST ALWAYS** follow the
 - **Reject Generic AI Slop**: Never insert placeholder banners (*"Next.js App Router Active"*), delete split hero compositions, or downgrade asymmetrical bento grids to plain uniform card lists.
 - **Rule Verification**: Before declaring frontend tasks complete, visually and structurally compare against the primary reference design (`frontend/index.html`) to ensure 100% aesthetic and layout parity.
 
+---
+
+### 8. ⚖️ Evidence-Based Auditing & Bounded Execution
+- **Optimize for Verified Outcomes**: Every autonomous task must have an explicit success condition, an objective evidence requirement, a bounded execution policy, and an authorized stopping condition (see [`.agents/rules/evidence_based_audit.md`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/.agents/rules/evidence_based_audit.md)).
+- **Consult Audit History**: Before conducting any audit or security review, check [`docs/audit-history.md`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/docs/audit-history.md). Do not reopen resolved findings or re-flag dismissed hypotheses without new reproducible evidence. Zero confirmed findings is a valid, successful audit result.

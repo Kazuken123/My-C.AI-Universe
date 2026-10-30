@@ -1,5 +1,15 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-10-30 - Evidence-Based Audit Protocol (EBAP) & Persistent Audit History
+
+- **Context & Rationale**:
+  - Addressed the "activity-as-value" and reward-driven overproduction failure mode in autonomous coding/auditing agents, where repeated audits generate speculative vulnerabilities, style nitpicks, or regressions when no new defects exist.
+  - Established the core invariant across the repository: **A successful audit is one that accurately determines the project's condition — not one that produces the most findings.** Zero verified findings (`0 confirmed findings`) is an explicitly authorized, valid success state.
+- **Architectural & Governance Changes**:
+  - [`docs/audit-history.md`](docs/audit-history.md): Created the persistent cross-session audit ledger recording the `2026-10-27` production audit (`A01`–`A22`), `Batch 1` remediation (`A01`, `A02`), `Phase 1` chat turn-state remediation (`A04`–`A07`), `2026-10-29` appraisal grounding & empirical model screening, the **Resolved Findings Registry**, **Dismissed Hypotheses & Intentional Architectural Invariants** (`BLOCK_NONE`, `updateMessageFields`, parameterized SQL, loopback sidecar), and the **Open Tracked Backlog**.
+  - [`.agents/rules/evidence_based_audit.md`](.agents/rules/evidence_based_audit.md) & [`.agents/rules/project_workflow.md`](.agents/rules/project_workflow.md): Codified the **4 Invariant Pillars** (*Explicit Success Condition*, *Objective Evidence Requirement*, *Bounded Execution Policy*, *Authorized Stopping Condition*) for all autonomous tasks.
+  - [`scripts/prepare-audit.js`](scripts/prepare-audit.js) & [`AUDIT_PROMPT.md`](AUDIT_PROMPT.md): Upgraded the audit prompt generator to enforce EBAP — requiring history verification (`docs/audit-history.md`), reachable source-to-sink attack traces, a finite 2-pass discovery/verification workflow, and explicit output templates for both **Zero Confirmed Findings** and **Evidence-Verified Defects**.
+
 ## 2026-10-29 - Terminology alignment (Threads -> Chats) and character conversation deduplication
 
 - **Context & User Request**:
