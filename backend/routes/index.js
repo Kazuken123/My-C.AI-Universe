@@ -12,7 +12,7 @@ const router = express.Router();
 router.get('/system/ping', (_req, res) => {
   res.json({
     status: 'ok',
-    version: '2.6.1',
+    version: '2.7.0',
     uptime: Math.floor(process.uptime()),
     timestamp: new Date().toISOString()
   });

@@ -719,7 +719,7 @@ async function runTests() {
   // 16. System Telemetry Ping API
   const pingRes = await fetch(`${BASE_URL}/api/system/ping`);
   const pingData = await assertResponse(pingRes, 'System Ping');
-  if (pingData.status !== 'ok' || pingData.version !== '2.6.1') {
+  if (pingData.status !== 'ok' || pingData.version !== '2.7.0') {
     throw new Error(`System ping unexpected response: ${JSON.stringify(pingData)}`);
   }
   console.log(`✅ 16. System Ping & Telemetry verified (status: ${pingData.status}, v${pingData.version}, uptime: ${pingData.uptime}s)`);
