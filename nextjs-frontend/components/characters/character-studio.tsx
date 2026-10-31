@@ -460,7 +460,7 @@ export function CharacterStudio() {
 
             <div className="space-y-1.5">
               <label className="font-mono text-xs text-text-secondary">
-                Anime Seiyuu / Voice Model (Fish Audio)
+                Default Character Voice / Anime Seiyuu (Author Default)
               </label>
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border-hairline bg-core-elevated px-3.5 py-2.5">
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -481,7 +481,7 @@ export function CharacterStudio() {
                     <div className="font-mono text-[10px] text-text-muted truncate">
                       {voiceId
                         ? `Fish Audio S2.1 · ID: ${voiceId}`
-                        : 'Select a Japanese anime seiyuu or upload a custom voice sample'}
+                        : 'Default voice when chatting with this character. Users can choose a different voice in chat.'}
                     </div>
                   </div>
                 </div>
@@ -506,7 +506,7 @@ export function CharacterStudio() {
                     className="inline-flex items-center gap-1.5 rounded-lg border border-accent/35 bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent/20 transition-colors"
                   >
                     <Mic className="h-3.5 w-3.5" />
-                    <span>{voiceId ? 'Change Voice' : 'Browse Voices'}</span>
+                    <span>{voiceId ? 'Change Default Voice' : 'Browse Default Voices'}</span>
                   </button>
                 </div>
               </div>
@@ -804,6 +804,8 @@ export function CharacterStudio() {
         onClose={() => setIsVoicePickerOpen(false)}
         selectedVoiceId={voiceId}
         selectedVoiceName={voiceName}
+        title="Set Author Default Voice"
+        subtitle="Default voice for this character. Users can choose their own voice in chat."
         onSelectVoice={(id, vName) => {
           setVoiceId(id);
           setVoiceName(vName);

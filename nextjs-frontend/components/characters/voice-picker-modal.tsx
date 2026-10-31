@@ -35,6 +35,10 @@ interface VoicePickerModalProps {
   selectedVoiceName?: string;
   onSelectVoice: (voiceId: string, voiceName: string) => void;
   title?: string;
+  subtitle?: string;
+  authorDefaultVoiceId?: string;
+  authorDefaultVoiceName?: string;
+  characterName?: string;
 }
 
 const POPULAR_SEARCHES = ['Kana Arima', 'Furina', 'Megumin', 'Ai Hoshino', 'Takahashi Rie', 'Han Megumi'];
@@ -45,7 +49,11 @@ export function VoicePickerModal({
   selectedVoiceId = '',
   selectedVoiceName = '',
   onSelectVoice,
-  title = 'Select Character Voice'
+  title = 'Choose Character Voice',
+  subtitle,
+  authorDefaultVoiceId = '',
+  authorDefaultVoiceName = '',
+  characterName = '',
 }: VoicePickerModalProps) {
   const [activeTab, setActiveTab] = useState<'search' | 'upload'>('search');
   const [searchQuery, setSearchQuery] = useState('');
@@ -198,7 +206,12 @@ export function VoicePickerModal({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white tracking-tight">{title}</h2>
-              <p className="text-xs text-white/50">Fish Audio Seiyuu & Character Voice Engine</p>
+              <p className="text-xs text-white/50">
+                {subtitle ||
+                  (authorDefaultVoiceName
+                    ? `Author Default: ${authorDefaultVoiceName} · Custom voice for ${characterName || 'this character'}`
+                    : 'Fish Audio Seiyuu & Character Voice Engine')}
+              </p>
             </div>
           </div>
           <button
@@ -268,11 +281,21 @@ export function VoicePickerModal({
                     onClose();
                   }}
                   className="px-3.5 py-2.5 text-xs text-amber-300 hover:text-amber-200 bg-amber-500/10 border border-amber-500/20 rounded-xl transition-colors whitespace-nowrap"
+                  title={authorDefaultVoiceName ? `Revert to author default voice (${authorDefaultVoiceName})` : 'Reset to Browser TTS'}
                 >
-                  Reset to Browser TTS
+                  {authorDefaultVoiceName ? `Reset to Author Default (${authorDefaultVoiceName})` : 'Reset to Browser TTS'}
                 </button>
               )}
             </div>
+
+            {/* Author Default Informational Pill */}
+            {authorDefaultVoiceName && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300">
+                <span className="font-semibold text-purple-200">Author's Default Voice:</span>
+                <span>{authorDefaultVoiceName}</span>
+                <span className="text-purple-400/60 ml-auto text-[10px]">Active unless customized for this chat</span>
+              </div>
+            )}
 
             {/* Quick search chips */}
             <div className="flex flex-wrap items-center gap-1.5 text-xs">

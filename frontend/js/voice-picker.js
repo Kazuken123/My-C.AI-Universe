@@ -43,6 +43,10 @@ class VoicePickerController {
     this.overlay = null;
     this.selectedVoiceId = '';
     this.selectedVoiceName = '';
+    this.authorDefaultVoiceId = '';
+    this.authorDefaultVoiceName = '';
+    this.characterName = '';
+    this.hasOverride = false;
     this.onSelectCallback = null;
     this.activeTab = 'discover';
     this.searchTimer = null;
@@ -172,9 +176,9 @@ class VoicePickerController {
               Active: Default Browser Speech
             </div>
             <div style="display: inline-flex; gap: 8px; align-items: center;">
-              <button type="button" class="btn-secondary btn-sm" id="voicePickerResetBtn">
+              <button type="button" class="btn-secondary btn-sm" id="voicePickerResetBtn" title="Reset voice preference">
                 <i class="ph-light ph-arrow-counter-clockwise"></i>
-                <span>Browser Speech</span>
+                <span id="voicePickerResetBtnText">Browser Speech</span>
               </button>
               <button type="button" class="btn-secondary btn-sm" id="voicePickerDoneBtn">
                 <span>Done</span>
@@ -227,10 +231,31 @@ class VoicePickerController {
 
   #updateReadout() {
     const readout = this.overlay?.querySelector('#voicePickerReadout');
+    const resetText = this.overlay?.querySelector('#voicePickerResetBtnText');
+    const resetBtn = this.overlay?.querySelector('#voicePickerResetBtn');
     if (!readout) return;
-    readout.textContent = this.selectedVoiceId
-      ? `Active: ${this.selectedVoiceName || this.selectedVoiceId}`
-      : 'Active: Default Browser Speech';
+
+    if (this.selectedVoiceId) {
+      if (this.authorDefaultVoiceId && this.selectedVoiceId === this.authorDefaultVoiceId && !this.hasOverride) {
+        readout.textContent = `Active: Author Default (${this.selectedVoiceName || this.selectedVoiceId})`;
+      } else {
+        readout.textContent = `Active: ${this.selectedVoiceName || this.selectedVoiceId}${this.authorDefaultVoiceId ? ' (Custom Override)' : ''}`;
+      }
+    } else if (this.authorDefaultVoiceId) {
+      readout.textContent = `Active: Author Default (${this.authorDefaultVoiceName || this.authorDefaultVoiceId})`;
+    } else {
+      readout.textContent = 'Active: Default Browser Speech';
+    }
+
+    if (resetText && resetBtn) {
+      if (this.authorDefaultVoiceId) {
+        resetText.textContent = `Author Default (${this.authorDefaultVoiceName || 'Default'})`;
+        resetBtn.title = `Revert to author's default voice (${this.authorDefaultVoiceName})`;
+      } else {
+        resetText.textContent = 'Browser Speech';
+        resetBtn.title = 'Reset to browser speech synthesis';
+      }
+    }
   }
 
   #switchTab(tabName) {
@@ -422,6 +447,7 @@ class VoicePickerController {
     resetBtn?.addEventListener('click', () => {
       this.selectedVoiceId = '';
       this.selectedVoiceName = '';
+      this.hasOverride = false;
       this.#updateReadout();
       this.#renderModels();
       if (typeof this.onSelectCallback === 'function') {
@@ -504,20 +530,45 @@ class VoicePickerController {
     });
   }
 
-  open({ selectedVoiceId = '', selectedVoiceName = '', title = 'Anime Seiyuu & Voice Studio', onSelect = null } = {}) {
+  open({
+    selectedVoiceId = '',
+    selectedVoiceName = '',
+    title = 'Choose Character Voice',
+    subtitle = '',
+    authorDefaultVoiceId = '',
+    authorDefaultVoiceName = '',
+    characterName = '',
+    hasOverride = false,
+    onSelect = null
+  } = {}) {
     this.selectedVoiceId = selectedVoiceId || '';
     this.selectedVoiceName = selectedVoiceName || '';
+    this.authorDefaultVoiceId = authorDefaultVoiceId || '';
+    this.authorDefaultVoiceName = authorDefaultVoiceName || '';
+    this.characterName = characterName || '';
+    this.hasOverride = Boolean(hasOverride);
     this.onSelectCallback = onSelect;
 
     const titleEl = this.overlay.querySelector('#voicePickerTitle');
     if (titleEl) titleEl.textContent = title;
+
+    const subEl = this.overlay.querySelector('.voice-picker-subtitle');
+    if (subEl) {
+      if (subtitle) {
+        subEl.textContent = subtitle;
+      } else if (this.authorDefaultVoiceName) {
+        subEl.textContent = `Author Default: ${this.authorDefaultVoiceName} · Override for ${this.characterName || 'this character'}`;
+      } else {
+        subEl.textContent = 'Fish Audio S2.1 · Gemini 3.1 Emotional Japanese Pipeline';
+      }
+    }
 
     this.#switchTab('discover');
     this.#updateReadout();
     this.overlay.classList.add('active');
 
     const searchInput = this.overlay.querySelector('#voicePickerSearchInput');
-    const initialQuery = (searchInput?.value || '').trim() || 'Kana Arima';
+    const initialQuery = (searchInput?.value || '').trim() || (this.authorDefaultVoiceName ? this.authorDefaultVoiceName.split(' ')[0] : 'Kana Arima');
     if (searchInput && !searchInput.value) {
       searchInput.value = initialQuery;
     }

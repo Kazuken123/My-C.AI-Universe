@@ -257,13 +257,24 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       const sess = appState.activeSession;
       if (!char || !sess) return;
 
-      const activeId = sess.voiceIdOverride || sess.voice_id_override || char.voiceId || char.voice_id || '';
-      const activeName = sess.voiceNameOverride || sess.voice_name_override || char.voiceName || char.voice_name || '';
+      const overrideId = sess.voiceIdOverride || sess.voice_id_override || '';
+      const overrideName = sess.voiceNameOverride || sess.voice_name_override || '';
+      const authorDefaultId = char.voiceId || char.voice_id || '';
+      const authorDefaultName = char.voiceName || char.voice_name || '';
+      const activeId = overrideId || authorDefaultId;
+      const activeName = overrideName || authorDefaultName;
 
       openVoicePickerModal({
         selectedVoiceId: activeId,
         selectedVoiceName: activeName,
-        title: `Voice Studio — ${char.name}`,
+        authorDefaultVoiceId: authorDefaultId,
+        authorDefaultVoiceName: authorDefaultName,
+        characterName: char.name,
+        hasOverride: Boolean(overrideId),
+        title: `Choose Voice for ${char.name}`,
+        subtitle: authorDefaultName
+          ? `Author's Default: ${authorDefaultName} · Select custom voice for ${char.name}`
+          : `Select custom voice for ${char.name} (author default: Browser Speech)`,
         onSelect: async ({ voiceId, voiceName }) => {
           try {
             const res = await api.updateSessionVoice(sess.id, {
@@ -278,7 +289,11 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
               voice_name_override: voiceName
             };
             renderChatHeader(appState.activeCharacter, appState.activeSession);
-            showToast(voiceId ? `Active voice set to ${voiceName || voiceId}` : 'Reset session voice override.');
+            showToast(
+              voiceId
+                ? `Voice for ${char.name} set to ${voiceName || voiceId}`
+                : (authorDefaultName ? `Reverted to author default voice (${authorDefaultName})` : 'Reverted to browser speech')
+            );
           } catch (err) {
             showToast('Failed to update session voice: ' + err.message);
           }
@@ -292,8 +307,11 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       autoSpeakTTS = !autoSpeakTTS;
       ttsAutoBtn.classList.toggle('btn-primary', autoSpeakTTS);
       ttsAutoBtn.innerHTML = autoSpeakTTS
-        ? '<i class="ph-fill ph-speaker-high"></i> <span>Voice ON</span>'
-        : '<i class="ph-light ph-speaker-high"></i> <span>Voice</span>';
+        ? '<i class="ph-fill ph-speaker-high"></i> <span>Narration ON</span>'
+        : '<i class="ph-light ph-speaker-high"></i> <span>Narration</span>';
+      ttsAutoBtn.title = autoSpeakTTS
+        ? 'Automatic narration active'
+        : 'Toggle Auto Narration';
       if (!autoSpeakTTS) {
         stopActiveVoicePlayback();
       }
@@ -1042,15 +1060,22 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       aiProviderSelect.value = session.provider;
     }
     if (selectVoiceBtn && selectVoiceLabel) {
+      const hasOverride = Boolean(session?.voiceIdOverride || session?.voice_id_override);
       const activeVoiceId =
         session?.voiceIdOverride || session?.voice_id_override || character?.voiceId || character?.voice_id || '';
       const activeVoiceName =
         session?.voiceNameOverride || session?.voice_name_override || character?.voiceName || character?.voice_name || '';
+
       selectVoiceBtn.classList.toggle('has-voice', Boolean(activeVoiceId));
-      selectVoiceLabel.textContent = activeVoiceId ? (activeVoiceName || 'Fish Voice') : 'Seiyuu';
-      selectVoiceBtn.title = activeVoiceId
-        ? `Active Seiyuu: ${activeVoiceName || activeVoiceId} (Click to switch)`
-        : 'Select Character Seiyuu Voice (Fish Audio)';
+      if (activeVoiceName) {
+        selectVoiceLabel.textContent = hasOverride ? activeVoiceName : `Voice: ${activeVoiceName}`;
+        selectVoiceBtn.title = hasOverride
+          ? `Custom Voice for ${character.name}: ${activeVoiceName} (Click to change)`
+          : `Author Default Voice for ${character.name}: ${activeVoiceName} (Click to choose voice for ${character.name})`;
+      } else {
+        selectVoiceLabel.textContent = 'Choose Voice';
+        selectVoiceBtn.title = `Choose Voice for ${character.name}`;
+      }
     }
   }
 

@@ -167,16 +167,20 @@ export function ChatHeader({
                 type="button"
                 onClick={onOpenVoiceModal}
                 className={cn(
-                  'icon-btn h-8 px-2 flex items-center gap-1.5 text-xs transition-colors rounded-lg border',
+                  'icon-btn h-8 px-2.5 flex items-center gap-1.5 text-xs transition-colors rounded-lg border',
                   activeVoiceName
                     ? 'border-purple-500/30 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20'
                     : 'border-border-hairline text-text-muted hover:text-text-primary'
                 )}
-                title={activeVoiceName ? `Voice: ${activeVoiceName} (Click to swap)` : 'Select Character Voice'}
+                title={
+                  activeVoiceName
+                    ? `Voice: ${activeVoiceName} (Click to choose voice for ${character.name})`
+                    : `Choose Voice for ${character.name}`
+                }
               >
                 <Mic className="h-3.5 w-3.5 text-purple-400" />
-                <span className="hidden md:inline max-w-[90px] truncate font-mono text-[11px]">
-                  {activeVoiceName || 'Voice'}
+                <span className="hidden md:inline max-w-[120px] truncate font-mono text-[11px]">
+                  {activeVoiceName || 'Choose Voice'}
                 </span>
               </button>
             )}

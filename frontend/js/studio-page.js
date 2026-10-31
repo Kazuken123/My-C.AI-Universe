@@ -107,7 +107,7 @@ class StudioPageApp {
     if (this.voiceSummarySub) {
       this.voiceSummarySub.textContent = activeVoiceId
         ? `Fish Audio S2.1 · ID: ${activeVoiceId}`
-        : 'Select a Japanese anime seiyuu or upload a custom voice sample';
+        : 'Default voice when chatting with this character. Users can choose a different voice in chat.';
     }
     if (this.btnClearVoice) {
       this.btnClearVoice.style.display = activeVoiceId ? 'inline-flex' : 'none';
@@ -277,10 +277,11 @@ class StudioPageApp {
         openVoicePickerModal({
           selectedVoiceId: this.voiceIdInput?.value?.trim() || '',
           selectedVoiceName: this.voiceNameInput?.value?.trim() || '',
-          title: 'Character Seiyuu & Voice Studio',
+          title: 'Author Default Voice — Character Studio',
+          subtitle: 'Select the default voice for this character. Users can choose their own voice in chat.',
           onSelect: ({ voiceId, voiceName }) => {
             this.setVoiceSelection(voiceId, voiceName);
-            showToast(voiceId ? `Selected voice: ${voiceName || voiceId}` : 'Reset to Browser Speech.');
+            showToast(voiceId ? `Default character voice set to ${voiceName || voiceId}` : 'Reset to Browser Speech.');
           }
         });
       });

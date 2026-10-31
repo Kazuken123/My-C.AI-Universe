@@ -1,5 +1,34 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-10-31 - Refinement: Character-Scoped "Choose Voice" in Chat Topbar & Author Default Voice Preservation
+
+- **Context & Motivation**:
+  - The topbar in the chat page previously had ambiguous button labels ("Voice" for the narration toggle and "Seiyuu" for voice selection in Express, and a raw fallback label "Voice" in Next.js).
+  - Users perceived "Voice" as a global cross-character setting. The user requested:
+    1. Rename/clarify the button to "Choose Voice" where the user can choose which voice to use for the character they are currently chatting with.
+    2. Ensure voice selection is scoped specifically to that character's conversation rather than a global default for all characters.
+    3. Retain the character author's default voice chosen during character creation as the baseline when no custom override is set.
+- **Architectural & UI Changes**:
+  1. **Topbar Button Clarity (`frontend/chat.html` & `nextjs-frontend/components/chat/chat-header.tsx`)**:
+     - Renamed voice selection button label to **"Choose Voice"** (displaying the active character voice name once selected, or "Choose Voice" by default).
+     - Renamed `#btnToggleTTS` from "Voice" / "Voice ON" to **"Narration"** / **"Narration ON"** (`#chatTtsBtnLabel`) to completely eliminate label collision.
+  2. **Character-Scoped Session Overrides (`frontend/js/chat.js` & `nextjs-frontend/components/chat/chat-view.tsx`)**:
+     - When a user chooses a voice in chat, it persists to `chat_sessions.voice_id_override` and `voice_name_override` via `PUT /v1/chats/:sessionId/voice`.
+     - Scoped strictly to the active character's chat session; other characters continue using their own author defaults.
+     - The canonical `characters` table is never altered by chatters, preserving the author's original vision.
+  3. **"Reset to Author Default" in Voice Picker Modal (`voice-picker.js` & `voice-picker-modal.tsx`)**:
+     - Added `authorDefaultVoiceId`, `authorDefaultVoiceName`, and `characterName` props to `VoicePickerModal`.
+     - In both vanilla Express and Next.js modals, an informational pill displays the author's default voice.
+     - When an override is active, users can click **"Reset to Author Default ([Voice Name])"** to clear the session override and instantly revert to the author's configured seiyuu.
+  4. **Character Studio Clarification (`frontend/create.html`, `studio-page.js`, `character-studio.tsx`)**:
+     - Updated studio labels to explicitly read: **"Default Character Voice / Anime Seiyuu (Author Default)"** with helper text explaining that this establishes the baseline for all chatters.
+- **Verification**:
+  - `npm test`: **44/44 backend suites passed (100%)**.
+  - `npm --prefix nextjs-frontend test`: **18/18 unit tests passed (100%)**.
+  - `node scripts/check-syntax.js`: **151/151 JavaScript files passed (100%)**.
+  - `graphify update .`: AST knowledge graph refreshed (`2260 nodes, 4933 edges`).
+  - `npm run audit:pack`: Repomix package refreshed (`repomix-output.xml`, 5.00 MB, 0 leaks).
+
 ## 2026-10-31 - Release v2.7.0: Anime Voice Roleplay, Fish Audio Discovery, Cloudflare R2 Caching & Procedural 3D Universe
 
 - **Version Bump**: Bumped to `v2.7.0` across `package.json`, `package-lock.json`, `backend/routes/index.js`, and test suites.

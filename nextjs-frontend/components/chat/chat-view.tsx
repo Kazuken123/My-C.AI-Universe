@@ -750,10 +750,13 @@ export function ChatView({
       <VoicePickerModal
         isOpen={isVoiceModalOpen}
         onClose={() => setIsVoiceModalOpen(false)}
-        selectedVoiceId={session?.voiceIdOverride || session?.voice_id_override || character?.voiceId || character?.voice_id || ''}
-        selectedVoiceName={session?.voiceNameOverride || session?.voice_name_override || character?.voiceName || character?.voice_name || ''}
+        selectedVoiceId={session?.voiceIdOverride || session?.voice_id_override || ''}
+        selectedVoiceName={session?.voiceNameOverride || session?.voice_name_override || ''}
+        authorDefaultVoiceId={character?.voiceId || character?.voice_id || ''}
+        authorDefaultVoiceName={character?.voiceName || character?.voice_name || ''}
+        characterName={character?.name || 'Character'}
         onSelectVoice={handleSelectSessionVoice}
-        title="Swap Character Voice for this Chat"
+        title={`Choose Voice for ${character?.name || 'Character'}`}
       />
     </div>
   );
