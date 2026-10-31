@@ -97,7 +97,7 @@ class PersonasPageApp {
   async init() {
     const currentUser = await api.getCurrentUser();
     if (!currentUser) {
-      window.location.href = '/auth.html?mode=signin&return=/personas.html';
+      window.location.href = '/auth?mode=signin&return=/personas';
       return;
     }
     await initSidebar('personas');

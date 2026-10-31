@@ -49,10 +49,10 @@ class DashboardApp {
                 <span class="mono-tag">${formatCount(char.interactions || 0)} chats</span>
               </div>
               <div class="cai-card-actions">
-                <a href="/create.html?id=${encodeURIComponent(char.id)}" class="icon-btn" data-edit-char="${escapeHtml(char.id)}" title="Edit character" aria-label="Edit ${escapeHtml(char.name)}" onclick="event.stopPropagation();">
+                <a href="/create?id=${encodeURIComponent(char.id)}" class="icon-btn" data-edit-char="${escapeHtml(char.id)}" title="Edit character" aria-label="Edit ${escapeHtml(char.name)}" onclick="event.stopPropagation();">
                   <i class="ph-light ph-pencil-simple"></i>
                 </a>
-                <a href="/chat.html?id=${encodeURIComponent(char.id)}" class="btn-secondary btn-sm" aria-label="Open chat with ${escapeHtml(char.name)}" title="Open chat with ${escapeHtml(char.name)}" data-enter-scene="${escapeHtml(char.id)}" onclick="event.stopPropagation();">
+                <a href="/chat?id=${encodeURIComponent(char.id)}" class="btn-secondary btn-sm" aria-label="Open chat with ${escapeHtml(char.name)}" title="Open chat with ${escapeHtml(char.name)}" data-enter-scene="${escapeHtml(char.id)}" onclick="event.stopPropagation();">
                   <i class="ph-light ph-chat-circle-dots"></i>
                   <span>Open chat</span>
                 </a>
@@ -123,7 +123,7 @@ class DashboardApp {
             <div class="double-bezel-core studio-card" style="text-align: center; padding: 48px 24px;">
               <h3 class="card-heading">Your universe starts here.</h3>
               <p class="hint" style="margin: 8px auto 20px; max-width: 44ch;">Create your first character and give a new story a beginning.</p>
-              <a href="/create.html" class="btn-island">
+              <a href="/create" class="btn-island">
                 <span>Create Character</span>
                 <span class="btn-island-icon"><i class="ph-light ph-plus"></i></span>
               </a>
@@ -132,12 +132,12 @@ class DashboardApp {
         </div>
       `;
 
-      const emptyCreateBtn = this.discoverGrid.querySelector('a[href="/create.html"]');
+      const emptyCreateBtn = this.discoverGrid.querySelector('a[href="/create"]');
       if (emptyCreateBtn) {
         emptyCreateBtn.addEventListener('click', (e) => {
           if (!api.getToken()) {
             e.preventDefault();
-            window.location.href = `/auth.html?mode=signin&return=/create.html`;
+            window.location.href = `/auth?mode=signin&return=/create`;
           }
         });
       }
@@ -161,10 +161,10 @@ class DashboardApp {
         if (e.target.closest('button') || e.target.closest('a')) return;
         const charId = card.dataset.charCard;
         if (!api.getToken()) {
-          window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(`/chat.html?id=${charId}`)}`;
+          window.location.href = `/auth?mode=signin&return=${encodeURIComponent(`/chat?id=${charId}`)}`;
           return;
         }
-        window.location.href = `/chat.html?id=${encodeURIComponent(charId)}`;
+        window.location.href = `/chat?id=${encodeURIComponent(charId)}`;
       });
     });
 
@@ -174,7 +174,7 @@ class DashboardApp {
         if (!api.getToken()) {
           e.preventDefault();
           e.stopPropagation();
-          window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(`/chat.html?id=${charId}`)}`;
+          window.location.href = `/auth?mode=signin&return=${encodeURIComponent(`/chat?id=${charId}`)}`;
         }
       });
     });
@@ -185,7 +185,7 @@ class DashboardApp {
         if (!api.getToken()) {
           e.preventDefault();
           e.stopPropagation();
-          window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(`/create.html?id=${charId}`)}`;
+          window.location.href = `/auth?mode=signin&return=${encodeURIComponent(`/create?id=${charId}`)}`;
         }
       });
     });
@@ -194,7 +194,7 @@ class DashboardApp {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         if (!api.getToken()) {
-          window.location.href = `/auth.html?mode=signin&return=/`;
+          window.location.href = `/auth?mode=signin&return=/`;
           return;
         }
         try {
@@ -227,7 +227,7 @@ class DashboardApp {
 
       this.continueSection.style.display = 'block';
       this.continueRow.innerHTML = sessions.slice(0, 3).map(s => `
-        <a href="/chat.html?id=${encodeURIComponent(s.characterId)}&session=${encodeURIComponent(s.id)}" class="double-bezel-shell card-shell continue-card-link" style="text-decoration: none; color: inherit;">
+        <a href="/chat?id=${encodeURIComponent(s.characterId)}&session=${encodeURIComponent(s.id)}" class="double-bezel-shell card-shell continue-card-link" style="text-decoration: none; color: inherit;">
           <div class="double-bezel-core cai-card" style="padding: 14px 16px;">
             <div class="cai-card-top">
               <img class="cai-avatar" src="${escapeHtml(s.characterAvatar || '')}" alt="${escapeHtml(s.characterName)}" style="width: 36px; height: 36px;" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
@@ -285,7 +285,7 @@ class DashboardApp {
       heroCreateBtn.addEventListener('click', (e) => {
         if (!api.getToken()) {
           e.preventDefault();
-          window.location.href = '/auth.html?mode=signin&return=/create.html';
+          window.location.href = '/auth?mode=signin&return=/create';
         }
       });
     }

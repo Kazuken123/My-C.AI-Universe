@@ -212,9 +212,9 @@ export async function initSidebar(activePage = 'discover') {
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || document.activeElement?.isContentEditable) return;
       if (e.altKey && !e.ctrlKey && !e.metaKey) {
         if (e.key === '1' || e.code === 'Digit1' || e.code === 'Numpad1') { window.location.href = '/'; e.preventDefault(); }
-        else if (e.key === '2' || e.code === 'Digit2' || e.code === 'Numpad2') { window.location.href = '/create.html'; e.preventDefault(); }
-        else if (e.key === '3' || e.code === 'Digit3' || e.code === 'Numpad3') { window.location.href = '/chats.html'; e.preventDefault(); }
-        else if (e.key === '4' || e.code === 'Digit4' || e.code === 'Numpad4') { window.location.href = '/personas.html'; e.preventDefault(); }
+        else if (e.key === '2' || e.code === 'Digit2' || e.code === 'Numpad2') { window.location.href = '/create'; e.preventDefault(); }
+        else if (e.key === '3' || e.code === 'Digit3' || e.code === 'Numpad3') { window.location.href = '/chats'; e.preventDefault(); }
+        else if (e.key === '4' || e.code === 'Digit4' || e.code === 'Numpad4') { window.location.href = '/personas'; e.preventDefault(); }
       }
     });
     window.addEventListener('keyup', (e) => {
@@ -289,7 +289,7 @@ export async function initSidebar(activePage = 'discover') {
           `;
         } else {
           recentList.innerHTML = sessions.slice(0, 8).map(s => `
-            <a href="/chat.html?id=${encodeURIComponent(s.characterId)}&session=${encodeURIComponent(s.id)}" class="recent-chat-item">
+            <a href="/chat?id=${encodeURIComponent(s.characterId)}&session=${encodeURIComponent(s.id)}" class="recent-chat-item">
               <span class="recent-chat-avatar-wrap">
                 <img class="recent-chat-avatar" src="${escapeHtml(s.characterAvatar || '')}" alt="${escapeHtml(s.characterName)}" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
               </span>
@@ -313,7 +313,7 @@ export async function initSidebar(activePage = 'discover') {
   await initPersonaPill();
 
   // Intercept protected navigation links for unauthenticated guests
-  document.querySelectorAll('.sidebar a[href*="create.html"], .sidebar a[href*="chats.html"], .sidebar a[href*="personas.html"], .mobile-bottom-nav a[href*="create.html"], .mobile-bottom-nav a[href*="chats.html"], .mobile-bottom-nav a[href*="personas.html"], .sidebar-cta-wrap a, #sidebar-persona-pill').forEach(link => {
+  document.querySelectorAll('.sidebar a[href*="create"], .sidebar a[href*="chats"], .sidebar a[href*="personas"], .mobile-bottom-nav a[href*="create"], .mobile-bottom-nav a[href*="chats"], .mobile-bottom-nav a[href*="personas"], .sidebar-cta-wrap a, #sidebar-persona-pill').forEach(link => {
     if (!link.__authGuardBound) {
       link.__authGuardBound = true;
       link.addEventListener('click', (e) => {
@@ -321,7 +321,7 @@ export async function initSidebar(activePage = 'discover') {
           e.preventDefault();
           e.stopPropagation();
           const href = link.getAttribute('href') || '/';
-          window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(href)}`;
+          window.location.href = `/auth?mode=signin&return=${encodeURIComponent(href)}`;
         }
       });
     }
@@ -340,7 +340,7 @@ export async function initSidebar(activePage = 'discover') {
 export function requireAuthOrRedirect(targetUrl = null) {
   if (!api.getToken()) {
     const ret = targetUrl || (window.location.pathname + window.location.search);
-    window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(ret)}`;
+    window.location.href = `/auth?mode=signin&return=${encodeURIComponent(ret)}`;
     return false;
   }
   return true;
@@ -472,15 +472,15 @@ export function initMobileNavigation(activePage = 'discover') {
           <i class="ph-light ph-compass"></i>
           <span>Discover</span>
         </a>
-        <a href="/create.html" class="mobile-nav-tab ${activePage === 'create' ? 'active' : ''}" data-page="create">
+        <a href="/create" class="mobile-nav-tab ${activePage === 'create' ? 'active' : ''}" data-page="create">
           <i class="ph-light ph-sparkle"></i>
           <span>Studio</span>
         </a>
-        <a href="/chats.html" class="mobile-nav-tab ${activePage === 'chats' ? 'active' : ''}" data-page="chats">
+        <a href="/chats" class="mobile-nav-tab ${activePage === 'chats' ? 'active' : ''}" data-page="chats">
           <i class="ph-light ph-chats-circle"></i>
           <span>Chats</span>
         </a>
-        <a href="/personas.html" class="mobile-nav-tab ${activePage === 'personas' ? 'active' : ''}" data-page="personas">
+        <a href="/personas" class="mobile-nav-tab ${activePage === 'personas' ? 'active' : ''}" data-page="personas">
           <i class="ph-light ph-identification-card"></i>
           <span>Personas</span>
         </a>
@@ -560,7 +560,7 @@ export async function initAccountState() {
         if (sidebarNav && !document.getElementById('sidebarAdminLink')) {
           const adminLink = document.createElement('a');
           adminLink.id = 'sidebarAdminLink';
-          adminLink.href = '/admin.html';
+          adminLink.href = '/admin';
           adminLink.className = 'nav-item';
           adminLink.style.borderColor = 'rgba(168, 85, 247, 0.4)';
           adminLink.style.background = 'rgba(168, 85, 247, 0.08)';
@@ -636,7 +636,7 @@ export function bindPersonaQuickSwitcher(personas = [], initialActive = null) {
     // If not authenticated, let auth guard handle redirection
     if (!api.getToken()) return;
 
-    // If modifier keys held, let browser navigate to /personas.html
+    // If modifier keys held, let browser navigate to /personas
     if (e.ctrlKey || e.metaKey || e.shiftKey) return;
 
     e.preventDefault();
@@ -665,7 +665,7 @@ export function bindPersonaQuickSwitcher(personas = [], initialActive = null) {
     const emptyHtml = `
       <div class="persona-switcher-empty">
         <p>No custom personas created yet.</p>
-        <a href="/personas.html" class="persona-switcher-link" style="color: var(--accent); font-weight: 600;">+ Create Persona</a>
+        <a href="/personas" class="persona-switcher-link" style="color: var(--accent); font-weight: 600;">+ Create Persona</a>
       </div>
     `;
 
@@ -695,11 +695,11 @@ export function bindPersonaQuickSwitcher(personas = [], initialActive = null) {
       </div>
       ${listHtml}
       <div class="persona-switcher-footer">
-        <a href="/personas.html" class="persona-switcher-link">
+        <a href="/personas" class="persona-switcher-link">
           <i class="ph-light ph-identification-card"></i>
           <span>Manage Personas</span>
         </a>
-        <a href="/profile-setup.html" class="persona-switcher-link">
+        <a href="/profile-setup" class="persona-switcher-link">
           <i class="ph-light ph-gear"></i>
           <span>Settings</span>
         </a>

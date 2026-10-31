@@ -58,7 +58,7 @@ class ChatsPageApp {
                   <button class="icon-btn" data-del-session="${escapeHtml(s.id)}" type="button" title="Delete Saved Chat">
                     <i class="ph-light ph-trash"></i>
                   </button>
-                  <a href="/chat.html?id=${encodeURIComponent(s.characterId)}&session=${encodeURIComponent(s.id)}" class="btn-secondary btn-sm" style="text-decoration: none;">
+                  <a href="/chat?id=${encodeURIComponent(s.characterId)}&session=${encodeURIComponent(s.id)}" class="btn-secondary btn-sm" style="text-decoration: none;">
                     <i class="ph-light ph-chats-circle"></i>
                     <span>Resume</span>
                   </a>
@@ -74,7 +74,7 @@ class ChatsPageApp {
       this.grid.querySelectorAll('[data-open-session]').forEach(card => {
         card.addEventListener('click', (e) => {
           if (e.target.closest('button') || e.target.closest('a')) return;
-          window.location.href = `/chat.html?id=${encodeURIComponent(card.dataset.openChar)}&session=${encodeURIComponent(card.dataset.openSession)}`;
+          window.location.href = `/chat?id=${encodeURIComponent(card.dataset.openChar)}&session=${encodeURIComponent(card.dataset.openSession)}`;
         });
       });
 
@@ -100,7 +100,7 @@ class ChatsPageApp {
   async init() {
     const currentUser = await api.getCurrentUser();
     if (!currentUser) {
-      window.location.href = '/auth.html?mode=signin&return=/chats.html';
+      window.location.href = '/auth?mode=signin&return=/chats';
       return;
     }
     await initSidebar('chats');

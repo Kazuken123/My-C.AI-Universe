@@ -1018,7 +1018,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       appState.activeSession = session;
       setActiveSessionForCharacter(character.id, session.id);
 
-      const url = `/chat.html?id=${encodeURIComponent(character.id)}${session?.id ? `&session=${encodeURIComponent(session.id)}` : ''}`;
+      const url = `/chat?id=${encodeURIComponent(character.id)}${session?.id ? `&session=${encodeURIComponent(session.id)}` : ''}`;
       if (window.location.pathname + window.location.search !== url) {
         window.history.replaceState({ view: 'chat', characterId: character.id, sessionId: session?.id }, '', url);
       }
@@ -1867,7 +1867,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
           title: `Storyline ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
         });
         appState.activeSession = fresh;
-        const url = `/chat.html?id=${encodeURIComponent(appState.activeCharacter.id)}&session=${encodeURIComponent(fresh.id)}`;
+        const url = `/chat?id=${encodeURIComponent(appState.activeCharacter.id)}&session=${encodeURIComponent(fresh.id)}`;
         window.history.replaceState({ view: 'chat', characterId: appState.activeCharacter.id, sessionId: fresh.id }, '', url);
         renderChatStream(appState.activeCharacter, fresh);
         renderRelationshipBar(fresh, appState.activeCharacter);

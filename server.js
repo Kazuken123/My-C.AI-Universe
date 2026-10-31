@@ -205,6 +205,31 @@ export class ApplicationServer {
       next();
     });
 
+    // Clean URLs & Canonical SEO Redirection Middleware
+    // Permanently redirects any incoming *.html route to its clean canonical counterpart,
+    // preserving the full query string (e.g. /chat.html?id=123 -> /chat?id=123)
+    const HTML_REDIRECTS = {
+      '/index.html': '/',
+      '/chat.html': '/chat',
+      '/create.html': '/create',
+      '/chats.html': '/chats',
+      '/personas.html': '/personas',
+      '/auth.html': '/auth',
+      '/login.html': '/auth',
+      '/profile-setup.html': '/profile-setup',
+      '/reset-password.html': '/reset-password',
+      '/characters.html': '/characters'
+    };
+
+    this.app.use((req, res, next) => {
+      const target = HTML_REDIRECTS[req.path];
+      if (target) {
+        const query = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+        return res.redirect(301, target + query);
+      }
+      next();
+    });
+
     this.app.get(['/admin', '/admin.html'], requireAdminWebAccess, (_req, res) => {
       res.sendFile(path.join(frontendDir, 'admin.html'));
     });
@@ -219,39 +244,39 @@ export class ApplicationServer {
 
     this.app.use(express.static(frontendDir));
 
-    this.app.get(['/', '/dashboard', '/index.html'], (_req, res) => {
+    this.app.get(['/', '/dashboard'], (_req, res) => {
       res.sendFile(path.join(frontendDir, 'index.html'));
     });
 
-    this.app.get(['/chat', '/chat.html'], (_req, res) => {
+    this.app.get('/chat', (_req, res) => {
       res.sendFile(path.join(frontendDir, 'chat.html'));
     });
 
-    this.app.get(['/auth', '/auth.html', '/login', '/login.html'], (_req, res) => {
+    this.app.get(['/auth', '/login'], (_req, res) => {
       res.sendFile(path.join(frontendDir, 'auth.html'));
     });
 
-    this.app.get(['/profile-setup', '/profile-setup.html', '/setup'], (_req, res) => {
+    this.app.get(['/profile-setup', '/setup'], (_req, res) => {
       res.sendFile(path.join(frontendDir, 'profile-setup.html'));
     });
 
-    this.app.get(['/reset-password', '/reset-password.html', '/forgot-password'], (_req, res) => {
+    this.app.get(['/reset-password', '/forgot-password'], (_req, res) => {
       res.sendFile(path.join(frontendDir, 'reset-password.html'));
     });
 
-    this.app.get(['/create', '/create.html'], (_req, res) => {
+    this.app.get('/create', (_req, res) => {
       res.sendFile(path.join(frontendDir, 'create.html'));
     });
 
-    this.app.get(['/chats', '/chats.html'], (_req, res) => {
+    this.app.get('/chats', (_req, res) => {
       res.sendFile(path.join(frontendDir, 'chats.html'));
     });
 
-    this.app.get(['/personas', '/personas.html'], (_req, res) => {
+    this.app.get('/personas', (_req, res) => {
       res.sendFile(path.join(frontendDir, 'personas.html'));
     });
 
-    this.app.get(['/characters', '/characters.html'], (_req, res) => {
+    this.app.get('/characters', (_req, res) => {
       res.sendFile(path.join(frontendDir, 'index.html'));
     });
 

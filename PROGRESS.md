@@ -1,5 +1,31 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-10-31 - Architecture: Clean URLs & Removal of `.html` File Extensions Across Full Stack
+
+- **Context & Motivation**:
+  - The user requested clean canonical URLs across the live deployment (`https://my-c-ai-universe.onrender.com/chat?id=...&session=...`), eliminating all visible `.html` suffixes (`/chat.html`, `/index.html`, `/create.html`, `/chats.html`, `/personas.html`, `/auth.html`, `/profile-setup.html`, `/reset-password.html`).
+- **Root Cause Analysis**:
+  - In `frontend/js/chat.js` (lines 1021 and 1870), `window.history.replaceState` explicitly appended `/chat.html?id=...` into the address bar whenever a session opened or a fresh session was started.
+  - In `server.js`, `express.static(frontendDir)` served static HTML files directly without rewriting or canonical redirects, and route definitions served both `/chat` and `/chat.html`.
+  - Links, navigation helpers, and redirection logic across `frontend/*.html` and `frontend/js/*.js` contained hardcoded `.html` file paths.
+- **Architectural & Routing Changes**:
+  1. **Canonical 301 Redirect Middleware in Express (`server.js`)**:
+     - Placed a clean URL 301 redirection middleware before `express.static`: any request to `*.html` (`/index.html`, `/chat.html`, `/create.html`, `/chats.html`, `/personas.html`, `/auth.html`, `/login.html`, `/profile-setup.html`, `/reset-password.html`, `/characters.html`) is permanently redirected (HTTP 301) to its clean route counterpart, preserving all query string parameters (`?id=...&session=...`).
+     - Kept explicit clean GET route handlers (`/chat`, `/create`, `/chats`, `/personas`, `/auth`, `/profile-setup`, `/reset-password`, `/characters`, `/admin`).
+  2. **Client-Side History & Routing Updates (`frontend/js/chat.js`, `app.js`, `chat-page.js`, `dashboard.js`, `common.js`, `chats-page.js`, `personas-page.js`, `studio-page.js`, `profile-setup-page.js`, `auth-page.js`)**:
+     - Replaced `/chat.html` with clean `/chat` in `window.history.replaceState` and `window.history.pushState`.
+     - Replaced all navigation mappings and auth return URLs (`return=/chat?id=...`, `return=/create`, `return=/chats`, etc.).
+  3. **Universal Template URL Cleaning (`frontend/*.html`)**:
+     - Updated all navigation links, buttons, `data-chat-base`, and redirects across all 9 HTML template files.
+  4. **Email Service Clean URL (`backend/services/email.service.js`)**:
+     - Password reset verification emails now generate clean links to `/reset-password?email=...&code=...`.
+- **Verification**:
+  - `npm test`: **44/44 backend & integration test suites passed (100%)**.
+  - `npm --prefix nextjs-frontend test`: **18/18 unit tests passed (100%)**.
+  - `node scripts/check-syntax.js`: **151/151 files verified clean (0 failures)**.
+  - `graphify update .`: Knowledge graph refreshed (`2263 nodes, 4941 edges, 147 communities`).
+  - `npm run audit:pack`: Repomix package refreshed (`repomix-output.xml`, 5.01 MB).
+
 ## 2026-10-31 - Fix: Keyless Fish Audio Community Catalog Search, Japanese (`ja`) Language Filter & Built-in Anime Voices
 
 - **Context & Root Cause Analysis**:

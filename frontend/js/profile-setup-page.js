@@ -61,7 +61,7 @@ class ProfileSetupController {
     try {
       this.currentUser = await api.getCurrentUser();
       if (!this.currentUser) {
-        window.location.href = '/auth.html?mode=signin&return=/profile-setup.html';
+        window.location.href = '/auth?mode=signin&return=/profile-setup';
         return;
       }
 

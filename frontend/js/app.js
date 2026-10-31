@@ -49,11 +49,11 @@ export class CAIUniverseApp {
   navigateTo(viewName, pushState = true) {
     if ((viewName === 'create' || viewName === 'chats' || viewName === 'personas') && !api.getToken()) {
       const pathMap = {
-        create: '/create.html',
-        chats: '/chats.html',
-        personas: '/personas.html'
+        create: '/create',
+        chats: '/chats',
+        personas: '/personas'
       };
-      window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(pathMap[viewName] || '/')}`;
+      window.location.href = `/auth?mode=signin&return=${encodeURIComponent(pathMap[viewName] || '/')}`;
       return;
     }
 
@@ -68,10 +68,10 @@ export class CAIUniverseApp {
     if (pushState) {
       const pathMap = {
         discover: '/',
-        create: '/create.html',
-        characters: '/characters.html',
-        chats: '/chats.html',
-        personas: '/personas.html'
+        create: '/create',
+        characters: '/characters',
+        chats: '/chats',
+        personas: '/personas'
       };
       const targetUrl = pathMap[viewName];
       if (targetUrl && window.location.pathname !== targetUrl) {
@@ -130,7 +130,7 @@ export class CAIUniverseApp {
       navFn,
       (charId, sessionId) => {
         if (!api.getToken()) {
-          window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(`/chat.html?id=${charId}`)}`;
+          window.location.href = `/auth?mode=signin&return=${encodeURIComponent(`/chat?id=${charId}`)}`;
           return;
         }
         this.chatController.openChatWithCharacter(charId, sessionId);
@@ -255,7 +255,7 @@ export class CAIUniverseApp {
     const params = new URLSearchParams(window.location.search);
     const charId = params.get('id');
 
-    if ((path.includes('chat.html') || path === '/chat') && charId) {
+    if ((path.includes('chat') || path === '/chat') && charId) {
       await this.chatController.openChatWithCharacter(charId);
     } else if (path.includes('create')) {
       this.characterManager.openStudioForCreate();

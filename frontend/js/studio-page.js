@@ -251,7 +251,7 @@ class StudioPageApp {
     const currentUser = await api.getCurrentUser();
     if (!currentUser) {
       const returnUrl = window.location.pathname + window.location.search;
-      window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(returnUrl || '/create.html')}`;
+      window.location.href = `/auth?mode=signin&return=${encodeURIComponent(returnUrl || '/create')}`;
       return;
     }
 
@@ -459,7 +459,7 @@ class StudioPageApp {
           }
 
           setTimeout(() => {
-            window.location.href = `/chat.html?id=${encodeURIComponent(saved.id)}`;
+            window.location.href = `/chat?id=${encodeURIComponent(saved.id)}`;
           }, 400);
         } catch (err) {
           showToast('Failed to save character: ' + err.message);

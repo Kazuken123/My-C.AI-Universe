@@ -311,7 +311,7 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         if (!api.getToken()) {
-          window.location.href = `/auth.html?mode=signin&return=/`;
+          window.location.href = `/auth?mode=signin&return=/`;
           return;
         }
         try {
@@ -506,7 +506,7 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
 
   function openStudioForCreate() {
     if (!api.getToken()) {
-      window.location.href = '/auth.html?mode=signin&return=/create.html';
+      window.location.href = '/auth?mode=signin&return=/create';
       return;
     }
     if (studioForm) studioForm.reset();
@@ -520,7 +520,7 @@ export function initCharactersModule(appState, navigateTo, openChatWithCharacter
   function openStudioForEdit(char) {
     if (!char) return;
     if (!api.getToken()) {
-      window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(`/create.html?id=${char.id}`)}`;
+      window.location.href = `/auth?mode=signin&return=${encodeURIComponent(`/create?id=${char.id}`)}`;
       return;
     }
     if (editCharIdInput) editCharIdInput.value = char.id;

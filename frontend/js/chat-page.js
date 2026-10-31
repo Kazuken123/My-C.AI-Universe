@@ -21,7 +21,7 @@ class ChatPageApp {
     const currentUser = await api.getCurrentUser();
     if (!currentUser) {
       const returnUrl = window.location.pathname + window.location.search;
-      window.location.href = `/auth.html?mode=signin&return=${encodeURIComponent(returnUrl)}`;
+      window.location.href = `/auth?mode=signin&return=${encodeURIComponent(returnUrl)}`;
       return;
     }
     this.state.currentUser = currentUser;
@@ -57,14 +57,14 @@ class ChatPageApp {
 
     const navFn = (target) => {
       if (target === 'discover') window.location.href = '/';
-      else if (target === 'create') window.location.href = '/create.html';
-      else if (target === 'chats') window.location.href = '/chats.html';
-      else if (target === 'personas') window.location.href = '/personas.html';
+      else if (target === 'create') window.location.href = '/create';
+      else if (target === 'chats') window.location.href = '/chats';
+      else if (target === 'personas') window.location.href = '/personas';
     };
 
     const editFn = (char) => {
       if (char?.id) {
-        window.location.href = `/create.html?id=${encodeURIComponent(char.id)}`;
+        window.location.href = `/create?id=${encodeURIComponent(char.id)}`;
       }
     };
 
@@ -102,7 +102,7 @@ class ChatPageApp {
         } else {
           showToast('No characters registered. Redirecting to Studio...');
           setTimeout(() => {
-            window.location.href = '/create.html';
+            window.location.href = '/create';
           }, 1200);
         }
       } catch (err) {

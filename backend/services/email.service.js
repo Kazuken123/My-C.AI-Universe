@@ -65,7 +65,7 @@ export class EmailService {
       safeOrigin = config.PUBLIC_BASE_URL || 'http://localhost:3000';
     }
 
-    const resetUrl = `${safeOrigin}/reset-password.html?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`;
+    const resetUrl = `${safeOrigin}/reset-password?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`;
     const subject = `[C.AI Universe] Password Reset Code: ${code}`;
     const safeEmail = escapeHtml(email);
     const safeResetUrl = escapeHtml(resetUrl);

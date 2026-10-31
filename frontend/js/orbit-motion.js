@@ -27,9 +27,9 @@ function nextSceneSpark(mood, previous = -1, random = Math.random) {
   return { index, text: prompts[index] };
 }
 function sceneSparkHref(base, characterId, prompt) {
-  if (!characterId || !prompt.trim() || !['/chat/', '/chat.html'].includes(base)) return '';
+  if (!characterId || !prompt.trim() || !['/chat', '/chat/', '/chat.html'].includes(base)) return '';
   const params = new URLSearchParams({ opener: prompt.trim().slice(0, 1000) });
-  if (base === '/chat.html') { params.set('id', characterId); return base + '?' + params; }
+  if (base === '/chat' || base === '/chat.html') { params.set('id', characterId); return '/chat?' + params; }
   return base + encodeURIComponent(characterId) + '?' + params;
 }
 function bindSceneSpark(island, signal) {

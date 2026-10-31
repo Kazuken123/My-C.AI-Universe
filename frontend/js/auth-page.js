@@ -153,7 +153,7 @@ class AuthPageController {
             const returnUrl = sanitizeReturnUrl(params.get('return'));
             const returnParam = returnUrl !== '/' ? `&return=${encodeURIComponent(returnUrl)}` : '';
             setTimeout(() => {
-              window.location.href = `/profile-setup.html?new=1${returnParam}`;
+              window.location.href = `/profile-setup?new=1${returnParam}`;
             }, 400);
           } else {
             await api.login({ username, password });
@@ -186,7 +186,7 @@ class AuthPageController {
         showToast('Signed in successfully with Google!');
         const returnUrl = sanitizeReturnUrl(params.get('return'));
         const returnParam = returnUrl !== '/' ? `&return=${encodeURIComponent(returnUrl)}` : '';
-        const targetUrl = authResult?.isNewUser ? `/profile-setup.html?new=1${returnParam}` : returnUrl;
+        const targetUrl = authResult?.isNewUser ? `/profile-setup?new=1${returnParam}` : returnUrl;
         setTimeout(() => {
           window.location.href = targetUrl;
         }, 400);
