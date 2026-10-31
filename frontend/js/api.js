@@ -257,6 +257,7 @@ export class ApiClient {
   searchVoiceModels(params = {}) {
     const qs = new URLSearchParams();
     if (params.search) qs.set('search', params.search);
+    if (params.language) qs.set('language', params.language);
     if (params.page) qs.set('page', String(params.page));
     if (params.pageSize) qs.set('pageSize', String(params.pageSize));
     const queryStr = qs.toString();

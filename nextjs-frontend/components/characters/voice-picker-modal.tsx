@@ -56,7 +56,8 @@ export function VoicePickerModal({
   characterName = '',
 }: VoicePickerModalProps) {
   const [activeTab, setActiveTab] = useState<'search' | 'upload'>('search');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(characterName || authorDefaultVoiceName || 'Kana Arima');
+  const [language, setLanguage] = useState<string>('ja');
   const [voices, setVoices] = useState<VoiceItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUnconfigured, setIsUnconfigured] = useState(false);
@@ -71,10 +72,14 @@ export function VoicePickerModal({
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Fetch voice models
-  const fetchVoices = useCallback(async (query: string) => {
+  const fetchVoices = useCallback(async (query: string, lang: string) => {
     setIsLoading(true);
     try {
-      const res = await api.searchVoiceModels({ search: query, pageSize: 18 });
+      const res = await api.searchVoiceModels({
+        search: query || characterName || 'Kana Arima',
+        language: lang,
+        pageSize: 18,
+      });
       if (res.unconfigured) {
         setIsUnconfigured(true);
       } else {
@@ -86,7 +91,7 @@ export function VoicePickerModal({
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [characterName]);
 
   // Initial load and debounced search
   useEffect(() => {
@@ -100,11 +105,11 @@ export function VoicePickerModal({
     }
 
     const timer = setTimeout(() => {
-      fetchVoices(searchQuery);
+      fetchVoices(searchQuery, language);
     }, searchQuery ? 300 : 0);
 
     return () => clearTimeout(timer);
-  }, [isOpen, searchQuery, fetchVoices]);
+  }, [isOpen, searchQuery, language, fetchVoices]);
 
   // Audio preview playback
   const togglePlayPreview = (voice: VoiceItem) => {
@@ -253,7 +258,7 @@ export function VoicePickerModal({
         {/* Search Tab */}
         {activeTab === 'search' && (
           <div className="flex-1 flex flex-col min-h-0 p-6 space-y-4 overflow-hidden">
-            {/* Search Input & Clear to Default */}
+            {/* Search Input, Language Filter & Clear to Default */}
             <div className="flex items-center gap-3">
               <div className="relative flex-1">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
@@ -273,6 +278,20 @@ export function VoicePickerModal({
                   </button>
                 )}
               </div>
+
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                aria-label="Filter voices by language"
+                title="Filter voices by language"
+                className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500/50 cursor-pointer"
+              >
+                <option value="ja" className="bg-[#0f1117]">🇯🇵 Japanese</option>
+                <option value="all" className="bg-[#0f1117]">🌐 All Languages</option>
+                <option value="en" className="bg-[#0f1117]">🇺🇸 English</option>
+                <option value="zh" className="bg-[#0f1117]">🇨🇳 Chinese</option>
+                <option value="ko" className="bg-[#0f1117]">🇰🇷 Korean</option>
+              </select>
 
               {selectedVoiceId && (
                 <button

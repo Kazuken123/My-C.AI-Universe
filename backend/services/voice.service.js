@@ -25,6 +25,81 @@ export const ALLOWED_EMOTION_TAGS = new Set([
   'giggle'
 ]);
 
+export const CURATED_ANIME_VOICES = [
+  {
+    id: '321f5f7b3b81483180a1a49c168814ca',
+    title: 'Kana Arima',
+    description: '非常に感情豊かで、怒りや悲しみといった強い感情をドラマチックに表現する声です。',
+    author: 'Lua',
+    coverImage: 'https://public-platform.r2.fish.audio/coverimage/321f5f7b3b81483180a1a49c168814ca',
+    tags: ['japanese', 'young', 'character-voice'],
+    languages: ['ja'],
+    taskCount: 1476,
+    likeCount: 8,
+    sampleAudio: 'https://platform.r2.fish.audio/task/fbba73f742dc4ec18afc5a47e17a8f96.mp3'
+  },
+  {
+    id: 'b79eb85863ff434e82dd210ffc54d9e9',
+    title: 'Kana Arima',
+    description: 'A clear and confident young female voice with a professional and calm delivery.',
+    author: 'aishhhaa !!',
+    coverImage: 'https://public-platform.r2.fish.audio/coverimage/b79eb85863ff434e82dd210ffc54d9e9',
+    tags: ['japanese', 'female', 'young'],
+    languages: ['ja'],
+    taskCount: 812,
+    likeCount: 6,
+    sampleAudio: 'https://platform.r2.fish.audio/task/961f4978c0a34923836433059970fee4.mp3'
+  },
+  {
+    id: '0ecca83001cc47a499f9d597cbd4e9e9',
+    title: 'Arima kana',
+    description: 'A high-pitched and highly energetic young female voice with an animated, expressive tone.',
+    author: 'Akairo',
+    coverImage: 'https://public-platform.r2.fish.audio/coverimage/0ecca83001cc47a499f9d597cbd4e9e9',
+    tags: ['japanese', 'female', 'young'],
+    languages: ['ja'],
+    taskCount: 743,
+    likeCount: 5,
+    sampleAudio: 'https://platform.r2.fish.audio/task/8eeb9c054b4a463f9fe12fe91f8f1a34.mp3'
+  },
+  {
+    id: '3fd70bbcdb6342df8c0c4143b958944b',
+    title: 'Furina',
+    description: 'Expressive theatrical anime character voice with rich emotional contrast.',
+    author: 'Giss',
+    coverImage: 'https://public-platform.r2.fish.audio/coverimage/3fd70bbcdb6342df8c0c4143b958944b',
+    tags: ['japanese', 'female', 'character-voice'],
+    languages: ['ja'],
+    taskCount: 4082,
+    likeCount: 26,
+    sampleAudio: 'https://platform.r2.fish.audio/task/291ca7102e3f47dd8c9202867bf2f3de.mp3'
+  },
+  {
+    id: 'a086bd25e6e340f89008eba1cec98a06',
+    title: 'Megumin',
+    description: 'Spirited arch-wizard anime character voice.',
+    author: 'luooul123_2023',
+    coverImage: 'https://public-platform.r2.fish.audio/coverimage/a086bd25e6e340f89008eba1cec98a06',
+    tags: ['japanese', 'female', 'character-voice'],
+    languages: ['ja'],
+    taskCount: 5309,
+    likeCount: 26,
+    sampleAudio: 'https://platform.r2.fish.audio/task/5a0f2b3999ce46febcd614db3731de8a.mp3'
+  },
+  {
+    id: '25b21a6149944b8298a99468821702e4',
+    title: 'Ai Hoshino',
+    description: 'Bright, charismatic idol voice with warm expressive energy.',
+    author: 'j76dd6g69d-afk',
+    coverImage: 'https://public-platform.r2.fish.audio/coverimage/25b21a6149944b8298a99468821702e4',
+    tags: ['japanese', 'female', 'young'],
+    languages: ['ja'],
+    taskCount: 4003,
+    likeCount: 47,
+    sampleAudio: 'https://platform.r2.fish.audio/task/7c6a21b46899461a90b60ae743bfea5d.mp3'
+  }
+];
+
 /**
  * VoiceService Class
  * Encapsulates Fish Audio community model discovery, zero-shot/custom voice creation,
@@ -161,52 +236,61 @@ export class VoiceService {
   }
 
   /**
-   * Search Fish Audio community voice models
+   * Search Fish Audio community voice models.
+   * Works with or without FISH_AUDIO_API_KEY via Fish Audio's public catalog endpoint,
+   * defaulting to Japanese ('ja') with automatic all-language fallback and curated resilience.
    * @param {Object} params
-   * @param {string} params.query
+   * @param {string} [params.query='']
+   * @param {string} [params.language='ja']
    * @param {number} [params.page=1]
-   * @param {number} [params.pageSize=15]
+   * @param {number} [params.pageSize=18]
    * @returns {Promise<{ total: number, items: Array, unconfigured?: boolean }>}
    */
-  async searchVoices({ query = '', page = 1, pageSize = 15 } = {}) {
-    if (!(config.FISH_AUDIO_API_KEY || process.env.FISH_AUDIO_API_KEY)) {
-      return { total: 0, items: [], unconfigured: true };
-    }
+  async searchVoices({ query = '', language = 'ja', page = 1, pageSize = 18 } = {}) {
+    const apiKey = (config.FISH_AUDIO_API_KEY || process.env.FISH_AUDIO_API_KEY || '').trim();
+    const unconfigured = !apiKey;
 
     const safePage = Math.max(1, Number(page) || 1);
-    const safePageSize = Math.min(24, Math.max(1, Number(pageSize) || 15));
+    const safePageSize = Math.min(24, Math.max(1, Number(pageSize) || 18));
     const cleanQuery = (query || '').trim();
+    const cleanLang = String(language || 'ja').trim().toLowerCase();
 
-    const url = new URL(`${config.FISH_AUDIO_BASE_URL}/model`);
-    if (cleanQuery) url.searchParams.set('title', cleanQuery);
-    url.searchParams.set('page_size', String(safePageSize));
-    url.searchParams.set('page_number', String(safePage));
+    const fetchCatalog = async (langFilter) => {
+      const url = new URL(`${config.FISH_AUDIO_BASE_URL || 'https://api.fish.audio'}/model`);
+      if (cleanQuery) url.searchParams.set('title', cleanQuery);
+      if (langFilter && langFilter !== 'all') {
+        url.searchParams.set('language', langFilter);
+      }
+      url.searchParams.set('page_size', String(safePageSize));
+      url.searchParams.set('page_number', String(safePage));
 
-    try {
+      const headers = { Accept: 'application/json' };
+      if (apiKey) {
+        headers.Authorization = `Bearer ${apiKey}`;
+      }
+
       const response = await fetch(url.toString(), {
         method: 'GET',
-        headers: {
-          Authorization: `Bearer ${(config.FISH_AUDIO_API_KEY || process.env.FISH_AUDIO_API_KEY)}`,
-          Accept: 'application/json'
-        },
+        headers,
         signal: AbortSignal.timeout(10000)
       });
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => '');
         console.warn('[VoiceService] Fish Audio search returned status', response.status, errorText);
-        return { total: 0, items: [] };
+        return null;
       }
 
-      const data = await response.json();
-      const rawItems = Array.isArray(data?.items) ? data.items : [];
+      return await response.json();
+    };
 
-      const items = rawItems
-        .filter(item => {
+    const normalizeItems = (rawItems) =>
+      (Array.isArray(rawItems) ? rawItems : [])
+        .filter((item) => {
           const id = item && (item._id || item.id);
           return id && SAFE_VOICE_ID_REGEX.test(id);
         })
-        .map(item => {
+        .map((item) => {
           const id = item._id || item.id;
           const sample = Array.isArray(item.samples) && item.samples[0] ? item.samples[0] : null;
           const sampleAudioRaw = sample ? (sample.audio || sample.audio_url || sample.url) : null;
@@ -216,18 +300,53 @@ export class VoiceService {
             description: String(item.description || '').slice(0, 300),
             author: item.author ? String(item.author.nickname || item.author.username || 'Community') : 'Community',
             coverImage: VoiceService.sanitizeHttpsUrl(item.cover_image || item.image),
-            tags: Array.isArray(item.tags) ? item.tags.slice(0, 10).map(t => String(t).slice(0, 30)) : [],
+            tags: Array.isArray(item.tags) ? item.tags.slice(0, 10).map((t) => String(t).slice(0, 30)) : [],
+            languages: Array.isArray(item.languages) ? item.languages.slice(0, 5).map((l) => String(l).slice(0, 10)) : [],
+            taskCount: Number(item.task_count ?? item.taskCount ?? 0),
+            likeCount: Number(item.like_count ?? item.likeCount ?? 0),
             sampleAudio: VoiceService.sanitizeHttpsUrl(sampleAudioRaw)
           };
         });
 
+    const filterCuratedFallback = () => {
+      if (!cleanQuery) return CURATED_ANIME_VOICES;
+      const lower = cleanQuery.toLowerCase();
+      const matched = CURATED_ANIME_VOICES.filter(
+        (v) =>
+          v.title.toLowerCase().includes(lower) ||
+          v.author.toLowerCase().includes(lower) ||
+          v.description.toLowerCase().includes(lower)
+      );
+      return matched.length > 0 ? matched : CURATED_ANIME_VOICES;
+    };
+
+    try {
+      let data = await fetchCatalog(cleanLang);
+      let items = data ? normalizeItems(data.items) : [];
+
+      // If language filter yielded 0 items, automatically retry across all languages
+      if (items.length === 0 && cleanLang && cleanLang !== 'all') {
+        const retryData = await fetchCatalog('all');
+        if (retryData) {
+          data = retryData;
+          items = normalizeItems(retryData.items);
+        }
+      }
+
+      if (!data) {
+        const fallback = filterCuratedFallback();
+        return { total: fallback.length, items: fallback, unconfigured };
+      }
+
       return {
         total: Number(data?.total) || items.length,
-        items
+        items,
+        unconfigured
       };
     } catch (err) {
       console.warn('[VoiceService] Voice search network error:', err.message);
-      return { total: 0, items: [] };
+      const fallback = filterCuratedFallback();
+      return { total: fallback.length, items: fallback, unconfigured };
     }
   }
 

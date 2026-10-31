@@ -1,5 +1,21 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-10-31 - Fix: Keyless Fish Audio Community Catalog Search, Japanese (`ja`) Language Filter & Built-in Anime Voices
+
+- **Context & Root Cause Analysis**:
+  - The user reported `"why there are no voices"` in the **"Choose Voice for Kana Arima"** modal on the live deployed instance (`No matching voice models found`), while Fish Audio's web UI showed `Kana Arima · Lua` (1.4K uses), `Kana Arima · aishhhaa !!` (812 uses), `Arima kana · Akairo`, etc. under the `🇯🇵 Japanese` filter.
+  - **Root Causes**:
+    1. `VoiceService.searchVoices()` (`backend/services/voice.service.js`) previously returned `{ total: 0, items: [], unconfigured: true }` immediately whenever `FISH_AUDIO_API_KEY` was not set in the server environment (e.g., on Render before adding the secret), and `frontend/js/voice-picker.js` rendered the empty array as `No matching voice models found`.
+    2. Fish Audio's `GET https://api.fish.audio/model` catalog endpoint is publicly readable without an `Authorization` header, and requires `language=ja` to match the Japanese anime seiyuu list order shown in Fish Audio's Explore UI.
+- **Architectural & UI Fixes**:
+  1. **Public Keyless Model Discovery (`backend/services/voice.service.js` & `backend/routes/voice.route.js`)**:
+     - Removed the `if (!FISH_AUDIO_API_KEY) return { items: [] }` gate in `VoiceService.searchVoices()`. The server now queries `https://api.fish.audio/model` with or without `FISH_AUDIO_API_KEY`, returning live community models and sample preview URLs (`https://public-platform.r2.fish.audio/...`) out of the box while surfacing `unconfigured: !apiKey` as a non-blocking hint for live TTS synthesis.
+     - Relaxed `GET /api/voice/models` from `requireAuth` to `optionalAuth` (still protected by `sensitiveEndpointLimiter`) and added route alias `POST /api/voice/models/custom` alongside `POST /api/voice/custom`.
+  2. **Japanese (`language=ja`) Filter & Language Selector (`voice.service.js`, `voice-picker.js`, `voice-picker-modal.tsx`)**:
+     - Defaulted `searchVoices` to `language = 'ja'` (matching Fish Audio's Japanese filter so searching `Kana Arima` returns `Kana Arima · Lua`, `Kana Arima · aishhhaa !!`, `Arima kana · Akairo`, etc.), with automatic retry across all languages if a query yields 0 results in the selected language.
+     - Added a language dropdown (`🇯🇵 Japanese`, `🌐 All Languages`, `🇺🇸 English`, `🇨🇳 Chinese`, `🇰🇷 Korean`) next to the search bar in both Express (`frontend/js/voice-picker.js`) and Next.js (`nextjs-frontend/components/characters/voice-picker-modal.tsx`) modals.
+     - Pre-populated the search input with the full character name (`Kana Arima`) when opening the modal for a character, and added `CURATED_ANIME_VOICES` as a resilient fallback if Fish Audio's API is temporarily unreachable.
+
 ## 2026-10-31 - Refinement: Character-Scoped "Choose Voice" in Chat Topbar & Author Default Voice Preservation
 
 - **Context & Motivation**:

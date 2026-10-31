@@ -104,14 +104,29 @@ class VoicePickerController {
           </div>
 
           <div class="voice-picker-body" id="voicePickerDiscoverPane">
-            <div class="voice-picker-search-wrap">
-              <i class="ph-light ph-magnifying-glass voice-picker-search-icon"></i>
-              <input
-                type="text"
-                class="voice-picker-search-input"
-                id="voicePickerSearchInput"
-                placeholder="Search anime character or seiyuu (e.g. Kana Arima, Furina, Megumin)..."
-              />
+            <div class="voice-picker-search-row" style="display: flex; gap: 8px; align-items: center;">
+              <div class="voice-picker-search-wrap" style="flex: 1;">
+                <i class="ph-light ph-magnifying-glass voice-picker-search-icon"></i>
+                <input
+                  type="text"
+                  class="voice-picker-search-input"
+                  id="voicePickerSearchInput"
+                  placeholder="Search anime character or seiyuu (e.g. Kana Arima, Furina, Megumin)..."
+                />
+              </div>
+              <select
+                id="voicePickerLangSelect"
+                class="select-control"
+                style="height: 38px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--border-hairline, rgba(255,255,255,0.1)); background: rgba(255,255,255,0.04); color: var(--text-primary, #f5f5f7); font-size: 0.78rem; cursor: pointer;"
+                title="Filter voices by language"
+                aria-label="Filter voices by language"
+              >
+                <option value="ja" selected>🇯🇵 Japanese</option>
+                <option value="all">🌐 All Languages</option>
+                <option value="en">🇺🇸 English</option>
+                <option value="zh">🇨🇳 Chinese</option>
+                <option value="ko">🇰🇷 Korean</option>
+              </select>
             </div>
 
             <div class="voice-picker-chips" id="voicePickerChips">
@@ -275,6 +290,7 @@ class VoicePickerController {
 
   async #fetchModels(queryStr) {
     const resultsEl = this.overlay?.querySelector('#voicePickerResults');
+    const langSelect = this.overlay?.querySelector('#voicePickerLangSelect');
     if (!resultsEl) return;
     this.#setAlert('');
     this.#stopSampleAudio();
@@ -282,11 +298,15 @@ class VoicePickerController {
 
     try {
       const res = await api.searchVoiceModels({
-        search: (queryStr || '').trim() || 'anime',
+        search: (queryStr || '').trim() || 'Kana Arima',
+        language: langSelect?.value || 'ja',
         page: 1,
         pageSize: 18
       });
       this.models = Array.isArray(res?.items) ? res.items : [];
+      if (res?.unconfigured) {
+        this.#setAlert('Live voice catalog loaded. Set FISH_AUDIO_API_KEY in server environment variables to enable AI TTS synthesis.');
+      }
       this.#renderModels();
     } catch (err) {
       this.models = [];
@@ -403,6 +423,7 @@ class VoicePickerController {
     const doneBtn = this.overlay.querySelector('#voicePickerDoneBtn');
     const resetBtn = this.overlay.querySelector('#voicePickerResetBtn');
     const searchInput = this.overlay.querySelector('#voicePickerSearchInput');
+    const langSelect = this.overlay.querySelector('#voicePickerLangSelect');
     const fileInput = this.overlay.querySelector('#voiceCustomFileInput');
     const fileLabel = this.overlay.querySelector('#voiceCustomFileLabel');
     const uploadForm = this.overlay.querySelector('#voicePickerUploadPane');
@@ -432,6 +453,10 @@ class VoicePickerController {
       this.searchTimer = setTimeout(() => {
         this.#fetchModels(searchInput.value);
       }, 350);
+    });
+
+    langSelect?.addEventListener('change', () => {
+      this.#fetchModels(searchInput?.value || '');
     });
 
     this.overlay.querySelectorAll('[data-voice-chip]').forEach((chipBtn) => {
@@ -568,8 +593,8 @@ class VoicePickerController {
     this.overlay.classList.add('active');
 
     const searchInput = this.overlay.querySelector('#voicePickerSearchInput');
-    const initialQuery = (searchInput?.value || '').trim() || (this.authorDefaultVoiceName ? this.authorDefaultVoiceName.split(' ')[0] : 'Kana Arima');
-    if (searchInput && !searchInput.value) {
+    const initialQuery = this.characterName || this.authorDefaultVoiceName || (searchInput?.value || '').trim() || 'Kana Arima';
+    if (searchInput) {
       searchInput.value = initialQuery;
     }
     this.#fetchModels(initialQuery);

@@ -499,7 +499,7 @@ export class ApiClient {
   // Voice & TTS Endpoints
   // ==========================================
 
-  searchVoiceModels(params: { search?: string; page?: number; pageSize?: number } = {}): Promise<{
+  searchVoiceModels(params: { search?: string; language?: string; page?: number; pageSize?: number } = {}): Promise<{
     success: boolean;
     total: number;
     items: Array<{
@@ -509,12 +509,16 @@ export class ApiClient {
       author: string;
       coverImage: string | null;
       tags: string[];
+      languages?: string[];
+      taskCount?: number;
+      likeCount?: number;
       sampleAudio: string | null;
     }>;
     unconfigured?: boolean;
   }> {
     const sp = new URLSearchParams();
     if (params.search) sp.set('search', params.search);
+    if (params.language) sp.set('language', params.language);
     if (params.page) sp.set('page', String(params.page));
     if (params.pageSize) sp.set('pageSize', String(params.pageSize));
     const qs = sp.toString() ? `?${sp.toString()}` : '';

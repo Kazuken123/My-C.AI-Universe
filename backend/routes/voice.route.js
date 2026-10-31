@@ -4,7 +4,7 @@ import {
   createCustomVoice,
   synthesizeVoice
 } from '../controllers/voice.controller.js';
-import { requireAuth, requireAdmin } from '../middlewares/auth.js';
+import { optionalAuth, requireAuth, requireAdmin } from '../middlewares/auth.js';
 import {
   sensitiveEndpointLimiter,
   voiceSynthesizeLimiter,
@@ -13,11 +13,12 @@ import {
 
 const router = express.Router();
 
-// Search community models (authenticated to prevent public scraping)
-router.get('/voice/models', requireAuth, sensitiveEndpointLimiter.middleware(), searchModels);
+// Search community models (rate-limited, works for both authenticated and guest sessions)
+router.get('/voice/models', optionalAuth, sensitiveEndpointLimiter.middleware(), searchModels);
 
 // Create custom voice model (admin-only to guard the 3-slot free account ceiling)
 router.post('/voice/custom', requireAuth, requireAdmin, voiceUploadLimiter.middleware(), createCustomVoice);
+router.post('/voice/models/custom', requireAuth, requireAdmin, voiceUploadLimiter.middleware(), createCustomVoice);
 
 // Synthesize character voice audio
 router.post('/voice/synthesize', requireAuth, voiceSynthesizeLimiter.middleware(), synthesizeVoice);

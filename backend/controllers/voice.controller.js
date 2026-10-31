@@ -16,15 +16,16 @@ export class VoiceController extends BaseController {
 
   /**
    * Search community voice models on Fish Audio
-   * GET /api/voice/models?search=...&page=1&pageSize=15
+   * GET /api/voice/models?search=...&language=ja&page=1&pageSize=18
    */
   async searchModels(req, res) {
     try {
-      const { search = '', page = 1, pageSize = 15 } = req.query;
+      const { search = '', language = 'ja', page = 1, pageSize = 18 } = req.query;
       const results = await this.service.searchVoices({
         query: String(search),
+        language: String(language || 'ja'),
         page: Number(page) || 1,
-        pageSize: Number(pageSize) || 15
+        pageSize: Number(pageSize) || 18
       });
       return this.sendJson(res, { success: true, ...results });
     } catch (error) {
@@ -44,7 +45,7 @@ export class VoiceController extends BaseController {
         description,
         audioDataUrl
       });
-      return this.sendJson(res, { success: true, voice: result }, 201);
+      return this.sendJson(res, { success: true, voice: result, model: result }, 201);
     } catch (error) {
       return this.handleError(res, error, 'Failed to create custom voice model');
     }

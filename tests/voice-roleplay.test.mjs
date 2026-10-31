@@ -64,6 +64,51 @@ test('VoiceService: sanitizeHttpsUrl strictly enforces https: protocol and expan
   assert.equal(VoiceService.sanitizeHttpsUrl('http://insecure.site/audio.mp3'), null);
 });
 
+test('VoiceService: searchVoices queries public Fish Audio catalog with language=ja even without API key', async () => {
+  const service = new VoiceService(null, null, null);
+  const originalFetch = globalThis.fetch;
+  const prevEnvKey = process.env.FISH_AUDIO_API_KEY;
+  delete process.env.FISH_AUDIO_API_KEY;
+
+  try {
+    let requestedUrls = [];
+    globalThis.fetch = async (url) => {
+      requestedUrls.push(String(url));
+      return new Response(
+        JSON.stringify({
+          total: 2,
+          items: [
+            {
+              _id: '7e25c79e909d4472a123ca2ef2a42ffe',
+              title: 'Kana Arima',
+              description: 'Oshi no Ko character voice',
+              author: { nickname: 'Lua', avatar: 'avatars/lua.png' },
+              cover_image: 'coverimage/kana.png',
+              task_count: 1476,
+              like_count: 8,
+              languages: ['ja'],
+              samples: [{ audio: 'https://public-platform.r2.fish.audio/samples/kana.mp3', text: 'アンタ、バカじゃないの？' }]
+            }
+          ]
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    };
+
+    const res = await service.searchVoices({ query: 'Kana Arima', language: 'ja' });
+    assert.ok(requestedUrls[0].includes('language=ja'), 'Must pass language=ja filter');
+    assert.ok(requestedUrls[0].includes('title=Kana+Arima'), 'Must pass search query as title');
+    assert.equal(res.items.length, 1);
+    assert.equal(res.items[0].title, 'Kana Arima');
+    assert.equal(res.items[0].author, 'Lua');
+    assert.equal(res.items[0].taskCount, 1476);
+    assert.equal(res.items[0].sampleAudio, 'https://public-platform.r2.fish.audio/samples/kana.mp3');
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (prevEnvKey !== undefined) process.env.FISH_AUDIO_API_KEY = prevEnvKey;
+  }
+});
+
 test('Character: validates voiceId with SAFE_VOICE_ID_REGEX', () => {
   const validChar = new Character({
     name: 'Kana Arima',
