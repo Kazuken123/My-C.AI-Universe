@@ -25,6 +25,9 @@
 - **Verification**:
   - `npm test`: **44/44 backend suites passed (100%)**.
   - `npm --prefix nextjs-frontend test`: **18/18 unit tests passed (100%)**.
+  - `npm --prefix nextjs-frontend run lint`: **Passed (`0 errors`)** (escaped `Author&apos;s Default Voice:` in `voice-picker-modal.tsx` for `react/no-unescaped-entities`).
+  - `npm --prefix nextjs-frontend run typecheck`: **Passed (`0 errors`)**.
+  - `npm --prefix nextjs-frontend run build`: **Production Next.js build succeeded (12/12 routes)**.
   - `node scripts/check-syntax.js`: **151/151 JavaScript files passed (100%)**.
   - `graphify update .`: AST knowledge graph refreshed (`2260 nodes, 4933 edges`).
   - `npm run audit:pack`: Repomix package refreshed (`repomix-output.xml`, 5.00 MB, 0 leaks).

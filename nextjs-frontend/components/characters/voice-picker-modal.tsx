@@ -291,7 +291,7 @@ export function VoicePickerModal({
             {/* Author Default Informational Pill */}
             {authorDefaultVoiceName && (
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300">
-                <span className="font-semibold text-purple-200">Author's Default Voice:</span>
+                <span className="font-semibold text-purple-200">Author&apos;s Default Voice:</span>
                 <span>{authorDefaultVoiceName}</span>
                 <span className="text-purple-400/60 ml-auto text-[10px]">Active unless customized for this chat</span>
               </div>
