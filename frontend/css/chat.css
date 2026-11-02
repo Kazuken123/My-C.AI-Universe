@@ -1585,6 +1585,167 @@ kbd {
   border-color: var(--accent);
 }
 
+/* ==========================================================================
+   Chat Stream Skeleton & Reverse Infinite Scroll History Loader
+   ========================================================================== */
+.chat-skeleton-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  animation: orbit-enter 0.3s var(--orbit-ease) both;
+}
+
+.chat-intro-skeleton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 24px;
+  border-bottom: 1px solid var(--border-hairline);
+  margin-bottom: 8px;
+  gap: 12px;
+}
+
+.chat-intro-skeleton .skeleton-avatar-circle {
+  width: 76px;
+  height: 76px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: linear-gradient(110deg, var(--bg-core) 25%, var(--bg-core-elevated) 45%, var(--bg-core) 65%);
+  background-size: 200% 100%;
+  animation: orbit-shimmer 1.8s ease-in-out infinite;
+}
+
+.chat-intro-skeleton .skeleton-line.title {
+  width: 180px;
+  height: 20px;
+  border-radius: 6px;
+  background: linear-gradient(110deg, var(--bg-core) 25%, var(--bg-core-elevated) 45%, var(--bg-core) 65%);
+  background-size: 200% 100%;
+  animation: orbit-shimmer 1.8s ease-in-out infinite;
+}
+
+.chat-intro-skeleton .skeleton-line.sub {
+  width: 260px;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(110deg, var(--bg-core) 25%, var(--bg-core-elevated) 45%, var(--bg-core) 65%);
+  background-size: 200% 100%;
+  animation: orbit-shimmer 1.8s ease-in-out infinite;
+}
+
+.msg-skeleton-row {
+  display: flex;
+  gap: 14px;
+  width: 100%;
+}
+
+.msg-skeleton-row.model {
+  align-items: flex-start;
+}
+
+.msg-skeleton-row.user {
+  flex-direction: row-reverse;
+}
+
+.msg-skeleton-row .skeleton-avatar-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid var(--border-hairline);
+  background: linear-gradient(110deg, var(--bg-core) 25%, var(--bg-core-elevated) 45%, var(--bg-core) 65%);
+  background-size: 200% 100%;
+  animation: orbit-shimmer 1.8s ease-in-out infinite;
+}
+
+.msg-skeleton-bubble {
+  max-width: 70%;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: var(--bg-core-elevated);
+  border: 1px solid var(--border-hairline);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 220px;
+}
+
+.msg-skeleton-row.user .msg-skeleton-bubble {
+  background: var(--accent-subtle, rgba(146, 100, 242, 0.08));
+  border-color: var(--accent-border);
+  border-radius: 18px 5px 18px 18px;
+  align-items: flex-end;
+}
+
+.msg-skeleton-bubble .skeleton-line {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(110deg, var(--bg-core) 25%, var(--bg-core-elevated) 45%, var(--bg-core) 65%);
+  background-size: 200% 100%;
+  animation: orbit-shimmer 1.8s ease-in-out infinite;
+}
+
+.chat-history-loader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 16px;
+  margin-bottom: 6px;
+  width: 100%;
+}
+
+.btn-history-load {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-core-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-hairline);
+  border-radius: 999px;
+  padding: 6px 18px;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s var(--orbit-ease);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+
+.btn-history-load:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--accent-border);
+  transform: translateY(-1px);
+}
+
+.btn-history-load:active {
+  transform: translateY(0);
+}
+
+.chat-history-loader.loading .history-loading-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.loading-spinner-pip {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--border-hairline);
+  border-top-color: var(--accent);
+  animation: orbit-spin 0.8s linear infinite;
+}
+
+@keyframes orbit-spin {
+  to { transform: rotate(360deg); }
+}
+
+
 
 
 

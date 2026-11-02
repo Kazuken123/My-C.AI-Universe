@@ -6,8 +6,33 @@ class ChatsPageApp {
     this.grid = document.getElementById('saved-chats-grid');
   }
 
+    buildSkeletonCards(count = 4) {
+    return Array.from({ length: count }, () => `
+      <div class="bento-cell bento-half">
+        <div class="double-bezel-shell card-shell skeleton-shell">
+          <div class="double-bezel-core cai-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div class="cai-card-top">
+                <div class="cai-avatar-wrap skeleton-box skeleton-avatar-box"></div>
+                <div class="cai-card-info" style="flex: 1;">
+                  <div class="skeleton-line skeleton-title-line"></div>
+                  <div class="skeleton-line skeleton-meta-line"></div>
+                </div>
+              </div>
+              <div class="skeleton-line" style="margin: 14px 0 10px; height: 38px; border-radius: var(--radius-sm);"></div>
+            </div>
+            <div class="cai-card-footer" style="margin-top: 10px;">
+              <span class="skeleton-pill sm"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
   async loadSessions() {
     if (!this.grid) return;
+    this.grid.innerHTML = this.buildSkeletonCards(4);
     try {
       const rawSessions = await api.getChatSessions();
       const sessions = deduplicateSessionsByCharacter(rawSessions);

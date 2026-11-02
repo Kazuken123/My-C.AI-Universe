@@ -1,6 +1,7 @@
 import { BaseAIProvider } from './BaseAIProvider.js';
 import { AIError } from '../errors.js';
 import { config } from '../../config/index.js';
+import { responseAlternativesSchema } from '../prompt/responseAlternatives.js';
 
 /**
  * Concrete Ollama Local AI Provider Class (extends BaseAIProvider)
@@ -23,7 +24,8 @@ export class OllamaProvider extends BaseAIProvider {
         body: JSON.stringify({
           model: config.OLLAMA_MODEL || 'qwen2.5:1.5b',
           prompt,
-          stream: false
+          stream: false,
+          ...(options.labAlternatives ? { format: responseAlternativesSchema(options) } : {})
         }),
         signal: options?.signal,
         timeout: options?.timeout

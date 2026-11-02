@@ -158,6 +158,24 @@
 .orbit-state button { margin: 0 auto; }
 .orbit-skeleton { height: 340px; border-radius: 15px; border: 1px solid var(--border-hairline); background: linear-gradient(110deg, var(--bg-core) 25%, var(--bg-core-elevated) 45%, var(--bg-core) 65%); background-size: 200% 100%; animation: orbit-shimmer 1.8s ease-in-out infinite; }
 @keyframes orbit-shimmer { to { background-position: -200% 0; } }
+
+/* Anatomical Double-Bezel Skeleton Architecture */
+.skeleton-shell { pointer-events: none; user-select: none; opacity: 0.85; }
+.skeleton-shell .cai-card { background: var(--bg-core); }
+.skeleton-box, .skeleton-line, .skeleton-pill, .skeleton-btn-sm {
+  background: linear-gradient(110deg, var(--bg-core) 25%, var(--bg-core-elevated) 45%, var(--bg-core) 65%);
+  background-size: 200% 100%;
+  animation: orbit-shimmer 1.8s ease-in-out infinite;
+}
+.skeleton-avatar-box { border-radius: 12px; border: 1px solid var(--border-hairline); }
+.skeleton-line { height: 12px; border-radius: 6px; margin-bottom: 8px; }
+.skeleton-title-line { width: 65%; height: 16px; margin-top: 4px; }
+.skeleton-meta-line { width: 45%; height: 10px; margin-top: 6px; }
+.skeleton-desc-line { width: 85%; height: 11px; margin-top: 8px; }
+.skeleton-pill { display: inline-block; height: 20px; width: 62px; border-radius: 999px; }
+.skeleton-pill.sm { width: 48px; height: 16px; }
+.skeleton-btn-sm { display: inline-block; width: 72px; height: 30px; border-radius: 10px; }
+
 .orbit-continue { padding-top: 30px; }
 .orbit-continue-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .orbit-continue .cai-card-top { flex-direction: row; gap: 14px; align-items: center; }
@@ -334,7 +352,7 @@
 .orbit-discover .bento-character-grid.character-track { display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: min(330px, 86%); grid-template-rows: 1fr; gap: 14px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: 2px; scrollbar-width: none; padding: 10px 2px 18px; margin: -10px -2px 0; }
 .character-track::-webkit-scrollbar { display: none; }
 .character-track > .bento-cell { scroll-snap-align: start; }
-.character-track:has(.orbit-state), .character-track:not(:has([data-char-card])):not(:has(.orbit-skeleton)) { grid-auto-columns: 100% !important; }
+.character-track:has(.orbit-state), .character-track:not(:has([data-char-card])):not(:has(.orbit-skeleton)):not(:has(.skeleton-shell)) { grid-auto-columns: 100% !important; }
 .character-track .orbit-state { min-height: 210px; }
 .orbit-discover .character-track .card-shell { border-radius: 18px; background: var(--bg-core); }
 .orbit-discover .character-track .card-shell:hover { transform: translateY(-4px); }

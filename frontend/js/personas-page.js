@@ -11,8 +11,31 @@ class PersonasPageApp {
     this.defaultCheck = document.getElementById('personaDefaultCheck');
   }
 
+    buildSkeletonCards(count = 3) {
+    return Array.from({ length: count }, () => `
+      <div class="persona-card-shell double-bezel-shell skeleton-shell">
+        <div class="persona-card-core double-bezel-core">
+          <div class="persona-card-header">
+            <div class="persona-card-meta" style="flex: 1;">
+              <div class="persona-glyph-badge skeleton-box" style="width: 44px; height: 44px; border-radius: 12px;"></div>
+              <div class="persona-card-title-group" style="flex: 1;">
+                <div class="skeleton-line" style="width: 50%; height: 16px;"></div>
+                <div class="skeleton-line" style="width: 30%; height: 10px; margin: 0;"></div>
+              </div>
+            </div>
+          </div>
+          <div class="persona-card-desc" style="margin-top: 12px;">
+            <div class="skeleton-line" style="width: 90%; height: 12px;"></div>
+            <div class="skeleton-line" style="width: 70%; height: 12px; margin: 0;"></div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
   async loadPersonas() {
     if (!this.listEl) return;
+    this.listEl.innerHTML = this.buildSkeletonCards(3);
     try {
       const personas = await api.getPersonas();
       if (!personas || personas.length === 0) {

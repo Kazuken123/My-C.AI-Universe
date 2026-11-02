@@ -354,7 +354,35 @@
 
           <!-- Scrollable Dialogue Stream -->
           <div class="chat-messages-scroll" id="chat-messages-scroll">
-            <div class="chat-stream-inner" id="chat-stream-inner"></div>
+            <div class="chat-stream-inner" id="chat-stream-inner">
+              <div class="chat-skeleton-stream" id="chat-initial-skeleton" aria-hidden="true">
+                <div class="chat-intro-skeleton">
+                  <div class="skeleton-avatar-circle"></div>
+                  <div class="skeleton-line title"></div>
+                  <div class="skeleton-line sub"></div>
+                </div>
+                <div class="msg-skeleton-row model">
+                  <div class="skeleton-avatar-circle"></div>
+                  <div class="msg-skeleton-bubble">
+                    <div class="skeleton-line" style="width: 85%;"></div>
+                    <div class="skeleton-line" style="width: 65%;"></div>
+                  </div>
+                </div>
+                <div class="msg-skeleton-row user">
+                  <div class="skeleton-avatar-circle"></div>
+                  <div class="msg-skeleton-bubble">
+                    <div class="skeleton-line" style="width: 70%;"></div>
+                  </div>
+                </div>
+                <div class="msg-skeleton-row model">
+                  <div class="skeleton-avatar-circle"></div>
+                  <div class="msg-skeleton-bubble">
+                    <div class="skeleton-line" style="width: 90%;"></div>
+                    <div class="skeleton-line" style="width: 55%;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Composer Dock -->

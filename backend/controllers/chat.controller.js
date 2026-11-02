@@ -1,5 +1,6 @@
 import { appraisalService } from '../services/appraisal.service.js';
-import { snapshot, prepareNarrativeState, narrativeContext } from '../services/turn-state.js';
+import { prepareResponseContext } from '../services/response-context.js';
+import { snapshot, prepareNarrativeState } from '../services/turn-state.js';
 import { RELATIONSHIP_MOODS, normalizeRelationshipStage } from '../../frontend/js/relationship-contract.js';
 import { BaseController } from './BaseController.js';
 import { ChatSession, ChatMessage } from '../models/ChatSession.js';
@@ -337,7 +338,7 @@ export class ChatController extends BaseController {
           : (userId ? this.sessionsRepo.findAll(charId, userId).then(arr => arr[0] || null) : Promise.resolve(null)),
         personaId
           ? this.personasRepo.findById(personaId, userId)
-          : this.personasRepo.findDefault(userId)
+          : Promise.resolve(null)
       ]);
 
       if (!character) {
@@ -388,7 +389,7 @@ export class ChatController extends BaseController {
         isNewSession = true;
       }
 
-      if (personaId) session.personaId = personaId;
+      if (personaId && activePersona) session.personaId = activePersona.id;
       if (provider) session.provider = provider;
 
       const pinnedMessages = session.getPinnedMessages().map(m => m.toJSON());
@@ -421,30 +422,14 @@ export class ChatController extends BaseController {
       ]);
 
       const beforeState = snapshot(session);
-      const context = narrativeContext(session, queryForMemory);
-      const appraisal = !regenerate && !isContinue
-        ? await this.appraiser.appraise({ character, session, userText: message.trim(), history: effectiveHistory, memories: context.memories })
-        : null;
-      const evaluatedState = this.relationshipService.evaluateAppraisal({userText:message || '',session,character,appraisal});
-      const aiOptions = {
-        requireComplete: true,
-        appraisalManaged: true,
-        narrativeContext: {...context,scene:appraisal?.scene || context.scene},
-        appraisal,
-        provider: provider ?? resolveStoredProviderName(session.provider),
-        persona: activePersona ? activePersona.toJSON() : null,
-        pinnedMessages,
-        memories: relevantMemories,
-        storySummary,
-        relationship: {
-          affinity: evaluatedState.affinity,
-          trust: evaluatedState.trust,
-          strain: evaluatedState.strain,
-          stage: evaluatedState.relationshipStage,
-          mood: evaluatedState.relationshipMood,
-          dynamic: character.relationshipDynamic
-        }
-      };
+      const personaContext = activePersona ? activePersona.toJSON() : null;
+      const { context, appraisal, evaluatedState, aiOptions } = await prepareResponseContext({
+        userId,
+        character, session, message: message || '', query: queryForMemory, history: effectiveHistory,
+        persona: personaContext, pinnedMessages, memories: relevantMemories, storySummary,
+        provider: provider ?? resolveStoredProviderName(session.provider), evaluate: !regenerate && !isContinue,
+        appraiser: this.appraiser, relationships: this.relationshipService
+      });
 
       // Case 1: Regenerate Swipe Variant
       if (regenerate) {

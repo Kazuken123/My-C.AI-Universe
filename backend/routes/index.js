@@ -6,6 +6,7 @@ import memoryRoutes from './memory.route.js';
 import authRoutes from './auth.route.js';
 import adminRoutes from './admin.route.js';
 import voiceRoutes from './voice.route.js';
+import responseLabRoutes from './response-lab.route.js';
 
 const router = express.Router();
 
@@ -25,5 +26,6 @@ router.use(chatRoutes);
 router.use(personaRoutes);
 router.use(memoryRoutes);
 router.use(voiceRoutes);
+router.use(responseLabRoutes);
 
 export default router;

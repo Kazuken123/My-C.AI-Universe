@@ -1,5 +1,6 @@
 import { generateCharacterPrompt, generateConversationHistory, buildVariationNote } from '../prompt/characterPrompt.js';
 import { config } from '../../config/index.js';
+import { buildResponseAlternativesNote } from '../prompt/responseAlternatives.js';
 
 /**
  * Abstract Base AI Provider Class (OOP Strategy Pattern Base)
@@ -40,8 +41,9 @@ export class BaseAIProvider {
     const conversationHistory = this.buildHistoryText(memory, charName, userName);
     const systemPrompt = this.buildSystemPrompt(character, safeOptions);
     const variationNote = buildVariationNote(memory, charName);
+    const approachNote = buildResponseAlternativesNote(safeOptions);
 
-    return `${systemPrompt}\n\n${conversationHistory}${userName}: ${userMsg}\n\n${variationNote ? variationNote + '\n\n' : ''}${charName}:`;
+    return `${systemPrompt}\n\n${conversationHistory}${userName}: ${userMsg}\n\n${variationNote ? variationNote + '\n\n' : ''}${approachNote ? approachNote + '\n\n' : ''}${charName}:`;
   }
 
   /**

@@ -3,6 +3,7 @@ import { BaseAIProvider } from './BaseAIProvider.js';
 import { AIError } from '../errors.js';
 import { config } from '../../config/index.js';
 import { buildRecencyStageNote, buildVariationNote } from '../prompt/characterPrompt.js';
+import { buildResponseAlternativesNote, responseAlternativesSchema } from '../prompt/responseAlternatives.js';
 
 export const PERMISSIVE_SAFETY_SETTINGS = [
   { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
@@ -100,8 +101,9 @@ export class GeminiProvider extends BaseAIProvider {
     if (mergedTurns.length > 0) {
       const targetName = options.persona?.name || 'User';
       const stageNote = [
-        options.relationship ? buildRecencyStageNote(options.relationship, character, targetName, options.appraisalManaged) : '',
-        buildVariationNote(memory, character.name)
+        options.relationship && options.labPromptVersion !== 'character-v1' ? buildRecencyStageNote(options.relationship, character, targetName, options.appraisalManaged) : '',
+        buildVariationNote(memory, character.name),
+        buildResponseAlternativesNote(options)
       ].filter(Boolean).join('\n');
       if (stageNote) {
         const lastTurn = mergedTurns[mergedTurns.length - 1];
@@ -129,7 +131,7 @@ export class GeminiProvider extends BaseAIProvider {
     const ai = this.#getClient();
     const systemPrompt = sanitizePromptForGemini(this.buildSystemPrompt(character, options));
     const contents = this.#buildContents(memory, userMsg, options, character);
-    const modelsToTry = this.#getModelsToTry();
+    const modelsToTry = options.modelOverride ? [options.modelOverride] : this.#getModelsToTry();
     let lastError = null;
 
     for (let i = 0; i < modelsToTry.length; i++) {
@@ -144,7 +146,10 @@ export class GeminiProvider extends BaseAIProvider {
             contents,
             config: {
               systemInstruction: systemPrompt,
+              ...(options.signal ? { abortSignal: options.signal } : {}),
               temperature: options.isRegenerate ? 0.95 : 0.85,
+              ...(options.timeout ? { httpOptions: { timeout: options.timeout } } : {}),
+              ...(options.labAlternatives ? { responseMimeType: 'application/json', responseJsonSchema: responseAlternativesSchema(options) } : {}),
               safetySettings: PERMISSIVE_SAFETY_SETTINGS
             }
           });
@@ -170,6 +175,7 @@ export class GeminiProvider extends BaseAIProvider {
 
           return text;
         } catch (error) {
+          if (options.signal?.aborted) throw options.signal.reason || error;
           lastError = error;
 
           const isTransientError =

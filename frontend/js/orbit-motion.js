@@ -193,6 +193,31 @@ function createUniverseControls() {
     let frame;
     let statusTimer;
     const cards = () => [...track.querySelectorAll(':scope > .bento-cell:has([data-char-card])')];
+
+    function preloadUpcomingCards() {
+      try {
+        const bounds = typeof track.getBoundingClientRect === 'function' ? track.getBoundingClientRect() : null;
+        const trackRight = bounds ? bounds.right : (track.clientWidth || 800);
+        const allCardEls = cards();
+        for (const card of allCardEls) {
+          if (!card || typeof card.getBoundingClientRect !== 'function') continue;
+          const r = card.getBoundingClientRect();
+          if (r.left <= trackRight + 1400) {
+            const img = card.querySelector ? card.querySelector('img.cai-avatar') : null;
+            if (img) {
+              if (img.loading === 'lazy') img.loading = 'eager';
+              const src = img.src || img.getAttribute?.('src');
+              if (src && typeof Image !== 'undefined') {
+                const pre = new Image();
+                pre.src = src;
+                if (typeof pre.decode === 'function') pre.decode().catch(() => {});
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+
     function update() {
       frame = 0;
       const items = cards();
@@ -212,7 +237,12 @@ function createUniverseControls() {
         if (visible.length) status.textContent = `Characters ${visible[0].index + 1}–${visible.at(-1).index + 1} of ${items.length}`;
       }, 180);
     }
-    function queueUpdate() { if (!frame) frame = requestAnimationFrame(update); }
+    function queueUpdate() {
+      if (!frame) frame = requestAnimationFrame(() => {
+        update();
+        preloadUpcomingCards();
+      });
+    }
     function move(direction) {
       const item = cards()[0];
       if (!item) return;
@@ -221,7 +251,11 @@ function createUniverseControls() {
       track.scrollBy({ left: direction * stride * count, behavior: motionAllowed() ? 'smooth' : 'instant' });
     }
     previous.addEventListener('click', () => move(-1), { signal });
+    previous.addEventListener('pointerenter', preloadUpcomingCards, { signal });
     next.addEventListener('click', () => move(1), { signal });
+    next.addEventListener('pointerenter', preloadUpcomingCards, { signal });
+    next.addEventListener('focus', preloadUpcomingCards, { signal });
+    next.addEventListener('touchstart', preloadUpcomingCards, { passive: true, signal });
     track.addEventListener('scroll', queueUpdate, { passive: true, signal });
     track.addEventListener('keydown', event => {
       if (event.target !== track) return;
@@ -231,6 +265,7 @@ function createUniverseControls() {
     const size = new ResizeObserver(queueUpdate); size.observe(track);
     const content = new MutationObserver(queueUpdate); content.observe(track, { childList: true, attributes: true, attributeFilter: ['aria-busy'] });
     update();
+    preloadUpcomingCards();
     return () => { controller.abort(); size.disconnect(); content.disconnect(); cancelAnimationFrame(frame); clearTimeout(statusTimer); };
   }
   return () => {

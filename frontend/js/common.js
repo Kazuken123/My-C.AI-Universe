@@ -155,6 +155,16 @@ export function deduplicateSessionsByCharacter(sessions = []) {
 export async function initSidebar(activePage = 'discover') {
   initTheme();
   bindSpotlightHover(document.body);
+  const labNav = document.querySelector('.sidebar-nav');
+  if (labNav && !labNav.querySelector('[data-page="response-lab"]')) {
+    const link = document.createElement('a');
+    const sessionId = new URLSearchParams(location.search).get('session');
+    link.href = '/response-lab' + (sessionId ? '?session=' + encodeURIComponent(sessionId) : '');
+    link.className = 'nav-item';
+    link.dataset.page = 'response-lab';
+    link.innerHTML = '<i class="ph-light ph-flask" aria-hidden="true"></i><span>Response Lab</span>';
+    labNav.appendChild(link);
+  }
 
   // Collapsible Sidebar Rail (Linear / Discord UX)
   const sidebar = document.querySelector('.sidebar');

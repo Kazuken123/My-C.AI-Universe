@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Explore character responses, choose what feels right, and build your private preference collection." />
+  <title>Response Lab · My C.AI Universe</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/css/response-lab.css" />
+  <script type="module" src="/js/response-lab.js"></script>
+</head>
+<body class="lab-page">
+  <a class="skip-link" href="#workspace">Skip to workspace</a>
+  <header class="lab-header">
+    <a class="lab-brand" href="/"><img src="/favicon.svg" alt="" width="30" height="30" /> C.AI Universe <span>/</span> <strong>Response Lab</strong></a>
+    <nav aria-label="Main navigation"><a href="/chats">Your chats</a><a href="/personas">Personas</a><span class="private-label">Private workspace</span></nav>
+  </header>
+  <main id="workspace" class="lab-layout">
+    <aside class="setup-panel" aria-label="Lab setup">
+      <div class="section-label">Your workspace</div>
+      <label for="savedLab">Saved labs</label><select id="savedLab"><option value="">New lab</option></select>
+      <button id="newLab" type="button" class="quiet">+ New lab</button>
+      <form id="setupForm">
+        <h2>Set the scene</h2>
+        <label for="sourceChat">Start from</label><select id="sourceChat"><option value="">A fresh scene</option></select>
+        <div id="freshFields">
+          <label for="character">Character</label><select id="character" required></select>
+          <label for="persona">Your persona</label><select id="persona"><option value="">Default persona</option></select>
+          <label for="stage">Relationship</label><select id="stage"><option value="">Character default</option></select>
+        </div>
+        <p id="importHint" class="hint" hidden>A private snapshot of the latest chat. Your original conversation stays intact.</p>
+        <label for="setup">Scene setup <span class="optional">optional</span></label>
+        <textarea id="setup" rows="4" maxlength="4000" placeholder="Where are they? What is happening? What is already established?"></textarea>
+        <label for="labTitle">Lab name <span class="optional">optional</span></label><input id="labTitle" maxlength="100" placeholder="A quiet morning" />
+        <button class="primary" id="createLab" type="submit">Create workspace <span aria-hidden="true">↗</span></button>
+      </form>
+      <section id="labInfo" hidden>
+        <h2 id="labName"></h2>
+        <p id="labIdentity" class="hint"></p>
+        <details><summary>View story context</summary><div id="contextText"></div></details>
+        <label for="savedTrial">Previous prompts</label><select id="savedTrial"><option value="">New prompt</option></select>
+        <button id="exportLab" class="quiet" type="button">Export feedback JSON</button>
+        <details class="delete-panel"><summary>Delete this lab</summary><p class="hint">Removes its test scenes and feedback. Normal chats are unaffected.</p><button id="deleteLab" class="danger" type="button">Delete lab and feedback</button></details>
+      </section>
+      <p class="aside-note">Choose what feels true to the character.<br />No written explanation needed.</p>
+    </aside>
+    <section class="review-panel" aria-label="Response review">
+      <div class="intro"><div class="section-label">Explore / Keep / Challenge</div><h1>Find the response<br /><em>that feels right.</em></h1><p>Your picks advance. Up to five new challengers can join each round after repeated or inconsistent replies are filtered out.</p></div>
+      <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+      <div id="authNotice" class="notice" hidden>Sign in to create a private lab. <a href="/auth?return=/response-lab">Sign in →</a></div>
+      <form id="promptForm">
+        <label for="message">Your next message</label>
+        <textarea id="message" rows="3" maxlength="4000" placeholder="Write the message you want the character to respond to…" required disabled></textarea>
+        <label class="comparison-toggle"><input id="comparePrompts" type="checkbox" /> Start this new prompt with a blind comparison · 10 answers</label>
+        <div class="composer-footer"><span class="hint" id="generationHint">Create a workspace to begin.</span><button id="generate" class="primary" disabled type="submit">Start tournament · 5 answers</button></div>
+      </form>
+      <section id="results" hidden aria-label="Generated alternatives">
+        <div class="results-heading"><div><h2>Choose what moves forward</h2><p id="batchStatus" class="hint" aria-live="polite"></p></div><label class="batch-picker">History <select id="batchSelect" aria-label="Choose round or earlier batch"></select></label></div>
+        <p class="review-instruction">Select every answer you want to keep. ★ marks an optional favorite. “Save &amp; next round” keeps your picks unchanged and tries to add up to five new challengers for this same moment. Only replies that pass the checks appear. Unselected replies are rejected when you save. Unreviewed rounds do not count as feedback.</p>
+        <div id="answers" class="answer-grid"></div>
+        <div class="review-actions">
+          <div><span id="selectionCount">No answers selected</span><span id="saveStatus" class="hint"></span></div>
+          <div class="action-buttons"><button id="more" class="primary" type="button">Save &amp; next round</button><button id="saveChoices" type="button">Save choices only</button><button id="noneFit" type="button">None fit · next round</button><button id="clearFeedback" class="quiet" type="button">Undo saved feedback</button></div>
+          <p id="roundHint" class="hint round-hint"></p>
+        </div>
+      </section>
+      <div id="emptyState" class="empty-state"><span class="empty-symbol" aria-hidden="true">↗</span><h2>A place to explore, not commit.</h2><p>Alternatives stay outside your story until you choose “Continue with this.” Saved choices guide future writing. They do not make events in the examples part of your story.</p></div>
+    </section>
+  </main>
+</body>
+</html>

@@ -148,6 +148,19 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     btnBackToDiscover.addEventListener('click', () => navigateTo('discover'));
   }
 
+  if (scrollWrap) {
+    let scrollCheckTimer;
+    scrollWrap.addEventListener('scroll', () => {
+      if (scrollCheckTimer) return;
+      scrollCheckTimer = setTimeout(() => {
+        scrollCheckTimer = null;
+        if (scrollWrap.scrollTop <= 120 && visibleMessageStartIndex > 0 && !isLoadingOlderHistory) {
+          loadOlderMessages();
+        }
+      }, 80);
+    }, { passive: true });
+  }
+
   /**
    * Stop any active Fish Audio HTMLAudioElement or Browser Speech playback
    */
@@ -992,6 +1005,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
   async function openChatWithCharacter(characterId, sessionId = null) {
     isSending = false;
     stopActiveVoicePlayback();
+    renderChatSkeleton();
     try {
       const [character, charSessions] = await Promise.all([
         api.getCharacter(characterId),
@@ -1079,13 +1093,46 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     }
   }
 
-  function renderChatStream(character, session) {
-    if (!streamInner) return;
-    const avatarUrl = character.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(character.name)}`;
-    const userPersona = appState.personas?.find(p => p.id === session.personaId) || appState.activePersona || { name: 'Traveler', avatar: 'TR' };
-    const userMonogram = getInitials(userPersona.name, 'TR');
+    const CHAT_PAGE_SIZE = 20;
+  let visibleMessageStartIndex = 0;
+  let isLoadingOlderHistory = false;
 
-    const introHtml = `
+  function renderChatSkeleton() {
+    if (!streamInner) return;
+    streamInner.innerHTML = `
+      <div class="chat-skeleton-stream" aria-hidden="true">
+        <div class="chat-intro-skeleton">
+          <div class="skeleton-avatar-circle"></div>
+          <div class="skeleton-line title"></div>
+          <div class="skeleton-line sub"></div>
+        </div>
+        <div class="msg-skeleton-row model">
+          <div class="skeleton-avatar-circle"></div>
+          <div class="msg-skeleton-bubble">
+            <div class="skeleton-line" style="width: 85%;"></div>
+            <div class="skeleton-line" style="width: 65%;"></div>
+          </div>
+        </div>
+        <div class="msg-skeleton-row user">
+          <div class="skeleton-avatar-circle"></div>
+          <div class="msg-skeleton-bubble">
+            <div class="skeleton-line" style="width: 70%;"></div>
+          </div>
+        </div>
+        <div class="msg-skeleton-row model">
+          <div class="skeleton-avatar-circle"></div>
+          <div class="msg-skeleton-bubble">
+            <div class="skeleton-line" style="width: 90%;"></div>
+            <div class="skeleton-line" style="width: 55%;"></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function buildIntroCardHtml(character) {
+    const avatarUrl = character.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(character.name)}`;
+    return `
       <div class="chat-intro-card">
         <img class="chat-intro-avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(character.name)}" />
         <h3>${escapeHtml(character.name)}</h3>
@@ -1095,76 +1142,179 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         </div>
       </div>
     `;
+  }
 
-    const messages = session.messages || [];
-    const lastModelIdx = messages.map(m => m.role).lastIndexOf('model');
+  function buildMessageRowHtml(msg, idx, totalCount, userPersona, character, lastModelIdx) {
+    const avatarUrl = character.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(character.name)}`;
+    const userMonogram = getInitials(userPersona.name, 'TR');
+    const isUser = msg.role === 'user';
+    const senderName = isUser ? userPersona.name : character.name;
+    const variants = Array.isArray(msg.variants) && msg.variants.length > 0
+      ? msg.variants
+      : [{ id: 'v1', text: msg.content }];
+    const selectedIdx = Math.min(msg.selectedVariantIndex || 0, variants.length - 1);
+    const displayContent = variants[selectedIdx]?.text || msg.content;
+    const isLastModel = !isUser && idx === lastModelIdx;
 
-    const messagesHtml = messages.map((msg, idx) => {
-      const isUser = msg.role === 'user';
-      const senderName = isUser ? userPersona.name : character.name;
-      const variants = Array.isArray(msg.variants) && msg.variants.length > 0
-        ? msg.variants
-        : [{ id: 'v1', text: msg.content }];
-      const selectedIdx = Math.min(msg.selectedVariantIndex || 0, variants.length - 1);
-      const displayContent = variants[selectedIdx]?.text || msg.content;
-      const isLastModel = !isUser && idx === lastModelIdx;
-
-      return `
-        <div class="msg-row ${isUser ? 'user' : 'model'}" data-msg-id="${escapeHtml(msg.id)}">
-          ${isUser
-            ? `<div class="msg-avatar">${escapeHtml(userMonogram)}</div>`
-            : `<img class="msg-avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(character.name)}" />`
-          }
-          <div class="msg-body">
-            <div class="msg-sender-line">
-              <span class="msg-sender-name">${escapeHtml(senderName)}</span>
-              ${!isUser ? `<span class="soul-id-badge" style="font-size: 0.6rem; padding: 1px 6px;"><span class="soul-dot"></span>SOUL-ID</span>` : ''}
-              ${msg.isPinned ? `<span class="pin-indicator"><i class="ph-fill ph-push-pin"></i> Pinned</span>` : ''}
-            </div>
-            <div class="msg-bubble" data-bubble-id="${escapeHtml(msg.id)}">${formatRoleplayText(displayContent)}</div>
-            <div class="msg-controls">
-              ${!isUser ? `
-                <div class="variant-swiper">
-                  <button class="swipe-btn" data-swipe-dir="-1" data-msg-id="${escapeHtml(msg.id)}" ${selectedIdx <= 0 ? 'disabled' : ''} type="button" title="Previous Take">
-                    <i class="ph-light ph-caret-left"></i>
-                  </button>
-                  <span class="take-switcher-badge"><i class="ph-light ph-film-slate"></i> Take ${selectedIdx + 1}/${variants.length}</span>
-                  <button class="swipe-btn" data-swipe-dir="1" data-msg-id="${escapeHtml(msg.id)}" ${selectedIdx >= variants.length - 1 ? 'disabled' : ''} type="button" title="Next Take">
-                    <i class="ph-light ph-caret-right"></i>
-                  </button>
-                  ${isLastModel ? `
-                    <button class="swipe-btn" data-regen-msg="${escapeHtml(msg.id)}" type="button" title="Reshoot Take (Synthesize new variant)">
-                      <i class="ph-light ph-arrows-clockwise"></i>
-                    </button>
-                  ` : ''}
-                </div>
-              ` : '<div></div>'}
-              <div class="msg-action-btns">
-                ${!isUser ? `
-                  <button class="msg-tool-btn" data-tts-msg="${escapeHtml(msg.id)}" type="button" title="Speak Line">
-                    <i class="ph-light ph-speaker-high"></i>
+    return `
+      <div class="msg-row ${isUser ? 'user' : 'model'}" data-msg-id="${escapeHtml(msg.id)}">
+        ${isUser
+          ? `<div class="msg-avatar">${escapeHtml(userMonogram)}</div>`
+          : `<img class="msg-avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(character.name)}" />`
+        }
+        <div class="msg-body">
+          <div class="msg-sender-line">
+            <span class="msg-sender-name">${escapeHtml(senderName)}</span>
+            ${!isUser ? `<span class="soul-id-badge" style="font-size: 0.6rem; padding: 1px 6px;"><span class="soul-dot"></span>SOUL-ID</span>` : ''}
+            ${msg.isPinned ? `<span class="pin-indicator"><i class="ph-fill ph-push-pin"></i> Pinned</span>` : ''}
+          </div>
+          <div class="msg-bubble" data-bubble-id="${escapeHtml(msg.id)}">${formatRoleplayText(displayContent)}</div>
+          <div class="msg-controls">
+            ${!isUser ? `
+              <div class="variant-swiper">
+                <button class="swipe-btn" data-swipe-dir="-1" data-msg-id="${escapeHtml(msg.id)}" ${selectedIdx <= 0 ? 'disabled' : ''} type="button" title="Previous Take">
+                  <i class="ph-light ph-caret-left"></i>
+                </button>
+                <span class="take-switcher-badge"><i class="ph-light ph-film-slate"></i> Take ${selectedIdx + 1}/${variants.length}</span>
+                <button class="swipe-btn" data-swipe-dir="1" data-msg-id="${escapeHtml(msg.id)}" ${selectedIdx >= variants.length - 1 ? 'disabled' : ''} type="button" title="Next Take">
+                  <i class="ph-light ph-caret-right"></i>
+                </button>
+                ${isLastModel ? `
+                  <button class="swipe-btn" data-regen-msg="${escapeHtml(msg.id)}" type="button" title="Reshoot Take (Synthesize new variant)">
+                    <i class="ph-light ph-arrows-clockwise"></i>
                   </button>
                 ` : ''}
-                <button class="msg-tool-btn ${msg.isPinned ? 'pinned' : ''}" data-pin-msg="${escapeHtml(msg.id)}" type="button" title="Pin to Context">
-                  <i class="${msg.isPinned ? 'ph-fill ph-push-pin' : 'ph-light ph-push-pin'}"></i>
-                </button>
-                <button class="msg-tool-btn" data-edit-msg="${escapeHtml(msg.id)}" type="button" title="Edit Turn">
-                  <i class="ph-light ph-pencil-simple"></i>
-                </button>
-                <button class="msg-tool-btn" data-rewind-msg="${escapeHtml(msg.id)}" type="button" title="Rewind chat to here">
-                  <i class="ph-light ph-clock-counter-clockwise"></i>
-                </button>
-                <button class="msg-tool-btn" data-copy-msg="${escapeHtml(msg.id)}" type="button" title="Copy text">
-                  <i class="ph-light ph-copy"></i>
-                </button>
               </div>
+            ` : '<div></div>'}
+            <div class="msg-action-btns">
+              ${!isUser ? `
+                <button class="msg-tool-btn" data-tts-msg="${escapeHtml(msg.id)}" type="button" title="Speak Line">
+                  <i class="ph-light ph-speaker-high"></i>
+                </button>
+              ` : ''}
+              <button class="msg-tool-btn ${msg.isPinned ? 'pinned' : ''}" data-pin-msg="${escapeHtml(msg.id)}" type="button" title="Pin to Context">
+                <i class="${msg.isPinned ? 'ph-fill ph-push-pin' : 'ph-light ph-push-pin'}"></i>
+              </button>
+              <button class="msg-tool-btn" data-edit-msg="${escapeHtml(msg.id)}" type="button" title="Edit Turn">
+                <i class="ph-light ph-pencil-simple"></i>
+              </button>
+              <button class="msg-tool-btn" data-rewind-msg="${escapeHtml(msg.id)}" type="button" title="Rewind chat to here">
+                <i class="ph-light ph-clock-counter-clockwise"></i>
+              </button>
+              <button class="msg-tool-btn" data-copy-msg="${escapeHtml(msg.id)}" type="button" title="Copy text">
+                <i class="ph-light ph-copy"></i>
+              </button>
             </div>
           </div>
         </div>
-      `;
-    }).join('');
+      </div>
+    `;
+  }
 
-    streamInner.innerHTML = introHtml + messagesHtml;
+  function loadOlderMessages() {
+    if (isLoadingOlderHistory || visibleMessageStartIndex <= 0) return;
+    const session = appState.activeSession;
+    const character = appState.activeCharacter;
+    if (!session || !character || !scrollWrap) return;
+
+    isLoadingOlderHistory = true;
+    const loader = document.getElementById('chatHistoryLoader');
+    if (loader) {
+      loader.classList.add('loading');
+      loader.innerHTML = `
+        <div class="history-loading-indicator">
+          <span class="loading-spinner-pip"></span>
+          <span>Loading earlier messages...</span>
+        </div>
+      `;
+    }
+
+    requestAnimationFrame(() => {
+      const messages = session.messages || [];
+      const userPersona = appState.personas?.find(p => p.id === session.personaId) || appState.activePersona || { name: 'Traveler', avatar: 'TR' };
+      const lastModelIdx = messages.map(m => m.role).lastIndexOf('model');
+
+      const newStartIndex = Math.max(0, visibleMessageStartIndex - CHAT_PAGE_SIZE);
+      const chunk = messages.slice(newStartIndex, visibleMessageStartIndex);
+
+      const chunkHtml = chunk.map((m, relIdx) => {
+        const absIdx = newStartIndex + relIdx;
+        return buildMessageRowHtml(m, absIdx, messages.length, userPersona, character, lastModelIdx);
+      }).join('');
+
+      const prevScrollHeight = scrollWrap.scrollHeight;
+      const prevScrollTop = scrollWrap.scrollTop;
+
+      const temp = document.createElement('div');
+      temp.innerHTML = chunkHtml;
+      const newRows = Array.from(temp.querySelectorAll(':scope > .msg-row'));
+
+      const insertionRef = loader ? loader.nextSibling : streamInner.firstChild;
+      for (const row of newRows) {
+        streamInner.insertBefore(row, insertionRef);
+      }
+
+      visibleMessageStartIndex = newStartIndex;
+
+      if (visibleMessageStartIndex === 0) {
+        if (loader) {
+          loader.outerHTML = buildIntroCardHtml(character);
+        } else {
+          const introDiv = document.createElement('div');
+          introDiv.innerHTML = buildIntroCardHtml(character);
+          streamInner.insertBefore(introDiv.firstElementChild, streamInner.firstChild);
+        }
+      } else if (loader) {
+        loader.classList.remove('loading');
+        loader.innerHTML = `
+          <button type="button" class="btn-history-load" id="btnLoadMoreHistory">
+            <i class="ph-light ph-clock-counter-clockwise"></i>
+            <span>Load earlier messages (${visibleMessageStartIndex} older turns)</span>
+          </button>
+        `;
+        document.getElementById('btnLoadMoreHistory')?.addEventListener('click', () => loadOlderMessages());
+      }
+
+      bindStreamEvents(character, session);
+
+      // Anchor scroll position
+      const scrollDelta = scrollWrap.scrollHeight - prevScrollHeight;
+      scrollWrap.scrollTop = prevScrollTop + scrollDelta;
+
+      isLoadingOlderHistory = false;
+    });
+  }
+
+  function renderChatStream(character, session) {
+    if (!streamInner) return;
+    const messages = session.messages || [];
+    const userPersona = appState.personas?.find(p => p.id === session.personaId) || appState.activePersona || { name: 'Traveler', avatar: 'TR' };
+    const lastModelIdx = messages.map(m => m.role).lastIndexOf('model');
+
+    if (messages.length <= CHAT_PAGE_SIZE) {
+      visibleMessageStartIndex = 0;
+      const introHtml = buildIntroCardHtml(character);
+      const messagesHtml = messages.map((m, idx) => buildMessageRowHtml(m, idx, messages.length, userPersona, character, lastModelIdx)).join('');
+      streamInner.innerHTML = introHtml + messagesHtml;
+    } else {
+      visibleMessageStartIndex = messages.length - CHAT_PAGE_SIZE;
+      const visibleMessages = messages.slice(visibleMessageStartIndex);
+      const loaderHtml = `
+        <div class="chat-history-loader" id="chatHistoryLoader" data-remaining="${visibleMessageStartIndex}">
+          <button type="button" class="btn-history-load" id="btnLoadMoreHistory">
+            <i class="ph-light ph-clock-counter-clockwise"></i>
+            <span>Load earlier messages (${visibleMessageStartIndex} older turns)</span>
+          </button>
+        </div>
+      `;
+      const messagesHtml = visibleMessages.map((m, relIdx) => {
+        const absIdx = visibleMessageStartIndex + relIdx;
+        return buildMessageRowHtml(m, absIdx, messages.length, userPersona, character, lastModelIdx);
+      }).join('');
+      streamInner.innerHTML = loaderHtml + messagesHtml;
+      document.getElementById('btnLoadMoreHistory')?.addEventListener('click', () => loadOlderMessages());
+    }
+
     scrollToBottom();
     bindStreamEvents(character, session);
   }

@@ -6,6 +6,7 @@ import { compileCharacterSystemPrompt } from '../ai/prompt/characterPrompt.js';
 import { applyTurnStateMigration } from './migrations/20261028-turn-state.js';
 import { applyMemoryPrivacyMigration } from './migrations/20261027-memory-privacy.js';
 import { applyCharacterVoiceMigration } from './migrations/20261030-character-voice.js';
+import { applyResponseLabMigration } from './migrations/20261102-response-lab.js';
 
 const DEFAULT_SQLITE_PATH = path.join(DB_DIR, 'universe.sqlite');
 const SCHEMA_SQL_PATH = path.join(DB_DIR, 'schema.sql');
@@ -269,6 +270,7 @@ export class DatabaseConnection {
     await applyMemoryPrivacyMigration(raw);
     await applyTurnStateMigration(raw);
     await applyCharacterVoiceMigration(raw);
+    await applyResponseLabMigration(raw);
 
     try {
       // Check if characters table is empty

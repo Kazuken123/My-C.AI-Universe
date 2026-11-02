@@ -214,6 +214,7 @@ export class ApplicationServer {
       '/create.html': '/create',
       '/chats.html': '/chats',
       '/personas.html': '/personas',
+      '/response-lab.html': '/response-lab',
       '/auth.html': '/auth',
       '/login.html': '/auth',
       '/profile-setup.html': '/profile-setup',
@@ -274,6 +275,10 @@ export class ApplicationServer {
 
     this.app.get('/personas', (_req, res) => {
       res.sendFile(path.join(frontendDir, 'personas.html'));
+    });
+
+    this.app.get('/response-lab', (_req, res) => {
+      res.sendFile(path.join(frontendDir, 'response-lab.html'));
     });
 
     this.app.get('/characters', (_req, res) => {

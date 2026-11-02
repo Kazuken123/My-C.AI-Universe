@@ -21,3 +21,20 @@ Metrics are English text heuristics, not quality ratings. Action-first and subje
 These eight-turn scenarios are short screening samples. The longer conversations, delayed memory recall, state-edit flows, human ratings and mobile/desktop review in [the Phase 1 quality gate](../../docs/phase1-chat-implementation.md#live-quality-gate-still-required) are still required.
 
 See [the tuning handoff](../../docs/response-quality-tuning.md) for baseline findings and current verification limits.
+
+## Kana reaction diagnosis
+
+These opt-in probes investigate the [2026-11-02 repetitive reaction report](../../docs/kana-response-diagnosis-2026-11-02.md). They do not modify production profiles or conversations.
+
+```powershell
+# Offline: verifies shared relationship context and advisory mood with an injected appraisal.
+node scripts/eval/probe-appraisal-context.mjs
+# Offline: save the four controlled prompt conditions, without model calls.
+node scripts/eval/diagnose-kana.mjs
+# Live: 12 independent generations + 2 appraisal calls, using configured Gemini quota.
+node scripts/eval/diagnose-kana.mjs --live
+# Add 6 generations checking genuine surprise and unresolved hurt.
+node scripts/eval/diagnose-kana.mjs --live --controls
+```
+
+The live probe pins fallback to the configured primary, uses a synthetic adult Kana spouse scenario, and changes stage, mood, or profile separately against a frozen Warm control. It saves prompts, raw replies, fixture and source hashes under `results/kana-causal-probe-*/`. Manually judge explicit unexpectedness and continuity; a blush alone is not a failure. These small samples are not a long-session quality benchmark. The offline probe uses the original defect fixture to verify repaired routing without altering stored mood or score semantics.

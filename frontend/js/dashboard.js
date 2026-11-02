@@ -64,13 +64,56 @@ class DashboardApp {
     `;
   }
 
+  buildSkeletonCards(count = 6) {
+    return Array.from({ length: count }, () => `
+      <div class="bento-cell">
+        <div class="double-bezel-shell card-shell skeleton-shell">
+          <div class="double-bezel-core cai-card">
+            <div class="cai-card-top">
+              <div class="cai-avatar-wrap skeleton-box skeleton-avatar-box"></div>
+              <div class="cai-card-info" style="flex: 1;">
+                <div class="skeleton-line skeleton-title-line"></div>
+                <div class="skeleton-line skeleton-meta-line"></div>
+                <div class="skeleton-line skeleton-desc-line"></div>
+              </div>
+            </div>
+            <div class="cai-card-tags" style="gap: 6px;">
+              <span class="skeleton-pill"></span>
+              <span class="skeleton-pill sm"></span>
+            </div>
+            <div class="cai-card-footer" style="padding-top: 10px;">
+              <span class="skeleton-pill sm"></span>
+              <div class="cai-card-actions">
+                <span class="skeleton-btn-sm"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  preloadCharacterAvatars(chars) {
+    if (!Array.isArray(chars) || !chars.length) return;
+    const slice = chars.slice(0, 10);
+    for (const char of slice) {
+      const rawAvatar = char.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(char.name)}`;
+      const avatarUrl = rawAvatar.startsWith('/assets/avatars/') ? `${rawAvatar}?v=5` : rawAvatar;
+      if (typeof Image !== 'undefined') {
+        const img = new Image();
+        img.src = avatarUrl;
+        if (typeof img.decode === 'function') img.decode().catch(() => {});
+      }
+    }
+  }
+
   async loadCharacters() {
     const requestId = ++this.requestId;
     const status = document.getElementById('roster-status');
     this.discoverGrid?.setAttribute('aria-busy', 'true');
     if (status) status.textContent = 'Finding your next connection…';
-    if (this.discoverGrid && !this.characters.length) {
-      this.discoverGrid.innerHTML = Array.from({ length: 8 }, () => '<div class="orbit-skeleton" aria-hidden="true"></div>').join('');
+    if (this.discoverGrid) {
+      this.discoverGrid.innerHTML = this.buildSkeletonCards(6);
     }
     try {
       const search = this.searchInput?.value.trim() || '';
@@ -85,6 +128,7 @@ class DashboardApp {
       if (requestId !== this.requestId) return;
       this.characters = Array.isArray(characters) ? characters : [];
       this.renderDiscoverGrid(this.characters);
+      this.preloadCharacterAvatars(this.characters);
       if (status) status.textContent = `${this.characters.length} characters. Endless ways to begin.`;
 
     } catch (err) {
@@ -278,6 +322,17 @@ class DashboardApp {
         this.discoverGrid?.scrollTo({ left: 0, behavior: 'instant' });
         this.loadCharacters();
       });
+    }
+
+    const railNextBtn = document.querySelector('[data-rail-next]');
+    if (railNextBtn) {
+      const preloadRemaining = () => {
+        if (this.characters && this.characters.length > 4) {
+          this.preloadCharacterAvatars(this.characters.slice(4));
+        }
+      };
+      railNextBtn.addEventListener('pointerenter', preloadRemaining);
+      railNextBtn.addEventListener('focus', preloadRemaining);
     }
 
     const heroCreateBtn = document.getElementById('hero-create-btn');
