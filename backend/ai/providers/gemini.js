@@ -129,7 +129,7 @@ export class GeminiProvider extends BaseAIProvider {
    */
   async generateReply(character, userMsg, memory = null, options = {}) {
     const ai = this.#getClient();
-    const systemPrompt = sanitizePromptForGemini(this.buildSystemPrompt(character, options));
+    const systemPrompt = sanitizePromptForGemini(this.buildSystemPrompt(character, { ...options, userMsg, memory }));
     const contents = this.#buildContents(memory, userMsg, options, character);
     const modelsToTry = options.modelOverride ? [options.modelOverride] : this.#getModelsToTry();
     let lastError = null;
@@ -231,7 +231,7 @@ export class GeminiProvider extends BaseAIProvider {
    */
   async *generateReplyStream(character, userMsg, memory = null, options = {}) {
     const ai = this.#getClient();
-    const systemPrompt = sanitizePromptForGemini(this.buildSystemPrompt(character, options));
+    const systemPrompt = sanitizePromptForGemini(this.buildSystemPrompt(character, { ...options, userMsg, memory }));
     const contents = this.#buildContents(memory, userMsg, options, character);
     const modelsToTry = this.#getModelsToTry();
     let lastError = null;

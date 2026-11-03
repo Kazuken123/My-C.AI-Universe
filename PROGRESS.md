@@ -1,5 +1,22 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-11-03 - DeepSqueak / PipSqueak 2 Behavior Stack on Gemini Flash-Lite
+
+- **Autonomous Cognitive Subtext Protocol (<thought>...</thought>)**:
+  - Moved internal cognitive and psychological evaluation from response tail to stream head.
+  - LLM now autoregressively conditions visible dialogue and actions on 4 internal dimensions before generating spoken words: Emotion, Hidden Motive, Sensory Grounding, and Unspoken Thought.
+- **Gemini Implicit Prefix Caching Structure**:
+  - Re-architected characterPrompt.js into cache-optimal layers:
+    1. Static Persona and 25 Curated Many-Shot Roleplay Exemplars (manyShotExemplars.js, extracted from winning chosen pairs in kana_dpo_train.jsonl and kana_sft_gemini.jsonl) remain byte-for-byte identical at prompt head to leverage 0-cost implicit prefix caching in Gemini 3.5 / 2.5 Flash-Lite.
+    2. Dynamic Keyword Lorebook (lorebook.js, scanning for B-Komachi, Aqua, Ruby, Baking Soda, etc.), Pinned Memories, and Storyline Chronicle append below static blocks.
+- **Zero-Flicker Stream Sanitization & Thought Extraction**:
+  - Authored createStreamSanitizer in relationship.service.js and wired it into chat.controller.js and gemini.js.
+  - Buffers opening tokens until </thought> is detected, extracting thought subtext into metadata and streaming clean roleplay prose to the UI with 0ms visual leakage.
+  - Tail relationship state ([[REL_STATE:...]]) continues to be parsed and stripped seamlessly.
+- **Verification**:
+  - Authored tests/deepsqueak-behavior-stack.test.js covering stream buffering, thought extraction, lorebook keyword triggers, and prefix-cache ordering (10/10 tests pass).
+  - Full automated regression test suite passes cleanly: 54/54 test files pass, 0 failed.
+
 ## 2026-11-03 - DPO & SFT Training Pipeline & Colab Notebook Generation
 
 - **Dataset Extraction & Structuring**:

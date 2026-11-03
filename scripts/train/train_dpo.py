@@ -12,12 +12,16 @@ from trl import DPOTrainer
 from transformers import TrainingArguments
 
 # 1. Hyperparameters & Configuration
-BASE_MODEL = "unsloth/Llama-3.2-3B-Instruct"  # Fast, highly capable 3B model for roleplay
+# Both unsloth/gemma-2-2b-it-bnb-4bit and unsloth/Llama-3.2-3B-Instruct load without token
+DEFAULT_MODEL = "unsloth/gemma-2-2b-it-bnb-4bit"
+BASE_MODEL = os.environ.get("BASE_MODEL", DEFAULT_MODEL)
 MAX_SEQ_LENGTH = 2048
 LORA_RANK = 16
 OUTPUT_DIR = "kana_dpo_model_output"
 TRAIN_DATA_PATH = "kana_dpo_train.jsonl"
 EVAL_DATA_PATH = "kana_dpo_eval.jsonl"
+HF_TOKEN = os.environ.get("HF_TOKEN", None)
+HF_REPO_NAME = os.environ.get("HF_REPO_NAME", None)
 
 def load_jsonl_dataset(path):
     rows = []
@@ -101,11 +105,32 @@ def main():
     print("Training Complete!")
     print(trainer_stats)
 
-    # 8. Save LoRA Adapters & GGUF (for Ollama / local deployment)
+    # 8. Save Lightweight LoRA Adapter (~40MB)
+    adapter_path = os.path.join(OUTPUT_DIR, "lora_adapter")
+    print(f"\nSaving lightweight LoRA adapter to {adapter_path}...")
+    model.save_pretrained(adapter_path)
+    tokenizer.save_pretrained(adapter_path)
+    print("LoRA adapter saved successfully.")
+
+    # 9. Push to Hugging Face Hub if configured
+    if HF_TOKEN and HF_REPO_NAME:
+        print(f"\nPushing LoRA adapter to Hugging Face: {HF_REPO_NAME}...")
+        try:
+            model.push_to_hub(HF_REPO_NAME, token=HF_TOKEN)
+            tokenizer.push_to_hub(HF_REPO_NAME, token=HF_TOKEN)
+            print("Successfully pushed to Hugging Face Hub!")
+        except Exception as e:
+            print(f"Failed to push to Hugging Face: {e}")
+
+    # 10. Save Merged 16-bit Model
     print(f"\nSaving merged model to {OUTPUT_DIR}/merged_16bit...")
-    model.save_pretrained_merged(f"{OUTPUT_DIR}/merged_16bit", tokenizer, save_method="merged_16bit")
+    try:
+        model.save_pretrained_merged(f"{OUTPUT_DIR}/merged_16bit", tokenizer, save_method="merged_16bit")
+    except Exception as e:
+        print(f"Merged model save skipped: {e}")
     
-    print("\nOptionally exporting GGUF Q4_K_M for Ollama...")
+    # 11. Optionally export GGUF Q4_K_M
+    print("\nOptionally exporting GGUF Q4_K_M...")
     try:
         model.save_pretrained_gguf(f"{OUTPUT_DIR}/gguf", tokenizer, quantization_method="q4_k_m")
         print(f"GGUF exported successfully to {OUTPUT_DIR}/gguf!")

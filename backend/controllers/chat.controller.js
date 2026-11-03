@@ -11,7 +11,7 @@ import {
 } from '../repositories/index.js';
 import { aiOrchestrator } from '../ai/index.js';
 import { memoryService } from '../services/memory.service.js';
-import { relationshipService, createStreamTailFilter } from '../services/relationship.service.js';
+import { relationshipService, createStreamTailFilter, createStreamSanitizer } from '../services/relationship.service.js';
 import { generateDefaultGreeting } from '../ai/prompt/characterPrompt.js';
 import { ValidationError, NotFoundError } from '../ai/errors.js';
 import { SAFE_VOICE_ID_REGEX } from '../models/Character.js';

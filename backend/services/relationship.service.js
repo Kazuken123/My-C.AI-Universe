@@ -236,6 +236,78 @@ export function computeContextualAffinityDelta(args) {
  * Holds back potential tag prefixes at chunk boundaries and suppresses the entire tag when detected.
  * @param {Function} emit - Callback receiving safe text chunks to forward to SSE client
  */
+
+/**
+ * End-to-end stream sanitizer that combines:
+ * 1. Head buffer: catches and suppresses top-of-message <thought>...</thought> blocks from flashing on UI
+ * 2. Tail buffer: catches and suppresses end-of-message [[REL_STATE:...]] tags
+ *
+ * @param {Function} emit - Callback to stream clean prose to client
+ * @param {Function} [onThought] - Optional callback receiving extracted thought string
+ */
+export function createStreamSanitizer(emit, onThought = null) {
+  const tailFilter = createStreamTailFilter(emit);
+  let thoughtBuffer = '';
+  let insideThought = false;
+  let thoughtFinished = false;
+
+  return {
+    push(incomingChunk) {
+      if (!incomingChunk) return;
+
+      if (thoughtFinished) {
+        tailFilter.push(incomingChunk);
+        return;
+      }
+
+      thoughtBuffer += incomingChunk;
+      const lower = thoughtBuffer.toLowerCase();
+      const trimmed = lower.trimStart();
+
+      if (!insideThought) {
+        if (trimmed.startsWith('<thought>') || trimmed.startsWith('<subtext>')) {
+          insideThought = true;
+        } else if (trimmed.startsWith('<') && ('<thought>'.startsWith(trimmed) || '<subtext>'.startsWith(trimmed))) {
+          // Incomplete opening tag, continue buffering
+          return;
+        } else {
+          // No opening thought tag found, release buffer to tailFilter
+          thoughtFinished = true;
+          tailFilter.push(thoughtBuffer);
+          thoughtBuffer = '';
+          return;
+        }
+      }
+
+      // Check for closing </thought> or </subtext>
+      const match = thoughtBuffer.match(/<\/(?:thought|subtext)>/i);
+      if (match) {
+        const closeIndex = match.index + match[0].length;
+        const thoughtText = thoughtBuffer.slice(0, closeIndex);
+        if (typeof onThought === 'function') {
+          onThought(thoughtText);
+        }
+        const remaining = thoughtBuffer.slice(closeIndex).trimStart();
+        thoughtFinished = true;
+        thoughtBuffer = '';
+        if (remaining) {
+          tailFilter.push(remaining);
+        }
+      }
+    },
+    flush() {
+      if (!thoughtFinished && thoughtBuffer) {
+        const clean = thoughtBuffer.replace(/<(?:thought|subtext)>[\s\S]*?(?:<\/(?:thought|subtext)>|$)/gi, '').trimStart();
+        if (clean) {
+          tailFilter.push(clean);
+        }
+        thoughtBuffer = '';
+      }
+      tailFilter.flush();
+    }
+  };
+}
+
 export function createStreamTailFilter(emit) {
   let pendingTail = '';
   let insideRelStateTag = false;
@@ -335,6 +407,11 @@ export class RelationshipService {
    */
   extractAndStripStateTag(rawText = '') {
     const text = String(rawText || '');
+    // 1. Extract thought tag if present
+    const thoughtRegex = /<(?:thought|subtext)>([\s\S]*?)<\/(?:thought|subtext)>/i;
+    const thoughtMatch = text.match(thoughtRegex);
+    const thought = thoughtMatch ? thoughtMatch[1].trim() : null;
+
     const regex = /\[\[REL_STATE:\s*(\{[\s\S]*?\})\s*\]\]/i;
     const match = text.match(regex);
 
@@ -359,11 +436,12 @@ export class RelationshipService {
     }
 
     const cleanText = text
+      .replace(/<(?:thought|subtext)>[\s\S]*?<\/(?:thought|subtext)>/gi, '')
       .replace(/\[\[REL_STATE:\s*\{[\s\S]*?\}\s*\]\]/gi, '')
       .replace(/\[\[REL_STATE:[\s\S]*$/gi, '')
       .trim();
 
-    return { cleanText, llmState };
+    return { cleanText, llmState, thought };
   }
 
   /**
