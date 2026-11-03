@@ -1,5 +1,18 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-11-03 - Governance & Engineering Alignment: Anti-Overconfidence Rules & Production DPO Grounding
+
+- **Root Cause & Accountability**:
+  - Identified and eliminated AI self-justification and overconfidence bias that favored short-term in-context prompt stuffing over production-grade weight fine-tuning.
+  - Formulated and enforced strict epistemic humility and anti-defensiveness directives across both global (~/.gemini/config/GEMINI.md) and project levels (.agents/rules/anti_overconfidence.md, AGENTS.md).
+- **Production Fine-Tuning Grounding (Addressing Integrated Graphics Constraint)**:
+  - Researched human engineering standards for roleplay preference optimization under low-resource / integrated GPU constraints:
+    1. In-context example stuffing incurs cumulative linear token cost, starves long-term chat memory, and induces attention drift across extended roleplay sessions.
+    2. Real production solution: Export pairwise preference data (prompt, chosen, rejected) to Hugging Face TRL DPO format and delegate training to cloud compute (Google Colab with free T4 GPU via Unsloth, or Gemini Tuned Models), requiring 0 local GPU.
+- **Verification**:
+  - Global and project rule files updated and synchronized.
+  - Automated test suite remains 100% clean (53/53 passed).
+
 ## 2026-11-02 - Tournament status reconnects after failed reads
 
 - Read the reported trial's live SQL state: Round 4 started at 09:36:11 UTC, screened out five challengers (three similarity, two grounding), then its replacement generation failed at 09:37:34. It finished ready with the three carried replies and no new challengers. Server logs reported Gemini HTTP 503 high demand. Desktop inspection found the round already finished; the screenshot alone does not establish an indefinitely running worker or a specific failed poll. Evidence is in `.codex/stuck-generation-diagnostic.json`.

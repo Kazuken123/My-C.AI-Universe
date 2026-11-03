@@ -13,3 +13,8 @@ Canonical 5-role vocabulary. See `docs/agents/triage-labels.md`.
 ### Domain docs
 
 Single-context (`GLOSSARY.md` + `docs/adr/`). See `docs/agents/domain.md`.
+
+### Engineering Invariants & Mindset
+
+Anti-overconfidence, epistemic humility & production realism rules. See `.agents/rules/anti_overconfidence.md`.
+
