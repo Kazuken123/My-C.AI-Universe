@@ -65,8 +65,18 @@ export class GeminiProvider extends BaseAIProvider {
       for (const msg of memory) {
         if (!msg || !msg.content || !msg.content.trim()) continue;
         const role = msg.role === 'user' ? 'user' : 'model';
-        const cleanText = sanitizePromptForGemini(msg.content.trim());
-        rawTurns.push({ role, text: cleanText });
+        let rawContent = msg.content;
+        if (role === 'model') {
+          // Multi-Turn Rule: Pass only clean visible reply in conversation history, never thought tags
+          rawContent = rawContent
+            .replace(/<(?:thought|subtext)>[\s\S]*?<\/(?:thought|subtext)>/gi, '')
+            .replace(/\[\[REL_STATE:[\s\S]*?\]\]/gi, '')
+            .trim();
+        }
+        const cleanText = sanitizePromptForGemini(rawContent.trim());
+        if (cleanText) {
+          rawTurns.push({ role, text: cleanText });
+        }
       }
     }
 

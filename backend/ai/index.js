@@ -1,4 +1,4 @@
-import { geminiProvider, ollamaProvider } from './providers/index.js';
+import { geminiProvider, ollamaProvider, modalGemmaProvider } from './providers/index.js';
 import { normalizeProviderName } from './providerSelection.js';
 
 /**
@@ -9,7 +9,8 @@ export class AIOrchestrator {
   constructor() {
     this.providers = new Map([
       ['gemini', geminiProvider],
-      ['ollama', ollamaProvider]
+      ['ollama', ollamaProvider],
+      ['modal_gemma', modalGemmaProvider]
     ]);
     this.requestQueue = [];
     this.isProcessing = false;

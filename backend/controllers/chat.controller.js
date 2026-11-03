@@ -579,12 +579,13 @@ Rules:
 - Do not repeat your previous words. Only speak and act as ${character.name}.`;
 
         const rawReply = await this.orchestrator.chat(character.toJSON(), continuationPrompt, effectiveHistory, aiOptions);
-        const { cleanText } = this.relationshipService.extractAndStripStateTag(rawReply);
+        const { cleanText, llmState, thought } = this.relationshipService.extractAndStripStateTag(rawReply);
 
         if (!cleanText.trim()) throw new Error('Empty character response');
         const newAiMsg = session.addMessage({
           role: 'model',
-          content: cleanText
+          content: cleanText,
+          metadata: { internalThought: thought || null }
         });
         session.touch();
         session.pendingEvent = {kind:'continuation',position:session.messages.length-1,messageId:newAiMsg.id,before:beforeState};
@@ -635,16 +636,22 @@ Rules:
         });
 
         let fullReply = '';
-        const tailFilter = createStreamTailFilter((safeChunk) => {
-          res.write(`data: ${JSON.stringify({ token: safeChunk })}\n\n`);
-        });
+        let streamedThought = '';
+        const sanitizer = createStreamSanitizer(
+          (safeChunk) => {
+            res.write(`data: ${JSON.stringify({ token: safeChunk })}\n\n`);
+          },
+          (thought) => {
+            streamedThought = thought;
+          }
+        );
 
         try {
           for await (const chunk of this.orchestrator.chatStream(character.toJSON(), message.trim(), effectiveHistory, aiOptions)) {
             fullReply += chunk;
-            tailFilter.push(chunk);
+            sanitizer.push(chunk);
           }
-          tailFilter.flush();
+          sanitizer.flush();
         } catch (streamErr) {
           console.warn('[CHAT CONTROLLER] Streaming fallback:', streamErr.message);
           if (fullReply) throw streamErr;
@@ -655,13 +662,14 @@ Rules:
           }
         }
 
-        const { cleanText, llmState } = this.relationshipService.extractAndStripStateTag(fullReply);
+        const { cleanText, llmState, thought } = this.relationshipService.extractAndStripStateTag(fullReply);
 
         if (!cleanText.trim()) throw new Error("Empty character response");
 
         const aiMsgObj = session.addMessage({
           role: 'model',
-          content: cleanText || '...'
+          content: cleanText || '...',
+          metadata: { internalThought: thought || streamedThought || null }
         });
         session.touch();
 
@@ -688,13 +696,14 @@ Rules:
       });
 
       const rawReply = await this.orchestrator.chat(character.toJSON(), message.trim(), effectiveHistory, aiOptions);
-      const { cleanText, llmState } = this.relationshipService.extractAndStripStateTag(rawReply);
+      const { cleanText, llmState, thought } = this.relationshipService.extractAndStripStateTag(rawReply);
 
       if (!cleanText.trim()) throw new Error("Empty character response");
 
       const aiMsgObj = session.addMessage({
         role: 'model',
-        content: cleanText
+        content: cleanText,
+        metadata: { internalThought: thought || null }
       });
       session.touch();
 

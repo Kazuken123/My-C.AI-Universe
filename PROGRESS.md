@@ -1,5 +1,33 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-11-04 - Gemma 4 Cloud Fine-Tuning Pipeline & Modal Serverless Provider
+
+- **Unsloth Gemma 4 Thinking Dataset Pipeline**:
+  - Authored `cloud_training/prepare_gemma4_data.js` converting `kana_sft_gemini.jsonl` and `kana_dpo_train.jsonl` into Unsloth Gemma 4 Thinking format.
+  - Generated `cloud_training/gemma4_sft.jsonl` (19 turns), `cloud_training/gemma4_dpo_train.jsonl` (305 pairs), and `cloud_training/gemma4_dpo_eval.jsonl` (33 holdout pairs).
+  - Enforced 4-part internal `<thought>` tracking (`Emotional State`, `Hidden Subtext`, `Sensory & Scene Anchor`, `Recalled Memory`) at the start of assistant replies.
+- **Kaggle 2x T4 Fine-Tuning Script (`cloud_training/kaggle_unsloth_gemma4.py`)**:
+  - Uses `unsloth/gemma-4-12B-it` with 4-bit QLoRA and `finetune_vision_layers = False`.
+  - Configures `chat_template = "gemma-4-thinking"` and strips duplicate `<bos>` with `.removeprefix('<bos>')`.
+  - Applies response-only loss masking with `train_on_responses_only(trainer, instruction_part="<|turn>user\n", response_part="<|turn>model\n")`.
+  - Pushes LoRA adapters and 4-bit GGUF directly to Hugging Face Hub using `push_to_hub_merged` and `push_to_hub_gguf`, strictly staying below Kaggle's 20GB `/kaggle/working` disk limit.
+- **Modal Serverless Deployment (`cloud_training/modal_gemma4_server.py`)**:
+  - Deploys vLLM serverless container on Modal GPU (T4 / A10G) exposing OpenAI-compatible `/v1/chat/completions`, `/v1/models`, and `/health`.
+  - Configures scale-to-zero billing (`scaledown_window = 300` - shuts down after 5 minutes idle for 0 cost).
+  - Protected with Bearer token authentication via `MODAL_API_KEY`.
+- **Modal Gemma Provider (`backend/ai/providers/modalGemma.js`)**:
+  - Provider switch `modal_gemma` inheriting from `BaseAIProvider`.
+  - Enforces Google recommended Gemma 4 sampling parameters: `temperature: 1.0`, `top_p: 0.95`, `top_k: 64`.
+  - Implements multi-turn history sanitization (stripping historical `<thought>` tags before sending to upstream API).
+  - Registered in `backend/ai/index.js` and `backend/ai/providerSelection.js`.
+- **Collapsed Sidebar Button & Cache Busting**:
+  - Bumped static assets in `frontend/chat.html` to `?v=2.7.0`.
+  - Reinforced high-contrast icon visibility for collapsed `.sidebar-quick-chat-btn` across Higgsfield and other themes.
+- **Verification**:
+  - Authored `tests/gemma4-cloud-pipeline.test.js` covering dataset generation, Kaggle script invariants, Modal serverless config, and provider history sanitization (4/4 tests pass).
+  - Full test suite passes: 56/56 test files pass, 0 failed.
+  - Checked syntax across 186/186 JavaScript files cleanly.
+
 ## 2026-11-03 - Chat User Feedback, Auto-Agreement & Collapsed Sidebar Plus Icon Fix
 
 - **Admin-Gated Response Lab Access**:
