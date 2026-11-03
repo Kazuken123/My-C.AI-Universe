@@ -1,0 +1,16 @@
+{
+  "createdAt": "2026-11-03T10:10:11.839Z",
+  "character": "Kana Arima",
+  "totalContextGroups": 8,
+  "totalDpoPairs": 359,
+  "dpoTrainPairs": 338,
+  "dpoEvalPairs": 21,
+  "totalSftExamples": 19,
+  "evalHoldoutContext": "0117014684f66038fc790d4d8ab6dcef1079232ead2007634697adade784f9a8",
+  "files": {
+    "dpoAll": "data/training/kana_dpo_all.jsonl",
+    "dpoTrain": "data/training/kana_dpo_train.jsonl",
+    "dpoEval": "data/training/kana_dpo_eval.jsonl",
+    "sftGemini": "data/training/kana_sft_gemini.jsonl"
+  }
+}

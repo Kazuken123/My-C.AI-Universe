@@ -1,5 +1,17 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-11-03 - DPO & SFT Training Pipeline & Colab Notebook Generation
+
+- **Dataset Extraction & Structuring**:
+  - Built scripts/eval/prepare-fine-tuning-data.mjs to extract 359 pairwise preference samples from Tournament evaluations.
+  - Generated data/training/kana_dpo_train.jsonl (338 training pairs) and data/training/kana_dpo_eval.jsonl (21 holdout eval pairs) formatted for Hugging Face TRL and Unsloth.
+  - Generated data/training/kana_sft_gemini.jsonl (19 examples) formatted for Google Gemini Tuned Models.
+- **Cloud Training Infrastructure (0% Local GPU Needed)**:
+  - Authored notebooks/train_kana_dpo_colab.ipynb for one-click training on Google Colab free T4 GPU using Unsloth (unsloth/Llama-3.2-3B-Instruct or Qwen-2.5).
+  - Authored scripts/train/train_dpo.py and scripts/train/tune-gemini.mjs.
+- **Verification**:
+  - 180/180 JavaScript files verified clean with scripts/check-syntax.js.
+
 ## 2026-11-03 - Governance & Engineering Alignment: Anti-Overconfidence Rules & Production DPO Grounding
 
 - **Root Cause & Accountability**:
