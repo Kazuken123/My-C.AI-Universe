@@ -199,7 +199,7 @@ export class ApplicationServer {
         .replace(/\/+/g, '/')
         .replace(/[.\s]+$/, '');
 
-      if (/^\/(admin(\.html)?|js\/admin-page\.js|css\/admin\.css)$/i.test(normalizedPath)) {
+      if (/^\/(admin(\.html)?|js\/admin-page\.js|css\/admin\.css|response-lab(\.html)?)$/i.test(normalizedPath)) {
         return requireAdminWebAccess(req, res, next);
       }
       next();
@@ -277,7 +277,7 @@ export class ApplicationServer {
       res.sendFile(path.join(frontendDir, 'personas.html'));
     });
 
-    this.app.get('/response-lab', (_req, res) => {
+    this.app.get(['/response-lab', '/response-lab.html'], requireAdminWebAccess, (_req, res) => {
       res.sendFile(path.join(frontendDir, 'response-lab.html'));
     });
 

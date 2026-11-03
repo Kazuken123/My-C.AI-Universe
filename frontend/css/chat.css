@@ -472,6 +472,24 @@
   color: var(--accent);
 }
 
+.msg-tool-btn.liked {
+  color: #4ade80 !important;
+}
+
+.msg-tool-btn.liked:hover {
+  background: rgba(74, 222, 128, 0.15) !important;
+  border-color: rgba(74, 222, 128, 0.35) !important;
+}
+
+.msg-tool-btn.disliked {
+  color: #f87171 !important;
+}
+
+.msg-tool-btn.disliked:hover {
+  background: rgba(248, 113, 113, 0.15) !important;
+  border-color: rgba(248, 113, 113, 0.35) !important;
+}
+
 /* Bottom Message Composer */
 .chat-composer-wrap {
   padding: 12px 20px 18px;

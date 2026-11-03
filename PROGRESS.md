@@ -1,5 +1,22 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-11-03 - Chat User Feedback, Auto-Agreement & Collapsed Sidebar Plus Icon Fix
+
+- **Admin-Gated Response Lab Access**:
+  - Scoped Response Lab sidebar navigation link strictly to admin users (currentUser.role === 'admin') in frontend/js/common.js.
+  - Added redirect to / for non-admin visitors in frontend/js/response-lab.js.
+  - Enforced requireAdminWebAccess on server routes ['/response-lab', '/response-lab.html'] in server.js.
+- **Collapsed Sidebar "Start new story" Button Fix**:
+  - Fixed white/lavender button blanking by styling .sidebar.collapsed .sidebar-cta-wrap .btn-island with background: var(--accent) !important and .btn-island-icon i with color: var(--text-on-accent) !important; font-size: 1.25rem !important.
+  - Ensured the + icon remains centered, crisp, and high-contrast across all themes (Higgsfield, Editorial, Telemetry, Default).
+  - Synchronized orbit.css identically between Express frontend/css/orbit.css and Next.js nextjs-frontend/app/orbit.css.
+- **Chat User Feedback & Auto-Agreement**:
+  - Added Like (thumbs up, rating 4) and Dislike (thumbs down, rating 1) action buttons to character message rows in frontend/js/chat.js and frontend/css/chat.css.
+  - Implemented auto-agreement in backend/controllers/chat.controller.js and frontend/js/chat.js: when a user generates multiple takes, stops regenerating, and progresses the scene (by sending a new message or clicking continue), the chosen take is automatically recorded as agreed (rating = 4), without overwriting explicit dislikes.
+- **Verification**:
+  - Authored tests/chat-feedback-and-access.test.js covering access control, collapsed button visibility, rating mutations, and auto-agreement (5/5 tests pass).
+  - Full automated regression test suite passes cleanly: 55/55 test files pass, 0 failed.
+
 ## 2026-11-03 - DeepSqueak / PipSqueak 2 Behavior Stack on Gemini Flash-Lite
 
 - **Autonomous Cognitive Subtext Protocol (<thought>...</thought>)**:

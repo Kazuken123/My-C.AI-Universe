@@ -549,6 +549,15 @@ ${existingVariants.length > 0 ? `- Do NOT repeat previous takes:\n${existingVari
         });
       }
 
+      // Auto-record agreement on chosen take when user stops regenerating and progresses scene
+      if (session && Array.isArray(session.messages)) {
+        const prevModelMsg = session.messages.slice().reverse().find(m => m.role === 'model');
+        if (prevModelMsg && Array.isArray(prevModelMsg.variants) && prevModelMsg.variants.length > 1 && !prevModelMsg.rating) {
+          prevModelMsg.rating = 4;
+          await this.sessionsRepo.db.prepare('UPDATE chat_messages SET rating = 4 WHERE id = ? AND session_id = ?').run(prevModelMsg.id, session.id);
+        }
+      }
+
       // Case 2: Scene Continuation
       if (isContinue) {
         const lastSessionMsg = session.messages.length > 0 ? session.messages[session.messages.length - 1] : null;
@@ -599,7 +608,7 @@ Rules:
       }
 
       // Case 3: Standard User Chat Turn
-      const isStreaming = req.query.stream === 'true' || req.headers.accept === 'text/event-stream';
+      const isStreaming = req.query?.stream === 'true' || req.headers?.accept === 'text/event-stream';
 
       const commitState = (userMsgObj, aiMsgObj) => {
         Object.assign(session, evaluatedState);

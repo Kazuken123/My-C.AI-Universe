@@ -1188,6 +1188,12 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
             ` : '<div></div>'}
             <div class="msg-action-btns">
               ${!isUser ? `
+                <button class="msg-tool-btn msg-like-btn ${msg.rating === 4 ? 'liked' : ''}" data-like-msg="${escapeHtml(msg.id)}" type="button" title="${msg.rating === 4 ? 'Remove like' : 'Good response'}">
+                  <i class="${msg.rating === 4 ? 'ph-fill ph-thumbs-up' : 'ph-light ph-thumbs-up'}"></i>
+                </button>
+                <button class="msg-tool-btn msg-dislike-btn ${msg.rating === 1 ? 'disliked' : ''}" data-dislike-msg="${escapeHtml(msg.id)}" type="button" title="${msg.rating === 1 ? 'Remove dislike' : 'Bad response'}">
+                  <i class="${msg.rating === 1 ? 'ph-fill ph-thumbs-down' : 'ph-light ph-thumbs-down'}"></i>
+                </button>
                 <button class="msg-tool-btn" data-tts-msg="${escapeHtml(msg.id)}" type="button" title="Speak Line">
                   <i class="ph-light ph-speaker-high"></i>
                 </button>
@@ -1390,6 +1396,60 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       });
     });
 
+    streamInner.querySelectorAll('[data-like-msg]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const msgId = btn.dataset.likeMsg;
+        const msg = session.messages.find(m => m.id === msgId);
+        if (!msg) return;
+        const newRating = msg.rating === 4 ? 0 : 4;
+        msg.rating = newRating;
+        btn.classList.toggle('liked', newRating === 4);
+        btn.title = newRating === 4 ? 'Remove like' : 'Good response';
+        const icon = btn.querySelector('i');
+        if (icon) icon.className = newRating === 4 ? 'ph-fill ph-thumbs-up' : 'ph-light ph-thumbs-up';
+        const dislikeBtn = streamInner.querySelector(`[data-dislike-msg="${msgId}"]`);
+        if (dislikeBtn) {
+          dislikeBtn.classList.remove('disliked');
+          dislikeBtn.title = 'Bad response';
+          const disIcon = dislikeBtn.querySelector('i');
+          if (disIcon) disIcon.className = 'ph-light ph-thumbs-down';
+        }
+        try {
+          await api.updateChatMessage(session.id, msgId, { rating: newRating });
+          showToast(newRating === 4 ? 'Marked response as good.' : 'Removed response rating.');
+        } catch (err) {
+          showToast(err.message);
+        }
+      });
+    });
+
+    streamInner.querySelectorAll('[data-dislike-msg]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const msgId = btn.dataset.dislikeMsg;
+        const msg = session.messages.find(m => m.id === msgId);
+        if (!msg) return;
+        const newRating = msg.rating === 1 ? 0 : 1;
+        msg.rating = newRating;
+        btn.classList.toggle('disliked', newRating === 1);
+        btn.title = newRating === 1 ? 'Remove dislike' : 'Bad response';
+        const icon = btn.querySelector('i');
+        if (icon) icon.className = newRating === 1 ? 'ph-fill ph-thumbs-down' : 'ph-light ph-thumbs-down';
+        const likeBtn = streamInner.querySelector(`[data-like-msg="${msgId}"]`);
+        if (likeBtn) {
+          likeBtn.classList.remove('liked');
+          likeBtn.title = 'Good response';
+          const likeIcon = likeBtn.querySelector('i');
+          if (likeIcon) likeIcon.className = 'ph-light ph-thumbs-up';
+        }
+        try {
+          await api.updateChatMessage(session.id, msgId, { rating: newRating });
+          showToast(newRating === 1 ? 'Marked response as bad.' : 'Removed response rating.');
+        } catch (err) {
+          showToast(err.message);
+        }
+      });
+    });
+
     streamInner.querySelectorAll('[data-pin-msg]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const msgId = btn.dataset.pinMsg;
@@ -1482,10 +1542,27 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     }
   }
 
+  function autoAgreePreviousTakes() {
+    if (!appState.activeSession?.messages) return;
+    const msgs = appState.activeSession.messages;
+    const lastModel = msgs.slice().reverse().find(m => m.role === 'model');
+    if (lastModel && Array.isArray(lastModel.variants) && lastModel.variants.length > 1 && !lastModel.rating) {
+      lastModel.rating = 4;
+      const likeBtn = streamInner?.querySelector(`[data-like-msg="${lastModel.id}"]`);
+      if (likeBtn) {
+        likeBtn.classList.add('liked');
+        likeBtn.title = 'Remove like';
+        const icon = likeBtn.querySelector('i');
+        if (icon) icon.className = 'ph-fill ph-thumbs-up';
+      }
+    }
+  }
+
   async function sendUserMessage(text) {
     const character = appState.activeCharacter;
     const session = appState.activeSession;
     if (!character || !session) return;
+    autoAgreePreviousTakes();
 
     if (text.startsWith('/update ')) {
       isSending = true;
@@ -1757,6 +1834,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
   async function handleContinueScene() {
     if (isSending || !appState.activeCharacter || !appState.activeSession) return;
+    autoAgreePreviousTakes();
     const character = appState.activeCharacter;
     const session = appState.activeSession;
     const messages = session.messages || [];

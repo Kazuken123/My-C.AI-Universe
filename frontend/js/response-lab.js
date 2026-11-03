@@ -268,7 +268,11 @@ $('exportLab').addEventListener('click', () => action(async () => {
 $('deleteLab').addEventListener('click', () => action(async () => { await req(`/labs/${encodeURIComponent(lab.id)}`, 'DELETE'); lab = null; trial = null; trials = []; setUrl(); await refreshList(); renderLab(); notice('Lab deleted.', true); }));
 async function init() {
   if (!api.getToken()) { $('authNotice').hidden = false; $('setupForm').hidden = true; $('createLab').disabled = true; return; }
-  await api.getMe();
+  const me = await api.getMe();
+  if (!me || me.role !== 'admin') {
+    window.location.replace('/');
+    return;
+  }
   const [characters, personas, chats] = await Promise.all([api.getCharacters(), api.getPersonas(), api.getChatSessions()]);
   $('character').innerHTML = characters.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
   $('persona').innerHTML += personas.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
