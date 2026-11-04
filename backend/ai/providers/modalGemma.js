@@ -21,6 +21,8 @@ export class ModalGemmaProvider extends BaseAIProvider {
 
   get endpointUrl() {
     return (
+      process.env.MODAL_GEMMA_ENDPOINT ||
+      process.env.MODAL_ENDPOINT_URL ||
       process.env.MODAL_GEMMA_URL ||
       process.env.MODAL_API_URL ||
       'https://your-workspace--cai-gemma4-serverless-fastapi-app.modal.run'

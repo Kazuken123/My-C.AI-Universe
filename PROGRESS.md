@@ -1,5 +1,31 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-11-04 - Hybrid Per-Character Routing (Kana on Fine-Tuned Gemma 4, Others on Many-Shot Gemini 3.5 Flash-Lite)
+
+- **Hybrid Model Routing (`backend/ai/providerSelection.js`, `backend/ai/index.js`, `backend/controllers/chat.controller.js`)**:
+  - Implemented `resolveProviderForCharacter(character, requestedProvider)` supporting dynamic character-based LLM routing.
+  - **Kana Arima (`1766394139616` / name contains 'kana')**: Automatically routes to `modal_gemma` when `MODAL_GEMMA_ENDPOINT` or `MODAL_ENDPOINT_URL` is configured; otherwise falls back to `gemini`.
+  - **Connection Resilience**: `AIOrchestrator` automatically falls back from `modal_gemma` to `gemini` on connection or cold-start errors, guaranteeing zero conversational disruption.
+  - **Other 6 Characters & Custom Entities**: Satoru Gojo, Frieren, Sherlock Holmes, Robin, Son Goku, and Math Teacher always route to `gemini` (Gemini 3.5 Flash-Lite) unless the request explicitly specifies an allowed alternative provider (e.g., `ollama`).
+  - Preserved 100% purity of `cloud_training/gemma4_sft.jsonl`, `gemma4_dpo_train.jsonl`, and `gemma4_dpo_eval.jsonl` strictly for Kana Arima.
+- **Multi-Character Dynamic Lorebooks (`backend/ai/prompt/lorebooks/`, `backend/ai/prompt/lorebook.js`)**:
+  - Maintained `kanaLorebook.json` 100% intact for Kana Arima.
+  - Authored structured keyword-triggered Lorebooks for the other 6 characters in `backend/ai/prompt/lorebooks/`:
+    - `gojoLorebook.json`: Limitless, Six Eyes, Hollow Purple, Infinite Void, Geto, Yuji, Megumi, Sukuna, Jujutsu High.
+    - `frierenLorebook.json`: Himmel, Heiter, Eisen, Fern, Stark, Zoltraak, grimoire, Aura, Aureole, Demon King.
+    - `holmesLorebook.json`: 221B Baker Street, Watson, Mrs. Hudson, Moriarty, Mycroft, Lestrade, Mind Palace, deduction, violin.
+    - `robinLorebook.json`: Penacony, Harmony, Xipe, Sunday, Halovian, Oak Family, Charmony Festival, Dreamscape.
+    - `gokuLorebook.json`: Vegeta, Gohan, Chi-Chi, Krillin, Piccolo, Kamehameha, Super Saiyan, Ultra Instinct, Senzu Bean.
+    - `mathTeacherLorebook.json`: proof, calculus, derivative, integral, linear algebra, matrix, probability, equation (with pedagogical step-by-step guidance).
+  - Enhanced `resolveLorebookEntries` to resolve by character ID, name, or character object with word-boundary regex scanning.
+- **Universal & Per-Character Many-Shot Exemplars (`backend/ai/prompt/manyShotExemplars.js`)**:
+  - Preserved `KANA_ARIMA_MANY_SHOT_EXEMPLARS` (25 gold-standard exemplars) 100% intact.
+  - Replaced empty string fallback with `UNIVERSAL_ROLEPLAY_EXEMPLARS` and calibrated character-specific exemplars (`GOJO_MANY_SHOT_EXEMPLARS`, `FRIEREN_MANY_SHOT_EXEMPLARS`, `HOLMES_MANY_SHOT_EXEMPLARS`, `ROBIN_MANY_SHOT_EXEMPLARS`, `GOKU_MANY_SHOT_EXEMPLARS`, `MATH_TEACHER_MANY_SHOT_EXEMPLARS`).
+  - Enforced 4-field `<thought>` structure (`Emotional State`, `Hidden Subtext`, `Sensory & Scene Anchor`, `Recalled Memory`) and `[STYLE & FORMAT DEMONSTRATION ONLY — Do Not Copy Character Identity]` banner across all non-Kana exemplars to maximize Gemini Implicit Prefix Caching.
+- **Verification**:
+  - Authored `tests/hybrid-per-character-routing.test.js` covering model routing, endpoint detection, automatic fallback, keyword lorebook triggers, and exemplar generation (17/17 tests pass).
+  - Full automated regression test suite passes cleanly: 57/57 test files pass, 0 failed.
+
 ## 2026-11-04 - Gemma 4 Cloud Fine-Tuning Pipeline & Modal Serverless Provider
 
 - **Unsloth Gemma 4 Thinking Dataset Pipeline**:

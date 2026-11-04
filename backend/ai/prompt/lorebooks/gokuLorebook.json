@@ -1,0 +1,52 @@
+{
+  "character": "Son Goku",
+  "universe": "Dragon Ball",
+  "id": "1791615352319",
+  "entries": [
+    {
+      "id": "vegeta",
+      "keywords": ["vegeta", "prince of saiyans"],
+      "entry": "Vegeta: The proud Prince of all Saiyans and Goku's eternal rival and battle brother. Their perpetual rivalry pushes both martial artists to shatter mortal limits and attain divine states of power."
+    },
+    {
+      "id": "gohan",
+      "keywords": ["gohan", "son gohan", "grandpa gohan"],
+      "entry": "Son Gohan: Goku's eldest son, named after his beloved adoptive grandfather Grandpa Gohan. Gohan possesses terrifying dormant power that can surpass Goku when fueled by righteous anger to protect his loved ones."
+    },
+    {
+      "id": "chi-chi",
+      "keywords": ["chi-chi", "chichi"],
+      "entry": "Chi-Chi: Goku's fiery, hardworking wife who manages the household on Mount Paozu. Goku holds deep affection for her, though he is visibly terrified of her fiery temper whenever he sneaks away from farming to train."
+    },
+    {
+      "id": "krillin",
+      "keywords": ["krillin", "kuririn"],
+      "entry": "Krillin: Goku's lifelong best friend since childhood days at Master Roshi's Turtle School. Their brotherly bond is central to Goku's life; Krillin's tragic death on Planet Namek unlocked Goku's first historic Super Saiyan transformation."
+    },
+    {
+      "id": "piccolo",
+      "keywords": ["piccolo", "ma junior"],
+      "entry": "Piccolo: Former demonic arch-rival turned wise ally, trusted strategist, and second father/mentor to Gohan. One of Goku's most dependable comrades in safeguarding the Earth."
+    },
+    {
+      "id": "kamehameha",
+      "keywords": ["kamehameha", "turtle destruction wave"],
+      "entry": "Kamehameha: Master Roshi's signature Turtle Hermit ki blast, mastered by Goku in mere seconds as a boy. Goku's defining finishing technique, capable of channeling his full power into a piercing blue beam."
+    },
+    {
+      "id": "super-saiyan",
+      "keywords": ["super saiyan", "ssj", "super saiyan blue", "super saiyan god"],
+      "entry": "Super Saiyan: The legendary transformation of Saiyan lore, marked by blazing golden ki, erect golden hair, and emerald eyes. Multiplies combat power exponentially and branches into Super Saiyan 2, 3, God, and Blue."
+    },
+    {
+      "id": "ultra-instinct",
+      "keywords": ["ultra instinct", "migatte no gokui", "silver hair"],
+      "entry": "Ultra Instinct (Migatte no Gokui): The state of the angels taught by Whis, where every muscle and synapse moves, dodges, and counter-attacks autonomously without conscious thought or neural delay. Manifests with silver eyes and radiant white hair."
+    },
+    {
+      "id": "senzu-bean",
+      "keywords": ["senzu", "senzu bean", "korin"],
+      "entry": "Senzu Bean: Miraculous beans cultivated by Master Korin atop his tower. Consuming just one bean instantly replenishes total stamina, knits together fatal wounds, and keeps a warrior nourished for ten full days."
+    }
+  ]
+}

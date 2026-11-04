@@ -16,7 +16,7 @@ import { generateDefaultGreeting } from '../ai/prompt/characterPrompt.js';
 import { ValidationError, NotFoundError } from '../ai/errors.js';
 import { SAFE_VOICE_ID_REGEX } from '../models/Character.js';
 import { config } from '../config/index.js';
-import { normalizeProviderName, resolveStoredProviderName } from '../ai/providerSelection.js';
+import { normalizeProviderName, resolveStoredProviderName, resolveProviderForCharacter } from '../ai/providerSelection.js';
 
 /**
  * ChatController Class (extends BaseController)
@@ -382,7 +382,7 @@ export class ChatController extends BaseController {
         session = this.#createNewSessionEntity(
           character,
           activePersona ? activePersona.id : 'persona_default',
-          provider || config.AI_PROVIDER,
+          resolveProviderForCharacter(character, provider || config.AI_PROVIDER),
           '',
           userId
         );
@@ -390,7 +390,7 @@ export class ChatController extends BaseController {
       }
 
       if (personaId && activePersona) session.personaId = activePersona.id;
-      if (provider) session.provider = provider;
+      if (provider) session.provider = resolveProviderForCharacter(character, provider);
 
       const pinnedMessages = session.getPinnedMessages().map(m => m.toJSON());
       const effectiveHistory = isNewSession && Array.isArray(clientMemory) && clientMemory.length > 0
@@ -427,7 +427,7 @@ export class ChatController extends BaseController {
         userId,
         character, session, message: message || '', query: queryForMemory, history: effectiveHistory,
         persona: personaContext, pinnedMessages, memories: relevantMemories, storySummary,
-        provider: provider ?? resolveStoredProviderName(session.provider), evaluate: !regenerate && !isContinue,
+        provider: resolveProviderForCharacter(character, provider ?? resolveStoredProviderName(session.provider)), evaluate: !regenerate && !isContinue,
         appraiser: this.appraiser, relationships: this.relationshipService
       });
 

@@ -1,0 +1,57 @@
+{
+  "character": "Frieren",
+  "universe": "Frieren: Beyond Journey's End",
+  "id": "1767000000001",
+  "entries": [
+    {
+      "id": "himmel",
+      "keywords": ["himmel", "hero himmel"],
+      "entry": "Himmel the Hero: The charismatic, kindhearted leader of the Hero Party who defeated the Demon King. Though playfully vain about his handsome statues, he spent their ten-year quest ensuring Frieren would never be alone during her long life. His peaceful passing at old age became the catalyst for Frieren's second journey to truly understand humans."
+    },
+    {
+      "id": "heiter",
+      "keywords": ["heiter", "corrupt priest"],
+      "entry": "Heiter: Priest of the Hero Party and Himmel's childhood companion. Despite being fond of alcohol ('the corrupt priest') and complaining of cowardice, he had unwavering faith. In his final years, he adopted the war orphan Fern and skillfully nudged Frieren into accepting Fern as her apprentice."
+    },
+    {
+      "id": "eisen",
+      "keywords": ["eisen", "dwarf"],
+      "entry": "Eisen: The stoic dwarven warrior of the Hero Party. Possessed of peerless physical durability and quiet wisdom. Outliving Himmel and Heiter, he entrusted his anxious apprentice Stark to join Frieren's journey toward Aureole."
+    },
+    {
+      "id": "fern",
+      "keywords": ["fern"],
+      "entry": "Fern: Frieren's human apprentice mage. Mature, disciplined, and remarkably observant, she acts as a strict caretaker for Frieren's lethargic morning habits. Fern has mastered lightning-quick casting of ordinary offensive magic and mana concealment."
+    },
+    {
+      "id": "stark",
+      "keywords": ["stark"],
+      "entry": "Stark: Eisen's apprentice warrior and Fern's traveling companion. While frequently trembling in fear before encounters, his warrior instincts, physical power, and axe strikes are formidable enough to fell solar dragons in single combat."
+    },
+    {
+      "id": "zoltraak",
+      "keywords": ["zoltraak", "ordinary offensive magic", "killing magic"],
+      "entry": "Zoltraak: Originally developed by the demon Qual as 'Killing Magic' that breached any defense. Deciphered, modified, and standardized by human mages and Frieren into the universal offensive spell. Frieren wields it with absolute efficiency against demons."
+    },
+    {
+      "id": "grimoire",
+      "keywords": ["grimoire", "folk magic", "spellbook", "mimic"],
+      "entry": "Grimoires & Folk Magic: Frieren's primary joy is collecting peculiar, trivial folk spells (creating sweet grape syrups, removing rust, creating fields of blooming flowers). Her curiosity frequently leads her into mimic chests on the minuscule 1% chance they hold an undiscovered grimoire."
+    },
+    {
+      "id": "aura",
+      "keywords": ["aura", "aura the guillotine", "scales of obedience"],
+      "entry": "Aura the Guillotine: One of the Seven Sages of Destruction who used the Scales of Obedience to enslave anyone with less mana than herself. Frieren, having suppressed her mana continuously for over a millennium, showed her true overwhelming aura and ordered Aura to cut off her own head."
+    },
+    {
+      "id": "aureole",
+      "keywords": ["aureole", "ende", "heaven"],
+      "entry": "Aureole (Ende / Heaven): The legendary resting place of departed souls situated at the northernmost continent edge where the Demon King's castle once stood. Frieren journeys there to meet and speak with Himmel once more."
+    },
+    {
+      "id": "demon-king",
+      "keywords": ["demon king", "demon", "demons"],
+      "entry": "The Demon King & Demons: Deceitful monsters who evolved human speech solely as an acoustic weapon to manipulate human sympathy and kill without hesitation. Known among demons as 'Frieren the Slayer' (Sousou no Frieren), she has eliminated more demons than any mage in history."
+    }
+  ]
+}

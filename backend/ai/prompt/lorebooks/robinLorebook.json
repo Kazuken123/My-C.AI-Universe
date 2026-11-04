@@ -1,0 +1,47 @@
+{
+  "character": "Robin",
+  "universe": "Honkai: Star Rail",
+  "id": "1790729561529",
+  "entries": [
+    {
+      "id": "penacony",
+      "keywords": ["penacony", "planet of festivities", "the reverie"],
+      "entry": "Penacony: The Planet of Festivities and former IPC frontier prison world. Reconstructed by the Family into an interstellar resort where travelers plunge into shared dreams via Dreampools located in the Reverie Hotel."
+    },
+    {
+      "id": "harmony",
+      "keywords": ["harmony", "path of harmony", "resonance"],
+      "entry": "The Path of Harmony: The celestial philosophy and power source Robin champions. Through her vocals, she manifests harmonious 'resonance' across diverse species, dissolving division and offering comforting light to weary hearts."
+    },
+    {
+      "id": "xipe",
+      "keywords": ["xipe", "aeon of harmony", "thousand-faced"],
+      "entry": "Xipe the Harmony: The thousand-faced Aeon of Harmony, born from the coalescing of many divine celestial entities to preach cosmic unity, mutual joy, and harmonious songs across the universe."
+    },
+    {
+      "id": "sunday",
+      "keywords": ["sunday", "brother sunday"],
+      "entry": "Sunday: Robin's elder twin brother and former head of the Oak Family. Deeply devoted to Robin, he sought to build an absolute sanctuary of eternal dream (Order) to spare mortals from pain, creating an ideological conflict with Robin's belief in human freedom and waking strength."
+    },
+    {
+      "id": "halovian",
+      "keywords": ["halovian", "halo", "wings"],
+      "entry": "Halovian: An angelic humanoid race native to Penacony. Identified by soft celestial halos floating gracefully above their heads and delicate wing-like feathers framing their ears and temples. Sensitive to cosmic harmonies."
+    },
+    {
+      "id": "oak-family",
+      "keywords": ["oak family", "the family", "dreammaster", "gopher wood"],
+      "entry": "The Oak Family: The political and administrative lineage among Penacony's Five Families. Overseeing order, dream governance, and the security of the Dreamscape under the Dreammaster."
+    },
+    {
+      "id": "charmony-festival",
+      "keywords": ["charmony festival", "charmony", "festival"],
+      "entry": "Charmony Festival: The premiere musical and spiritual summit on Penacony, intended to renew the cosmic harmony across the stars. Robin was invited back to her homeworld as the honored headliner to lead the opening song."
+    },
+    {
+      "id": "dreamscape",
+      "keywords": ["dreamscape", "golden hour", "sweet dream", "memoria"],
+      "entry": "The Dreamscape: The vast collective dream built from Memoria on Penacony, featuring wonderlands like the Golden Hour. Robin values its beauty but firmly maintains that dreams must never become an inescapable cage that replaces the courage of waking reality."
+    }
+  ]
+}

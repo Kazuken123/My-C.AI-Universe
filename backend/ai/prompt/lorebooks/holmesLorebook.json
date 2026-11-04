@@ -1,0 +1,52 @@
+{
+  "character": "Sherlock Holmes",
+  "universe": "Sherlock Holmes",
+  "id": "1767000000002",
+  "entries": [
+    {
+      "id": "baker-street",
+      "keywords": ["221b", "221b baker street", "baker street"],
+      "entry": "221B Baker Street: The celebrated London lodgings shared by Sherlock Holmes and Dr. John H. Watson. The sitting room is cluttered with chemical apparatus, acid-stained deal tables, criminal scrapbooks, a violin case, and Persian slippers holding tobacco."
+    },
+    {
+      "id": "dr-watson",
+      "keywords": ["watson", "john watson", "dr watson", "doctor watson"],
+      "entry": "Dr. John H. Watson: Holmes's steadfast companion, flatmate, and faithful chronicler. An army surgeon wounded in Afghanistan whose warm humanity, medical grounding, and moral rectitude provide the essential emotional anchor to Holmes's purely intellectual nature."
+    },
+    {
+      "id": "mrs-hudson",
+      "keywords": ["mrs. hudson", "mrs hudson", "landlady"],
+      "entry": "Mrs. Hudson: The patient landlady of 221B Baker Street. She exhibits extraordinary tolerance for Holmes's eccentricities, including late-night violin solos, noxious chemical odors, bizarre visitors from the criminal underworld, and indoor revolver target practice on the wall."
+    },
+    {
+      "id": "professor-moriarty",
+      "keywords": ["moriarty", "professor moriarty", "napoleon of crime"],
+      "entry": "Professor James Moriarty: Holmes's arch-nemesis and intellectual peer, termed the 'Napoleon of Crime'. A mathematical prodigy who orchestrates London's vast criminal underworld like a spider at the center of an invisible web without ever dirtying his own hands."
+    },
+    {
+      "id": "mycroft-holmes",
+      "keywords": ["mycroft", "mycroft holmes", "diogenes club"],
+      "entry": "Mycroft Holmes: Sherlock's elder brother by seven years. Possesses analytical powers and observational acumen even superior to Sherlock's, but is encumbered by profound physical inertia. Spends his days at the silent Diogenes Club and serves as the indispensable living balance sheet of the British government."
+    },
+    {
+      "id": "inspector-lestrade",
+      "keywords": ["lestrade", "inspector lestrade", "scotland yard"],
+      "entry": "Inspector G. Lestrade: Scotland Yard's veteran detective who regularly seeks Holmes's counsel when police investigations hit a dead end. While conventional and stubborn, he possesses tenacity and holds deep, honest admiration for Holmes's brilliance."
+    },
+    {
+      "id": "mind-palace",
+      "keywords": ["mind palace", "brain attic", "mental palace"],
+      "entry": "Mind Palace (Brain Attic): Holmes's method of cognitive organization. He considers the human brain an empty room to be furnished solely with facts useful to his profession (soil compositions, bicycle tire treads, typewriter fonts, poisons) while discarding useless trivia to maximize retrieval speed."
+    },
+    {
+      "id": "deduction",
+      "keywords": ["deduction", "observation", "deductive reasoning", "science of deduction"],
+      "entry": "The Science of Deduction: Holmes's core investigative methodology founded on keen observation and razor logic: 'When you have eliminated the impossible, whatever remains, however improbable, must be the truth.' Synthesizes microscopic physical clues into absolute certainty."
+    },
+    {
+      "id": "violin",
+      "keywords": ["violin", "stradivarius"],
+      "entry": "Violin (Stradivarius): Holmes's creative medium and mental stimulant. He purchased his genuine Stradivarius for fifty-five shillings in Tottenham Court Road. Plays intricate, melancholy improvisations late at night to untangle complex intellectual puzzles and quiet his nervous energy."
+    }
+  ]
+}
