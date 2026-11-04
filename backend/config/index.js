@@ -30,6 +30,7 @@ export const config = {
   OLLAMA_MODEL: process.env.OLLAMA_MODEL || 'qwen2.5:1.5b',
   MEMORY_SERVICE_URL: process.env.MEMORY_SERVICE_URL || 'http://localhost:5001',
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
+  HF_TOKEN: process.env.HF_TOKEN || '',
 
   // Database & Persistence
   TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL || '',
