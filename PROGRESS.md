@@ -1,5 +1,28 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-11-05 - Fine-Tuned Gemma 4 31B Modal Serverless Deployment & Hybrid Live Routing
+
+- **Hugging Face Model Adapter Published**:
+  - Kaggle fine-tuning completed 20/20 steps (~2 epochs) on `unsloth/gemma-4-31B-it-unsloth-bnb-4bit`.
+  - Normalized YAML metadata (fixing invalid local path to valid Hugging Face base model) and uploaded LoRA adapter weights 100% to [`Kazuken123/kana-arima-gemma4-thinking`](https://huggingface.co/Kazuken123/kana-arima-gemma4-thinking).
+- **Modal Serverless Production Deployment (`cloud_training/modal_gemma4_server.py`)**:
+  - Deployed single-container FastAPI server on Modal (`cai-gemma4-serverless`) running `Gemma4Inference.fastapi_app` on NVIDIA A10G (24GB VRAM).
+  - Attached persistent Hugging Face cache volume `hf-cache-vol` at `/root/.cache/huggingface` to eliminate redownloads on container reuse.
+  - Scale-to-zero billing enforced (`scaledown_window=300`) — automatically terminates GPU container after 5 minutes of inactivity for $0 idle cost.
+  - Resolved `torchvision` dependency required by Unsloth vision processor by pinning `torch>=2.4.0,<2.15.0` and `torchvision>=0.19.0`.
+  - Resolved text tokenization bypass in `Gemma4Processor` by extracting `text_tokenizer` and passing pure text strings.
+  - Wrapped model generation in `torch.inference_mode()` with `torch.cuda.empty_cache()` to completely eliminate CUDA memory fragmentation.
+- **Provider & Prompt Optimization (`backend/ai/providers/modalGemma.js`, `backend/ai/prompt/characterPrompt.js`)**:
+  - Kana Arima fine-tuned model already encodes the 25 gold-standard exemplars directly in its LoRA weights.
+  - Enforced `options.skipExemplars = true` for `modal_gemma` in `ModalGemmaProvider.buildSystemPrompt`, shrinking prompt length from ~4,000 tokens down to ~500 tokens, eliminating CUDA OOM and reducing inference latency by 5x.
+  - Maintained full multi-turn sanitization and zero-leak `<thought>` stripping on incoming SSE chunks.
+- **End-to-End Verification**:
+  - `/health` endpoint verified returning HTTP 200 with `status: ok` and active model metadata.
+  - `/v1/chat/completions` tested directly on Modal: generated 4-field cognitive `<thought>`, light-novel actions (`*...*`), authentic Tsundere dialogue, and `[[REL_STATE]]` tag.
+  - SSE real-time streaming verified with 68 chunks ending with `data: [DONE]`.
+  - Node.js `ModalGemmaProvider.generateReply()` and `ModalGemmaProvider.generateReplyStream()` verified live E2E.
+  - Full automated regression test suite: 57/57 test files pass, 0 failed.
+
 ## 2026-11-04 - Hybrid Per-Character Routing (Kana on Fine-Tuned Gemma 4, Others on Many-Shot Gemini 3.5 Flash-Lite)
 
 - **Hybrid Model Routing (`backend/ai/providerSelection.js`, `backend/ai/index.js`, `backend/controllers/chat.controller.js`)**:

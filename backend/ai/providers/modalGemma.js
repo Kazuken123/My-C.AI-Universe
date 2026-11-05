@@ -38,6 +38,16 @@ export class ModalGemmaProvider extends BaseAIProvider {
   }
 
   /**
+   * Builds system prompt for Gemma 4.
+   * Kana Arima's LoRA adapter already encodes the 25 many-shot exemplars and cognitive structure
+   * in its weights, so we omit redundant exemplar repetition (options.skipExemplars = true)
+   * to conserve GPU VRAM and keep inference latency under 2 seconds.
+   */
+  buildSystemPrompt(character, options = {}) {
+    return super.buildSystemPrompt(character, { ...options, skipExemplars: true });
+  }
+
+  /**
    * Builds sanitized OpenAI-compatible message array for Gemma 4.
    * Multi-Turn Invariant: Historical model turns strictly strip past thoughts
    * so Gemma 4 always reasons fresh for the current turn.

@@ -416,7 +416,7 @@ ${options.labAlternatives
 [CHARACTER PROFILE & CORE PERSONA]
 ${baseSystemPrompt}`;
 
-  if (manyShotBlock) {
+  if (manyShotBlock && !options.skipExemplars) {
     staticPrompt += `\n\n${manyShotBlock}`;
   }
 
