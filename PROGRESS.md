@@ -1,5 +1,22 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-11-05 - Fix Gemma 4 Chat Template Alternating Roles Contract (`jinja2.exceptions.TemplateError`)
+
+- **Root Cause Analysis (`jinja2.exceptions.TemplateError: Conversation roles must alternate user/assistant/user/assistant/...`)**:
+  - In Character.AI roleplay, every storyline begins with the character's opening greeting (`role: 'model'` / `'assistant'`).
+  - Google's Gemma 4 chat template (compiled via Jinja2 in Hugging Face Transformers) strictly validates that the conversation turns must begin with `user` and strictly alternate between `user` and `assistant`.
+  - When `#buildMessages` sent `[system, assistant (greeting), user]`, or when consecutive user turns or scene continuation assistant turns occurred, Gemma's Jinja template threw a 500 error in ~180ms.
+- **Architectural Fix**:
+  - `backend/ai/providers/modalGemma.js`:
+    - Merges adjacent turns with the same role using double newlines.
+    - If the opening dialogue turn is `assistant` (greeting), prepends `{ role: 'user', content: '*Enters scene*' }`.
+    - Handles empty user turns for scene continuation so the array always ends with `user`.
+  - `cloud_training/modal_gemma4_server.py`:
+    - Implemented `_sanitize_messages(self, messages)` server-side defense in both synchronous and streaming generators before invoking `tok.apply_chat_template()`.
+- **Empirical Verification**:
+  - Sent realistic multi-turn roleplay through `ModalGemmaProvider`: Returned HTTP 200 with complete Kana Arima in-character dialogue, 4-part `<thought>` block, and `[[REL_STATE]]` tag in ~18s.
+  - Full automated regression test suite: 57/57 test files passed (0 failed).
+
 ## 2026-11-05 - Render Deployment Environment Diagnosis, GPU Cold-Start Timeout (120s) & Character Provider Auto-Resolution
 
 - **Diagnosis of Modal Serverless Call Absence on Render Production**:

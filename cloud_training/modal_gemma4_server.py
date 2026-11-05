@@ -104,6 +104,45 @@ class Gemma4Inference:
         FastLanguageModel.for_inference(self.model)
         print("[MODAL] Gemma 4 Thinking Engine online and ready.")
 
+    def _sanitize_messages(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        """
+        Normalizes message list to satisfy Gemma 4's strict alternating roles requirement:
+        1. System message at index 0 (if present).
+        2. Dialogue turns strictly alternate: user -> assistant -> user -> assistant...
+        3. Adjacent same-role turns are merged with double newlines.
+        4. If first dialogue turn is assistant, prepends a natural user interaction starter.
+        """
+        system_msgs = []
+        dialogue = []
+        for m in messages:
+            role = m.get("role", "user")
+            content = (m.get("content") or "").strip()
+            if not content:
+                continue
+            if role == "system":
+                system_msgs.append(content)
+            else:
+                dialogue.append({"role": role, "content": content})
+
+        merged = []
+        for m in dialogue:
+            if merged and merged[-1]["role"] == m["role"]:
+                merged[-1]["content"] += "\n\n" + m["content"]
+            else:
+                merged.append({"role": m["role"], "content": m["content"]})
+
+        if merged and merged[0]["role"] == "assistant":
+            merged.insert(0, {"role": "user", "content": "*Enters scene*"})
+
+        if not merged:
+            merged.append({"role": "user", "content": "Hello"})
+
+        final = []
+        if system_msgs:
+            final.append({"role": "system", "content": "\n\n".join(system_msgs)})
+        final.extend(merged)
+        return final
+
     def _generate_text(
         self,
         messages: List[Dict[str, str]],
@@ -115,8 +154,9 @@ class Gemma4Inference:
         import torch
         torch.cuda.empty_cache()
         tok = getattr(self, "text_tokenizer", getattr(self.tokenizer, "tokenizer", self.tokenizer))
+        clean_messages = self._sanitize_messages(messages)
         prompt = tok.apply_chat_template(
-            messages,
+            clean_messages,
             tokenize=False,
             add_generation_prompt=True
         )
@@ -163,8 +203,9 @@ class Gemma4Inference:
 
         torch.cuda.empty_cache()
         tok = getattr(self, "text_tokenizer", getattr(self.tokenizer, "tokenizer", self.tokenizer))
+        clean_messages = self._sanitize_messages(messages)
         prompt = tok.apply_chat_template(
-            messages,
+            clean_messages,
             tokenize=False,
             add_generation_prompt=True
         )

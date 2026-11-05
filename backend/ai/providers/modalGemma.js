@@ -54,11 +54,7 @@ export class ModalGemmaProvider extends BaseAIProvider {
    */
   #buildMessages(character, userMsg, memory = null, options = {}) {
     const safeOptions = options || {};
-    const messages = [];
-
-    // System prompt with character definition and lorebook
-    const systemPrompt = this.buildSystemPrompt(character, safeOptions);
-    messages.push({ role: 'system', content: systemPrompt });
+    const rawTurns = [];
 
     // Multi-turn conversation history
     if (Array.isArray(memory)) {
@@ -76,14 +72,38 @@ export class ModalGemmaProvider extends BaseAIProvider {
         }
 
         if (content) {
-          messages.push({ role, content });
+          rawTurns.push({ role, content });
         }
       }
     }
 
-    // Active user prompt
-    messages.push({ role: 'user', content: userMsg.trim() });
-    return messages;
+    // Active user prompt or continuation directive
+    const cleanUserMsg = (userMsg || '').trim();
+    if (cleanUserMsg) {
+      rawTurns.push({ role: 'user', content: cleanUserMsg });
+    } else if (rawTurns.length === 0 || rawTurns[rawTurns.length - 1].role !== 'user') {
+      rawTurns.push({ role: 'user', content: `*Continues the scene naturally as ${character?.name || 'character'}*` });
+    }
+
+    // Merge consecutive turns with the same role to strictly fulfill Gemma 4's alternating roles contract
+    const alternatingTurns = [];
+    for (const msg of rawTurns) {
+      if (alternatingTurns.length > 0 && alternatingTurns[alternatingTurns.length - 1].role === msg.role) {
+        alternatingTurns[alternatingTurns.length - 1].content += '\n\n' + msg.content;
+      } else {
+        alternatingTurns.push({ role: msg.role, content: msg.content });
+      }
+    }
+
+    // In Gemma 4 chat template, dialogue MUST begin with 'user'.
+    // If the opening message is the character's greeting ('assistant'), prepend a natural user action.
+    if (alternatingTurns.length > 0 && alternatingTurns[0].role === 'assistant') {
+      alternatingTurns.unshift({ role: 'user', content: '*Enters scene*' });
+    }
+
+    // System prompt with character definition and lorebook
+    const systemPrompt = this.buildSystemPrompt(character, safeOptions);
+    return [{ role: 'system', content: systemPrompt }, ...alternatingTurns];
   }
 
   /**
