@@ -149,7 +149,7 @@ export class ChatController extends BaseController {
   async createChatSession(req, res) {
     try {
       const { characterId, personaId, provider: requestedProvider, title } = req.body;
-      const provider = normalizeProviderName(requestedProvider);
+      const provider = requestedProvider === undefined ? undefined : normalizeProviderName(requestedProvider);
       const userId = req.user ? req.user.id : null;
       if (!characterId) {
         throw new ValidationError('characterId is required', 'characterId');
@@ -166,10 +166,12 @@ export class ChatController extends BaseController {
         throw new NotFoundError('Character not found');
       }
 
+      const resolvedProvider = resolveProviderForCharacter(character, provider);
+
       const session = this.#createNewSessionEntity(
         character,
         activePersona ? activePersona.id : 'persona_default',
-        provider,
+        resolvedProvider,
         title,
         userId
       );

@@ -1,5 +1,20 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-11-05 - Render Deployment Environment Diagnosis, GPU Cold-Start Timeout (120s) & Character Provider Auto-Resolution
+
+- **Diagnosis of Modal Serverless Call Absence on Render Production**:
+  - Root Cause 1 (Environment Variables on Render): The production web app is hosted on Render (`https://my-c-ai-universe.onrender.com`). Render does not read `.env` (gitignored). The Render Environment tab had `FISH_AUDIO_API_KEY`, `GEMINI_API_KEY`, `JWT_SECRET`, `NODE_ENV`, `NODE_VERSION`, `TURSO_AUTH_TOKEN`, and `TURSO_DATABASE_URL`, but was missing `MODAL_GEMMA_ENDPOINT` and `MODAL_API_KEY`. Consequently, `hasValidModalEndpoint()` returned `false` on Render, automatically routing all roleplay turns to Gemini.
+  - Root Cause 2 (Cold-Start Abort Window): A serverless GPU container cold start on Modal takes ~55s startup + 1m+ execution for Gemma 4 31B. The application's global `AI_TIMEOUT` was set to 30s (`AI_TIMEOUT: 30000`).
+  - Root Cause 3 (Session Creation Provider Hardcoding): `ChatController.createChatSession` previously normalized `requestedProvider` directly instead of passing through `resolveProviderForCharacter(character, requestedProvider)`, causing new sessions to store `provider: 'gemini'` if the client sent no provider or defaulted to `gemini`.
+- **Architectural Enhancements**:
+  - `backend/config/index.js`: Added `MODAL_GEMMA_ENDPOINT`, `MODAL_API_KEY`, `MODAL_MODEL`, and dedicated `MODAL_TIMEOUT: 120000` (2 minutes) to safely accommodate serverless GPU cold start.
+  - `backend/ai/providers/modalGemma.js`: Updated HTTP fetch calls to utilize `config.MODAL_TIMEOUT || 120000` instead of the 30s `AI_TIMEOUT`.
+  - `backend/controllers/chat.controller.js`: In `createChatSession`, routed through `resolveProviderForCharacter(character, provider)` after early validation, ensuring Kana Arima sessions automatically resolve to `modal_gemma` when available.
+  - `frontend/js/chat.js`: Added reactive `change` listener to `#aiProvider` to update active session provider dynamically in memory.
+- **Verification**:
+  - Full automated regression test suite: 57/57 test files passed (56 unit + 1 E2E API, 0 failed).
+  - Packed via Repomix and updated graphify knowledge graph.
+
 ## 2026-11-05 - Character Avatar Polish, Elimination of Orange Artifacts, Genuine Interactions Count & Gemma 4 31B Fine-Tuned Model Selector
 
 - **Character Profile Image Polish & Removal of Orange Background/Glow (`frontend/css/chat.css`, `nextjs-frontend/app/chat.css`)**:

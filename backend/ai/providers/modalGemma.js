@@ -112,7 +112,7 @@ export class ModalGemmaProvider extends BaseAIProvider {
         },
         body: JSON.stringify(requestPayload),
         signal: options?.signal,
-        timeout: options?.timeout || config.AI_TIMEOUT || 45000
+        timeout: options?.timeout || config.MODAL_TIMEOUT || 120000
       });
 
       if (!res.ok) {
@@ -169,7 +169,7 @@ export class ModalGemmaProvider extends BaseAIProvider {
       },
       body: JSON.stringify(requestPayload),
       signal: options?.signal,
-      timeout: options?.timeout || config.AI_TIMEOUT || 60000
+      timeout: options?.timeout || config.MODAL_TIMEOUT || 120000
     });
 
     if (!res.ok) {

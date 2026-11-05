@@ -344,6 +344,14 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     });
   }
 
+  if (aiProviderSelect) {
+    aiProviderSelect.addEventListener('change', () => {
+      if (appState.activeSession) {
+        appState.activeSession.provider = aiProviderSelect.value;
+      }
+    });
+  }
+
   const drawerBackdrop = document.getElementById('drawerBackdrop');
   const drawerCloseBtn = document.getElementById('drawerCloseBtn');
 

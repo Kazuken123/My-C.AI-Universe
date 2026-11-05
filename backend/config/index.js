@@ -31,6 +31,10 @@ export const config = {
   MEMORY_SERVICE_URL: process.env.MEMORY_SERVICE_URL || 'http://localhost:5001',
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
   HF_TOKEN: process.env.HF_TOKEN || '',
+  MODAL_GEMMA_ENDPOINT: process.env.MODAL_GEMMA_ENDPOINT || '',
+  MODAL_API_KEY: process.env.MODAL_API_KEY || 'universe-secret-key-2026',
+  MODAL_MODEL: process.env.MODAL_MODEL || 'gemma-4-thinking',
+  MODAL_TIMEOUT: Number(process.env.MODAL_TIMEOUT) || 120000,
 
   // Database & Persistence
   TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL || '',
