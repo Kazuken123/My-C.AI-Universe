@@ -84,7 +84,9 @@ export function CharacterCatalog() {
           {CATEGORY_TABS.map(category => <button key={category} type="button" onClick={() => setActiveCategory(category)} className={cn('category-pill', activeCategory === category && 'active')} aria-pressed={activeCategory === category}>{category}</button>)}
         </div></div>
         <div className="character-rail" data-character-rail>
-        <button className="rail-arrow rail-prev" type="button" data-rail-prev aria-label="Previous characters" aria-controls="discover-grid" hidden>‹</button>
+        <button className="rail-arrow rail-prev" type="button" data-rail-prev aria-label="Previous characters" aria-controls="discover-grid" hidden>
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+        </button>
         <div className="bento-character-grid character-track" id="discover-grid" aria-busy={loading} tabIndex={0} role="region" aria-roledescription="carousel" aria-label="Characters. Use left and right arrow keys to browse.">
           {loading ? Array.from({ length: 8 }, (_, index) => <div className="orbit-skeleton" key={index} aria-hidden="true" />) : error ? (
             <div className="orbit-state" role="alert"><h3>A little pause in the story.</h3><p>We couldn’t load the characters. Please try again.</p><button className="btn-island" type="button" onClick={fetchCharacters}>Try again <span aria-hidden="true">↗</span></button></div>
@@ -92,7 +94,9 @@ export function CharacterCatalog() {
             <div className="orbit-state"><h3>{hasFilters ? 'No characters found. Yet.' : 'Your universe starts here.'}</h3><p>{hasFilters ? 'Try a different name or explore another genre.' : 'Create your first character and give a new story a beginning.'}</p>{hasFilters ? <button className="btn-island" type="button" onClick={resetFilters}>Clear filters</button> : <Link className="btn-island" href="/create">Create a character ↗</Link>}</div>
           )}
         </div>
-        <button className="rail-arrow rail-next" type="button" data-rail-next aria-label="Next characters" aria-controls="discover-grid" hidden>›</button>
+        <button className="rail-arrow rail-next" type="button" data-rail-next aria-label="Next characters" aria-controls="discover-grid" hidden>
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+        </button>
         <span className="sr-only" data-rail-status role="status" aria-live="polite" />
         </div>
       </section>

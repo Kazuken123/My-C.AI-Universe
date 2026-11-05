@@ -299,6 +299,19 @@
 [data-theme="higgsfield"] .sidebar .nav-item.active { background: #a78bfa18 !important; color: #ddd2ff !important; border-color: #b8a4ff30 !important; box-shadow: none !important; }
 [data-theme="higgsfield"] .btn-island { background-image: none; }
 [data-theme="higgsfield"] .btn-island:hover { background: var(--accent-hover); border-color: var(--accent); }
+[data-theme="higgsfield"] .sidebar .auth-launch-btn:hover,
+[data-theme="higgsfield"] .auth-launch-btn:hover {
+  background: var(--bg-card-hover, #25213d) !important;
+  border-color: var(--accent-border) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+[data-theme="higgsfield"] .sidebar .auth-launch-btn:hover .btn-island-icon,
+[data-theme="higgsfield"] .auth-launch-btn:hover .btn-island-icon {
+  background: var(--accent-hover) !important;
+  color: var(--text-on-accent) !important;
+  transform: translateX(3px) scale(1.05);
+}
 
 .island-dock { position: fixed; top: max(16px, env(safe-area-inset-top)); left: calc(50% + 128px); transform: translateX(-50%); z-index: 900; width: min(440px, calc(100% - 288px)); display: flex; justify-content: center; pointer-events: none; transition: left .4s var(--orbit-ease); }
 .app-shell:has(> .sidebar.collapsed) .island-dock { left: calc(50% + 36px); width: min(440px, calc(100% - 104px)); }
@@ -379,12 +392,61 @@
 .orbit-discover .character-track .cai-card-actions .btn-secondary { min-height: 32px; height: 32px; padding: 5px 8px; font-size: .65rem; border-radius: 10px; }
 .orbit-discover .character-track .cai-card-actions .btn-secondary span { display: none; }
 .orbit-discover .character-track .orbit-skeleton { min-height: 215px; height: 215px; border-radius: 18px; }
-.rail-arrow { position: absolute; top: calc(50% - 8px); transform: translateY(-50%) scale(.9); z-index: 4; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0 0 4px; border-radius: 50%; border: 1px solid var(--accent-border); background: var(--bg-core-elevated); color: var(--text-primary); box-shadow: 0 6px 22px #0007; font: 300 2rem var(--font-sans); cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .2s, transform .3s var(--orbit-ease), background .2s; }
-.rail-arrow[hidden] { display: none; }
-.rail-prev { left: -18px; }
-.rail-next { right: -18px; }
-.character-rail:hover .rail-arrow, .character-rail:focus-within .rail-arrow { opacity: 1; pointer-events: auto; transform: translateY(-50%) scale(1); }
-.rail-arrow:hover { background: var(--accent); color: var(--text-on-accent); }
+.rail-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 68px;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.65);
+  box-shadow: none;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, color 0.2s ease, transform 0.25s var(--orbit-ease);
+}
+.rail-arrow svg {
+  display: block;
+  width: 28px;
+  height: 28px;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.85));
+  transition: transform 0.2s var(--orbit-ease), filter 0.2s ease;
+}
+.rail-arrow[hidden] {
+  display: none !important;
+}
+.rail-prev {
+  left: 12px;
+}
+.rail-next {
+  right: 12px;
+}
+.character-rail:hover .rail-arrow,
+.character-rail:focus-within .rail-arrow {
+  opacity: 1;
+  pointer-events: auto;
+}
+.rail-arrow:hover {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: #ffffff;
+  transform: translateY(-50%) scale(1.12);
+}
+.rail-arrow:hover svg {
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5)) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.95));
+}
+.rail-arrow:active {
+  transform: translateY(-50%) scale(0.96);
+}
 .orbit-discover .orbit-continue-grid .cai-card-top { flex-direction: row; align-items: center; gap: 12px; }
 .orbit-discover .orbit-continue-grid .cai-card-info { padding: 0; }
 .orbit-discover .orbit-continue-grid .cai-avatar { border-radius: 50%; flex-shrink: 0; }
@@ -407,11 +469,11 @@
   .orbit-discover .character-track .cai-card-actions .btn-secondary, .orbit-discover .character-track .cai-card-actions .icon-btn, .orbit-discover .character-track .like-btn { min-height: 40px; }
   .orbit-art { height: 290px; }
   .orbit-roster { scroll-margin-top: 130px; }
-  .rail-prev { left: -12px; } .rail-next { right: -12px; }
+  .rail-prev { left: 4px; } .rail-next { right: 4px; }
   .island-menu { padding-inline: 20px; }
   .orbit-section-heading { flex-wrap: wrap; }
 }
-@media (hover: none) { .rail-arrow { opacity: 1; pointer-events: auto; transform: translateY(-50%); width: 40px; height: 40px; } }
+@media (hover: none) { .rail-arrow { opacity: 1; pointer-events: auto; transform: translateY(-50%); width: 32px; height: 56px; background: transparent; border: none; box-shadow: none; } }
 
 /* Let the mobile drawer rise above the backdrop outside the app shell. */
 @media (max-width: 1024px) {

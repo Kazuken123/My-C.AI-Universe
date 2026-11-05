@@ -1609,6 +1609,11 @@ body.show-nav-kbd .nav-kbd {
   filter: brightness(1.15);
 }
 
+.sidebar .auth-launch-btn:hover {
+  border-color: var(--accent-border);
+  color: var(--text-primary);
+}
+
 .auth-user-view {
   width: 100%;
 }

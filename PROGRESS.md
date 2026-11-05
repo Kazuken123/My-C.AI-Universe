@@ -1,5 +1,19 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-11-05 - Character Rail Chevron UI & Sidebar Sign-In Hover Contrast Fix
+
+- **Discover Character Carousel `< >` Chevron Modernization (`frontend/index.html`, `nextjs-frontend/components/characters/character-catalog.tsx`, `frontend/css/orbit.css`, `nextjs-frontend/app/orbit.css`)**:
+  - Replaced legacy text `‹` / `›` and circular button container with sleek, borderless SVG chevron icons (`width: 28px`, `height: 28px`, `stroke-width: 2.6`, `stroke-linecap="round"`), achieving 1:1 pixel parity with Character.AI reference design.
+  - Eliminated circular background, border, and box-shadow completely (`background: transparent; border: none; box-shadow: none;`).
+  - Implemented hover-reveal choreography: arrows remain invisible (`opacity: 0; pointer-events: none`) by default and smoothly fade in on carousel hover (`.character-rail:hover .rail-arrow`, `opacity: 1`).
+  - Positioned chevrons directly over the carousel bounds (`left: 12px` / `right: 12px`, vertically centered at `top: 50%`) with drop-shadow filter directly on SVG strokes for crisp readability over all character art.
+- **Sidebar Sign-In / Register Hover Contrast Fix (`frontend/css/orbit.css`, `nextjs-frontend/app/orbit.css`, `frontend/css/base.css`, `nextjs-frontend/app/base.css`)**:
+  - Root Cause: In `[data-theme="higgsfield"]`, `.btn-island:hover` set `background: var(--accent-hover)` (`#ddd4ff`, near-white) while `.auth-launch-btn` had white text `color: var(--text-primary)`, causing text to disappear on hover.
+  - Fix: Added targeted high-specificity rule `[data-theme="higgsfield"] .sidebar .auth-launch-btn:hover` maintaining rich dark elevated background (`var(--bg-card-hover, #25213d)`), subtle accent border, and glowing icon (`var(--accent-hover)`), ensuring white text remains 100% legible and high-contrast across all themes.
+- **Verification**:
+  - Maintained 100% identical byte-for-byte parity between `frontend/css/orbit.css` and `nextjs-frontend/app/orbit.css`.
+  - Full automated regression test suite: 57/57 test files pass, 0 failed.
+
 ## 2026-11-05 - Fine-Tuned Gemma 4 31B Modal Serverless Deployment & Hybrid Live Routing
 
 - **Hugging Face Model Adapter Published**:
