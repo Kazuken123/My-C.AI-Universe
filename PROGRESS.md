@@ -1,5 +1,37 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-11-05 - Chat Topbar Minimalist Redesign & Character.AI Style `...` Right Drawer Integration
+
+- **Topbar Cleanup & Relationship Dynamics Bar Relocation (`frontend/chat.html`, `frontend/css/chat.css`, `nextjs-frontend/components/chat/chat-header.tsx`, `nextjs-frontend/app/chat.css`)**:
+  - Relocated `#chatRelationshipBar` pill from its cramped position beneath character name on the left to the prominent, unconstrained right side of the chat topbar (`.chat-topbar-actions`).
+  - Anchored `#chatRelationshipPopover` cleanly to the right side of the viewport (`right: 20px; left: auto; top: calc(100% + 8px)`), directly underneath the relationship dynamics pill.
+  - Replaced the horizontal 8-button topbar clutter with a minimal 3-element right cluster:
+    1. Psychological Relationship Dynamics pill (`#chatRelationshipBar`)
+    2. Voice Narration Audio toggle (`#btnToggleTTS` with icon toggle between `ph-speaker-slash` and `ph-fill ph-speaker-high`)
+    3. More Options `...` button (`#btnToggleDrawer` with `ph-bold ph-dots-three`)
+  - Preserved back button, avatar with voice visualizer, character name, and SOUL-ID badge on the left with spacious breathing room.
+- **Character.AI Style Profile & Settings Right Drawer (`frontend/chat.html`, `frontend/css/chat.css`, `frontend/js/chat.js`)**:
+  - Re-architected `#chat-right-drawer` into a multi-tier panel matching the Character.AI reference design:
+    - **Drawer Topbar**: Seamless header bar with back navigation button (`#drawerBackBtn`, hidden on root menu) and close button (`#drawerCloseBtn`).
+    - **Profile Hero Section (`#pane-menu`)**:
+      - Large circular character avatar with golden aura ring (`box-shadow: 0 0 24px rgba(234, 179, 8, 0.25)`).
+      - Character name, creator handle (`Người thực hiện @creator`), and dynamic interaction counter (`formatCount(chats) + ' lượt tương tác'`).
+      - 4 quick-action pill buttons: Share (`#drawerShareBtn`), Like with live count (`#drawerLikeBtn`), Dislike (`#drawerDislikeBtn`), and Bookmark (`#drawerBookmarkBtn`).
+      - Authentic character status/tagline block (`#drawerCharStatus`).
+    - **Prominent New Chat Trigger**: Full-width tactile button (`#btnNewChatSession`, "Cuộc trò chuyện mới") with chat bubble icon.
+    - **Unified Feature Menu List**:
+      1. Voice row (`#btnSelectVoice`) with dynamic label (`#chatVoiceBtnLabel`) showing "Mặc định" or active voice name and chevron right.
+      2. History row (`#btnChatHistory`) opening branching storylines and saved sessions.
+      3. Customization & Lore row (`#btnOpenDossier`) smoothly switching to `#pane-lore` with back-navigation.
+      4. Pinned & Memories row (`#btnMemoryNotebook`) switching to `#pane-memories` with back-navigation.
+      5. User Persona row (`#chatPersonaSelect`) with inline sleek dropdown selector.
+      6. AI Model / Style row (`#aiProvider`) with inline sleek provider switcher (`gemini` / `ollama`).
+- **Next.js Frontend Parity (`nextjs-frontend/components/chat/chat-header.tsx`, `nextjs-frontend/app/chat.css`)**:
+  - Aligned Next.js `ChatHeader` with the minimal topbar: left avatar + name + tagline; right relationship pill + narration toggle + `MoreHorizontal` options button with sleek popover menu.
+- **Verification & Invariant Preservation**:
+  - Preserved 100% of DOM IDs for API synchronization, auto-speech hooks, and persona binding.
+  - Automated test suite: 57/57 test files passed (0 failed).
+
 ## 2026-11-05 - Character Rail Chevron UI & Sidebar Sign-In Hover Contrast Fix
 
 - **Discover Character Carousel `< >` Chevron Modernization (`frontend/index.html`, `nextjs-frontend/components/characters/character-catalog.tsx`, `frontend/css/orbit.css`, `nextjs-frontend/app/orbit.css`)**:

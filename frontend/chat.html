@@ -190,56 +190,27 @@
                     <span class="voice-wave-bar"></span>
                   </div>
                 </div>
-                <div class="chat-header-sub-row">
-                  <div class="chat-header-sub" id="chat-header-sub">Cinema Studio &middot; 35mm Lens</div>
-                  <button class="chat-relationship-bar-pill" id="chatRelationshipBar" type="button" title="Psychological Relationship Dynamics (Click to Direct / Inspect)" aria-haspopup="dialog" aria-expanded="false">
-                    <span class="rel-stage-icon" id="chatRelStageIcon"><i class="ph-light ph-heart"></i></span>
-                    <span class="rel-stage-label" id="chatRelStageLabel">Stranger / Neutral</span>
-                    <span class="rel-score-badge" id="chatRelScoreBadge">0</span>
-                    <span class="rel-mood-pill" id="chatRelMoodPill">Calm</span>
-                    <div class="rel-progress-track" aria-hidden="true">
-                      <div class="rel-progress-fill" id="chatRelProgressFill" style="width: 50%;"></div>
-                    </div>
-                  </button>
-                </div>
+                <div class="chat-header-sub" id="chat-header-sub">Cinema Studio &middot; 35mm Lens</div>
               </div>
             </div>
 
-            <div class="chat-toolbar">
-              <div class="select-wrap select-compact select-persona-wrap">
-                <i class="ph-light ph-user-circle select-icon"></i>
-                <select class="select-control" id="chatPersonaSelect" title="Active User Persona" aria-label="Active User Persona"></select>
-              </div>
-              <div class="select-wrap select-compact select-provider-wrap">
-                <i class="ph-light ph-cpu select-icon"></i>
-                <select class="select-control" id="aiProvider" title="Select AI Model Provider" aria-label="Select AI Model Provider">
-                  <option value="gemini" selected>Gemini 3.5 Flash Lite</option>
-                  <option value="ollama">Ollama Local</option>
-                </select>
-              </div>
-              <button class="btn-secondary btn-sm" id="btnSelectVoice" type="button" title="Choose Voice for this Character">
-                <i class="ph-light ph-microphone"></i>
-                <span id="chatVoiceBtnLabel">Choose Voice</span>
+            <div class="chat-topbar-actions">
+              <button class="chat-relationship-bar-pill" id="chatRelationshipBar" type="button" title="Psychological Relationship Dynamics (Click to Direct / Inspect)" aria-haspopup="dialog" aria-expanded="false">
+                <span class="rel-stage-icon" id="chatRelStageIcon"><i class="ph-light ph-heart"></i></span>
+                <span class="rel-stage-label" id="chatRelStageLabel">Stranger / Neutral</span>
+                <span class="rel-score-badge" id="chatRelScoreBadge">0</span>
+                <span class="rel-mood-pill" id="chatRelMoodPill">Calm</span>
+                <div class="rel-progress-track" aria-hidden="true">
+                  <div class="rel-progress-fill" id="chatRelProgressFill" style="width: 50%;"></div>
+                </div>
               </button>
-              <button class="btn-secondary btn-sm" id="btnToggleTTS" type="button" title="Toggle Auto Narration">
-                <i class="ph-light ph-speaker-high"></i>
-                <span id="chatTtsBtnLabel">Narration</span>
+
+              <button class="chat-topbar-btn" id="btnToggleTTS" type="button" title="Narration: OFF (Click to unmute)" aria-label="Toggle Voice Narration">
+                <i class="ph-light ph-speaker-slash"></i>
               </button>
-              <button class="btn-secondary btn-sm" id="btnNewChatSession" type="button" title="Start a fresh chat">
-                <i class="ph-light ph-plus"></i>
-                <span>New Chat</span>
-              </button>
-              <button class="btn-secondary btn-sm" id="btnChatHistory" type="button" title="Saved Chats &amp; History">
-                <i class="ph-light ph-clock-counter-clockwise"></i>
-                <span>History</span>
-              </button>
-              <button class="btn-secondary btn-sm" id="btnMemoryNotebook" type="button" title="Open Character Memory Notebook">
-                <i class="ph-light ph-brain"></i>
-                <span>Memory</span>
-              </button>
-              <button class="btn-secondary btn-sm" id="btnToggleDrawer" type="button" title="Toggle Lore &amp; Memory Vault">
-                <i class="ph-light ph-sidebar-simple"></i>
-                <span>Dossier</span>
+
+              <button class="chat-topbar-btn" id="btnToggleDrawer" type="button" title="More Options &amp; Profile" aria-label="More Options">
+                <i class="ph-bold ph-dots-three"></i>
               </button>
             </div>
 
@@ -415,27 +386,137 @@
 
         <!-- Right Character Dossier & Vector Memory Drawer (Collapsed by default, opens on user toggle) -->
         <aside class="chat-right-drawer collapsed" id="chat-right-drawer" aria-label="Character Dossier and Memory">
-          <div class="drawer-tabs" role="tablist">
-            <button class="drawer-tab active" data-pane="pane-lore" type="button">
-              <i class="ph-light ph-identification-badge"></i>
-              <span>Dossier</span>
+          <div class="drawer-header-bar">
+            <button class="icon-btn drawer-back-btn hidden" id="drawerBackBtn" type="button" aria-label="Back to Menu" title="Back">
+              <i class="ph-bold ph-caret-left"></i>
             </button>
-            <button class="drawer-tab" data-pane="pane-memories" type="button">
-              <i class="ph-light ph-brain"></i>
-              <span>Memory</span>
-            </button>
-            <button class="drawer-tab" data-pane="pane-sessions" type="button">
-              <i class="ph-light ph-git-branch"></i>
-              <span>Chats</span>
-            </button>
-            <button class="drawer-close-btn" id="drawerCloseBtn" type="button" aria-label="Close Dossier">
+            <span class="drawer-header-title" id="drawerHeaderTitle">Profile</span>
+            <button class="icon-btn drawer-close-btn" id="drawerCloseBtn" type="button" aria-label="Close Drawer" title="Close">
               <i class="ph-light ph-x"></i>
             </button>
           </div>
 
           <div class="drawer-body">
+            <!-- Pane 0: Character.AI Style Main Menu & Profile -->
+            <div class="drawer-pane active" id="pane-menu">
+              <div class="drawer-profile-hero">
+                <div class="drawer-profile-avatar-wrap">
+                  <img class="drawer-profile-avatar" id="drawerCharAvatar" src="https://api.dicebear.com/9.x/adventurer/svg?seed=Default" alt="" />
+                </div>
+                <h2 class="drawer-profile-name" id="drawerCharName">Character</h2>
+                <div class="drawer-profile-creator" id="drawerCharCreator">Người thực hiện @cai_creator</div>
+                <div class="drawer-profile-stats" id="drawerCharInteractions">
+                  <i class="ph-light ph-chat-circle"></i>
+                  <span id="drawerChatCountLabel">1.4m lượt tương tác</span>
+                </div>
+
+                <div class="drawer-profile-actions">
+                  <button class="drawer-action-pill" id="drawerShareBtn" type="button" title="Chia sẻ nhân vật">
+                    <i class="ph-light ph-share-network"></i>
+                  </button>
+                  <button class="drawer-action-pill" id="drawerLikeBtn" type="button" title="Thích nhân vật">
+                    <i class="ph-light ph-thumbs-up"></i>
+                    <span id="drawerLikeCount">2.2k</span>
+                  </button>
+                  <button class="drawer-action-pill" id="drawerDislikeBtn" type="button" title="Không thích">
+                    <i class="ph-light ph-thumbs-down"></i>
+                  </button>
+                  <button class="drawer-action-pill" id="drawerBookmarkBtn" type="button" title="Lưu dấu">
+                    <i class="ph-light ph-bookmark-simple"></i>
+                  </button>
+                </div>
+
+                <div class="drawer-profile-status" id="drawerCharStatus"></div>
+              </div>
+
+              <!-- Prominent New Chat Button (Character.AI Style) -->
+              <button class="drawer-new-chat-btn" id="btnNewChatSession" type="button" title="Cuộc trò chuyện mới">
+                <i class="ph-bold ph-chat-circle-dots"></i>
+                <span>Cuộc trò chuyện mới</span>
+              </button>
+
+              <!-- Menu Options Rows (Image 3 Style) -->
+              <div class="drawer-menu-list">
+                <!-- 1. Voice -->
+                <button class="drawer-menu-row" id="btnSelectVoice" type="button" title="Chọn giọng nói">
+                  <div class="drawer-menu-row-left">
+                    <i class="ph-light ph-waveform"></i>
+                    <span>Giọng nói</span>
+                  </div>
+                  <div class="drawer-menu-row-right">
+                    <span class="drawer-menu-val" id="chatVoiceBtnLabel">Mặc định</span>
+                    <i class="ph-bold ph-caret-right"></i>
+                  </div>
+                </button>
+
+                <!-- 2. History -->
+                <button class="drawer-menu-row" id="btnChatHistory" type="button" title="Lịch sử trò chuyện">
+                  <div class="drawer-menu-row-left">
+                    <i class="ph-light ph-clock-counter-clockwise"></i>
+                    <span>Lịch sử</span>
+                  </div>
+                  <div class="drawer-menu-row-right">
+                    <i class="ph-bold ph-caret-right"></i>
+                  </div>
+                </button>
+
+                <!-- 3. Character Dossier & Customization -->
+                <button class="drawer-menu-row" id="btnOpenDossier" type="button" title="Tùy chỉnh &amp; Dossier">
+                  <div class="drawer-menu-row-left">
+                    <i class="ph-light ph-sliders"></i>
+                    <span>Tùy chỉnh</span>
+                  </div>
+                  <div class="drawer-menu-row-right">
+                    <i class="ph-bold ph-caret-right"></i>
+                  </div>
+                </button>
+
+                <!-- 4. Pinned & Memories -->
+                <button class="drawer-menu-row" id="btnMemoryNotebook" type="button" title="Đã ghim &amp; Ký ức">
+                  <div class="drawer-menu-row-left">
+                    <i class="ph-light ph-push-pin"></i>
+                    <span>Đã ghim</span>
+                  </div>
+                  <div class="drawer-menu-row-right">
+                    <i class="ph-bold ph-caret-right"></i>
+                  </div>
+                </button>
+
+                <!-- 5. User Persona -->
+                <div class="drawer-menu-row drawer-menu-select-row">
+                  <div class="drawer-menu-row-left">
+                    <i class="ph-light ph-user-circle"></i>
+                    <span>Chân dung</span>
+                  </div>
+                  <div class="drawer-menu-row-right select-wrap-container">
+                    <div class="select-wrap select-compact select-persona-wrap">
+                      <select class="select-control drawer-select" id="chatPersonaSelect" title="Chân dung người dùng" aria-label="Chân dung người dùng"></select>
+                    </div>
+                    <i class="ph-bold ph-caret-right"></i>
+                  </div>
+                </div>
+
+                <!-- 6. AI Model / Style -->
+                <div class="drawer-menu-row drawer-menu-select-row">
+                  <div class="drawer-menu-row-left">
+                    <i class="ph-light ph-sparkle"></i>
+                    <span>Phong cách</span>
+                  </div>
+                  <div class="drawer-menu-row-right select-wrap-container">
+                    <div class="select-wrap select-compact select-provider-wrap">
+                      <select class="select-control drawer-select" id="aiProvider" title="Select AI Model Provider" aria-label="Select AI Model Provider">
+                        <option value="gemini" selected>Gemini 3.5 Flash Lite</option>
+                        <option value="ollama">Ollama Local</option>
+                      </select>
+                    </div>
+                    <i class="ph-bold ph-caret-right"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Pane 1: Profile & Lore -->
-            <div class="drawer-pane active" id="pane-lore">
+            <div class="drawer-pane" id="pane-lore">
               <div id="drawer-lore-content"></div>
             </div>
 

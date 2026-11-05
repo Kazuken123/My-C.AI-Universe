@@ -83,6 +83,19 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
   // Right Drawer Elements
   const rightDrawer = document.getElementById('chat-right-drawer');
+  const drawerBackBtn = document.getElementById('drawerBackBtn');
+  const drawerHeaderTitle = document.getElementById('drawerHeaderTitle');
+  const btnOpenDossier = document.getElementById('btnOpenDossier');
+  const drawerCharAvatar = document.getElementById('drawerCharAvatar');
+  const drawerCharName = document.getElementById('drawerCharName');
+  const drawerCharCreator = document.getElementById('drawerCharCreator');
+  const drawerChatCountLabel = document.getElementById('drawerChatCountLabel');
+  const drawerLikeCount = document.getElementById('drawerLikeCount');
+  const drawerCharStatus = document.getElementById('drawerCharStatus');
+  const drawerShareBtn = document.getElementById('drawerShareBtn');
+  const drawerLikeBtn = document.getElementById('drawerLikeBtn');
+  const drawerDislikeBtn = document.getElementById('drawerDislikeBtn');
+  const drawerBookmarkBtn = document.getElementById('drawerBookmarkBtn');
   const drawerLoreContent = document.getElementById('drawer-lore-content');
   const drawerMemoriesList = document.getElementById('drawer-memories-list');
   const drawerPinsList = document.getElementById('drawer-pins-list');
@@ -318,13 +331,13 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
   if (ttsAutoBtn) {
     ttsAutoBtn.addEventListener('click', () => {
       autoSpeakTTS = !autoSpeakTTS;
-      ttsAutoBtn.classList.toggle('btn-primary', autoSpeakTTS);
+      ttsAutoBtn.classList.toggle('active', autoSpeakTTS);
       ttsAutoBtn.innerHTML = autoSpeakTTS
-        ? '<i class="ph-fill ph-speaker-high"></i> <span>Narration ON</span>'
-        : '<i class="ph-light ph-speaker-high"></i> <span>Narration</span>';
+        ? '<i class="ph-fill ph-speaker-high"></i>'
+        : '<i class="ph-light ph-speaker-slash"></i>';
       ttsAutoBtn.title = autoSpeakTTS
-        ? 'Automatic narration active'
-        : 'Toggle Auto Narration';
+        ? 'Narration: ON (Click to mute)'
+        : 'Narration: OFF (Click to unmute)';
       if (!autoSpeakTTS) {
         stopActiveVoicePlayback();
       }
@@ -356,12 +369,27 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     }
   };
 
+  const switchDrawerPane = (paneId, title = 'Profile') => {
+    document.querySelectorAll('.drawer-pane').forEach(p => p.classList.remove('active'));
+    const target = document.getElementById(paneId);
+    if (target) target.classList.add('active');
+
+    if (paneId === 'pane-menu') {
+      if (drawerBackBtn) drawerBackBtn.classList.add('hidden');
+      if (drawerHeaderTitle) drawerHeaderTitle.textContent = 'Profile';
+    } else {
+      if (drawerBackBtn) drawerBackBtn.classList.remove('hidden');
+      if (drawerHeaderTitle) drawerHeaderTitle.textContent = title;
+    }
+  };
+
   const openRightDrawer = () => {
     closeHistoryDrawer();
     closeRelPopover();
     if (rightDrawer) {
       rightDrawer.classList.remove('collapsed');
       rightDrawer.classList.add('open');
+      switchDrawerPane('pane-menu', 'Profile');
     }
     if (toggleDrawerBtn) {
       toggleDrawerBtn.classList.add('active');
@@ -417,11 +445,22 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     });
   }
 
+  if (drawerBackBtn) {
+    drawerBackBtn.addEventListener('click', () => {
+      switchDrawerPane('pane-menu', 'Profile');
+    });
+  }
+
+  if (btnOpenDossier) {
+    btnOpenDossier.addEventListener('click', () => {
+      switchDrawerPane('pane-lore', 'Tùy chỉnh & Dossier');
+    });
+  }
+
   if (memoryNotebookBtn && rightDrawer) {
     memoryNotebookBtn.addEventListener('click', () => {
       openRightDrawer();
-      const memTab = document.querySelector('.drawer-tab[data-pane="pane-memories"]');
-      if (memTab) memTab.click();
+      switchDrawerPane('pane-memories', 'Đã ghim & Ký ức');
     });
   }
 
@@ -462,18 +501,6 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
   if (toggleDrawerBtn) {
     toggleDrawerBtn.classList.remove('active');
   }
-
-
-  // Drawer tab switching
-  document.querySelectorAll('.drawer-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.drawer-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.drawer-pane').forEach(p => p.classList.remove('active'));
-      tab.classList.add('active');
-      const target = document.getElementById(tab.dataset.pane);
-      if (target) target.classList.add('active');
-    });
-  });
 
   const STAGE_ICONS = {
     'Hatred / Nemesis': '<i class="ph-bold ph-skull"></i>',
@@ -1915,6 +1942,78 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
   async function refreshRightDrawer(character, session) {
     if (!character) return;
+
+    if (drawerCharAvatar) {
+      drawerCharAvatar.src = character.avatar || 'https://api.dicebear.com/9.x/adventurer/svg?seed=Default';
+    }
+    if (drawerCharName) {
+      drawerCharName.textContent = character.name || 'Character';
+    }
+    if (drawerCharCreator) {
+      drawerCharCreator.textContent = character.creator ? `Người thực hiện @${character.creator}` : 'Người thực hiện @cai_creator';
+    }
+    if (drawerChatCountLabel) {
+      const chatNum = Number(character.chats || character.chatCount || 1400000);
+      drawerChatCountLabel.textContent = formatCount(chatNum) + ' lượt tương tác';
+    }
+    if (drawerLikeCount) {
+      const likesNum = Number(character.likes || 2200);
+      drawerLikeCount.textContent = formatCount(likesNum);
+    }
+    if (drawerCharStatus) {
+      drawerCharStatus.textContent = character.tagline || (character.description ? character.description.slice(0, 100) : '');
+    }
+
+    if (selectVoiceLabel) {
+      const activeVoiceName = session?.voiceNameOverride || session?.voice_name_override || character?.voiceName || character?.voice_name || '';
+      selectVoiceLabel.textContent = activeVoiceName || 'Mặc định';
+    }
+
+    if (drawerShareBtn && !drawerShareBtn.dataset.bound) {
+      drawerShareBtn.dataset.bound = 'true';
+      drawerShareBtn.addEventListener('click', async () => {
+        try {
+          if (navigator.clipboard) {
+            await navigator.clipboard.writeText(window.location.href);
+            showToast('Đã sao chép liên kết vào bộ nhớ tạm!');
+          }
+        } catch {
+          showToast('Không thể sao chép liên kết');
+        }
+      });
+    }
+
+    if (drawerLikeBtn && !drawerLikeBtn.dataset.bound) {
+      drawerLikeBtn.dataset.bound = 'true';
+      drawerLikeBtn.addEventListener('click', async () => {
+        if (!appState.activeCharacter) return;
+        try {
+          const res = await api.toggleLike(appState.activeCharacter.id);
+          drawerLikeBtn.classList.toggle('active', res.isLiked);
+          if (drawerLikeCount) drawerLikeCount.textContent = formatCount(res.likes);
+        } catch (err) {
+          console.warn('Like toggle error:', err);
+        }
+      });
+    }
+
+    if (drawerBookmarkBtn && !drawerBookmarkBtn.dataset.bound) {
+      drawerBookmarkBtn.dataset.bound = 'true';
+      drawerBookmarkBtn.addEventListener('click', () => {
+        drawerBookmarkBtn.classList.toggle('active');
+        showToast(drawerBookmarkBtn.classList.contains('active') ? 'Đã lưu dấu nhân vật!' : 'Đã bỏ lưu dấu');
+      });
+    }
+
+    if (drawerDislikeBtn && !drawerDislikeBtn.dataset.bound) {
+      drawerDislikeBtn.dataset.bound = 'true';
+      drawerDislikeBtn.addEventListener('click', () => {
+        drawerDislikeBtn.classList.toggle('active');
+        if (drawerDislikeBtn.classList.contains('active')) {
+          drawerLikeBtn?.classList.remove('active');
+        }
+      });
+    }
 
     if (drawerLoreContent) {
       drawerLoreContent.innerHTML = `
