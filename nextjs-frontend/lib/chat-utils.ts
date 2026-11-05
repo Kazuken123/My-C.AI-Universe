@@ -56,12 +56,15 @@ export function calculateAffinityPercent(affinity = 0): number {
 
 export const AI_PROVIDERS = [
   { id: 'gemini', label: 'Gemini 3.5 Flash Lite' },
+  { id: 'modal_gemma', label: 'Gemma 4 31B Fine-Tuned (Modal GPU)' },
   { id: 'ollama', label: 'Ollama Local' },
 ] as const;
 
-export function resolveSupportedProvider(provider?: string | null): 'gemini' | 'ollama' {
+export function resolveSupportedProvider(provider?: string | null): 'gemini' | 'modal_gemma' | 'ollama' {
   const normalized = typeof provider === 'string' ? provider.trim().toLowerCase() : '';
-  return normalized === 'ollama' ? 'ollama' : 'gemini';
+  if (normalized === 'modal_gemma') return 'modal_gemma';
+  if (normalized === 'ollama') return 'ollama';
+  return 'gemini';
 }
 
 export function removeSessionById<T extends { id?: string }>(

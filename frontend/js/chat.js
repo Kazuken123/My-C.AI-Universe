@@ -1097,8 +1097,12 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     if (chatInput) {
       chatInput.placeholder = `Message ${character.name}... (Press Enter on empty input to continue scene)`;
     }
-    if (aiProviderSelect && session?.provider) {
-      aiProviderSelect.value = session.provider;
+    if (aiProviderSelect) {
+      if (session?.provider) {
+        aiProviderSelect.value = session.provider;
+      } else if (character && (character.id === '1766394139616' || String(character.name).toLowerCase().includes('kana'))) {
+        aiProviderSelect.value = 'modal_gemma';
+      }
     }
     if (selectVoiceBtn && selectVoiceLabel) {
       const hasOverride = Boolean(session?.voiceIdOverride || session?.voice_id_override);
@@ -1953,11 +1957,11 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       drawerCharCreator.textContent = character.creator ? `Người thực hiện @${character.creator}` : 'Người thực hiện @cai_creator';
     }
     if (drawerChatCountLabel) {
-      const chatNum = Number(character.chats || character.chatCount || 1400000);
+      const chatNum = Number(character.interactions ?? character.chats ?? character.chatCount ?? 0);
       drawerChatCountLabel.textContent = formatCount(chatNum) + ' lượt tương tác';
     }
     if (drawerLikeCount) {
-      const likesNum = Number(character.likes || 2200);
+      const likesNum = Number(character.likes ?? 0);
       drawerLikeCount.textContent = formatCount(likesNum);
     }
     if (drawerCharStatus) {

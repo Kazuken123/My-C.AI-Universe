@@ -1,5 +1,20 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-11-05 - Character Avatar Polish, Elimination of Orange Artifacts, Genuine Interactions Count & Gemma 4 31B Fine-Tuned Model Selector
+
+- **Character Profile Image Polish & Removal of Orange Background/Glow (`frontend/css/chat.css`, `nextjs-frontend/app/chat.css`)**:
+  - Root Cause: `.drawer-profile-avatar-wrap` previously applied a gold/orange linear gradient (`rgba(234, 179, 8)`) with `padding: 3px` and an orange radial box-shadow under the mistaken assumption that Ghost's character avatar aura in C.AI was a universal design token. For characters with transparent avatars or padding, the orange gradient bled through into the image background.
+  - Fix: Completely eliminated the orange gradient, padding, and orange glow. Standardized on a circular, edge-to-edge avatar frame (`width: 92px`, `height: 92px`, `border-radius: 50%`, `overflow: hidden`, `padding: 0`) with dark neutral backing (`var(--bg-core-elevated, #16161a)`), subtle hairline border (`2px solid rgba(255, 255, 255, 0.12)`), and deep ambient drop shadow (`0 8px 24px rgba(0, 0, 0, 0.5)`).
+  - Also standardized `.chat-header-avatar-wrap` to circular `border-radius: 50%` matching Character.AI.
+- **Genuine Entity Interaction & Like Counting (`frontend/chat.html`, `frontend/js/chat.js`)**:
+  - Root Cause: Replaced the static fallback of `1400000` (which was copied from the Ghost screenshot's "1.4m lượt tương tác") and hardcoded `2.2k` likes.
+  - Fix: Connected `#drawerChatCountLabel` and `#drawerLikeCount` directly to genuine SQL entity metrics: `character.interactions` and `character.likes` via `formatCount(character.interactions ?? 0)`.
+- **Gemma 4 31B Fine-Tuned Model Integration in UI (`frontend/chat.html`, `frontend/js/chat.js`, `nextjs-frontend/lib/chat-utils.ts`)**:
+  - Root Cause: While the backend `ModalGemmaProvider` and `resolveProviderForCharacter` were fully functional on Modal GPU serverless, the frontend `<select id="aiProvider">` dropdown only exposed `gemini` and `ollama`.
+  - Fix: Added `<option value="modal_gemma">Gemma 4 31B Fine-Tuned (Modal GPU)</option>` to the model picker in both Express and Next.js frontends (`AI_PROVIDERS`), enabling users to explicitly select Gemma 4 31B Fine-Tuned for roleplay sessions.
+- **Verification**:
+  - Full automated regression test suite: 57/57 test files passed (0 failed).
+
 ## 2026-11-05 - Chat Topbar Minimalist Redesign & Character.AI Style `...` Right Drawer Integration
 
 - **Topbar Cleanup & Relationship Dynamics Bar Relocation (`frontend/chat.html`, `frontend/css/chat.css`, `nextjs-frontend/components/chat/chat-header.tsx`, `nextjs-frontend/app/chat.css`)**:
