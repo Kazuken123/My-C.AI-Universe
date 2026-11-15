@@ -1,0 +1,62 @@
+name: Strix AI Security Scan
+
+on:
+  workflow_dispatch:
+    inputs:
+      scan_mode:
+        description: Strix scan depth
+        type: choice
+        default: quick
+        options: [quick, standard, deep]
+      max_budget:
+        description: Maximum LLM spend cap (USD)
+        type: string
+        default: '5'
+  schedule:
+    # Weekly automated security scan (Sundays 03:00 UTC) when secrets are configured
+    - cron: '0 3 * * 0'
+
+permissions:
+  contents: read
+
+jobs:
+  strix:
+    name: Strix Autonomous Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check Strix LLM secret configuration
+        id: check-secrets
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+        run: |
+          if [ -z "$LLM_API_KEY" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Skipped: Add repository secret LLM_API_KEY (e.g. Google AI Studio GEMINI_API_KEY) and optional STRIX_LLM (default gemini/gemini-2.5-flash) to enable Strix scans." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout repository
+        if: steps.check-secrets.outputs.enabled == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Install Strix
+        if: steps.check-secrets.outputs.enabled == 'true'
+        run: curl -sSL https://strix.ai/install | bash
+
+      - name: Run Strix headless scan
+        if: steps.check-secrets.outputs.enabled == 'true'
+        id: strix-run
+        env:
+          STRIX_LLM: ${{ secrets.STRIX_LLM || 'gemini/gemini-2.5-flash' }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          set +e
+          strix -n -t ./ --scan-mode "${{ inputs.scan_mode || 'quick' }}" --max-budget "${{ inputs.max_budget || '5' }}"
+          exit_code=$?
+          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
+          exit "$exit_code"

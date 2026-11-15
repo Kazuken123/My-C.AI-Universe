@@ -1,5 +1,22 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-11-15 - Antigravity Harness Engineering, Tiered Swarm Workflow, AI Studio MCP Offload & Strix CI
+
+- **Deterministic Antigravity Harness Gates (`.agents/hooks.json`, `.agents/hooks/pre-commit-gate.mjs`, `.agents/hooks/stop-verify.mjs`, plus global `~/.gemini/config/hooks.json`)**:
+  - Added `PreToolUse` (`run_command`) gate that blocks `git commit` if forbidden local/secret files (`.env`, `*.sqlite`, `PLAN.md`, `*.pptx`, `__pycache__`, `repomix-output.*`) are staged or if `scripts/check-syntax.js` fails on staged JS/MJS files.
+  - Added `Stop` verification hook (`terminationReason === 'NO_TOOL_CALL'` and `!continuationActive`) that catches JS syntax regressions in dirty working trees before the agent terminates.
+  - Added global safety guard (`~/.gemini/config/hooks/global-guard.mjs`) blocking raw `git push --force` without `--force-with-lease` and prompting on `git reset --hard` or direct `.env` shell reads.
+- **Quota-Saving Multi-Agent & Swarm Workflows (`.agents/workflows/tiered-dev.md`, `.agents/workflows/swarm-audit.md`, global `tiered-swarm` skill)**:
+  - Standardized model tiering so **Gemini 4 Argon / Hydrogen** stays on coordination and hard reasoning while `research` subagents, swarm readers, verifiers, narrators, and monitors run on **Flash** (`gemini-3.8-flash-medium` / `flash`).
+  - Integrated Cloudflare's [`security-audit`](https://github.com/cloudflare/security-audit-skill) skill (`~/.gemini/config/skills/security-audit/`) with [`docs/audit-history.md`](file:///c:/Users/giuag/OneDrive/Documents/My%20C.AI%20Universe/docs/audit-history.md) and documented the Windows `O_NOFOLLOW`/`O_NONBLOCK` validator caveat.
+- **Google AI Studio MCP Offload Server (`~/.gemini/config/mcp-servers/ai-studio-offload/server.mjs`)**:
+  - Built and registered a local stdio MCP server (`ai_studio_ask`, `ai_studio_analyze_files`, `ai_studio_review_diff`) powered by `@google/genai` and `GEMINI_API_KEY` (Windows env var or `~/.gemini/config/.env.aistudio`) to offload bulk file/diff/log analysis off Antigravity quotas while blocking reads of `.env`/keys/SQLite files.
+- **Strix Autonomous AppSec CI (`.github/workflows/strix-security.yml`, global `strix-security` skill)**:
+  - Added manual/scheduled GitHub Actions workflow using `usestrix/strix` (`STRIX_LLM` + `LLM_API_KEY`) because Docker is not installed on the local Windows workstation.
+- **Verification**:
+  - Authored `tests/antigravity-hooks.test.mjs` (5/5 passing) verifying `.agents/hooks.json`, secret staging block, syntax-gate enforcement, and `continuationActive` loop guard.
+  - Verified `global-guard.mjs` decisions and `ai-studio-offload` MCP stdio tool discovery/error handling via `@modelcontextprotocol/sdk`.
+
 ## 2026-11-05 - Fix Gemma 4 Chat Template Alternating Roles Contract (`jinja2.exceptions.TemplateError`)
 
 - **Root Cause Analysis (`jinja2.exceptions.TemplateError: Conversation roles must alternate user/assistant/user/assistant/...`)**:

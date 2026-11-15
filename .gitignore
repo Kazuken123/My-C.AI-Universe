@@ -42,6 +42,9 @@ memory-service/test_memories.json
 memory-service/test_memory.py
 .agents/*
 !.agents/rules/
+!.agents/hooks.json
+!.agents/hooks/
+!.agents/workflows/
 graphify-out/
 
 # Avatar media files (Persisted directly in Turso Cloud media_assets table)
