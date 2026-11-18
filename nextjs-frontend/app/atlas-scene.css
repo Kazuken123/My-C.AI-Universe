@@ -1,0 +1,20 @@
+/* The poster is a fixed-time frame of the live shader, art-directed per viewport. */
+.universe-art .universe-scene .universe-fallback {
+  background: #05080c url("/images/atlas-horizon-wide.webp") 72% 49% / cover no-repeat;
+}
+.universe-scene .universe-fallback > *,
+.universe-scene .universe-fallback::before,
+.universe-scene .universe-fallback::after {
+  display: none;
+}
+@media (max-width: 768px) {
+  .universe-art .universe-scene .universe-fallback {
+    background-position: 53% 31%;
+    background-image: url("/images/atlas-horizon-compact.webp");
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .universe-scene .universe-canvas, .universe-scene .universe-fallback {
+    transition: none;
+  }
+}
