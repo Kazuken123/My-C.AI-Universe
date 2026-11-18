@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   X,
   BookOpen,
@@ -34,18 +34,20 @@ export function ChatDrawerMemories({
 }: ChatDrawerMemoriesProps) {
   const [activeTab, setActiveTab] = useState<'lore' | 'memories' | 'pins'>('memories');
   const [memories, setMemories] = useState<CharacterMemory[]>([]);
-  const [loadingMemories, setLoadingMemories] = useState(false);
+  const [loadingMemories, setLoadingMemories] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [newMemoryText, setNewMemoryText] = useState('');
   const [addingMemory, setAddingMemory] = useState(false);
 
   const fetchMemories = useCallback(async () => {
     if (!character.id) return;
     setLoadingMemories(true);
+    setFetchError(false);
     try {
       const res = await api.getMemories(character.id, session?.id);
       setMemories(Array.isArray(res?.memories) ? res.memories : []);
     } catch {
-      setMemories([]);
+      setFetchError(true);
     } finally {
       setLoadingMemories(false);
     }
@@ -93,37 +95,40 @@ export function ChatDrawerMemories({
 
   const pinnedMessages = (session?.messages || []).filter((m) => m.isPinned);
 
-  return (
-    <>
-      {/* Backdrop */}
-      <div
-        hidden={!isOpen}
-        onClick={onClose}
-        className="era-chat-backdrop fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
-        aria-hidden="true"
-      />
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
-      {/* Drawer Panel */}
-      <aside
-        ref={node => { if (node) node.inert = !isOpen; }}
-        hidden={!isOpen}
-        aria-hidden={!isOpen}
-        className={cn(
-          'era-chat-drawer fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-border-hairline bg-rail backdrop-blur-2xl transition-transform duration-300',
-          isOpen ? 'translate-x-0' : 'translate-x-full'
-        )}
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (isOpen && !dialog.open) dialog.showModal();
+    if (!isOpen && dialog.open) dialog.close();
+    return () => {
+      if (dialog.open) dialog.close();
+    };
+  }, [isOpen]);
+
+  return (
+      <dialog
+        ref={dialogRef}
+        aria-labelledby="chat-memories-title"
+        onCancel={event => {
+          event.preventDefault();
+          onClose();
+        }}
+        className="atlas-chat-dialog"
       >
         {/* Drawer Header */}
         <div className="flex items-center justify-between border-b border-border-hairline p-4">
           <div className="flex items-center gap-2">
             <BookOpen className="h-4 w-4 text-accent" />
-            <h2 className="font-display text-sm font-bold text-text-primary">
+            <h2 id="chat-memories-title" className="font-display text-sm font-bold text-text-primary">
               Lore & Memory Notebook
             </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
+            aria-label="Close drawer"
             className="icon-btn h-7 w-7 text-text-muted hover:text-text-primary"
           >
             <X className="h-4 w-4" />
@@ -207,6 +212,11 @@ export function ChatDrawerMemories({
               {loadingMemories ? (
                 <div className="flex items-center justify-center p-8 text-text-muted">
                   <Loader2 className="h-5 w-5 animate-spin text-accent" />
+                </div>
+              ) : fetchError ? (
+                <div className="atlas-chat-state" role="alert">
+                  <p>Could not load memories.</p>
+                  <button className="btn-secondary" type="button" onClick={fetchMemories}>Try again</button>
                 </div>
               ) : memories.length === 0 ? (
                 <div className="rounded-xl border border-border-hairline bg-white/[0.02] p-6 text-center text-xs text-text-muted">
@@ -339,7 +349,6 @@ export function ChatDrawerMemories({
             </div>
           )}
         </div>
-      </aside>
-    </>
+      </dialog>
   );
 }

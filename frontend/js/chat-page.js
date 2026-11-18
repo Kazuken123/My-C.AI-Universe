@@ -75,8 +75,6 @@ class ChatPageApp {
       showToast
     );
 
-    await this.chatController.loadAllSessions();
-
     const params = new URLSearchParams(window.location.search);
     const charId = params.get('id');
     const sessionId = params.get('session');
@@ -106,13 +104,29 @@ class ChatPageApp {
           }, 1200);
         }
       } catch (err) {
-        showToast('Error loading character: ' + err.message);
+        this.renderStartupError();
       }
     }
   }
+  renderStartupError() {
+    const stream = document.getElementById('chat-stream-inner');
+    if (!stream) return;
+    stream.removeAttribute('aria-busy');
+    stream.innerHTML = `<div class="atlas-chat-state" role="alert">
+      <h2>Could not open chat</h2>
+      <p>Could not load the character directory.</p>
+      <button type="button" class="btn-secondary">Try again</button>
+      <a href="/" class="btn-secondary">Browse characters</a>
+    </div>`;
+    stream.querySelector('button').addEventListener('click', () => window.location.reload());
+  }
+
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   const app = new ChatPageApp();
-  app.init();
+  app.init().catch(error => {
+    console.error('Could not initialize chat:', error);
+    app.renderStartupError();
+  });
 });

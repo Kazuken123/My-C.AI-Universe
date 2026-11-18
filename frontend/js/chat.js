@@ -1,7 +1,7 @@
 import { normalizeRelationshipStage, RELATIONSHIP_MOODS, RELATIONSHIP_PRESETS } from './relationship-contract.js';
 import { api } from './api.js';
 import { escapeHtml, formatCount, bindSpotlightHover } from './characters.js';
-import { deduplicateSessionsByCharacter, setActiveSessionForCharacter, getActiveSessionForCharacter } from './common.js';
+import { deduplicateSessionsByCharacter, setActiveSessionForCharacter, getActiveSessionForCharacter, initCustomSelects } from './common.js';
 import { openVoicePickerModal } from './voice-picker.js';
 
 /**
@@ -307,6 +307,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
               voiceIdOverride: voiceId,
               voiceNameOverride: voiceName
             });
+            if (appState.activeSession?.id !== sess.id) return;
             appState.activeSession = res.session || {
               ...sess,
               voiceIdOverride: voiceId,
@@ -356,12 +357,15 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
   const drawerCloseBtn = document.getElementById('drawerCloseBtn');
 
   const closeRightDrawer = () => {
+    if (rightDrawer?.contains(document.activeElement)) toggleDrawerBtn?.focus();
     if (rightDrawer) {
       rightDrawer.classList.add('collapsed');
       rightDrawer.classList.remove('open');
+      rightDrawer.inert = true;
     }
     if (toggleDrawerBtn) {
       toggleDrawerBtn.classList.remove('active');
+      toggleDrawerBtn.setAttribute('aria-expanded', 'false');
     }
     if (drawerBackdrop && (!chatHistoryDrawer || chatHistoryDrawer.classList.contains('hidden'))) {
       drawerBackdrop.classList.remove('active');
@@ -397,17 +401,22 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     if (rightDrawer) {
       rightDrawer.classList.remove('collapsed');
       rightDrawer.classList.add('open');
+      rightDrawer.inert = false;
       switchDrawerPane('pane-menu', 'Profile');
     }
     if (toggleDrawerBtn) {
       toggleDrawerBtn.classList.add('active');
+      toggleDrawerBtn.setAttribute('aria-expanded', 'true');
     }
     if (drawerBackdrop && window.innerWidth <= 768) drawerBackdrop.classList.add('active');
+    drawerCloseBtn?.focus();
   };
 
   const closeHistoryDrawer = () => {
+    if (chatHistoryDrawer?.contains(document.activeElement)) toggleDrawerBtn?.focus();
     if (chatHistoryDrawer) {
       chatHistoryDrawer.classList.add('hidden');
+      chatHistoryDrawer.inert = true;
     }
     if (btnChatHistory) {
       btnChatHistory.classList.remove('active');
@@ -422,6 +431,8 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     closeRelPopover();
     if (chatHistoryDrawer) {
       chatHistoryDrawer.classList.remove('hidden');
+      chatHistoryDrawer.inert = false;
+      btnCloseHistoryDrawer?.focus();
     }
     if (btnChatHistory) {
       btnChatHistory.classList.add('active');
@@ -500,6 +511,30 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       closeHistoryDrawer();
     });
   }
+
+  document.addEventListener('keydown', event => {
+    const drawer = chatHistoryDrawer && !chatHistoryDrawer.classList.contains('hidden')
+      ? chatHistoryDrawer
+      : rightDrawer?.classList.contains('open') ? rightDrawer : null;
+    if (!drawer || event.defaultPrevented || document.querySelector('.voice-picker-overlay.active')) return;
+
+    if (event.key === 'Escape' && drawer.contains(document.activeElement)) {
+      if (drawer === chatHistoryDrawer) closeHistoryDrawer();
+      else closeRightDrawer();
+    }
+
+    if (event.key !== 'Tab' || window.innerWidth > 768 || !drawerBackdrop?.classList.contains('active')) return;
+    const controls = [...drawer.querySelectorAll('button, a[href], select, textarea, input')]
+      .filter(element => !element.disabled && element.tabIndex >= 0 && element.getClientRects().length);
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if (!first) return;
+    if (!drawer.contains(document.activeElement) ||
+      (event.shiftKey ? document.activeElement === first : document.activeElement === last)) {
+      event.preventDefault();
+      (event.shiftKey ? last : first).focus();
+    }
+  });
 
   // Initial state: start collapsed across all screen sizes (dossier only appears when clicked)
   if (rightDrawer) {
@@ -671,13 +706,15 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
   if (btnResetStrain) {
     btnResetStrain.addEventListener('click', async () => {
-      if (!appState.activeSession) return;
+      const sessionId = appState.activeSession?.id;
+      if (!sessionId) return;
       try {
         lastDirectorOverrideTime = Date.now();
-        const updated = await api.updateSessionRelationship(appState.activeSession.id, {
+        const updated = await api.updateSessionRelationship(sessionId, {
           strain: 0,
           relationshipMood: 'Calm'
         });
+        if (appState.activeSession?.id !== sessionId) return;
         if (updated && updated.session) {
           appState.activeSession = { ...appState.activeSession, ...updated.session };
         } else if (updated && updated.relationship) {
@@ -693,7 +730,8 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
   if (btnApplyRelOverride) {
     btnApplyRelOverride.addEventListener('click', async () => {
-      if (!appState.activeSession) return;
+      const sessionId = appState.activeSession?.id;
+      if (!sessionId) return;
       try {
         lastDirectorOverrideTime = Date.now();
         const affinityVal = parseInt(relAffinitySlider?.value ?? 0, 10);
@@ -710,7 +748,8 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
           payload.trust = RELATIONSHIP_PRESETS.find(p=>p.stage===stageVal)?.trust ?? affinityVal;
         }
 
-        const updated = await api.updateSessionRelationship(appState.activeSession.id, payload);
+        const updated = await api.updateSessionRelationship(sessionId, payload);
+        if (appState.activeSession?.id !== sessionId) return;
         if (updated && updated.session) {
           appState.activeSession = { ...appState.activeSession, ...updated.session };
         } else if (updated && updated.relationship) {
@@ -925,8 +964,13 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
   /**
    * Render saved conversation threads for the active character in the History Drawer
    */
+  let historyRequest = 0;
+
   async function renderCharacterHistory() {
     if (!chatHistoryList || !appState.activeCharacter) return;
+    const character = appState.activeCharacter;
+    const request = ++historyRequest;
+    const isCurrent = () => request === historyRequest && appState.activeCharacter?.id === character.id;
     try {
       chatHistoryList.innerHTML = `
         <div style="padding: 24px; text-align: center; color: var(--text-muted); font-size: 0.8rem;">
@@ -936,17 +980,18 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
       let charSessions = [];
       try {
-        charSessions = await api.getChatSessions(appState.activeCharacter.id);
+        charSessions = await api.getChatSessions(character.id);
       } catch {
         charSessions = Array.isArray(appState.sessions)
-          ? appState.sessions.filter(s => s.characterId === appState.activeCharacter.id)
+          ? appState.sessions.filter(s => s.characterId === character.id)
           : [];
       }
 
+      if (!isCurrent()) return;
       if (!charSessions || charSessions.length === 0) {
         chatHistoryList.innerHTML = `
           <div style="padding: 32px 16px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
-            No chats found for ${escapeHtml(appState.activeCharacter.name)}.
+            No chats found for ${escapeHtml(character.name)}.
           </div>
         `;
         return;
@@ -970,7 +1015,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
                 <i class="ph-light ph-trash"></i>
               </button>
             </div>
-            <div class="history-thread-snippet">${escapeHtml(snippet)}</div>
+            <button type="button" class="history-thread-snippet atlas-history-open">${escapeHtml(snippet)}</button>
           </div>
         `;
       };
@@ -1025,6 +1070,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         });
       });
     } catch (err) {
+      if (!isCurrent()) return;
       console.error('Failed to render character history:', err);
       chatHistoryList.innerHTML = `
         <div style="padding: 24px; text-align: center; color: var(--error); font-size: 0.8rem;">
@@ -1037,34 +1083,57 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
   /**
    * Open the Chat Room for a specific Character and optional Session ID
    */
-  async function openChatWithCharacter(characterId, sessionId = null) {
-    isSending = false;
+  let chatRequest = 0;
+  let creatingSession = false;
+
+  async function openChatWithCharacter(characterId, sessionId = null, startFresh = false) {
+    if (creatingSession) return;
+    if (isSending) {
+      showToast('Wait for the current reply before switching chats.');
+      return;
+    }
+    const request = ++chatRequest;
+    if (startFresh) creatingSession = true;
     stopActiveVoicePlayback();
-    renderChatSkeleton();
+    const previousSession = appState.activeSession;
+    const composer = chatInput?.closest('.chat-composer-wrap');
+    composer?.querySelector('.atlas-chat-action-error')?.remove();
+    const controls = [chatInput, sendBtn, continueBtn, newSessionBtn, btnHistoryNewThread].filter(Boolean);
+    controls.forEach(control => { control.disabled = true; });
+    if (!previousSession) renderChatSkeleton();
+    streamInner?.setAttribute('aria-busy', 'true');
     try {
       const [character, charSessions] = await Promise.all([
-        api.getCharacter(characterId),
-        api.getChatSessions(characterId)
+        startFresh ? appState.activeCharacter : api.getCharacter(characterId),
+        sessionId || startFresh ? Promise.resolve([]) : api.getChatSessions(characterId)
       ]);
+
+      const savedId = getActiveSessionForCharacter(character.id);
+      const targetId = sessionId || charSessions.find(s => s.id === savedId)?.id || charSessions[0]?.id;
+      if (request !== chatRequest) return;
+      const session = targetId
+        ? await api.getChatSession(targetId)
+        : await api.createChatSession({
+            characterId: character.id,
+            personaId: (startFresh && chatPersonaSelect?.value) || appState.activePersona?.id || 'persona_default',
+            provider: aiProviderSelect?.value || 'gemini',
+            ...(startFresh ? { title: `Storyline ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` } : {})
+          });
+
+      if (request !== chatRequest) return;
+      if (session.characterId !== character.id) throw new Error('This chat belongs to another character.');
       appState.activeCharacter = character;
-
-      let session;
-
-      const activeStoredSessionId = getActiveSessionForCharacter(character.id);
-      const targetSessionId = sessionId || (charSessions.some(s => s.id === activeStoredSessionId) ? activeStoredSessionId : null);
-      if (targetSessionId) {
-        session = await api.getChatSession(targetSessionId);
-      } else if (charSessions.length > 0) {
-        session = await api.getChatSession(charSessions[0].id);
-      } else {
-        session = await api.createChatSession({
-          characterId: character.id,
-          personaId: appState.activePersona?.id || 'persona_default',
-          provider: aiProviderSelect?.value || 'gemini'
-        });
-      }
-
       appState.activeSession = session;
+      if (chatPersonaSelect) {
+        const persona = appState.personas?.find(p => p.id === session?.personaId)
+          || appState.personas?.find(p => p.isDefault)
+          || appState.personas?.[0];
+        if (persona) {
+          appState.activePersona = persona;
+          chatPersonaSelect.value = persona.id;
+          initCustomSelects(chatPersonaSelect.closest('.select-wrap') || document);
+        }
+      }
       setActiveSessionForCharacter(character.id, session.id);
 
       const url = `/chat?id=${encodeURIComponent(character.id)}${session?.id ? `&session=${encodeURIComponent(session.id)}` : ''}`;
@@ -1073,25 +1142,39 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       }
 
       navigateTo('chat', false);
-      if (streamInner) {
-        streamInner.classList.remove('chat-stream-switching');
-        void streamInner.offsetWidth;
-        streamInner.classList.add('chat-stream-switching');
-      }
       renderChatHeader(character, session);
       renderChatStream(character, session);
       renderRelationshipBar(session, character);
       await Promise.all([
         refreshRightDrawer(character, session),
-        loadAllSessions()
+        loadAllSessions(startFresh)
       ]);
 
+      if (request !== chatRequest) return;
+      if (startFresh) showToast('Started a fresh chat.');
       if (chatHistoryDrawer && !chatHistoryDrawer.classList.contains('hidden')) {
         renderCharacterHistory().catch(() => {});
       }
     } catch (error) {
-      console.error('Failed to open chat:', error);
-      showToast('Could not open chat: ' + error.message);
+      if (request !== chatRequest) return;
+      const notice = document.createElement('div');
+      notice.className = previousSession ? 'atlas-chat-action-error' : 'atlas-chat-state';
+      notice.setAttribute('role', 'alert');
+      notice.innerHTML = `<h2>Could not open chat</h2>
+        <p>${escapeHtml(error.message || 'Check your connection and try again.')}</p>
+        <button type="button" class="btn-secondary">Try again</button>
+        ${previousSession ? '' : '<a href="/chats" class="btn-secondary">Saved chats</a>'}`;
+      if (previousSession && composer) composer.prepend(notice);
+      else streamInner?.replaceChildren(notice);
+      notice.querySelector('button').addEventListener('click', () => {
+        openChatWithCharacter(characterId, sessionId, startFresh);
+      });
+    } finally {
+      if (startFresh) creatingSession = false;
+      if (request === chatRequest) {
+        streamInner?.removeAttribute('aria-busy');
+        controls.forEach(control => { control.disabled = !appState.activeSession; });
+      }
     }
   }
 
@@ -1132,13 +1215,14 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     }
   }
 
-    const CHAT_PAGE_SIZE = 20;
+  const CHAT_PAGE_SIZE = 20;
   let visibleMessageStartIndex = 0;
   let isLoadingOlderHistory = false;
 
   function renderChatSkeleton() {
     if (!streamInner) return;
     streamInner.innerHTML = `
+      <span class="atlas-sr-only" role="status">Opening chat</span>
       <div class="chat-skeleton-stream" aria-hidden="true">
         <div class="chat-intro-skeleton">
           <div class="skeleton-avatar-circle"></div>
@@ -1204,7 +1288,6 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         <div class="msg-body">
           <div class="msg-sender-line">
             <span class="msg-sender-name">${escapeHtml(senderName)}</span>
-            ${!isUser ? `<span class="soul-id-badge" style="font-size: 0.6rem; padding: 1px 6px;"><span class="soul-dot"></span>SOUL-ID</span>` : ''}
             ${msg.isPinned ? `<span class="pin-indicator"><i class="ph-fill ph-push-pin"></i> Pinned</span>` : ''}
           </div>
           <div class="msg-bubble" data-bubble-id="${escapeHtml(msg.id)}">${formatRoleplayText(displayContent)}</div>
@@ -1498,6 +1581,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
           const updated = await api.updateChatMessage(session.id, msgId, {
             isPinned: !msg.isPinned
           });
+          if (appState.activeSession?.id !== session.id) return;
           appState.activeSession = updated.session;
           renderChatStream(character, updated.session);
           await refreshRightDrawer(character, updated.session);
@@ -1529,6 +1613,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
           if (!newText) return;
           try {
             const updated = await api.updateChatMessage(session.id, msgId, { content: newText });
+            if (appState.activeSession?.id !== session.id) return;
             appState.activeSession = updated.session;
             renderChatStream(character, updated.session);
             showToast('Turn updated in SQL.');
@@ -1549,6 +1634,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         }
         try {
           const updatedSession = await api.rewindChatSession(session.id, msgId);
+          if (appState.activeSession?.id !== session.id) return;
           appState.activeSession = updatedSession;
           renderChatStream(character, updatedSession);
           showToast('Rewound storyline to selected turn.');
@@ -1655,7 +1741,6 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       <div class="msg-body">
         <div class="msg-sender-line">
           <span class="msg-sender-name">${escapeHtml(character.name)}</span>
-          <span class="soul-id-badge" style="font-size: 0.6rem; padding: 1px 6px;"><span class="soul-dot"></span>SOUL-ID</span>
         </div>
         <div class="msg-bubble streaming-bubble">
           <span class="stream-text"></span><span class="stream-cursor">▌</span>
@@ -1753,6 +1838,10 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         renderChatStream(appState.activeCharacter, updatedSession);
         renderRelationshipBar(updatedSession, appState.activeCharacter);
       } catch { modelRow.remove(); }
+      if (!chatInput.value && !appState.activeSession?.messages?.slice(-2).some(msg => msg.role === 'user' && msg.content === text)) {
+        chatInput.value = text;
+        chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
       showToast('Connection interrupted. Review the conversation before sending again.');
     } finally {
       isSending = false;
@@ -1890,7 +1979,6 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       <div class="msg-body">
         <div class="msg-sender-line">
           <span class="msg-sender-name">${escapeHtml(character.name)}</span>
-          <span class="soul-id-badge" style="font-size: 0.6rem; padding: 1px 6px;"><span class="soul-dot"></span>SOUL-ID</span>
         </div>
         <div class="msg-bubble streaming-bubble">
           <em>*${escapeHtml(character.name)} advances the moment<span class="typing-dots"><span></span><span></span><span></span></span>*</em>
@@ -2075,6 +2163,8 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       }
     }
 
+    if (appState.activeCharacter?.id !== character.id || appState.activeSession?.id !== session?.id) return;
+
     const drawerStoryChronicle = document.getElementById('drawer-story-chronicle');
     if (drawerStoryChronicle && character) {
       const storySummary = sharedMemData?.storySummary || '';
@@ -2196,30 +2286,9 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
   }
 
   if (newSessionBtn) {
-    newSessionBtn.addEventListener('click', async () => {
+    newSessionBtn.addEventListener('click', () => {
       if (!appState.activeCharacter) return;
-      try {
-        const fresh = await api.createChatSession({
-          characterId: appState.activeCharacter.id,
-          personaId: chatPersonaSelect?.value || appState.activePersona?.id || 'persona_default',
-          provider: aiProviderSelect?.value || 'gemini',
-          title: `Storyline ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-        });
-        appState.activeSession = fresh;
-        const url = `/chat?id=${encodeURIComponent(appState.activeCharacter.id)}&session=${encodeURIComponent(fresh.id)}`;
-        window.history.replaceState({ view: 'chat', characterId: appState.activeCharacter.id, sessionId: fresh.id }, '', url);
-        renderChatStream(appState.activeCharacter, fresh);
-        renderRelationshipBar(fresh, appState.activeCharacter);
-        await refreshRightDrawer(appState.activeCharacter, fresh);
-        await loadAllSessions(true);
-        if (chatHistoryDrawer && !chatHistoryDrawer.classList.contains('hidden')) {
-          await renderCharacterHistory();
-        }
-        setActiveSessionForCharacter(appState.activeCharacter.id, fresh.id);
-        showToast('Started a fresh chat.');
-      } catch (err) {
-        showToast(err.message);
-      }
+      openChatWithCharacter(appState.activeCharacter.id, null, true);
     });
   }
 

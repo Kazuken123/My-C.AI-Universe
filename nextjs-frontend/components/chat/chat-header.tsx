@@ -10,7 +10,6 @@ import {
   History,
   Cpu,
   UserCheck,
-  Radio,
   Mic,
   MoreHorizontal,
 } from 'lucide-react';
@@ -58,6 +57,7 @@ export function ChatHeader({
 }: ChatHeaderProps) {
   const [isOptionsOpen, setIsOptionsOpen] = React.useState(false);
   const optionsRef = React.useRef<HTMLDivElement>(null);
+  const optionsButtonRef = React.useRef<HTMLButtonElement>(null);
 
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -65,11 +65,18 @@ export function ChatHeader({
         setIsOptionsOpen(false);
       }
     }
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+      setIsOptionsOpen(false);
+      optionsButtonRef.current?.focus();
+    }
     if (isOptionsOpen) {
+      document.addEventListener('keydown', handleEscape);
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
     };
   }, [isOptionsOpen]);
 
@@ -114,13 +121,10 @@ export function ChatHeader({
               <h1 className="font-display text-sm font-bold text-text-primary truncate">
                 {character.name}
               </h1>
-              <span className="hidden sm:inline-flex items-center gap-1 rounded border border-border-hairline bg-white/5 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-text-muted">
-                <Radio className="h-2 w-2 text-emerald-400" />
-                SOUL-ID
-              </span>
+
             </div>
             <p className="text-[11px] text-text-muted truncate max-w-xs sm:max-w-md">
-              {character.tagline || (character.creator ? `By ${character.creator}` : 'Cinema Studio · 35mm Lens')}
+              {character.tagline || (character.creator ? `By ${character.creator}` : '')}
             </p>
           </div>
         </div>
@@ -167,12 +171,14 @@ export function ChatHeader({
           {/* ... More Options Button */}
           <button
             type="button"
+            ref={optionsButtonRef}
+            aria-expanded={isOptionsOpen}
             onClick={() => setIsOptionsOpen((prev) => !prev)}
             className={cn(
               'h-8 w-8 rounded-full border flex items-center justify-center transition-colors',
               isOptionsOpen ? 'border-accent bg-accent/20 text-accent' : 'border-border-subtle bg-white/[0.04] text-text-muted hover:text-text-primary hover:bg-white/[0.08]'
             )}
-            title="More Options & Profile"
+            aria-label="Chat options"
           >
             <MoreHorizontal className="h-4 w-4" />
           </button>
@@ -226,6 +232,7 @@ export function ChatHeader({
                   type="button"
                   onClick={() => {
                     setIsOptionsOpen(false);
+                    optionsButtonRef.current?.focus();
                     onOpenVoiceModal();
                   }}
                   className="flex items-center justify-between p-2 rounded-lg hover:bg-white/[0.04] text-left w-full"
@@ -245,6 +252,7 @@ export function ChatHeader({
                 type="button"
                 onClick={() => {
                   setIsOptionsOpen(false);
+                  optionsButtonRef.current?.focus();
                   onOpenHistoryDrawer();
                 }}
                 className="flex items-center justify-between p-2 rounded-lg hover:bg-white/[0.04] text-left w-full"
@@ -260,6 +268,7 @@ export function ChatHeader({
                 type="button"
                 onClick={() => {
                   setIsOptionsOpen(false);
+                  optionsButtonRef.current?.focus();
                   onOpenMemoriesDrawer();
                 }}
                 className="flex items-center justify-between p-2 rounded-lg hover:bg-white/[0.04] text-left w-full"
