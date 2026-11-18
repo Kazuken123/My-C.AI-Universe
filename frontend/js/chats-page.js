@@ -1,125 +1,82 @@
 import { api } from './api.js';
-import { initSidebar, showToast, escapeHtml, bindSpotlightHover, deduplicateSessionsByCharacter } from './common.js';
+import { initSidebar, showToast, escapeHtml } from './common.js';
 
 class ChatsPageApp {
   constructor() {
     this.grid = document.getElementById('saved-chats-grid');
-  }
-
-    buildSkeletonCards(count = 4) {
-    return Array.from({ length: count }, () => `
-      <div class="bento-cell bento-half">
-        <div class="double-bezel-shell card-shell skeleton-shell">
-          <div class="double-bezel-core cai-card" style="display: flex; flex-direction: column; justify-content: space-between;">
-            <div>
-              <div class="cai-card-top">
-                <div class="cai-avatar-wrap skeleton-box skeleton-avatar-box"></div>
-                <div class="cai-card-info" style="flex: 1;">
-                  <div class="skeleton-line skeleton-title-line"></div>
-                  <div class="skeleton-line skeleton-meta-line"></div>
-                </div>
-              </div>
-              <div class="skeleton-line" style="margin: 14px 0 10px; height: 38px; border-radius: var(--radius-sm);"></div>
-            </div>
-            <div class="cai-card-footer" style="margin-top: 10px;">
-              <span class="skeleton-pill sm"></span>
-            </div>
-          </div>
-        </div>
-      </div>
-    `).join('');
+    this.loadingMarkup = this.grid?.innerHTML;
   }
 
   async loadSessions() {
     if (!this.grid) return;
-    this.grid.innerHTML = this.buildSkeletonCards(4);
-    try {
-      const rawSessions = await api.getChatSessions();
-      const sessions = deduplicateSessionsByCharacter(rawSessions);
-      if (!sessions || sessions.length === 0) {
-        this.grid.innerHTML = `
-          <div class="bento-cell" style="grid-column: 1 / -1;">
-            <div class="double-bezel-shell">
-              <div class="double-bezel-core studio-card" style="text-align: center; padding: 56px 24px;">
-                <h3 class="card-heading">No saved narrative chats yet</h3>
-                <p class="hint" style="margin: 8px auto 20px; max-width: 44ch;">
-                  Pick any character from the Discovery roster to initiate an active storyline persisted in SQLite.
-                </p>
-                <a href="/" class="btn-island">
-                  <span>Browse Characters</span>
-                  <span class="btn-island-icon"><i class="ph-light ph-arrow-right"></i></span>
-                </a>
-              </div>
-            </div>
-          </div>
-        `;
-        return;
-      }
-
-      this.grid.innerHTML = sessions.map((s, idx) => `
-        <div class="bento-cell bento-half">
-          <div class="double-bezel-shell card-shell" data-open-char="${escapeHtml(s.characterId)}" data-open-session="${escapeHtml(s.id)}" style="cursor: pointer;">
-            <div class="double-bezel-core cai-card" style="display: flex; flex-direction: column; justify-content: space-between;">
-              <div>
-                <div class="cai-card-top">
-                  <div class="cai-avatar-wrap">
-                    <img class="cai-avatar" src="${escapeHtml(s.characterAvatar || '')}" alt="${escapeHtml(s.characterName)}" onerror="this.src='https://api.dicebear.com/9.x/adventurer/svg?seed=Fallback'" />
-                  </div>
-                  <div class="cai-card-info">
-                    <div class="cai-card-name">${escapeHtml(s.characterName)}</div>
-                    <div class="cai-card-creator">Chat ID: ${escapeHtml(s.id.slice(0, 16))}</div>
-                    <div class="cai-card-tagline" style="margin-top: 4px;">Last active: ${new Date(s.updatedAt || s.createdAt).toLocaleDateString()}</div>
-                  </div>
-                </div>
-
-                <div class="thread-snippet-box" style="margin: 14px 0 10px; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; font-style: italic; background: rgba(0,0,0,0.22); padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-hairline);">
-                  "${escapeHtml((s.lastMessage || 'Scene opened.').replace(/\*/g, '').slice(0, 130))}..."
-                </div>
-              </div>
-
-              <div class="cai-card-footer" style="margin-top: 10px;">
-                <span class="mono-tag">${s.messageCount || 1} Turns</span>
-                <div class="cai-card-actions">
-                  <button class="icon-btn" data-del-session="${escapeHtml(s.id)}" type="button" title="Delete Saved Chat">
-                    <i class="ph-light ph-trash"></i>
-                  </button>
-                  <a href="/chat?id=${encodeURIComponent(s.characterId)}&session=${encodeURIComponent(s.id)}" class="btn-secondary btn-sm" style="text-decoration: none;">
-                    <i class="ph-light ph-chats-circle"></i>
-                    <span>Resume</span>
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      `).join('');
-
-      bindSpotlightHover(this.grid);
-
-      this.grid.querySelectorAll('[data-open-session]').forEach(card => {
-        card.addEventListener('click', (e) => {
-          if (e.target.closest('button') || e.target.closest('a')) return;
-          window.location.href = `/chat?id=${encodeURIComponent(card.dataset.openChar)}&session=${encodeURIComponent(card.dataset.openSession)}`;
-        });
-      });
-
-      this.grid.querySelectorAll('[data-del-session]').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          if (!confirm('Permanently delete this saved chat?')) return;
-          try {
-            await api.deleteChatSession(btn.dataset.delSession);
-            showToast('Chat removed from database.');
-            await this.loadSessions();
-            await initSidebar('chats');
-          } catch (err) {
-            showToast(err.message);
-          }
-        });
-      });
-    } catch (err) {
-      showToast('Could not load saved chats: ' + err.message);
+    if (this.grid.getAttribute('aria-busy') !== 'true') {
+      this.grid.innerHTML = this.loadingMarkup;
     }
+    this.grid.setAttribute('aria-busy', 'true');
+    try {
+      const sessions = await api.getChatSessions();
+      this.renderSessions(sessions);
+    } catch {
+      this.grid.innerHTML = `<div class="atlas-chat-state" role="alert">
+        <h2>Saved chats are unavailable</h2>
+        <p>Check your connection and try again.</p>
+        <button class="btn-secondary" type="button">Try again</button>
+      </div>`;
+      this.grid.querySelector('button').addEventListener('click', () => this.loadSessions());
+    } finally {
+      this.grid.removeAttribute('aria-busy');
+    }
+  }
+
+  renderSessions(sessions) {
+    if (!sessions.length) {
+      this.grid.innerHTML = `<div class="atlas-chat-state">
+        <h2>No saved chats yet</h2>
+        <p>Start a conversation to find it here.</p>
+        <a href="/" class="btn-secondary">Browse characters</a>
+      </div>`;
+      return;
+    }
+
+    this.grid.innerHTML = sessions.map(s => {
+      const preview = (s.lastMessage || 'Scene opened.').replace(/\*/g, '');
+      const updated = new Date(s.updatedAt || s.createdAt).toLocaleDateString();
+      const href = `/chat?id=${encodeURIComponent(s.characterId)}&session=${encodeURIComponent(s.id)}`;
+      return `<article class="atlas-saved-entry">
+        <img class="atlas-saved-avatar" src="${escapeHtml(s.characterAvatar || '/favicon.svg')}" alt="" />
+        <div class="atlas-saved-text">
+          <h2><a href="${href}">${escapeHtml(s.title || s.characterName)}</a></h2>
+          <p class="atlas-saved-meta">${escapeHtml(s.characterName)} · ${s.messageCount ?? 0} messages · ${escapeHtml(updated)}</p>
+          <p class="atlas-saved-preview">${escapeHtml(preview)}</p>
+        </div>
+        <div class="atlas-saved-actions">
+          <a href="${href}" class="btn-secondary btn-sm">Resume <i class="ph-light ph-arrow-right" aria-hidden="true"></i></a>
+          <button class="icon-btn" data-del-session="${escapeHtml(s.id)}" type="button" aria-label="Delete chat">
+            <i class="ph-light ph-trash" aria-hidden="true"></i>
+          </button>
+        </div>
+      </article>`;
+    }).join('');
+
+    this.grid.querySelectorAll('[data-del-session]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Permanently delete this saved chat?')) return;
+        btn.disabled = true;
+        try {
+          await api.deleteChatSession(btn.dataset.delSession);
+          const entry = btn.closest('article');
+          const nextEntry = entry.nextElementSibling || entry.previousElementSibling;
+          entry.remove();
+          if (!this.grid.querySelector('article')) this.renderSessions([]);
+          (nextEntry?.querySelector('a') || this.grid.querySelector('a'))?.focus();
+          showToast('Chat deleted.');
+          await initSidebar('chats');
+        } catch (err) {
+          showToast(err.message);
+          btn.disabled = false;
+        }
+      });
+    });
   }
 
   async init() {
@@ -128,8 +85,7 @@ class ChatsPageApp {
       window.location.href = '/auth?mode=signin&return=/chats';
       return;
     }
-    await initSidebar('chats');
-    await this.loadSessions();
+    await Promise.allSettled([initSidebar('chats'), this.loadSessions()]);
   }
 }
 

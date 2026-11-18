@@ -42,10 +42,13 @@ export class AmbientMotionCanvas {
   }
 
   #init() {
-    // Keep ambient motion active in browser even when laptop/OS animations are turned off.
-    // The product keeps ambient motion on; older pause preferences are obsolete.
-    this.reducedMotion = false;
-    try { localStorage.removeItem('ambient_motion_disabled'); } catch {}
+    const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    this.reducedMotion = preference.matches;
+    preference.addEventListener('change', ({ matches }) => {
+      this.reducedMotion = matches;
+      if (matches) this.pause();
+      else this.resume();
+    });
 
     this.#initDom();
     this.#updateTheme();
@@ -74,16 +77,6 @@ export class AmbientMotionCanvas {
     });
 
     this.resume();
-  }
-
-  // Compatibility for old callers: this preference no longer disables motion.
-  toggleMotion() { this.forceStart(); return true; }
-
-  forceStart() {
-    this.reducedMotion = false;
-    try { localStorage.removeItem('ambient_motion_disabled'); } catch {}
-    this.resume();
-    console.log('%c[AmbientCanvas] 🚀 Motion enabled.', 'color: #10b981; font-weight: bold;');
   }
 
   #initDom() {
@@ -214,7 +207,7 @@ export class AmbientMotionCanvas {
   }
 
   resume() {
-    if (this.isRunning || this.reducedMotion) return;
+    if (this.isRunning || this.reducedMotion || document.hidden || !this.ctx) return;
     this.isRunning = true;
     this.lastTime = performance.now();
     const loop = (now) => {

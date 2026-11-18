@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
 import { api } from '@/lib/api';
@@ -19,8 +19,10 @@ import {
 
 export default function PersonasPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const requestVersion = useRef(0);
   const [personas, setPersonas] = useState<UserPersona[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [updatingDefaultId, setUpdatingDefaultId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -37,21 +39,34 @@ export default function PersonasPage() {
   }, [toast]);
 
   const loadPersonas = useCallback(async (silent = false) => {
+    const request = ++requestVersion.current;
     if (!silent) setLoading(true);
+    setLoadError(false);
     try {
       const data = await api.getPersonas();
+      if (request !== requestVersion.current) return;
       setPersonas(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
+      if (request !== requestVersion.current) return;
+      setLoadError(true);
       const msg = err instanceof Error ? err.message : 'Failed to load personas';
       showToast(msg, 'error');
     } finally {
-      if (!silent) setLoading(false);
+      if (request === requestVersion.current) setLoading(false);
     }
   }, [showToast]);
 
   useEffect(() => {
-    loadPersonas(false);
-  }, [loadPersonas]);
+    if (authLoading) return;
+    if (isAuthenticated) {
+      loadPersonas(false);
+    } else {
+      requestVersion.current++;
+      setPersonas([]);
+      setLoadError(false);
+      setLoading(false);
+    }
+  }, [authLoading, isAuthenticated, loadPersonas]);
 
   const handleSetDefault = async (id: string) => {
     setUpdatingDefaultId(id);
@@ -87,14 +102,14 @@ export default function PersonasPage() {
   };
 
   const handleCreated = async (newPersona: UserPersona) => {
-    showToast(`Saved identity "${newPersona.name}" to SQL.`);
+    showToast(`Saved identity "${newPersona.name}".`);
     await loadPersonas(true);
   };
 
   const activePersona = personas.find((p) => p.isDefault);
 
   return (
-    <div className="content-container space-y-8">
+    <div className="content-container atlas-workspace space-y-8">
       {/* Toast Notification Banner */}
       {toast && (
         <div
@@ -128,11 +143,11 @@ export default function PersonasPage() {
               <Contact2 className="h-5 w-5" />
             </div>
             <h1 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight text-text-primary">
-              Roleplay Identities
+              Your personas
             </h1>
           </div>
           <p className="text-sm text-text-secondary max-w-2xl leading-relaxed">
-            Configure multiple user personas injected into LLM system prompts so characters recognize your name, backstory, and personality traits.
+            Choose who you are in a scene. Your active persona gives characters your name and backstory.
           </p>
         </div>
 
@@ -140,13 +155,13 @@ export default function PersonasPage() {
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-2 rounded-full border border-border-hairline bg-core px-3 py-1 font-mono text-xs text-text-muted">
             <span className="h-2 w-2 rounded-full bg-emerald-400" />
-            <span>{personas.length} Identities in SQL</span>
+            <span>{personas.length} personas</span>
           </div>
 
           <button
             type="button"
-            onClick={() => loadPersonas(false)}
-            disabled={loading}
+            onClick={() => loadPersonas(personas.length > 0)}
+            disabled={loading || !isAuthenticated}
             className="icon-btn h-9 w-9 text-text-muted hover:text-text-primary cursor-pointer"
             title="Refresh Roster"
             aria-label="Refresh Roster"
@@ -182,7 +197,7 @@ export default function PersonasPage() {
         <div className="lg:col-span-7 space-y-4">
           <div className="flex items-center justify-between px-1">
             <h2 className="font-display text-base font-bold text-text-secondary tracking-tight">
-              Active Personas Roster
+              Persona collection
             </h2>
             {activePersona && (
               <span className="font-mono text-xs text-accent">
@@ -191,8 +206,8 @@ export default function PersonasPage() {
             )}
           </div>
 
-          {loading ? (
-            <div className="space-y-4">
+          {loading && personas.length === 0 ? (
+            <div className="space-y-4" role="status"><span className="atlas-sr-only">Loading personas</span>
               {[1, 2].map((i) => (
                 <DoubleBezel key={i} coreClassName="p-6 space-y-3">
                   <div className="flex items-center gap-3">
@@ -205,6 +220,11 @@ export default function PersonasPage() {
                   <div className="h-16 w-full bg-white/5 rounded-lg animate-pulse" />
                 </DoubleBezel>
               ))}
+            </div>
+          ) : loadError && personas.length === 0 ? (
+            <div role="alert">
+              <p>Your personas could not be loaded.</p>
+              <button type="button" className="btn-secondary" onClick={() => loadPersonas()}>Try again</button>
             </div>
           ) : personas.length === 0 ? (
             <DoubleBezel coreClassName="p-10 text-center space-y-3">

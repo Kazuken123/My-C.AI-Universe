@@ -11,9 +11,9 @@ class PersonasPageApp {
     this.defaultCheck = document.getElementById('personaDefaultCheck');
   }
 
-    buildSkeletonCards(count = 3) {
+  buildSkeletonCards(count = 3) {
     return Array.from({ length: count }, () => `
-      <div class="persona-card-shell double-bezel-shell skeleton-shell">
+      <div aria-hidden="true" class="persona-card-shell double-bezel-shell skeleton-shell">
         <div class="persona-card-core double-bezel-core">
           <div class="persona-card-header">
             <div class="persona-card-meta" style="flex: 1;">
@@ -35,7 +35,9 @@ class PersonasPageApp {
 
   async loadPersonas() {
     if (!this.listEl) return;
-    this.listEl.innerHTML = this.buildSkeletonCards(3);
+    const coldLoad = !this.listEl.querySelector('.persona-card-shell:not(.skeleton-shell)');
+    this.listEl.setAttribute('aria-busy', 'true');
+    if (coldLoad) this.listEl.innerHTML = '<span class="atlas-sr-only" role="status">Loading personas</span>' + this.buildSkeletonCards(3);
     try {
       const personas = await api.getPersonas();
       if (!personas || personas.length === 0) {
@@ -113,7 +115,14 @@ class PersonasPageApp {
         });
       });
     } catch (err) {
-      showToast('Could not load personas: ' + err.message);
+      if (coldLoad) {
+        this.listEl.innerHTML = '<p role="alert">Your personas could not be loaded.</p><button type="button" class="btn-secondary">Try again</button>';
+        this.listEl.querySelector('button').addEventListener('click', () => this.loadPersonas(), { once: true });
+      } else {
+        showToast('Could not refresh personas: ' + err.message);
+      }
+    } finally {
+      this.listEl.removeAttribute('aria-busy');
     }
   }
 

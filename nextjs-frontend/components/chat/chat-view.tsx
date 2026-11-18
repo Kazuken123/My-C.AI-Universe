@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import type { Character } from '@/types/character';
 import type { ChatSession, ChatMessage, RelationshipMetrics } from '@/types/chat';
 import type { UserPersona } from '@/types/persona';
@@ -12,6 +12,7 @@ import { useAuth } from '@/context/auth-context';
 import { ChatHeader } from './chat-header';
 import { ChatMessages } from './chat-messages';
 import { ChatInput } from './chat-input';
+import { ChatSkeleton } from './chat-skeleton';
 import { ChatDrawerMemories } from './chat-drawer-memories';
 import { ChatDrawerHistory } from './chat-drawer-history';
 import { RelationshipDirectorModal } from './relationship-director-modal';
@@ -27,7 +28,7 @@ export function ChatView({
   characterId,
   initialSessionId,
 }: ChatViewProps) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   // State
   const [character, setCharacter] = useState<Character | null>(null);
@@ -41,8 +42,12 @@ export function ChatView({
   // Loading & Error states
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const sessionRequest = useRef(0);
+  const pendingSessionChange = useRef(false);
+  const [switchingSession, setSwitchingSession] = useState(false);
 
   // Streaming state
+  const [actionError, setActionError] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingBuffer, setStreamingBuffer] = useState('');
 
@@ -158,154 +163,119 @@ export function ChatView({
           voiceIdOverride: voiceId,
           voiceNameOverride: voiceName
         });
-        setSession(res.session);
+        setSession(current => current?.id === session.id ? res.session : current);
       } catch (err: any) {
         console.warn('Failed to update session voice override:', err.message);
       }
     }
   };
 
-  // Initialize Character, Personas, and Session
+  const activateSession = useCallback((next: ChatSession, defaultPersonaId: string) => {
+    if (next.characterId !== characterId) throw new Error('This chat belongs to another character.');
+    setAiProvider(resolveSupportedProvider(next.provider));
+    setActivePersonaId(next.personaId || defaultPersonaId);
+    setSession(next);
+  }, [characterId]);
+
   const initWorkspace = useCallback(async () => {
+    const request = ++sessionRequest.current;
     setLoading(true);
     setError(null);
     try {
-      // 1. Load Character
-      const char = await api.getCharacter(characterId);
-      setCharacter(char);
+      const [nextCharacter, nextPersonas, latestSessions] = await Promise.all([
+        api.getCharacter(characterId),
+        api.getPersonas().catch(() => [] as UserPersona[]),
+        initialSessionId ? Promise.resolve([]) : api.getChatSessions(characterId),
+      ]);
+      if (request !== sessionRequest.current) return;
 
-      // 2. Load Personas
-      let userPersonas: UserPersona[] = [];
-      let defaultPersonaId = 'persona_default';
-      try {
-        userPersonas = await api.getPersonas();
-        setPersonas(userPersonas);
-        const defaultPersona = userPersonas.find((p) => p.isDefault) || userPersonas[0];
-        if (defaultPersona) {
-          defaultPersonaId = defaultPersona.id;
-          setActivePersonaId(defaultPersona.id);
-        }
-      } catch {
-        // Unauthenticated or personas fetch fallback
-      }
+      const defaultPersona = nextPersonas.find(p => p.isDefault) || nextPersonas[0];
+      const defaultPersonaId = defaultPersona?.id || 'persona_default';
+      const targetId = initialSessionId || latestSessions[0]?.id;
+      const next = targetId
+        ? await api.getChatSession(targetId)
+        : await api.createChatSession({ characterId, provider: 'gemini', personaId: defaultPersonaId });
 
-      // 3. Load or Create Session
-      let activeSess: ChatSession | null = null;
-      if (initialSessionId) {
-        try {
-          activeSess = await api.getChatSession(initialSessionId);
-        } catch {
-          // fallback to latest session
-        }
-      }
-
-      if (!activeSess) {
-        try {
-          const sessions = await api.getChatSessions(characterId);
-          if (sessions && sessions.length > 0) {
-            activeSess = await api.getChatSession(sessions[0].id);
-          }
-        } catch {
-          // no existing sessions
-        }
-      }
-
-      if (!activeSess) {
-        try {
-          activeSess = await api.createChatSession({
-            characterId,
-            provider: 'gemini',
-            personaId: defaultPersonaId,
-          });
-        } catch {
-          // If creation fails due to auth or offline, fallback to a local preview session
-          activeSess = {
-            id: `session_local_${Date.now()}`,
-            characterId: char.id,
-            characterName: char.name,
-            characterAvatar: char.avatar,
-            title: `Chat with ${char.name}`,
-            provider: 'gemini',
-            affinity: char.initialAffinity ?? char.initial_affinity ?? 0,
-            trust: char.initialAffinity ?? char.initial_affinity ?? 0,
-            strain: 0,
-            relationshipStage: char.initialRelationshipStage || char.initial_relationship_stage || 'Stranger / Neutral',
-            relationshipMood: 'Calm',
-            createdAt: new Date().toISOString(),
-            messages: [
-              {
-                id: `msg_greet_${Date.now()}`,
-                role: 'model',
-                content: char.greeting || '*Enters scene.*',
-                selectedVariantIndex: 0,
-                variants: [
-                  {
-                    id: `var_1`,
-                    text: char.greeting || '*Enters scene.*',
-                    createdAt: new Date().toISOString(),
-                  },
-                ],
-                isPinned: false,
-                rating: 0,
-                createdAt: new Date().toISOString(),
-              },
-            ],
-          };
-        }
-      }
-
-      if (activeSess?.provider) {
-        setAiProvider(resolveSupportedProvider(activeSess.provider));
-      }
-      if (activeSess?.personaId) {
-        setActivePersonaId(activeSess.personaId);
-      }
-
-      setSession(activeSess);
+      if (request !== sessionRequest.current) return;
+      activateSession(next, defaultPersonaId);
+      setCharacter(nextCharacter);
+      setPersonas(nextPersonas);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to initialize chat workspace';
-      setError(msg);
+      if (request !== sessionRequest.current) return;
+      setError(err instanceof Error ? err.message : 'Failed to initialize chat workspace');
     } finally {
-      setLoading(false);
+      if (request === sessionRequest.current) setLoading(false);
     }
-  }, [characterId, initialSessionId]);
+  }, [characterId, initialSessionId, activateSession]);
 
-  useEffect(() => {
-    initWorkspace();
-  }, [initWorkspace]);
+  const invalidateSessionRequest = useCallback(() => {
+    // Late responses from the previous route must not commit state.
+    sessionRequest.current += 1;
+    pendingSessionChange.current = false;
+  }, []);
 
-  // Handle switching narrative threads
-  const handleSelectSession = async (sessionId: string) => {
-    try {
-      const s = await api.getChatSession(sessionId);
-      setAiProvider(resolveSupportedProvider(s.provider));
-      setSession(s);
-    } catch (err: unknown) {
-      console.warn('Failed to switch session:', err);
+  const userId = user?.id;
+  useLayoutEffect(() => {
+    if (authLoading || !userId) return;
+    const timer = window.setTimeout(initWorkspace, 0);
+    return () => {
+      window.clearTimeout(timer);
+      invalidateSessionRequest();
+    };
+  }, [authLoading, userId, initWorkspace, invalidateSessionRequest]);
+
+  const changeSession = async (targetId?: string) => {
+    if (isStreaming) {
+      setActionError('Wait for the current reply before switching chats.');
+      return;
     }
-  };
+    if (pendingSessionChange.current) return;
+    if (targetId && targetId === session?.id) {
+      setIsHistoryOpen(false);
+      return;
+    }
 
-  // Handle starting a fresh thread
-  const handleNewSession = async () => {
+    const request = ++sessionRequest.current;
+    pendingSessionChange.current = true;
+    setSwitchingSession(true);
+    setActionError('');
     try {
-      const newSess = await api.createChatSession({
-        characterId,
-        provider: aiProvider,
-        personaId: activePersonaId,
-      });
-      setSession(newSess);
+      const next = targetId
+        ? await api.getChatSession(targetId)
+        : await api.createChatSession({ characterId, provider: aiProvider, personaId: activePersonaId });
+      if (request !== sessionRequest.current) return;
+
+      const defaultPersona = personas.find(p => p.isDefault) || personas[0];
+      activateSession(next, defaultPersona?.id || 'persona_default');
+      setIsHistoryOpen(false);
     } catch {
-      // Re-init fallback
-      initWorkspace();
+      if (request !== sessionRequest.current) return;
+      setActionError(targetId
+        ? 'Could not open the selected chat. Try again from history.'
+        : 'Could not start a new storyline. Try again.');
+    } finally {
+      if (request === sessionRequest.current) {
+        pendingSessionChange.current = false;
+        setSwitchingSession(false);
+      }
     }
   };
+
+  useLayoutEffect(() => {
+    if (!session || session.characterId !== characterId || loading || error) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('session') === session.id) return;
+    url.searchParams.set('session', session.id);
+    window.history.replaceState(window.history.state, '', url);
+  }, [session, characterId, loading, error]);
 
   // Send standard user message with real-time SSE streaming
   const handleSendMessage = async (text: string) => {
-    if (!character || !session || isStreaming) return;
+    if (!character || !session || isStreaming || pendingSessionChange.current) return;
 
     // Handle in-chat /update command
     if (text.startsWith('/update ')) {
+      setIsStreaming(true);
       try {
         const res = await api.sendChatMessage({
           charId: character.id,
@@ -316,10 +286,13 @@ export function ChatView({
           setCharacter(res.characterUpdated);
         }
         const updatedSession = await api.getChatSession(session.id);
-        setSession(updatedSession);
+        setSession(current => current?.id === session.id ? updatedSession : current);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Update command failed';
-        alert(msg);
+        setActionError(msg);
+        throw err;
+      } finally {
+        setIsStreaming(false);
       }
       return;
     }
@@ -338,7 +311,7 @@ export function ChatView({
     };
 
     setSession((prev) => {
-      if (!prev) return prev;
+      if (prev?.id !== session.id) return prev;
       return {
         ...prev,
         messages: [...prev.messages, userMsg],
@@ -396,7 +369,7 @@ export function ChatView({
 
           // Synchronously update session so messages transition cleanly without flicker
           setSession((prev) => {
-            if (!prev) return prev;
+            if (prev?.id !== session.id) return prev;
             const updatedMessages = prev.messages.map((m) =>
               m.id === tempUserMsgId ? finalUserMsg : m
             );
@@ -425,7 +398,7 @@ export function ChatView({
       // An interrupted stream may already have committed. Read before allowing a manual retry.
       try { setSession(await api.getChatSession(session.id)); }
       catch { setSession(prev => prev ? {...prev,messages:prev.messages.filter(m=>m.id!==tempUserMsgId)} : prev); }
-      alert('Connection interrupted. Review the conversation before sending again.');
+      setActionError('Connection interrupted. Review the conversation before sending again.');
       throw streamErr;
     } finally {
       setIsStreaming(false);
@@ -435,7 +408,7 @@ export function ChatView({
 
   // Handle scene continuation (empty message turn)
   const handleContinueScene = async () => {
-    if (!character || !session || isStreaming) return;
+    if (!character || !session || isStreaming || pendingSessionChange.current) return;
 
     setIsStreaming(true);
     setStreamingBuffer('');
@@ -462,7 +435,7 @@ export function ChatView({
       };
 
       setSession((prev) => {
-        if (!prev) return prev;
+        if (prev?.id !== session.id) return prev;
         return {
           ...prev,
           id: res.sessionId || prev.id,
@@ -495,11 +468,11 @@ export function ChatView({
       const res = await api.updateChatMessage(session.id, messageId, {
         selectedVariantIndex: index,
       });
-      setSession(res.session);
+      setSession(current => current?.id === session.id ? res.session : current);
     } catch {
       // optimistic local fallback
       setSession((prev) => {
-        if (!prev) return prev;
+        if (prev?.id !== session.id) return prev;
         return {
           ...prev,
           messages: prev.messages.map((m) =>
@@ -512,7 +485,7 @@ export function ChatView({
 
   // Regenerate new alternative take
   const handleRegenerate = async (messageId: string) => {
-    if (!character || !session || isStreaming) return;
+    if (!character || !session || isStreaming || pendingSessionChange.current) return;
     setIsStreaming(true);
     setStreamingBuffer('');
 
@@ -529,7 +502,7 @@ export function ChatView({
 
       if (res.message) {
         setSession((prev) => {
-          if (!prev) return prev;
+          if (prev?.id !== session.id) return prev;
           return {
             ...prev,
             messages: prev.messages.map((m) => (m.id === messageId ? res.message! : m)),
@@ -539,7 +512,7 @@ export function ChatView({
         });
       } else {
         const updated = await api.getChatSession(res.sessionId || session.id);
-        setSession(updated);
+        setSession(current => current?.id === session.id ? updated : current);
       }
 
       if (autoTTS && res.response) {
@@ -564,7 +537,7 @@ export function ChatView({
       const res = await api.updateChatMessage(session.id, messageId, {
         isPinned: !msg.isPinned,
       });
-      setSession(res.session);
+      setSession(current => current?.id === session.id ? res.session : current);
     } catch {
       // ignore
     }
@@ -577,7 +550,7 @@ export function ChatView({
       const res = await api.updateChatMessage(session.id, messageId, {
         content: newContent,
       });
-      setSession(res.session);
+      setSession(current => current?.id === session.id ? res.session : current);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to update message';
       alert(msg);
@@ -591,7 +564,7 @@ export function ChatView({
 
     try {
       const updated = await api.rewindChatSession(session.id, messageId);
-      setSession(updated);
+      setSession(current => current?.id === session.id ? updated : current);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to rewind storyline';
       alert(msg);
@@ -610,7 +583,7 @@ export function ChatView({
     try {
       const res = await api.updateSessionRelationship(session.id, overrides);
       setSession((prev) => {
-        if (!prev) return prev;
+        if (prev?.id !== session.id) return prev;
         return {
           ...prev,
           ...overrides,
@@ -623,16 +596,23 @@ export function ChatView({
     }
   };
 
-  if (loading) {
+  if (authLoading) return <ChatSkeleton />;
+
+  if (!user) {
+    const params = new URLSearchParams();
+    if (initialSessionId) params.set('session', initialSessionId);
+    const returnTo = typeof window === 'undefined'
+      ? `/chat/${encodeURIComponent(characterId)}${params.size ? `?${params}` : ''}`
+      : window.location.pathname + window.location.search;
     return (
-      <div className="flex min-h-[500px] items-center justify-center">
-        <div className="flex flex-col items-center gap-3 text-text-muted">
-          <Loader2 className="h-8 w-8 animate-spin text-accent" />
-          <p className="font-mono text-xs">Connecting to neural roleplay stream...</p>
-        </div>
+      <div className="atlas-chat-state">
+        <h2>Sign in to open this chat</h2>
+        <Link href={`/auth?return=${encodeURIComponent(returnTo)}`} className="btn-secondary">Sign in</Link>
       </div>
     );
   }
+
+  if (loading) return <ChatSkeleton />;
 
   if (error || !character) {
     return (
@@ -645,7 +625,8 @@ export function ChatView({
           <p className="text-xs text-text-muted">
             {error || 'Character archetype not found.'}
           </p>
-          <div className="pt-2">
+          <div className="atlas-chat-actions">
+            <button type="button" className="btn-secondary" onClick={initWorkspace}>Try again</button>
             <Link
               href="/"
               className="btn-island py-2 px-4 text-xs"
@@ -659,10 +640,10 @@ export function ChatView({
   }
 
   const activePersona = personas.find((p) => p.id === activePersonaId);
-  const personaDisplayName = activePersona?.name || user?.displayName || 'Traveler';
+  const personaDisplayName = activePersona?.name || user.displayName || 'Traveler';
 
   return (
-    <div className="relative flex flex-col h-[calc(100dvh-5rem)] rounded-2xl border border-border-hairline bg-canvas overflow-hidden shadow-2xl">
+    <div className="atlas-chat-reader relative flex flex-col rounded-2xl border border-border-hairline bg-canvas overflow-hidden">
       {/* Interactive Chat Header */}
       <ChatHeader
         character={character}
@@ -682,18 +663,9 @@ export function ChatView({
         onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
       />
 
-      {/* Guest Mode Banner */}
-      {!user && (
-        <div className="flex items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs text-amber-300">
-          <span>Guest mode active. Sign in to persist chats, long-term memories, and custom personas.</span>
-          <Link href="/auth" className="underline font-semibold hover:text-white shrink-0">
-            Sign In
-          </Link>
-        </div>
-      )}
-
       {/* Messages Stream Viewport */}
       <ChatMessages
+        key={session?.id}
         character={character}
         messages={session?.messages || []}
         userPersonaName={personaDisplayName}
@@ -707,16 +679,24 @@ export function ChatView({
         onSpeakText={speakText}
       />
 
+      {actionError && !isHistoryOpen && (
+        <div className="atlas-chat-action-error" role="alert">
+          <span>{actionError}</span>
+          <button className="btn-secondary btn-sm" onClick={() => setActionError('')}>Dismiss</button>
+        </div>
+      )}
+
       {/* Chat Input Bar */}
       <ChatInput
         onSendMessage={handleSendMessage}
         onContinueScene={handleContinueScene}
-        disabled={loading}
+        disabled={switchingSession}
         isStreaming={isStreaming}
       />
 
       {/* Slide-over Drawers & Modals */}
       <ChatDrawerMemories
+        key={session?.id}
         isOpen={isMemoriesOpen}
         onClose={() => setIsMemoriesOpen(false)}
         character={character}
@@ -724,7 +704,7 @@ export function ChatView({
         onRefreshSession={async () => {
           if (session) {
             const updated = await api.getChatSession(session.id);
-            setSession(updated);
+            setSession(current => current?.id === session.id ? updated : current);
           }
         }}
       />
@@ -734,8 +714,10 @@ export function ChatView({
         onClose={() => setIsHistoryOpen(false)}
         characterId={character.id}
         activeSessionId={session?.id}
-        onSelectSession={handleSelectSession}
-        onNewSession={handleNewSession}
+        actionError={actionError}
+        onSelectSession={changeSession}
+        onNewSession={() => changeSession()}
+        pending={switchingSession}
       />
 
       <RelationshipDirectorModal

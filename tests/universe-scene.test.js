@@ -5,7 +5,7 @@ import vm from 'node:vm';
 
 const source = readFileSync(new URL('../frontend/js/universe-scene.js', import.meta.url), 'utf8');
 
-function harness({ width = 600, height = 400, unavailable = false, contextThrows = false, shaderFails = false, paused = false } = {}) {
+function harness({ width = 600, height = 400, unavailable = false, contextThrows = false, shaderFails = false, framebufferFails = false, paused = false, reducedMotion = false, fallbackOnly = false } = {}) {
   const frames = new Map();
   const observers = [];
   const calls = { draws: 0, deletedBuffers: 0, deletedPrograms: 0, particles: 0, pointer: [0, 0], batches: [], blends: [], geometry: null };
@@ -19,25 +19,44 @@ function harness({ width = 600, height = 400, unavailable = false, contextThrows
     observe(target, options) { this.target = target; this.options = options; }
     disconnect() { this.disconnected = true; }
   }
+  const preference = new EventTarget();
+  preference.matches = reducedMotion;
   const gl = {
+    FRAMEBUFFER_COMPLETE: 19, FRAMEBUFFER: 20, TEXTURE_2D: 21, TRIANGLES: 22,
+    createTexture: () => ({}), createFramebuffer: () => ({}),
+    checkFramebufferStatus: () => framebufferFails ? 0 : 19,
+    bindFramebuffer(_, value) { calls.target = value; },
+    deleteFramebuffer() { calls.framebuffersReleased = (calls.framebuffersReleased || 0) + 1; },
+    deleteTexture() { calls.texturesReleased = (calls.texturesReleased || 0) + 1; },
     VERTEX_SHADER: 1, FRAGMENT_SHADER: 2, COMPILE_STATUS: 3, LINK_STATUS: 4,
     ARRAY_BUFFER: 5, STATIC_DRAW: 6, FLOAT: 7, ALIASED_POINT_SIZE_RANGE: 8,
     BLEND: 9, SRC_ALPHA: 10, ONE: 11, ONE_MINUS_SRC_ALPHA: 12, COLOR_BUFFER_BIT: 13, POINTS: 14,
     createProgram: () => ({}), createShader: () => ({}), createBuffer: () => ({}),
     getShaderParameter: () => !shaderFails, getProgramParameter: () => true,
     getAttribLocation: () => 0, getUniformLocation: (_, name) => name, getParameter: () => [1, 256],
-    uniform1f() {}, uniform2f(_, x, y) { calls.pointer = [x, y]; },
-    drawArrays(_, first, count) { calls.draws++; calls.particles += count; calls.batches.push({ first, count, blend: calls.blends.at(-1) }); },
+    uniform1f(name, value) {
+      if (name === 'uTime') calls.time = value;
+    },
+    uniform2f(name, x, y) {
+      if (name === 'uPointer') calls.pointer = [x, y];
+      if (name === 'uCenter') calls.center = [x, y];
+    },
+    drawArrays(_, first, count) { calls.draws++; calls.particles += count; calls.batches.push({ mode: _, target: calls.target, first, count, blend: calls.blends.at(-1) }); },
     deleteBuffer() { calls.deletedBuffers++; }, deleteProgram() { calls.deletedPrograms++; },
   };
-  for (const method of ['shaderSource', 'compileShader', 'attachShader', 'linkProgram', 'useProgram', 'bindBuffer', 'bufferData', 'enableVertexAttribArray', 'vertexAttribPointer', 'enable', 'blendFuncSeparate', 'clearColor', 'deleteShader', 'viewport', 'clear']) gl[method] = () => {};
-  gl.bufferData = (_, data) => { calls.geometry = data; };
+  for (const method of ['uniform1i', 'bindTexture', 'disable', 'disableVertexAttribArray', 'texParameteri', 'texImage2D', 'framebufferTexture2D', 'shaderSource', 'compileShader', 'attachShader', 'linkProgram', 'useProgram', 'bindBuffer', 'bufferData', 'enableVertexAttribArray', 'vertexAttribPointer', 'enable', 'blendFuncSeparate', 'clearColor', 'deleteShader', 'viewport', 'clear']) gl[method] = () => {};
+  gl.bufferData = (_, data) => { if (data.length > 6) calls.geometry = data; };
   gl.blendFuncSeparate = (...args) => calls.blends.push(args);
   const canvas = new Element();
   canvas.getContext = () => { if (contextThrows) throw new Error('GPU unavailable'); return unavailable ? null : gl; };
   const art = new Element();
   const host = new Element();
-  host.querySelector = () => canvas;
+  const video = new Element();
+  video.paused = true;
+  video.getAttribute = name => video[name];
+  video.play = async () => { video.paused = false; video.dispatchEvent(new Event('playing')); };
+  video.pause = () => { video.paused = true; };
+  host.querySelector = selector => selector === 'video' ? video : (fallbackOnly ? null : canvas);
   host.closest = () => art;
   const document = new Element();
   document.readyState = 'complete';
@@ -47,50 +66,56 @@ function harness({ width = 600, height = 400, unavailable = false, contextThrows
   document.documentElement.dataset.orbitMotion = paused ? 'paused' : 'running';
   document.querySelectorAll = () => host.isConnected ? [host] : [];
   const context = vm.createContext({
-    document, window: { devicePixelRatio: 3, innerWidth: width >= 460 ? 1200 : width, IntersectionObserver: Observer },
+    document, window: { matchMedia: () => preference, devicePixelRatio: 3, innerWidth: width >= 460 ? 1200 : width, IntersectionObserver: Observer },
     AbortController, ResizeObserver: Observer, IntersectionObserver: Observer, MutationObserver: Observer,
     requestAnimationFrame: callback => { const id = ++nextFrame; frames.set(id, callback); return id; },
     cancelAnimationFrame: id => frames.delete(id),
   });
   vm.runInContext(source, context);
   const step = now => { const pending = [...frames.values()]; frames.clear(); pending.forEach(callback => callback(now)); };
-  const motion = value => {
-    document.documentElement.dataset.orbitMotion = value;
-    observers.filter(o => o.target === document.documentElement && !o.disconnected).forEach(o => o.callback([]));
-  };
   const visibility = value => {
     observers.filter(o => o.target === host && !o.options && !o.disconnected).at(-1).callback([{ isIntersecting: value }]);
   };
+  visibility(true);
   const detach = () => {
     host.isConnected = false;
     observers.find(o => o.target === document.body).callback([{ addedNodes: [], removedNodes: [host] }]);
     step(200);
   };
-  return { canvas, host, art, document, context, calls, observers, frames, step, motion, visibility, detach };
+  return { preference, canvas, video, host, art, document, context, calls, observers, frames, step, visibility, detach };
 }
 
-test('the universe keeps animating even if an old pause flag remains', () => {
-  const h = harness({ paused: true });
+test('the visible scene animates automatically with reduced motion enabled', () => {
+  const h = harness({ paused: true, reducedMotion: true });
+  h.visibility(true);
   assert.equal(h.host.dataset.universeReady, 'true');
-  assert.equal(h.calls.draws, 2);
+  assert.equal(h.host.dataset.sceneActive, 'true');
   assert.equal(h.frames.size, 1);
   h.step(100);
-  assert.ok(h.calls.draws > 2);
   const draws = h.calls.draws;
-  h.motion('paused');
-  h.step(200);
+  h.step(400);
   assert.ok(h.calls.draws > draws);
-  assert.equal(h.frames.size, 1);
+  assert.equal(h.calls.time, 0.3);
+
+  h.visibility(false);
+  h.visibility(true);
+  h.step(4000);
+  assert.equal(h.calls.time, 0.3);
 });
 
 test('offscreen scenes and hidden tabs stop scheduling animation', () => {
   const h = harness();
   h.visibility(false);
+  assert.equal(h.host.dataset.universeVisible, 'false');
+  assert.equal(h.host.dataset.sceneActive, 'false');
   assert.equal(h.frames.size, 0);
   h.visibility(true);
+  assert.equal(h.host.dataset.universeVisible, 'true');
+  assert.equal(h.host.dataset.sceneActive, 'true');
   assert.equal(h.frames.size, 1);
   h.document.hidden = true;
   h.document.dispatchEvent(new Event('visibilitychange'));
+  assert.equal(h.host.dataset.sceneActive, 'false');
   assert.equal(h.frames.size, 0);
   h.document.hidden = false;
   h.document.dispatchEvent(new Event('visibilitychange'));
@@ -119,10 +144,13 @@ test('pointer changes perspective while touch does not steer the camera', () => 
 test('route removal releases GPU resources, observers and animation', () => {
   const h = harness();
   h.detach();
-  assert.equal(h.calls.deletedBuffers, 1);
-  assert.equal(h.calls.deletedPrograms, 1);
+  assert.equal(h.calls.deletedBuffers, 2);
+  assert.equal(h.calls.framebuffersReleased, 1);
+  assert.equal(h.calls.texturesReleased, 1);
+  assert.equal(h.calls.deletedPrograms, 2);
   assert.equal(h.frames.size, 0);
   assert.equal(h.host.dataset.universeReady, undefined);
+  assert.equal(h.host.dataset.sceneActive, undefined);
   assert.ok(h.observers.filter(o => o.target !== h.document.body).every(o => o.disconnected));
   h.document.dispatchEvent(new Event('visibilitychange'));
   assert.equal(h.frames.size, 0);
@@ -140,13 +168,27 @@ test('context loss displays the fallback and restoration resumes the scene', () 
   assert.equal(h.frames.size, 1);
 });
 
-test('unavailable WebGL, context errors and shader errors retain the static fallback', () => {
-  for (const options of [{ unavailable: true }, { contextThrows: true }, { shaderFails: true }]) {
+test('unavailable WebGL, context errors and shader errors keep the fallback active while visible', () => {
+  for (const options of [{ unavailable: true }, { contextThrows: true }, { shaderFails: true }, { framebufferFails: true }]) {
     const h = harness(options);
     assert.equal(h.host.dataset.universeReady, undefined);
+    assert.equal(h.host.dataset.sceneActive, 'true');
     assert.equal(h.frames.size, 0);
     assert.equal(h.calls.draws, 0);
   }
+});
+
+test('the loading scene activates visible fallback layers without WebGL', () => {
+  const source = readFileSync(new URL('../nextjs-frontend/app/(discover)/loading.tsx', import.meta.url), 'utf8');
+  assert.match(source, /className="universe-scene" data-universe-scene/);
+  const h = harness({ fallbackOnly: true, reducedMotion: true });
+  assert.equal(h.host.dataset.sceneActive, 'true');
+  assert.equal(h.calls.draws, 0);
+  assert.equal(h.frames.size, 0);
+  h.visibility(false);
+  assert.equal(h.host.dataset.sceneActive, 'false');
+  h.detach();
+  assert.equal(h.host.dataset.sceneActive, undefined);
 });
 
 test('duplicate script execution does not create a second renderer', () => {
@@ -154,7 +196,7 @@ test('duplicate script execution does not create a second renderer', () => {
   const observers = h.observers.length;
   vm.runInContext(source, h.context);
   assert.equal(h.observers.length, observers);
-  assert.equal(h.calls.draws, 2);
+  assert.equal(h.calls.draws, 3);
 });
 
 test('both frontend copies of the renderer and stylesheet remain identical', () => {
@@ -173,7 +215,7 @@ test('the scene contains multiple celestial structures with substantial depth', 
     const z = data[i + 2] + data[i + 5];
     nearest = Math.max(nearest, z); farthest = Math.min(farthest, z);
   }
-  assert.deepEqual([...kinds].sort(), [0, 1, 2, 3, 4, 5]);
+  assert.deepEqual([...kinds].sort(), [0, 1, 2, 3, 5]);
   assert.ok(nearest > 6 && farthest < -20);
   assert.match(h.host.dataset.universeLayers, /galaxies.*filaments.*nebulae.*worlds/);
   const again = harness();
@@ -182,11 +224,16 @@ test('the scene contains multiple celestial structures with substantial depth', 
 
 test('dark foreground bodies use an opaque blend pass after the emitting field', () => {
   const h = harness();
-  const [light, foreground] = h.calls.batches;
+  const [light, lens, foreground] = h.calls.batches;
+  assert.ok(light.target);
+  assert.equal(lens.target, null);
+  assert.equal(lens.mode, 22);
+  assert.equal(lens.count, 3);
+  assert.equal(foreground.target, null);
   assert.equal(light.first, 0);
   assert.ok(light.count > 5000);
   assert.equal(foreground.first, light.count);
-  assert.equal(foreground.count, 3);
+  assert.equal(foreground.count, 2);
   assert.equal(light.blend[1], 11); // ONE: additive light.
   assert.equal(foreground.blend[1], 12); // ONE_MINUS_SRC_ALPHA: opaque dark sides.
 });
@@ -199,20 +246,58 @@ test('panoramic high-density displays stay inside the backing-pixel budget', () 
   assert.equal(h.frames.size, 0);
 });
 
-test('the distant black hole retains its projected size and placement on desktop and mobile', () => {
-  for (const [width, x, y, size] of [[1200, 1.9, 3.3, 106], [340, -1.65, -.45, 72]]) {
-    const h = harness({ width });
-    const rows = Array.from({ length: h.calls.geometry.length / 15 }, (_, i) => h.calls.geometry.slice(i * 15, i * 15 + 15));
-    const hole = rows.find(row => row[14] === 4);
-    const worlds = rows.filter(row => row[14] === 3 || row[14] === 5);
-    assert.ok(hole[5] < -8, 'black hole is in the deep field');
-    assert.ok(worlds.every(world => world[5] > hole[5]), 'worlds remain closer than the hole');
-    const depth = 16 - hole[5];
-    assert.ok(Math.abs(hole[3] / depth - x / 14.4) < 1e-6);
-    assert.ok(Math.abs(hole[4] / depth - y / 14.4) < 1e-6);
-    assert.ok(Math.abs(hole[13] / depth - size / 14.4) < 1e-6);
-    assert.equal(rows[h.calls.batches[1].first][14], 4, 'distant body is composited before foreground worlds');
+test('the fallback movie starts only on demand, pauses offscreen, and releases playback on detach', () => {
+  const live = harness({});
+  assert.equal(live.video.src, undefined);
+  for (const [width, format] of [[1200, 'wide'], [390, 'compact']]) {
+    const h = harness({ unavailable: true, reducedMotion: true, width });
+    assert.equal(h.video.src, '/images/atlas-horizon-' + format + '.mp4');
+    assert.equal(h.video.paused, false);
+    h.visibility(false);
+    assert.equal(h.video.paused, true);
+    h.visibility(true);
+    assert.equal(h.video.paused, false);
+    h.detach();
+    assert.equal(h.video.paused, true);
   }
+});
+
+test('the lens uses dedicated desktop and mobile art direction', () => {
+  assert.deepEqual(harness({ width: 1200 }).calls.center, [.81, .60]);
+  assert.deepEqual(harness({ width: 340 }).calls.center, [.82, .71]);
+});
+
+test('resizing across the breakpoint replaces the foreground bodies with the matching composition', () => {
+  const h = harness({ width: 1200 });
+  const desktop = h.calls.geometry;
+  h.context.window.innerWidth = h.host.clientWidth = 390;
+  h.observers.find(observer => observer.target === h.host).callback();
+  assert.ok(h.calls.geometry.length < desktop.length);
+  assert.deepEqual(h.calls.center, [.82, .71]);
+  h.context.window.innerWidth = h.host.clientWidth = 1200;
+  h.observers.find(observer => observer.target === h.host).callback();
+  assert.deepEqual(h.calls.geometry, desktop);
+});
+
+test('the left-side spiral uses the same overlay and image across both render paths', () => {
+  const css = readFileSync(new URL('../frontend/css/atlas-scene.css', import.meta.url), 'utf8');
+  const legacyPhoto = readFileSync(new URL('../frontend/images/atlas-spiral.webp', import.meta.url));
+  const nextPhoto = readFileSync(new URL('../nextjs-frontend/public/images/atlas-spiral.webp', import.meta.url));
+  assert.deepEqual(legacyPhoto, nextPhoto);
+  assert.equal(legacyPhoto.toString('ascii', 8, 12), 'WEBP');
+  assert.match(css, /\.universe-scene::after\s*\{[^}]*left: 14%;[^}]*atlas-spiral\.webp[^}]*animation: atlas-spiral-drift/);
+  assert.match(css, /\.universe-scene::after\s*\{[^}]*left: 17%;/);
+  assert.match(css, /\.universe-scene\[data-scene-active="true"\]::after\s*\{\s*animation-play-state: running/);
+  assert.doesNotMatch(source, /uniform \w+ uGalaxy|vec3 spiralGalaxy\(/);
+});
+test('fallback art and lens styles are identical in both frontends', () => {
+  for (const format of ['wide','compact']) {
+    const file = 'images/atlas-horizon-' + format + '.webp';
+    const poster = readFileSync(new URL('../frontend/' + file, import.meta.url));
+    assert.equal(poster.toString('ascii',8,12),'WEBP');
+    assert.deepEqual(poster,readFileSync(new URL('../nextjs-frontend/public/' + file,import.meta.url)));
+  }
+  assert.deepEqual(readFileSync(new URL('../frontend/css/atlas-scene.css',import.meta.url)),readFileSync(new URL('../nextjs-frontend/app/atlas-scene.css',import.meta.url)));
 });
 
 test('each particle galaxy has a visible orbit with a fixed centre', () => {
@@ -231,4 +316,41 @@ test('each particle galaxy has a visible orbit with a fixed centre', () => {
     }
     h.detach();
   }
+});
+
+test('sustained slow drawing reduces resolution before releasing the renderer to its poster', () => {
+  const h = harness();
+  const full = h.canvas.width;
+  let now = 0;
+  const slowUntil = quality => {
+    for (let i = 0; i < 60 && h.host.dataset.universeQuality !== quality; i++) h.step(now += 130);
+    assert.equal(h.host.dataset.universeQuality, quality);
+  };
+  slowUntil('0.75');
+  assert.equal(h.canvas.width, Math.round(full * .75));
+  slowUntil('0.5');
+  assert.equal(h.canvas.width, Math.round(full * .5));
+  slowUntil('poster');
+  assert.equal(h.frames.size, 0);
+  assert.equal(h.host.dataset.universeReady, undefined);
+  assert.equal(h.calls.framebuffersReleased, 1);
+  const draws = h.calls.draws;
+  h.visibility(false);
+  h.visibility(true);
+  assert.equal(h.frames.size, 0);
+  assert.equal(h.calls.draws, draws);
+});
+
+test('isolated stalls, initial warmup and offscreen gaps retain full scene quality', () => {
+  const h = harness();
+  let now = 0;
+  for (let cycle = 0; cycle < 4; cycle++) {
+    h.step(now += 400);
+    for (let i = 0; i < 20; i++) h.step(now += 40);
+    h.visibility(false);
+    now += 6000;
+    h.visibility(true);
+  }
+  assert.equal(h.host.dataset.universeQuality, '1');
+  assert.equal(h.host.dataset.universeReady, 'true');
 });

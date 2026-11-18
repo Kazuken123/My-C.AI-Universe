@@ -125,38 +125,6 @@ function orbitViewTransition(update) {
   }
 }
 
-function createAtmosphereControls() {
-  const root = document.documentElement;
-  const bound = new WeakSet();
-  try {
-    const saved = localStorage.getItem('cai_skill_theme');
-    if (saved === 'era-day' || saved === 'higgsfield') root.dataset.theme = saved;
-  } catch {}
-  function sync() {
-    const day = root.dataset.theme === 'era-day';
-    document.querySelectorAll('[data-atmosphere-toggle]').forEach(button => {
-      button.setAttribute('aria-pressed', String(day));
-      const label = button.querySelector('[data-atmosphere-label]');
-      const text = day ? 'By Day · Alabaster' : 'By Night · Cosmos';
-      if (label && label.textContent !== text) label.textContent = text;
-    });
-  }
-  new MutationObserver(sync).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
-  return () => {
-    document.querySelectorAll('[data-atmosphere-toggle]').forEach(button => {
-      if (bound.has(button)) return;
-      bound.add(button);
-      button.addEventListener('click', () => orbitViewTransition(() => {
-        const theme = root.dataset.theme === 'era-day' ? 'higgsfield' : 'era-day';
-        root.dataset.theme = theme;
-        try { localStorage.setItem('cai_skill_theme', theme); } catch {}
-        sync();
-      }));
-    });
-    sync();
-  };
-}
-
 /** Dashboard controls shared by Express and Next. No duplicate API requests. */
 function createUniverseControls() {
   const islands = new Map();
@@ -340,12 +308,11 @@ function initOrbitMotion() {
   window.__orbitMotion = true;
   const root = document.documentElement;
   const scanUniverseControls = createUniverseControls();
-  const scanAtmosphereControls = createAtmosphereControls();
   window.orbitViewTransition = orbitViewTransition;
-  // Motion is always on. Discard the obsolete pause preference from older builds.
-  try { localStorage.removeItem('ambient_motion_disabled'); } catch {}
-  root.dataset.orbitMotion = 'running';
-  window.ambientCanvas?.forceStart();
+  const updateMotionMode = () => {
+    root.dataset.orbitMotion = orbitMotionAllowed() ? 'running' : 'paused';
+  };
+  updateMotionMode();
   let observed = new WeakSet();
   let scrollFrame = 0;
   function updateScroll() {
@@ -387,7 +354,6 @@ function initOrbitMotion() {
 
   function scan() {
     scanUniverseControls();
-    scanAtmosphereControls();
     document.querySelectorAll(revealSelector).forEach((el, index) => {
       if (observed.has(el)) return;
       observed.add(el);
@@ -403,6 +369,7 @@ function initOrbitMotion() {
   }
 
   window.matchMedia?.('(prefers-reduced-motion: no-preference)').addEventListener?.('change', () => {
+    updateMotionMode();
     document.querySelectorAll('.orbit-reveal').forEach(el => { el.dataset.reveal = 'visible'; });
     refreshRevealObserver();
     scan();

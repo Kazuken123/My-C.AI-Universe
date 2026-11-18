@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="C.AI Universe" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <title>Character Architecture Studio — My C.AI Universe</title>
+  <title>Character Studio — My C.AI Universe</title>
   <meta name="description" content="Synthesize canonical characters from Fandom/Wikipedia or author custom personalities with persistent SQL memory." />
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -30,6 +30,7 @@
   <script type="module" src="/js/ambient-canvas.js"></script>
   <link rel="stylesheet" href="/css/orbit.css" />
   <script type="module" src="/js/orbit-motion.js"></script>
+  <link rel="stylesheet" href="/css/atlas.css" />
 </head>
 <body>
   <!-- Ambient Kinetic Motion Canvas Engine -->
@@ -73,7 +74,7 @@
             </span>
             <div class="brand-text-wrap">
               <span class="brand-title">C.AI Universe</span>
-              <span class="brand-version">ORBIT STUDIO</span>
+              <span class="brand-version">SPACE ATLAS</span>
             </div>
           </a>
           <div class="sidebar-header-actions">
@@ -186,11 +187,11 @@
 
     <!-- Main Studio Workspace -->
     <main class="main-workspace">
-      <div class="content-container">
+      <div class="content-container atlas-workspace">
         <header class="view-header">
           <div>
-            <h1 class="view-title" id="studio-heading">Character Architecture Studio</h1>
-            <p class="view-subtitle">Synthesize from Fandom/Wikipedia canon, generate via AI prompt, or author manually.</p>
+            <h1 class="view-title" id="studio-heading">Character Studio</h1>
+            <p class="view-subtitle">Create a character, shape their voice, and write your first scene.</p>
           </div>
           <button class="btn-ghost" id="btnResetStudio" type="button">
             <i class="ph-light ph-arrow-counter-clockwise"></i>
@@ -198,16 +199,27 @@
           </button>
         </header>
 
-        <div class="studio-grid">
-          <div class="studio-left-col">
+        <a class="atlas-preview-link" href="#studio-preview">Preview character ↓</a>
+        <div id="studio-load-status" role="status">
+          <div class="atlas-editor-placeholder">
+            <span class="atlas-sr-only">Loading character editor</span>
+            <i class="atlas-skeleton" aria-hidden="true"></i>
+            <div class="atlas-columns" aria-hidden="true">
+              <section><i class="atlas-skeleton"></i><i class="atlas-skeleton"></i><i class="atlas-skeleton"></i><i class="atlas-skeleton"></i></section>
+              <section><i class="atlas-skeleton"></i><i class="atlas-skeleton"></i><i class="atlas-skeleton"></i></section>
+            </div>
+          </div>
+        </div>
+        <div class="studio-grid" hidden>
+          <div class="studio-left-col" id="studio-fields">
             <!-- Double-Bezel Automated Ingestion Card -->
             <div class="double-bezel-shell">
               <div class="double-bezel-core studio-card">
                 <div class="card-header-row">
-                  <h2 class="card-heading">Automated Canon Ingestion</h2>
-                  <span class="mono-tag">WIKI + LLM</span>
+                  <h2 class="card-heading">Start from a source</h2>
+
                 </div>
-                <p class="hint">Extract canon traits, portraits, and dialogue quotes from any Fandom or Wikipedia URL. The AI analyzes real quotes and personality to judge cognitive profile (MBTI), calibrate speech cadence ('...', '—', '?!', '~'), and ground opening scenes with situational props.</p>
+                <p class="hint">Import a wiki page or describe a character. You can edit every field below.</p>
 
                 <div class="form-group">
                   <label for="charWikiInput">Fandom or Wikipedia Source URL</label>
@@ -221,7 +233,7 @@
                 </div>
 
                 <div class="form-group" style="margin-bottom: 0;">
-                  <label for="aiConceptInput">One-Line Concept Synthesizer</label>
+                  <label for="aiConceptInput">Character concept</label>
                   <div class="inline-input-group">
                     <input type="text" class="form-input" id="aiConceptInput" placeholder="A sharp-tongued cyberpunk watchmaker who trades memories for time..." />
                     <button type="button" class="btn-secondary" id="btnGenerateAI">
@@ -236,6 +248,7 @@
             <!-- Main Character Specification Form -->
             <div class="double-bezel-shell">
               <form class="double-bezel-core studio-card" id="studio-form">
+                <h2 class="card-heading">Identity</h2>
                 <input type="hidden" id="studioCharId" value="" />
 
                 <div class="form-row-2col">
@@ -276,7 +289,8 @@
                 </div>
 
                 <div class="form-group">
-                  <label>Default Character Voice / Anime Seiyuu (Author Default)</label>
+                  <h2 class="atlas-section">Voice and opening scene</h2>
+                  <span>Character voice</span>
                   <input type="hidden" id="charVoiceIdInput" value="" />
                   <input type="hidden" id="charVoiceNameInput" value="" />
                   <div class="studio-voice-selector">
@@ -347,7 +361,7 @@
 
                 <div class="form-divider" style="margin: 20px 0 16px; border-top: 1px solid var(--border-subtle);"></div>
                 <div class="card-header-row" style="margin-bottom: 12px;">
-                  <h3 style="margin: 0; font-size: 0.92rem; font-weight: 700; letter-spacing: -0.01em; color: var(--accent);">Starting Relationship &amp; Universe Dynamic</h3>
+                  <h3 style="margin: 0; font-size: 0.92rem; font-weight: 700; letter-spacing: -0.01em; color: var(--accent);">Starting relationship</h3>
                   <span class="mono-tag">PSYCHOLOGICAL ENGINE</span>
                 </div>
 
@@ -386,7 +400,7 @@
 
                 <div class="form-submit-bar">
                   <button type="submit" class="btn-island" id="btnSaveCharacter">
-                    <span id="btnSaveText">Commit to SQL &amp; Launch Scene</span>
+                    <span id="btnSaveText">Save and start scene</span>
                     <span class="btn-island-icon" aria-hidden="true">
                       <i class="ph-light ph-arrow-right"></i>
                     </span>
@@ -397,12 +411,12 @@
           </div>
 
           <!-- Right Column: Sticky Live Hardware Dossier Preview -->
-          <div class="studio-right-col">
+          <div class="studio-right-col" id="studio-preview" tabindex="-1">
             <div class="double-bezel-shell sticky-preview-shell">
               <div class="double-bezel-core studio-card">
                 <div class="card-header-row">
-                  <h2 class="card-heading">Live Dossier Preview</h2>
-                  <span class="mono-tag">REALTIME</span>
+                  <h2 class="card-heading">Character preview</h2>
+                  <a class="atlas-preview-link" href="#studio-fields">Back to editor ↑</a>
                 </div>
 
                 <div class="preview-dossier-card">
@@ -411,7 +425,7 @@
                   </div>
 
                   <div class="preview-meta-block">
-                    <div class="preview-dossier-creator" id="preview-creator">Authored by @you &middot; Relational SQL</div>
+                    <div class="preview-dossier-creator" id="preview-creator">Authored by @you</div>
                     <div class="preview-dossier-name" id="preview-name">New Character</div>
                     <div class="preview-dossier-tagline" id="preview-tagline">AI Roleplay Character</div>
                     <div class="preview-dossier-tags" id="preview-tags">

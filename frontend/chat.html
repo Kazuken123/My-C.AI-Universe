@@ -29,6 +29,8 @@
   <script type="module" src="/js/ambient-canvas.js"></script>
   <link rel="stylesheet" href="/css/orbit.css?v=2.7.0" />
   <script type="module" src="/js/orbit-motion.js"></script>
+  <link rel="stylesheet" href="/css/atlas.css" />
+  <link rel="stylesheet" href="/css/atlas-chat.css" />
 </head>
 <body class="is-chat-page">
   <!-- Ambient Kinetic Motion Canvas Engine -->
@@ -55,7 +57,7 @@
             </span>
             <div class="brand-text-wrap">
               <span class="brand-title">C.AI Universe</span>
-              <span class="brand-version">ORBIT STUDIO</span>
+              <span class="brand-version">SPACE ATLAS</span>
             </div>
           </a>
           <div class="sidebar-header-actions">
@@ -170,7 +172,7 @@
     <main class="main-workspace chat-page-main">
       <div class="chat-room-layout">
         <!-- Center Dialogue Stage -->
-        <div class="chat-main-column">
+        <div class="chat-main-column atlas-chat-reader">
           <header class="chat-topbar">
             <div class="chat-char-header">
               <a href="/" class="icon-btn back-to-discover-btn" id="btnBackToDiscover" title="Back to Character Directory">
@@ -182,7 +184,7 @@
               <div class="chat-header-meta">
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <span class="chat-header-title" id="chat-header-name">Character</span>
-                  <span class="soul-id-badge"><span class="soul-dot"></span>SOUL-ID</span>
+
                   <div class="voice-wave-visualizer" id="chat-voice-visualizer" aria-hidden="true" title="Live Voice Audio Wave">
                     <span class="voice-wave-bar"></span>
                     <span class="voice-wave-bar"></span>
@@ -190,7 +192,7 @@
                     <span class="voice-wave-bar"></span>
                   </div>
                 </div>
-                <div class="chat-header-sub" id="chat-header-sub">Cinema Studio &middot; 35mm Lens</div>
+                <div class="chat-header-sub" id="chat-header-sub"></div>
               </div>
             </div>
 
@@ -209,7 +211,7 @@
                 <i class="ph-light ph-speaker-slash"></i>
               </button>
 
-              <button class="chat-topbar-btn" id="btnToggleDrawer" type="button" title="More Options &amp; Profile" aria-label="More Options">
+              <button class="chat-topbar-btn" id="btnToggleDrawer" type="button" aria-controls="chat-right-drawer" aria-expanded="false" title="More Options &amp; Profile" aria-label="More Options">
                 <i class="ph-bold ph-dots-three"></i>
               </button>
             </div>
@@ -325,7 +327,8 @@
 
           <!-- Scrollable Dialogue Stream -->
           <div class="chat-messages-scroll" id="chat-messages-scroll">
-            <div class="chat-stream-inner" id="chat-stream-inner">
+            <div class="chat-stream-inner" id="chat-stream-inner" aria-busy="true">
+              <span class="atlas-sr-only" role="status">Opening chat</span>
               <div class="chat-skeleton-stream" id="chat-initial-skeleton" aria-hidden="true">
                 <div class="chat-intro-skeleton">
                   <div class="skeleton-avatar-circle"></div>
@@ -361,13 +364,13 @@
             <div class="chat-composer-inner">
               <div class="double-bezel-shell composer-shell">
                 <div class="composer-box">
-                  <textarea id="chatInput" rows="1" placeholder="Write dialogue or *action*..."></textarea>
+                  <textarea id="chatInput" rows="1" disabled aria-label="Message" placeholder="Write dialogue or *action*..."></textarea>
                   <div class="composer-actions">
-                    <button type="button" class="btn-secondary btn-sm" id="continueBtn" title="Let the character continue the scene (or press Enter on empty input)">
+                    <button type="button" class="btn-secondary btn-sm" id="continueBtn" disabled title="Let the character continue the scene (or press Enter on empty input)">
                       <i class="ph-light ph-fast-forward"></i>
                       <span>Continue</span>
                     </button>
-                    <button type="button" class="composer-send-btn" id="sendBtn" title="Send message" aria-label="Send message">
+                    <button type="button" class="composer-send-btn" id="sendBtn" disabled title="Send message" aria-label="Send message">
                       <i class="ph-light ph-paper-plane-right"></i>
                     </button>
                   </div>
@@ -385,7 +388,7 @@
         </div>
 
         <!-- Right Character Dossier & Vector Memory Drawer (Collapsed by default, opens on user toggle) -->
-        <aside class="chat-right-drawer collapsed" id="chat-right-drawer" aria-label="Character Dossier and Memory">
+        <aside class="chat-right-drawer collapsed" id="chat-right-drawer" inert aria-label="Character Dossier and Memory">
           <div class="drawer-header-bar">
             <button class="icon-btn drawer-back-btn hidden" id="drawerBackBtn" type="button" aria-label="Back to Menu" title="Back">
               <i class="ph-bold ph-caret-left"></i>
@@ -560,7 +563,7 @@
         </aside>
 
         <!-- Saved Threads / Conversation History Drawer (C.AI Style) -->
-        <aside class="chat-side-drawer chat-history-drawer hidden" id="chatHistoryDrawer" aria-label="Conversation History">
+        <aside class="chat-side-drawer chat-history-drawer hidden" id="chatHistoryDrawer" inert aria-label="Conversation History">
           <div class="chat-history-header">
             <button class="chat-history-close-btn" id="btnCloseHistoryDrawer" type="button" title="Close History">
               <i class="ph-light ph-caret-right"></i>

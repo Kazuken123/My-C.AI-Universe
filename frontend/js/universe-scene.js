@@ -25,12 +25,10 @@
       p.yz = mat2(cos(aTilt.x), sin(aTilt.x), -sin(aTilt.x), cos(aTilt.x)) * p.yz;
       p.xy = mat2(cos(aTilt.y), sin(aTilt.y), -sin(aTilt.y), cos(aTilt.y)) * p.xy;
       p += aCenter.xyz;
-      vec3 skyPosition = p;
+
       vec2 look = uPointer + vec2(sin(uTime * .028) * .022, cos(uTime * .021) * .013);
       p.xz = mat2(cos(look.x), sin(look.x), -sin(look.x), cos(look.x)) * p.xz;
       p.yz = mat2(cos(look.y), sin(look.y), -sin(look.y), cos(look.y)) * p.yz;
-      // The distant black hole is anchored in the deep field, with restrained parallax.
-      if (aSize.y > 3.5 && aSize.y < 4.5) p = mix(skyPosition, p, .12);
       float depth = max(1.0, 16.0 - p.z);
       gl_Position = vec4(p.x * 2.0 / uAspect, p.y * 2.0, depth - .2, depth);
       gl_PointSize = clamp(aSize.x * uPixelRatio * 16.0 / depth, 1.0, uMaxPointSize);
@@ -57,70 +55,25 @@
       return mix(mix(hash(cell), hash(cell + vec2(1., 0.)), f.x),
                  mix(hash(cell + vec2(0., 1.)), hash(cell + vec2(1.)), f.x), f.y);
     }
-    // Advect a periodic texture around the disc. No time seam at atan's +/-PI.
-    float accretionFlow(float radius, float angle) {
-      float speed = .48 + .24 / pow(max(radius, .28), 1.35);
-      float phase = angle - uTime * speed;
-      vec2 orbit = vec2(cos(phase), sin(phase));
-      float turbulence = noise(orbit * (6. + radius * 11.) + radius * vec2(9., 4.));
-      float bands = .78 + .12 * sin(radius * 95. + turbulence * 3.5);
-      float streams = .7 + .22 * sin(phase * 3. + radius * 19.)
-                            + .08 * sin(phase * 7. - radius * 31.);
-      return bands * streams * (.65 + turbulence * .5);
-    }
-    vec4 blackHole(vec2 p) {
-      float tilt = vShape.y;
-      vec2 q = mat2(cos(tilt), sin(tilt), -sin(tilt), cos(tilt)) * p;
-      float r = length(q);
-      // Almost edge-on: a thin ellipse in front, a lensed image behind the shadow.
-      vec2 plane = vec2(q.x, q.y / vShape.x);
-      float discRadius = length(plane);
-      float discAngle = atan(plane.y, plane.x);
-      float discMask = smoothstep(.26, .34, discRadius) * (1. - smoothstep(.72, .94, discRadius));
-      float shadow = 1. - smoothstep(.266, .279, r);
-      float front = smoothstep(-.008, .012, q.y);
-      float discVisibility = 1. - shadow * (1. - front);
-      float flow = accretionFlow(discRadius, discAngle);
-      float beaming = 1.12 - .4 * smoothstep(-.85, .85, q.x);
-      float disc = discMask * discVisibility * flow * beaming;
-      float heat = 1. - smoothstep(.28, .9, discRadius);
-      vec3 discColor = mix(vec3(.37, .16, .055), vec3(1., .76, .4), heat);
-      discColor = mix(discColor, vec3(1., .94, .76), pow(heat, 3.));
-      // A broad upper arc and a much fainter lower image, connected to the disc.
-      vec2 lens = vec2(q.x, q.y / .92);
-      float lensRadius = length(lens);
-      float lensAngle = atan(lens.y, lens.x);
-      float arcMask = smoothstep(.282, .305, lensRadius) * (1. - smoothstep(.365, .445, lensRadius));
-      float upper = smoothstep(.015, .16, -q.y);
-      float lower = smoothstep(.015, .14, q.y) * .12;
-      float lensedFlow = accretionFlow(.38 + (lensRadius - .3) * 2.8, lensAngle);
-      float lensBands = .83 + .17 * sin(lensRadius * 160. + lensedFlow * 2.);
-      float arc = arcMask * (upper + lower) * lensBands * lensedFlow * beaming;
-      float photon = exp(-abs(r - .28) * 250.) * (.38 + upper * .34);
-      float bloom = exp(-abs(lensRadius - .33) * 28.) * upper * .065;
-      bloom += exp(-abs(q.y) * 65.) * exp(-q.x * q.x * 3.) * .055;
-      bloom *= 1. - shadow;
-      vec3 light = discColor * disc * 1.65 + vec3(1., .81, .49) * arc * 1.7;
-      light += vec3(1., .88, .65) * photon + vec3(.8, .48, .22) * bloom;
-      // Keep a crisp dark silhouette, with a restrained atmospheric glow.
-      light *= 1. - smoothstep(.91, 1., r);
-      vec3 mapped = 1. - exp(-light * 1.4);
-      float alpha = max(shadow, max(mapped.r, max(mapped.g, mapped.b)));
-      return vec4(mapped / max(alpha, .001), alpha);
-    }
-    vec4 planet(vec2 p, float radius) {
+    vec4 planet(vec2 p, float radius, float atmosphere) {
       vec2 q = p / radius;
       float r = dot(q, q);
-      if (r > 1.15) return vec4(0.);
-      float edge = 1.0 - smoothstep(.98, 1.07, r);
+      if (r > 1.13) return vec4(0.);
+      float edge = 1.0 - smoothstep(.965, 1.025, r);
       vec3 n = vec3(q.x, -q.y, sqrt(max(0., 1.0 - r)));
-      float light = max(0., dot(n, normalize(vec3(-.65, .5, .6))));
-      float bands = .5 + .5 * sin(q.y * 24. + noise(q * 5. + uTime * .006) * 3.);
-      vec3 surface = mix(vColor.rgb * .35, vColor.rgb, bands * .55 + .25);
-      vec3 color = surface * (.055 + light * .88);
-      float rim = pow(1.0 - max(0., n.z), 3.) * max(.12, light);
-      color += vec3(.26, .5, .84) * rim * .85;
-      return vec4(color, edge);
+      // A source behind the silhouette lights one crescent of its visible sphere.
+      vec3 star = normalize(vec3(vShape, mix(-.83, -.25, atmosphere)));
+      float light = max(0., dot(n, star));
+      vec2 surfaceUv = n.xy + n.z * vec2(.37, .68);
+      float terrain = .64 * noise(surfaceUv * 7.) + .36 * noise(surfaceUv * 23. + 8.);
+      float surface = .28 + .72 * smoothstep(.15, .85, terrain);
+      vec3 color = vec3(.008, .011, .019) + vColor.rgb * surface * light * mix(.65, 1.05, atmosphere);
+      float litLimb = pow(max(0., dot(normalize(n.xy + vec2(.0001)), normalize(star.xy))), 2.2);
+      float rim = exp(-n.z * mix(7., 12., atmosphere)) * litLimb;
+      vec3 rimColor = mix(vColor.rgb, vec3(.78, .73, .66), atmosphere * .5);
+      color += rimColor * rim * mix(.15, .72, atmosphere);
+      float halo = exp(-max(0., r - 1.) * 51.) * litLimb * .22 * atmosphere;
+      return vec4(mix(vColor.rgb * .58, color, edge), max(edge, halo));
     }
     void main() {
       vec2 p = gl_PointCoord * 2.0 - 1.0;
@@ -145,19 +98,146 @@
         float alpha = (exp(-r * r * 16.) + exp(-r * 4.) * arm * .55) * (1. - smoothstep(.65, 1., r));
         gl_FragColor = vec4(mix(vColor.rgb, vec3(1., .87, .66), exp(-r * 8.)), vColor.a * alpha);
       } else if (vKind < 3.5) {
-        gl_FragColor = planet(p, .87);
-      } else if (vKind < 4.5) {
-        gl_FragColor = blackHole(p);
+        gl_FragColor = planet(p, .81, .0);
       } else {
-        vec2 q = mat2(.94, .342, -.342, .94) * p;
-        float r = length(vec2(q.x / .96, q.y / .26));
-        float ring = smoothstep(.51, .59, r) * (1. - smoothstep(.94, 1., r));
-        ring *= .55 + .2 * sin(r * 105.);
-        vec4 body = planet(p, .43);
-        vec4 belt = vec4(vec3(.72, .64, .58), ring * .8);
-        gl_FragColor = body.a > .1 && (q.y < 0. || ring < .05) ? body : vec4(mix(body.rgb, belt.rgb, belt.a), max(body.a, belt.a));
+        gl_FragColor = planet(p, .87, 1.);
       }
       if (gl_FragColor.a < .002) discard;
+    }
+  `;
+
+  const lensVertex = `
+    attribute vec2 aCorner;
+    varying vec2 vUv;
+    void main() {
+      vUv = aCorner * .5 + .5;
+      gl_Position = vec4(aCorner, 0., 1.);
+    }
+  `;
+  const lensFragment = `
+    #ifdef GL_FRAGMENT_PRECISION_HIGH
+    precision highp float;
+    #else
+    precision mediump float;
+    #endif
+    uniform sampler2D uSky;
+    uniform vec2 uSize;
+    uniform vec2 uCenter;
+    uniform float uRadius;
+    uniform float uTime;
+    varying vec2 vUv;
+
+    float hash(vec2 p) {
+      vec3 q = fract(vec3(p.xyx) * .1031);
+      q += dot(q, q.yzx + 33.33);
+      return fract((q.x + q.y) * q.z);
+    }
+    float noise(vec2 p) {
+      vec2 i = floor(p), f = fract(p);
+      f = f*f*(3.-2.*f);
+      return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+1.),f.x),f.y);
+    }
+    // Work in the disk's tilted frame. Along-flow noise is deliberately coarse
+    // so that thin bands read as filaments rather than spots.
+    float filament(vec2 flow) {
+      float warp = noise(flow*vec2(2.8, 10.))*2.2 + noise(flow*vec2(7., 25.))*.65;
+      float broad = noise(vec2(flow.x*3.5, flow.y*22.+warp));
+      float fine = noise(vec2(flow.x*10., flow.y*91.+2.*warp));
+      float thread = noise(vec2(flow.x*15., flow.y*192.+4.*warp));
+      return (.24 + 1.05*pow(broad,1.7)) * (.38 + .76*fine + .43*thread);
+    }
+
+    // A narrow dust lane supplies a recognizable feature behind the lens.
+    vec3 sky(vec2 uv) {
+      vec2 p = (uv-uCenter)*uSize/uRadius;
+      float grain = noise(p*2.)*.5 + noise(p*6.)*.3 + noise(p*17.)*.2;
+      float lane = p.y - .35*p.x - .62 + .2*sin(p.x*.8);
+      float cloud = exp(-abs(lane)*2.8)*pow(grain,2.) + exp(-abs(lane+.24)*9.)*grain*.36;
+      vec3 field = texture2D(uSky,clamp(uv,vec2(.001),vec2(.999))).rgb;
+      return vec3(.014,.021,.032) + field*vec3(.48,.46,.42) + vec3(.32,.38,.43)*cloud;
+    }
+
+    void main() {
+      vec2 p = (vUv-uCenter)*uSize/uRadius;
+      float r = length(p);
+      // Inverse screen-space lens mapping. Distant background samples stay fixed.
+      float influence = 1.-smoothstep(2.1,4.8,r);
+      vec2 bend = p*(1.22/max(r*r,.15))*influence;
+      vec2 lensedUv = vUv-bend*uRadius/uSize;
+      vec3 color = sky(lensedUv);
+      vec2 q = mat2(.944,-.33,.33,.944)*p;
+      float shadow = 1.-smoothstep(.988,1.014,r);
+      vec3 shadowColor = mix(vec3(.030,.019,.027),vec3(.094,.065,.083),
+                             exp(-length((q-vec2(-.50,-.33))*1.40)));
+      color = mix(color,shadowColor,shadow);
+
+      // The far-side image is pulled into a high arch. Its luminous outer
+      // bands lean away from the shadow and flow into the near-side sheet.
+      float upper = smoothstep(-.96,1.02,q.y);
+      float displacement = max(r-1.,0.);
+      vec2 arcPoint = q + vec2(displacement*mix(-.06,.32,upper),0.);
+      arcPoint.y /= mix(.97,1.16,upper);
+      float depth = length(arcPoint)-1.;
+      float thickness = mix(.55,.92,upper);
+      float left = 1.-smoothstep(-.72,.81,q.x);
+      float arcFlux = 0.;
+      float arcHaze = 0.;
+      if (depth > -.04 && depth < 1.35) {
+        float aft = smoothstep(-.025,.135,depth);
+        float rolloff = 1.-smoothstep(thickness*.27,thickness,depth);
+        float angle = atan(arcPoint.y,arcPoint.x);
+        // Sine/cosine coordinates wrap continuously through the left shoulder.
+        float phase = angle-uTime*(.27-.09*min(depth,1.));
+        float along = .84*sin(phase)+.29*sin(2.*phase)+.29*cos(phase);
+        float lane = depth + .058*sin(3.*angle+depth*4.) + .033*sin(7.*angle-depth*7.);
+        float texture = filament(vec2(along,lane));
+        float lift = .38+.62*smoothstep(.05,.85,abs(q.y));
+        float shoulder = exp(-abs(q.y+.22)*3.5)*left;
+        arcFlux = aft*rolloff*texture*lift*mix(.79,1.60,upper) * (.48+.85*left);
+        arcFlux *= 1.-shoulder*.35;
+        arcHaze = aft*exp(-max(depth,0.)*3.0)*(.16+.16*left);
+      }
+
+      // The foreground projects as an almost edge-on sheet. The upper side
+      // widens into the approaching gas on the left while its core stays thin.
+      float longitudinal = q.x;
+      float sheetY = q.y + .41 - .020*sin(q.x*1.5);
+      float reach = (1.-smoothstep(3.55,5.70,-longitudinal))
+                    *(1.-smoothstep(2.2,3.9,longitudinal));
+      float core = exp(-pow(abs(sheetY)/.095,1.42));
+      float wingWidth = mix(.125,.29,left) * mix(.7,1.38,smoothstep(-.05,.18,sheetY));
+      float wing = exp(-pow(abs(sheetY)/(wingWidth+.026*abs(q.x)),1.23));
+      float sheetFlux = 0.;
+      if (reach > .0 && abs(sheetY)<1.55) {
+        float flow = longitudinal-uTime*(.52-.14*smoothstep(0.,3.,abs(longitudinal)));
+        float y = sheetY + .006*sin(2.1*longitudinal+sheetY*4.);
+        float weave = (noise(vec2(flow*1.6,y*16.))-.5)*mix(.16,.47,left);
+        float lanes = noise(vec2(flow*.85,y*61.+weave));
+        float threads = noise(vec2(flow*3.1,y*203.+weave));
+        float strands = (.37+.91*pow(lanes,1.3))*(.52+.72*threads);
+        vec2 junction = vec2((longitudinal+1.52)*1.75,(sheetY-.17)*8.5);
+        float belt = exp(-dot(junction,junction));
+        float turbulence = noise(vec2(flow*8.0,y*51.))*noise(vec2(flow*21.,y*100.));
+        strands += belt*(.16+1.35*turbulence);
+        float fold = exp(-abs(sheetY-.16)*9.)*left;
+        // Against the shadow only the thin, optically dense foreground is visible.
+        float fringe = 1. - shadow * smoothstep(.11,.43,abs(sheetY)) * .92;
+        sheetFlux = reach * (1.17*core+(.87*wing+.24*fold)*fringe)*strands;
+      }
+
+      float photonWidth = max(.005,.79/uRadius);
+      float photon = 0.;
+      if (abs(r-1.005)<3.*photonWidth) {
+        float rim = (r-1.005)/photonWidth;
+        photon = exp(-rim*rim)*(.10+.26*left+.26*exp(-abs(sheetY)*7.));
+      }
+      float warmHaze = reach*(.14*exp(-abs(sheetY)*3.0)+.12*wing)+arcHaze;
+      float flux = arcFlux+sheetFlux;
+      vec3 gas = mix(vec3(.87,.58,.42),vec3(1.0,.90,.76),smoothstep(.09,1.2,flux));
+      vec3 emission = gas*flux*1.62 + vec3(1.,.85,.66)*photon
+                    + vec3(.51,.23,.22)*warmHaze;
+      color += (1.-min(color,vec3(1.)))*(1.-exp(-emission));
+      gl_FragColor = vec4(min(color,vec3(1.)),1.);
     }
   `;
 
@@ -242,37 +322,36 @@
     }
     // Draw opaque foreground bodies last so their unlit sides occlude the star field.
     const opaqueOffset = particles.length / 15;
-    // Move the black hole from z=1.6 to z=-9 and scale x/y/size by the same
-    // depth ratio: it keeps its apparent size and position, but sits behind worlds.
-    const blackHoleDepthScale = 25 / 14.4;
-    point([0, 0, 0], [(compact ? -1.65 : 1.9) * blackHoleDepthScale, (compact ? -.45 : 3.3) * blackHoleDepthScale, -9, 0],
-      [.17, -.08], [...gold, 1], (compact ? 72 : 106) * blackHoleDepthScale, 4);
-    point([0, 0, 0], [compact ? 1.45 : 6.7, compact ? -2.55 : -3.15, 5.5, 0], [0, 0], [.35, .52, .66, 1], compact ? 115 : 150, 5);
-    point([0, 0, 0], [compact ? -1.65 : -8, compact ? -4.1 : -4.8, 6.5, 0], [0, 0], [.48, .36, .58, 1], compact ? 58 : 76, 3);
-    counts.worlds = 3;
+    point([0, 0, 0], [compact ? 3.65 : 8.35, compact ? -.88 : -4.35, 4.7, 0], [-.26, .94], [.37, .49, .57, 1], compact ? 38 : 56, 5);
+    point([0, 0, 0], [compact ? -1.15 : -6.18, compact ? -3.72 : 2.73, 6.5, 0], [.58, .8], [.56, .49, .43, 1], compact ? 10 : 17, 3);
+    counts.worlds = 2;
     return { data: new Float32Array(particles), opaqueOffset, counts };
   }
 
   function mountUniverse(host) {
     const canvas = host.querySelector('canvas');
-    if (!canvas) return () => {};
+    const fallbackVideo = host.querySelector('video');
     let gl;
-    try {
-      gl = canvas.getContext('webgl', { alpha: true, antialias: false, depth: false, premultipliedAlpha: true, powerPreference: 'low-power' });
-    } catch { return () => {}; }
-    if (!gl) return () => {}; // The layered CSS space scene remains visible.
+    function acquireContext() {
+      try {
+        return canvas.getContext('webgl', { alpha: false, antialias: false, depth: false, powerPreference: 'low-power' });
+      } catch { return null; }
+    }
+
     const controller = new AbortController();
     const { signal } = controller;
     const art = host.closest('.orbit-hero') || host.closest('.orbit-art') || host;
-    const compact = (window.innerWidth || host.clientWidth) < 769;
-    const geometry = createParticles(compact);
+    let compact = (window.innerWidth || host.clientWidth) < 769;
+    let geometry;
     const pointer = [0, 0];
     const target = [0, 0];
     let program;
     let buffer;
     let uniforms;
+    let lensProgram, quad, skyTexture, framebuffer, lensUniforms, corner;
+    let attributes = [];
     let frame = 0;
-    let visible = true;
+    let visible = !('IntersectionObserver' in window);
     let lost = false;
     let disposed = false;
     let elapsed = 0;
@@ -281,129 +360,269 @@
     let width = 1;
     let height = 1;
     let pixelRatio = 1;
-    const canAnimate = () => !disposed && !lost && visible && !document.hidden;
+    const resolutionScales = [1, .75, .5];
+    let qualityLevel = 0;
+    let posterOnly = false;
+    let sampleStart = 0;
+    let samples = 0;
+    let slowSamples = 0;
+    function resetSampleWindow() {
+      sampleStart = samples = slowSamples = lastDraw = 0;
+    }
+    const sceneIsActive = () => visible && !document.hidden;
+    const canAnimate = () => !disposed && !lost && sceneIsActive() && !posterOnly;
 
     function release() {
       if (buffer) gl.deleteBuffer(buffer);
+      if (quad) gl.deleteBuffer(quad);
       if (program) gl.deleteProgram(program);
-      buffer = null;
-      program = null;
+      if (lensProgram) gl.deleteProgram(lensProgram);
+      if (skyTexture) gl.deleteTexture(skyTexture);
+      if (framebuffer) gl.deleteFramebuffer(framebuffer);
+      quad = buffer = program = lensProgram = skyTexture = framebuffer = null;
+      delete host.dataset.universeReady;
     }
-    function setup() {
+    function compile(vertex, fragment) {
+      const result = gl.createProgram();
       const shaders = [];
       try {
-        program = gl.createProgram();
-        for (const [type, source] of [[gl.VERTEX_SHADER, vertexSource], [gl.FRAGMENT_SHADER, fragmentSource]]) {
+        for (const [type, source] of [[gl.VERTEX_SHADER, vertex], [gl.FRAGMENT_SHADER, fragment]]) {
           const shader = gl.createShader(type);
-          if (!shader) throw new Error('Shader unavailable');
           shaders.push(shader);
           gl.shaderSource(shader, source);
           gl.compileShader(shader);
           if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error('Shader compilation failed');
-          gl.attachShader(program, shader);
+          gl.attachShader(result, shader);
         }
-        gl.linkProgram(program);
-        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error('Program linking failed');
-        gl.useProgram(program);
-        buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, geometry.data, gl.STATIC_DRAW);
-        let offset = 0;
-        for (const [name, size] of [['aPosition', 3], ['aCenter', 4], ['aTilt', 2], ['aColor', 4], ['aSize', 2]]) {
-          const location = gl.getAttribLocation(program, name);
-          gl.enableVertexAttribArray(location);
-          gl.vertexAttribPointer(location, size, gl.FLOAT, false, 60, offset * 4);
-          offset += size;
-        }
-        uniforms = Object.fromEntries(['uTime', 'uAspect', 'uPixelRatio', 'uMaxPointSize', 'uPointer'].map(name => [name, gl.getUniformLocation(program, name)]));
-        gl.uniform1f(uniforms.uMaxPointSize, gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1]);
-        gl.enable(gl.BLEND);
-        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-        gl.clearColor(0, 0, 0, 0);
-        host.dataset.universeReady = 'true';
-        host.dataset.universeLayers = Object.keys(geometry.counts).join(' ');
-        return true;
-      } catch {
-        release();
-        delete host.dataset.universeReady;
-        return false;
+        gl.linkProgram(result);
+        if (!gl.getProgramParameter(result, gl.LINK_STATUS)) throw new Error('Program linking failed');
+        return result;
+      } catch (error) {
+        gl.deleteProgram(result);
+        throw error;
       } finally {
         shaders.forEach(shader => gl.deleteShader(shader));
       }
     }
+    function setup() {
+      try {
+        geometry ||= createParticles(compact);
+        program = compile(vertexSource, fragmentSource);
+        lensProgram = compile(lensVertex, lensFragment);
+        buffer = gl.createBuffer();
+        quad = gl.createBuffer();
+        framebuffer = gl.createFramebuffer();
+        skyTexture = gl.createTexture();
+        if (!buffer || !quad || !framebuffer || !skyTexture) throw new Error('Scene allocation failed');
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, geometry.data, gl.STATIC_DRAW);
+        let offset = 0;
+        attributes = [['aPosition',3],['aCenter',4],['aTilt',2],['aColor',4],['aSize',2]].map(([name,size]) => {
+          const attribute = { location: gl.getAttribLocation(program,name), size, offset };
+          offset += size*4;
+          return attribute;
+        });
+        gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,3,-1,-1,3]), gl.STATIC_DRAW);
+        corner = gl.getAttribLocation(lensProgram,'aCorner');
+        const locations = (target,names) => Object.fromEntries(names.map(name => [name,gl.getUniformLocation(target,name)]));
+        uniforms = locations(program,['uTime','uAspect','uPixelRatio','uMaxPointSize','uPointer']);
+        lensUniforms = locations(lensProgram,['uSize','uCenter','uRadius','uTime','uSky']);
+        gl.useProgram(program);
+        gl.uniform1f(uniforms.uMaxPointSize,gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1]);
+        gl.bindTexture(gl.TEXTURE_2D,skyTexture);
+        for (const key of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D,key,gl.LINEAR);
+        for (const key of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D,key,gl.CLAMP_TO_EDGE);
+        gl.bindTexture(gl.TEXTURE_2D,null);
+        host.dataset.universeLayers = Object.keys(geometry.counts).join(' ') + ' lens';
+        return true;
+      } catch {
+        release();
+        return false;
+      }
+    }
+    function bindParticles() {
+      gl.useProgram(program);
+      gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+      for (const {location,size,offset} of attributes) {
+        gl.enableVertexAttribArray(location);
+        gl.vertexAttribPointer(location,size,gl.FLOAT,false,60,offset);
+      }
+      gl.enable(gl.BLEND);
+    }
     function draw() {
       if (!program || lost || disposed) return;
-      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.viewport(0,0,canvas.width,canvas.height);
+      gl.bindFramebuffer(gl.FRAMEBUFFER,framebuffer);
+      gl.clearColor(0,0,0,1);
       gl.clear(gl.COLOR_BUFFER_BIT);
-      gl.uniform1f(uniforms.uTime, elapsed);
-      gl.uniform1f(uniforms.uAspect, width / height);
-      gl.uniform1f(uniforms.uPixelRatio, pixelRatio);
-      gl.uniform2f(uniforms.uPointer, pointer[0], pointer[1]);
-      // Additive light for gas and stars; normal alpha for dark foreground bodies.
-      gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-      gl.drawArrays(gl.POINTS, 0, geometry.opaqueOffset);
-      gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-      gl.drawArrays(gl.POINTS, geometry.opaqueOffset, geometry.data.length / 15 - geometry.opaqueOffset);
+      bindParticles();
+      gl.uniform1f(uniforms.uTime,elapsed);
+      gl.uniform1f(uniforms.uAspect,width/height);
+      gl.uniform1f(uniforms.uPixelRatio,pixelRatio);
+      gl.uniform2f(uniforms.uPointer,pointer[0],pointer[1]);
+      gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+      gl.drawArrays(gl.POINTS,0,geometry.opaqueOffset);
+      for (const {location} of attributes) gl.disableVertexAttribArray(location);
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+      gl.useProgram(lensProgram);
+      gl.disable(gl.BLEND);
+      gl.bindBuffer(gl.ARRAY_BUFFER,quad);
+      gl.enableVertexAttribArray(corner);
+      gl.vertexAttribPointer(corner,2,gl.FLOAT,false,0,0);
+      gl.bindTexture(gl.TEXTURE_2D,skyTexture);
+      gl.uniform1i(lensUniforms.uSky,0);
+      const narrow = (window.innerWidth || width) < 769;
+      gl.uniform2f(lensUniforms.uSize,width,height);
+      gl.uniform2f(lensUniforms.uCenter,narrow ? .82 : .81,narrow ? .71 : .60);
+      gl.uniform1f(lensUniforms.uRadius,Math.min(width*(narrow ? .19 : .136),height*(narrow ? .19 : .29)));
+      gl.uniform1f(lensUniforms.uTime,elapsed);
+      gl.drawArrays(gl.TRIANGLES,0,3);
+      gl.bindTexture(gl.TEXTURE_2D,null);
+      gl.disableVertexAttribArray(corner);
+
+      bindParticles();
+      gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+      gl.drawArrays(gl.POINTS,geometry.opaqueOffset,geometry.data.length/15-geometry.opaqueOffset);
+      host.dataset.universeReady = 'true';
+    }
+    // Ignore startup, GPU reallocation and hidden time. Eight slow submissions
+    // within a ten-frame sample identify a sustained cost rather than a single stall.
+    function adaptResolution(now) {
+      if (!sampleStart) sampleStart = now;
+      if (!lastDraw || now - sampleStart < 1200) return false;
+      const lowest = qualityLevel === resolutionScales.length - 1;
+      if (now - lastDraw > (lowest ? 100 : 70)) slowSamples++;
+      if (++samples < 10) return false;
+      const overBudget = slowSamples >= 8;
+      samples = slowSamples = 0;
+      if (!overBudget) return false;
+      if (lowest) {
+        posterOnly = true;
+        host.dataset.universeQuality = 'poster';
+        release();
+        sync();
+      } else {
+        qualityLevel++;
+        resize();
+      }
+      return true;
     }
     function tick(now) {
       frame = 0;
       if (!canAnimate()) { previous = 0; return; }
-      if (previous) elapsed += Math.min((now - previous) / 1000, 0.05);
+      if (previous) elapsed += (now - previous) / 1000;
       previous = now;
       // 30fps is plenty for this slow scene and keeps laptop GPU use modest.
       if (now - lastDraw >= 1000 / 30) {
         pointer[0] += (target[0] - pointer[0]) * 0.07;
         pointer[1] += (target[1] - pointer[1]) * 0.07;
-        draw();
-        lastDraw = now;
+        if (!adaptResolution(now)) {
+          draw();
+          lastDraw = now;
+        }
       }
-      frame = requestAnimationFrame(tick);
+      if (canAnimate() && program) frame = requestAnimationFrame(tick);
+    }
+    function syncFallback() {
+      if (!fallbackVideo) return;
+      if (!sceneIsActive() || host.dataset.universeReady === 'true') {
+        if (!fallbackVideo.paused) fallbackVideo.pause();
+        return;
+      }
+      const narrow = (window.innerWidth || host.clientWidth) < 769;
+      const source = '/images/atlas-horizon-' + (narrow ? 'compact' : 'wide') + '.mp4';
+      if (fallbackVideo.getAttribute('src') !== source) {
+        delete fallbackVideo.dataset.ready;
+        fallbackVideo.muted = true;
+        fallbackVideo.src = source;
+      }
+      if (fallbackVideo.paused) fallbackVideo.play().catch(() => {});
     }
     function sync() {
+      syncFallback();
+      host.dataset.sceneActive = String(sceneIsActive());
       if (canAnimate() && program && !frame) frame = requestAnimationFrame(tick);
-      else if (!canAnimate()) { cancelAnimationFrame(frame); frame = 0; previous = 0; }
+      else if (!canAnimate() || !program) { cancelAnimationFrame(frame); frame = 0; previous = 0; resetSampleWindow(); }
     }
     function resize() {
+      resetSampleWindow();
       width = Math.max(1, host.clientWidth);
       height = Math.max(1, host.clientHeight);
+      const narrow = (window.innerWidth || width) < 769;
+      if (compact !== narrow) {
+        compact = narrow;
+        geometry = null;
+        if (program && !lost && !posterOnly) {
+          geometry = createParticles(compact);
+          gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+          gl.bufferData(gl.ARRAY_BUFFER,geometry.data,gl.STATIC_DRAW);
+        }
+      }
       // A panoramic canvas should not multiply GPU cost on high-density 4K displays.
-      pixelRatio = Math.min(window.devicePixelRatio || 1, compact ? 1.25 : 1.5, Math.sqrt(1600000 / (width * height)));
-      canvas.width = Math.round(width * pixelRatio);
-      canvas.height = Math.round(height * pixelRatio);
+      pixelRatio = Math.min(window.devicePixelRatio || 1, compact ? 1.25 : 1.5, Math.sqrt(1600000 / (width * height))) * resolutionScales[qualityLevel];
+      canvas.width = Math.max(1, Math.round(width * pixelRatio));
+      canvas.height = Math.max(1, Math.round(height * pixelRatio));
+      if (!program || lost || posterOnly) return;
+      host.dataset.universeQuality = String(resolutionScales[qualityLevel]);
+      gl.bindTexture(gl.TEXTURE_2D,skyTexture);
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,canvas.width,canvas.height,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+      gl.bindFramebuffer(gl.FRAMEBUFFER,framebuffer);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,skyTexture,0);
+      const complete = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+      gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+      gl.bindTexture(gl.TEXTURE_2D,null);
+      if (!complete) { release(); sync(); return; }
       draw();
     }
 
-    if (!setup()) return () => {};
-    const sizeObserver = new ResizeObserver(resize);
-    sizeObserver.observe(host);
+    function start() {
+      if (!lost && !posterOnly) {
+        gl ||= acquireContext();
+        if (gl && (program || setup())) resize();
+      }
+      sync();
+    }
+
+    fallbackVideo?.addEventListener('playing', () => { fallbackVideo.dataset.ready = ''; }, { signal });
+    fallbackVideo?.addEventListener('error', () => { delete fallbackVideo.dataset.ready; }, { signal });
+    window.matchMedia?.('(max-width: 768px)').addEventListener?.('change', syncFallback, { signal });
+    const sizeObserver = canvas ? new ResizeObserver(resize) : null;
+    sizeObserver?.observe(host);
     const viewObserver = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
       visible = entries[0].isIntersecting;
+      host.dataset.universeVisible = String(visible);
       sync();
     }) : null;
     viewObserver?.observe(host);
     document.addEventListener('visibilitychange', sync, { signal });
     art.addEventListener('pointermove', event => {
-      if (event.pointerType !== 'mouse') return;
+      if (event.pointerType !== 'mouse' || !program || !canAnimate()) return;
       const bounds = art.getBoundingClientRect();
       target[0] = ((event.clientX - bounds.left) / bounds.width - 0.5) * 0.18;
       target[1] = ((event.clientY - bounds.top) / bounds.height - 0.5) * 0.12;
     }, { passive: true, signal });
     art.addEventListener('pointerleave', () => { target[0] = 0; target[1] = 0; }, { signal });
-    canvas.addEventListener('webglcontextlost', event => {
+    canvas?.addEventListener('webglcontextlost', event => {
       event.preventDefault(); lost = true; delete host.dataset.universeReady; sync();
     }, { signal });
-    canvas.addEventListener('webglcontextrestored', () => {
+    canvas?.addEventListener('webglcontextrestored', () => {
       lost = false;
-      if (setup()) { resize(); sync(); }
+      release(); start();
     }, { signal });
-    resize();
-    sync();
+    if (canvas) start();
+    else sync();
     return () => {
       disposed = true;
+      if (fallbackVideo && !fallbackVideo.paused) fallbackVideo.pause();
       cancelAnimationFrame(frame);
       controller.abort();
-      sizeObserver.disconnect();
+      sizeObserver?.disconnect();
       viewObserver?.disconnect();
+      delete host.dataset.sceneActive;
+      delete host.dataset.universeQuality;
+      delete host.dataset.universeVisible;
       release();
       delete host.dataset.universeReady;
     };

@@ -1,0 +1,364 @@
+/* Discover scene, roster, and portrait cards. */
+.orbit-discover {
+  --atlas-gutter: clamp(24px, 4vw, 72px);
+  --atlas-scene-edge: #050610;
+  --atlas-scene-veil: #050610df;
+  --atlas-card-width: clamp(176px, 19vw, 232px);
+  padding-inline: var(--atlas-gutter);
+}
+
+.orbit-discover .discover-topbar.universe-searchbar {
+  background: transparent;
+  border: 0;
+  min-height: 44px;
+}
+
+.orbit-discover .discover-topbar::after {
+  display: none;
+}
+
+.orbit-discover .orbit-hero.universe-hero {
+  align-items: flex-end;
+  min-height: clamp(405px, 56svh, 570px);
+  padding: clamp(130px, 19svh, 205px) 0 30px;
+  scroll-margin-top: 74px;
+  isolation: isolate;
+}
+
+.orbit-discover .universe-hero .orbit-hero-copy {
+  width: min(48%, 480px);
+  padding: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.orbit-discover .universe-hero .orbit-title {
+  font-size: clamp(2.65rem, 5.2vw, 5.7rem);
+  margin-block-end: 14px;
+  text-wrap: initial;
+}
+
+.orbit-discover .universe-hero .orbit-description {
+  font-size: .92rem;
+  line-height: 1.55;
+}
+
+.orbit-discover .universe-hero .hero-actions {
+  margin-top: 20px;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+}
+
+.orbit-discover .orbit-art.universe-art {
+  inset: -54px calc(-1 * var(--atlas-gutter)) -30px;
+}
+
+.orbit-discover .universe-art::after {
+  background: radial-gradient(ellipse 65% 55% at 8% 77%, var(--atlas-scene-veil) 15%, transparent 90%),
+    linear-gradient(0deg, var(--atlas-scene-edge), transparent 24%);
+}
+
+.orbit-discover .orbit-roster {
+  animation: none;
+  clip-path: none;
+  margin-block: 0 32px;
+  padding-block-start: 0;
+}
+
+.orbit-discover .orbit-roster .orbit-section-heading {
+  align-items: center;
+  flex-direction: row;
+  margin: 0 0 8px;
+  gap: 12px;
+}
+
+.orbit-discover .orbit-roster .orbit-section-heading h2 {
+  font-size: clamp(1.6rem, 2.5vw, 2.45rem);
+  margin: 0;
+}
+
+.orbit-discover :is(.atlas-return, .atlas-roster-feedback .btn-ghost) {
+  min-height: 44px;
+}
+
+.orbit-discover .atlas-return {
+  display: none;
+}
+
+.orbit-discover:has(.universe-hero[hidden], .orbit-roster:target) .atlas-return {
+  display: inline-flex;
+}
+
+.atlas-roster-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.atlas-roster-controls .search-controls {
+  flex: 1 1 300px;
+  min-width: 0;
+  max-width: 400px;
+}
+
+.atlas-roster-controls .search-box {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 12px;
+  border-color: var(--border-subtle);
+}
+
+.atlas-roster-controls .search-box:focus-within {
+  border-color: var(--accent);
+}
+
+.atlas-roster-controls .search-box input {
+  min-width: 0;
+}
+
+.atlas-roster-controls .atlas-sort {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.atlas-roster-controls .select-control {
+  width: 100%;
+  min-height: 44px;
+}
+
+.orbit-discover .orbit-roster .roster-filter-bar {
+  margin: 0;
+}
+
+.orbit-discover .orbit-roster .category-pill {
+  min-height: 36px;
+}
+
+.atlas-roster-feedback {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 28px;
+  margin-bottom: 8px;
+}
+
+.atlas-roster-feedback p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: .76rem;
+}
+
+.atlas-roster-feedback .btn-ghost[hidden] {
+  display: none;
+}
+
+.orbit-discover .bento-character-grid.character-track {
+  grid-auto-columns: var(--atlas-card-width);
+  padding-block: 5px 14px;
+  margin-block: -5px 0;
+}
+
+.orbit-discover .character-track .cai-card {
+  padding: 0;
+  gap: 0;
+}
+
+.orbit-discover .character-track .cai-card-top {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+.orbit-discover .character-track .cai-avatar-wrap {
+  width: 100%;
+  height: auto;
+  flex: none;
+  aspect-ratio: 5 / 6;
+  border-radius: 0;
+}
+
+.orbit-discover .character-track .cai-card-info {
+  padding: 12px 12px 0;
+}
+
+.orbit-discover .character-track .cai-card-name {
+  font-size: .95rem;
+  overflow-wrap: anywhere;
+}
+
+.orbit-discover .character-track .cai-card-tags {
+  padding: 8px 12px;
+}
+
+.orbit-discover .character-track .cai-card-footer {
+  padding: 6px 8px;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.orbit-discover .character-track .cai-card-actions {
+  margin-inline-start: auto;
+}
+
+.orbit-discover .character-track .atlas-portrait-skeleton {
+  position: relative;
+  min-height: calc(var(--atlas-card-width) * 1.2 + 132px);
+  height: auto;
+  background-color: var(--bg-core);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.atlas-portrait-skeleton::before,
+.atlas-portrait-skeleton::after {
+  content: '';
+  position: absolute;
+  background: var(--bg-core-elevated);
+}
+
+.atlas-portrait-skeleton::before {
+  width: 100%;
+  aspect-ratio: 5 / 6;
+}
+
+.atlas-portrait-skeleton::after {
+  top: calc(var(--atlas-card-width) * 1.2 + 15px);
+  left: 12px;
+  width: 60%;
+  height: 10px;
+  border-radius: 4px;
+  box-shadow: 0 21px var(--bg-core-elevated), 0 48px var(--bg-core-elevated);
+}
+
+[data-theme="era-day"] .orbit-discover {
+  --atlas-scene-edge: #f8f6f0;
+  --atlas-scene-veil: #f8f6f0e8;
+}
+
+[data-theme="era-day"] .orbit-discover .universe-art::after {
+  background: radial-gradient(ellipse 65% 55% at 8% 77%, var(--atlas-scene-veil) 15%, transparent 90%),
+    linear-gradient(0deg, var(--atlas-scene-edge), transparent 24%);
+}
+
+@media (max-width: 768px) {
+  .orbit-discover {
+    --atlas-gutter: clamp(16px, 5vw, 24px);
+    --atlas-card-width: clamp(172px, 46vw, 210px);
+    padding-bottom: calc(92px + var(--safe-bottom, 0px));
+  }
+
+  .orbit-discover .orbit-hero.universe-hero {
+    align-items: flex-end;
+    min-height: clamp(310px, 41svh, 370px);
+    padding: 108px 0 20px;
+    scroll-margin-top: 60px;
+  }
+
+  .orbit-discover .universe-hero .orbit-hero-copy {
+    width: 100%;
+    max-width: 440px;
+  }
+
+  .orbit-discover .universe-hero .orbit-title {
+    font-size: clamp(2.25rem, 10vw, 3.65rem);
+    margin-block-end: 9px;
+  }
+
+  .orbit-discover .universe-hero .hero-actions {
+    margin-top: 14px;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .orbit-discover .hero-actions :is(.btn-island, .btn-ghost) {
+    width: auto;
+  }
+
+  .orbit-discover .orbit-art.universe-art {
+    inset-block: -98px 14px;
+    justify-self: stretch;
+  }
+
+  .orbit-discover .universe-art::after,
+  [data-theme="era-day"] .orbit-discover .universe-art::after {
+    background: linear-gradient(0deg, var(--atlas-scene-edge) 3%, var(--atlas-scene-veil) 45%, transparent 71%);
+  }
+
+  .orbit-discover .orbit-roster {
+    scroll-margin-top: calc(116px + var(--safe-top, 0px));
+  }
+
+  .orbit-discover .orbit-roster .category-pill {
+    min-height: 44px;
+  }
+
+  .atlas-roster-controls .search-kbd {
+    display: none;
+  }
+
+  .atlas-roster-controls .select-icon {
+    display: none;
+  }
+
+  .atlas-roster-controls .select-control {
+    font-size: .73rem;
+    padding-inline: 11px 30px;
+  }
+}
+
+.orbit-discover .orbit-hero.universe-hero[hidden],
+.orbit-discover .atlas-scene-resume[hidden],
+.orbit-discover .atlas-scene-preview[hidden] {
+  display: none;
+}
+
+.atlas-scene-resume {
+  margin-top: 14px;
+}
+
+.atlas-scene-name {
+  color: var(--text-primary);
+  font-size: .92rem;
+  font-weight: 650;
+  margin: 0 0 3px;
+}
+
+.atlas-scene-preview {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: .8rem;
+  line-height: 1.5;
+  max-width: 37ch;
+  margin: 0 0 10px;
+  overflow-wrap: anywhere;
+}
+
+.orbit-discover .orbit-hero-copy .btn-ghost {
+  min-height: 44px;
+}
+
+.orbit-discover .atlas-scene-resume:not([hidden]) + .hero-actions {
+  margin-top: 5px;
+}
+
+@media (max-width: 768px) {
+  .orbit-discover .orbit-hero.universe-hero:has(.atlas-scene-resume:not([hidden])) .orbit-description {
+    display: none;
+  }
+}
+
+@media (min-width: 769px) and (max-height: 780px) {
+  .orbit-discover {
+    padding-top: 72px;
+  }
+
+  .orbit-discover .orbit-hero.universe-hero {
+    min-height: clamp(380px, 54svh, 420px);
+    padding-block-end: 22px;
+  }
+}

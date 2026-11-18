@@ -211,34 +211,24 @@ test('M4: deduplicateSessionsByCharacter groups sessions by character and counts
   assert.equal(result[1].threadCount, 1);
 });
 
-test('EBAP-01: deleting the displayed session from raw history surfaces the next remaining chat for that character', async () => {
-  const { deduplicateSessionsByCharacter, removeSessionById } = await import('../../lib/chat-utils.ts');
+test('EBAP-01: saved chats list and remove individual sessions independently', async () => {
+  const { removeSessionById } = await import('../../lib/chat-utils.ts');
   const { readFileSync } = await import('node:fs');
-  const path = await import('node:path');
-  const { fileURLToPath } = await import('node:url');
+  const source = readFileSync(new URL('../../components/chat/saved-chats-list.tsx', import.meta.url), 'utf8');
 
-  assert.equal(typeof removeSessionById, 'function');
-
-  const rawSessions = [
-    { id: 'sess_newest', characterId: 'char_kana', characterName: 'Kana Arima', lastMessage: 'Latest chat' },
-    { id: 'sess_older', characterId: 'char_kana', characterName: 'Kana Arima', lastMessage: 'Older chat' },
-    { id: 'sess_gojo', characterId: 'char_gojo', characterName: 'Satoru Gojo', lastMessage: 'Infinity' },
+  const sessions = [
+    { id: 'sess_newest', characterId: 'char_kana' },
+    { id: 'sess_older', characterId: 'char_kana' },
+    { id: 'sess_gojo', characterId: 'char_gojo' },
   ];
 
-  const remainingRaw = removeSessionById(rawSessions, 'sess_newest');
-  const dedupedAfterDelete = deduplicateSessionsByCharacter(remainingRaw);
-
-  assert.equal(dedupedAfterDelete.length, 2);
-  assert.equal(dedupedAfterDelete[0].characterId, 'char_kana');
-  assert.equal(dedupedAfterDelete[0].id, 'sess_older');
-  assert.equal(dedupedAfterDelete[0].threadCount, 1);
-
-  const componentPath = path.resolve(
-    path.dirname(fileURLToPath(import.meta.url)),
-    '../../components/chat/saved-chats-list.tsx'
-  );
-  const source = readFileSync(componentPath, 'utf8');
-  assert.match(source, /rawSessions/, 'SavedChatsList must retain rawSessions so deleting one chat reveals remaining character chats');
+  assert.deepEqual(removeSessionById(sessions, 'sess_newest'), [sessions[1], sessions[2]]);
+  assert.deepEqual(removeSessionById(sessions, 'sess_older'), [sessions[0], sessions[2]]);
+  assert.equal(sessions.length, 3);
+  assert.match(source, /sessions\.map\(/);
+  assert.match(source, /session=\$\{encodeURIComponent\(session\.id\)\}/);
+  assert.match(source, /removeSessionById\(prev, sessionId\)/);
+  assert.doesNotMatch(source, /deduplicateSessionsByCharacter/);
 });
 
 test('EBAP-02: every Next.js AI_PROVIDERS option is accepted by backend normalizeProviderName and legacy providers normalize safely', async () => {

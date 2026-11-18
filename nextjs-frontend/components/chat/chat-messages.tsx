@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useLayoutEffect, useState } from 'react';
 import {
   Pin,
   Edit3,
@@ -45,7 +45,7 @@ function FormattedRoleplayText({ text }: { text: string }) {
   const lines = clean.split('\n');
 
   return (
-    <div className="space-y-1.5 leading-relaxed text-sm">
+    <div className="atlas-turn-copy space-y-1.5">
       {lines.map((line, idx) => {
         if (!line.trim()) return <div key={idx} className="h-2" />;
 
@@ -102,27 +102,44 @@ export function ChatMessages({
   onRewindMessage,
   onSpeakText,
 }: ChatMessagesProps) {
-  const scrollEndRef = useRef<HTMLDivElement | null>(null);
+  const pageSize = 28;
+  const [visibleCount, setVisibleCount] = useState(pageSize);
+  const visibleStart = Math.max(0, messages.length - visibleCount);
+  const keepAtBottom = useRef(true);
+  const historyAnchor = useRef<{ id: string; top: number } | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Smart auto-scroll: direct scroll on streaming tokens if near bottom; smooth scroll on new turn
-  useEffect(() => {
-    if (!containerRef.current) return;
+  useLayoutEffect(() => {
     const container = containerRef.current;
-    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 200;
-
-    if (isStreaming) {
-      if (isNearBottom) {
-        container.scrollTop = container.scrollHeight;
-      }
-    } else {
-      scrollEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (!container) return;
+    const anchor = historyAnchor.current;
+    if (anchor) {
+      const row = [...container.querySelectorAll<HTMLElement>('[data-turn-id]')]
+        .find(element => element.dataset.turnId === anchor.id);
+      if (row) container.scrollTop += row.getBoundingClientRect().top - anchor.top;
+      historyAnchor.current = null;
+    } else if (keepAtBottom.current) {
+      container.scrollTop = container.scrollHeight;
     }
-  }, [messages, streamingBuffer, isStreaming]);
+  }, [messages, visibleCount, streamingBuffer, isStreaming]);
+
+  const loadOlderTurns = () => {
+    const container = containerRef.current;
+    const firstTurn = container?.querySelector<HTMLElement>('[data-turn-id]');
+    if (!firstTurn?.dataset.turnId) return;
+    const shouldMoveFocus = visibleStart <= pageSize && document.activeElement === container?.querySelector('.atlas-older-turns button');
+    historyAnchor.current = {
+      id: firstTurn.dataset.turnId,
+      top: firstTurn.getBoundingClientRect().top,
+    };
+    keepAtBottom.current = false;
+    setVisibleCount(count => count + pageSize);
+    if (shouldMoveFocus) firstTurn.focus({ preventScroll: true });
+  };
 
   const handleCopy = (id: string, text: string) => {
     navigator.clipboard?.writeText(text);
@@ -147,7 +164,11 @@ export function ChatMessages({
   return (
     <div
       ref={containerRef}
-      className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6"
+      onScroll={event => {
+        const container = event.currentTarget;
+        keepAtBottom.current = container.scrollHeight - container.scrollTop - container.clientHeight < 120;
+      }}
+      className="atlas-chat-transcript flex-1 overflow-y-auto p-4 md:p-6 space-y-6"
     >
       {messages.length === 0 && !isStreaming && (
         <div className="flex min-h-[300px] flex-col items-center justify-center text-center p-8 space-y-3">
@@ -164,9 +185,15 @@ export function ChatMessages({
         </div>
       )}
 
-      {messages.map((msg, index) => {
+      {visibleStart > 0 && (
+        <div className="atlas-older-turns">
+          <button className="btn-secondary btn-sm" type="button" onClick={loadOlderTurns}>Show earlier messages</button>
+        </div>
+      )}
+
+      {messages.slice(visibleStart).map((msg, index) => {
         const isUser = msg.role === 'user';
-        const isLatest = index === messages.length - 1;
+        const isLatest = index + visibleStart === messages.length - 1;
         const variants = msg.variants || [];
         const variantIndex = msg.selectedVariantIndex ?? 0;
         const displayContent =
@@ -176,7 +203,7 @@ export function ChatMessages({
 
         if (isUser) {
           return (
-            <div key={msg.id} className="flex justify-end gap-3 group">
+            <div key={msg.id} data-turn-id={msg.id} tabIndex={-1} className="flex justify-end gap-3 group">
               <div className="flex flex-col items-end max-w-xl space-y-1">
                 <span className="font-mono text-[11px] text-text-muted px-1">
                   {userPersonaName}
@@ -215,7 +242,7 @@ export function ChatMessages({
 
                 {/* Turn Actions on Hover */}
                 {editingId !== msg.id && (
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 pt-0.5 px-1 text-text-muted text-[11px]">
+                  <div className="atlas-turn-actions opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 pt-0.5 px-1 text-text-muted text-[11px]">
                     <button
                       type="button"
                       onClick={() => handleStartEdit(msg)}
@@ -249,7 +276,7 @@ export function ChatMessages({
 
         // Model / Character Message
         return (
-          <div key={msg.id} className="flex justify-start gap-3 group">
+          <div key={msg.id} data-turn-id={msg.id} tabIndex={-1} className="flex justify-start gap-3 group">
             {/* Character Avatar */}
             <div className="h-8 w-8 shrink-0 rounded-full overflow-hidden border border-border-subtle bg-core-elevated shadow-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -261,10 +288,7 @@ export function ChatMessages({
                 <span className="font-display font-bold text-xs text-text-primary">
                   {character.name}
                 </span>
-                <span className="inline-flex items-center gap-1 rounded border border-border-hairline bg-white/5 px-1 py-0.2 font-mono text-[9px] uppercase tracking-wider text-text-muted">
-                  <Radio className="h-2 w-2 text-emerald-400" />
-                  SOUL-ID
-                </span>
+
                 {msg.isPinned && (
                   <span className="inline-flex items-center gap-0.5 rounded-full bg-accent/15 px-1.5 py-0.2 font-mono text-[9px] text-accent">
                     <Pin className="h-2.5 w-2.5" />
@@ -333,7 +357,7 @@ export function ChatMessages({
 
               {/* Turn Actions on Hover */}
               {editingId !== msg.id && (
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 pt-0.5 px-1 text-text-muted text-[11px]">
+                <div className="atlas-turn-actions opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 pt-0.5 px-1 text-text-muted text-[11px]">
                   <button
                     type="button"
                     onClick={() => onPinMessage(msg.id)}
@@ -436,7 +460,7 @@ export function ChatMessages({
       )}
 
       {/* Bottom Anchor */}
-      <div ref={scrollEndRef} className="h-4" />
+
     </div>
   );
 }
