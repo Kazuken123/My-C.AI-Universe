@@ -11,11 +11,7 @@ export default function DiscoverLoading() {
         <div className="orbit-art universe-art">
           <div className="universe-scene" data-universe-scene>
             <div className="universe-fallback">
-              <span className="universe-fallback-nebula" />
-              <span className="universe-fallback-galaxy" />
-              <span className="universe-fallback-core" />
-              <span className="universe-fallback-world" />
-              <span className="universe-fallback-horizon" />
+              <video muted playsInline loop preload="none" />
             </div>
           </div>
         </div>

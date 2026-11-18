@@ -55,19 +55,25 @@
       return mix(mix(hash(cell), hash(cell + vec2(1., 0.)), f.x),
                  mix(hash(cell + vec2(0., 1.)), hash(cell + vec2(1.)), f.x), f.y);
     }
-    vec4 planet(vec2 p, float radius) {
+    vec4 planet(vec2 p, float radius, float atmosphere) {
       vec2 q = p / radius;
       float r = dot(q, q);
-      if (r > 1.15) return vec4(0.);
-      float edge = 1.0 - smoothstep(.98, 1.07, r);
+      if (r > 1.13) return vec4(0.);
+      float edge = 1.0 - smoothstep(.965, 1.025, r);
       vec3 n = vec3(q.x, -q.y, sqrt(max(0., 1.0 - r)));
-      float light = max(0., dot(n, normalize(vec3(-.65, .5, .6))));
-      float bands = .5 + .5 * sin(q.y * 24. + noise(q * 5. + uTime * .006) * 3.);
-      vec3 surface = mix(vColor.rgb * .35, vColor.rgb, bands * .55 + .25);
-      vec3 color = surface * (.055 + light * .88);
-      float rim = pow(1.0 - max(0., n.z), 3.) * max(.12, light);
-      color += vec3(.26, .5, .84) * rim * .85;
-      return vec4(color, edge);
+      // A source behind the silhouette lights one crescent of its visible sphere.
+      vec3 star = normalize(vec3(vShape, mix(-.83, -.25, atmosphere)));
+      float light = max(0., dot(n, star));
+      vec2 surfaceUv = n.xy + n.z * vec2(.37, .68);
+      float terrain = .64 * noise(surfaceUv * 7.) + .36 * noise(surfaceUv * 23. + 8.);
+      float surface = .28 + .72 * smoothstep(.15, .85, terrain);
+      vec3 color = vec3(.008, .011, .019) + vColor.rgb * surface * light * mix(.65, 1.05, atmosphere);
+      float litLimb = pow(max(0., dot(normalize(n.xy + vec2(.0001)), normalize(star.xy))), 2.2);
+      float rim = exp(-n.z * mix(7., 12., atmosphere)) * litLimb;
+      vec3 rimColor = mix(vColor.rgb, vec3(.78, .73, .66), atmosphere * .5);
+      color += rimColor * rim * mix(.15, .72, atmosphere);
+      float halo = exp(-max(0., r - 1.) * 51.) * litLimb * .22 * atmosphere;
+      return vec4(mix(vColor.rgb * .58, color, edge), max(edge, halo));
     }
     void main() {
       vec2 p = gl_PointCoord * 2.0 - 1.0;
@@ -92,16 +98,9 @@
         float alpha = (exp(-r * r * 16.) + exp(-r * 4.) * arm * .55) * (1. - smoothstep(.65, 1., r));
         gl_FragColor = vec4(mix(vColor.rgb, vec3(1., .87, .66), exp(-r * 8.)), vColor.a * alpha);
       } else if (vKind < 3.5) {
-        gl_FragColor = planet(p, .87);
-
+        gl_FragColor = planet(p, .81, .0);
       } else {
-        vec2 q = mat2(.94, .342, -.342, .94) * p;
-        float r = length(vec2(q.x / .96, q.y / .26));
-        float ring = smoothstep(.51, .59, r) * (1. - smoothstep(.94, 1., r));
-        ring *= .55 + .2 * sin(r * 105.);
-        vec4 body = planet(p, .43);
-        vec4 belt = vec4(vec3(.72, .64, .58), ring * .8);
-        gl_FragColor = body.a > .1 && (q.y < 0. || ring < .05) ? body : vec4(mix(body.rgb, belt.rgb, belt.a), max(body.a, belt.a));
+        gl_FragColor = planet(p, .87, 1.);
       }
       if (gl_FragColor.a < .002) discard;
     }
@@ -125,9 +124,6 @@
     uniform vec2 uSize;
     uniform vec2 uCenter;
     uniform float uRadius;
-    uniform vec2 uGalaxyCenter;
-    uniform float uGalaxyRadius;
-    uniform float uGalaxyForeground;
     uniform float uTime;
     varying vec2 vUv;
 
@@ -141,35 +137,14 @@
       f = f*f*(3.-2.*f);
       return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+1.),f.x),f.y);
     }
-    vec3 spiralGalaxy(vec2 uv) {
-      vec2 p = (uv-uGalaxyCenter)*uSize/uGalaxyRadius;
-      if (dot(p,p) > 1.25) return vec3(0.);
-      vec2 q = mat2(.951,-.309,.309,.951)*p;
-      q.y /= .62;
-      float r = length(q);
-      if (r > 1.) return vec3(0.);
-      float phase = atan(q.y,q.x) - uTime*.12;
-      vec2 orbit = vec2(cos(phase),sin(phase))*r;
-      float cloud = noise(orbit*9.)*.63 + noise(orbit*21.)*.25 + noise(orbit*49.)*.12;
-      float winding = phase*2. + log(1.+r*10.)*3.7 + .35*noise(orbit*8.);
-      float arms = pow(.5+.5*cos(winding),4.);
-      float dust = pow(.5+.5*cos(winding-.83),7.)*smoothstep(.12,.34,r);
-      float fade = (1.-smoothstep(.52,1.,r))*exp(-r*1.34);
-      float gas = arms*fade*(.75+.65*cloud)*(1.-dust*.65);
-      float haze = exp(-r*4.2)*(.08+.12*cloud);
-      float bulge = exp(-r*9.)*.42 + exp(-r*r*90.)*.55;
-      float knots = pow(noise(orbit*54.),11.)*arms*fade*2.5;
-      vec3 tint = mix(vec3(.8,.48,.76),vec3(.32,.53,1.),smoothstep(.1,.82,r));
-      return tint*(gas+haze) + vec3(1.,.76,.45)*bulge + vec3(.66,.83,1.)*knots;
-    }
-    // Follow the gas around each projected image. Radial shear stretches a knot
-    // into a filament across adjacent bands.
-    float orbitLight(float angle, float radius, float speed) {
-      float orbit = angle - uTime * speed + radius * 1.65;
-      float knots = pow(.5 + .5*cos(5.*orbit + .78*sin(3.*orbit + radius)), 5.);
-      float wisps = pow(.5 + .5*cos(11.*orbit - radius*3.4), 3.);
-      float wake = .5 + .5*cos(3.*orbit + radius*.9);
-      return .27 + .92*knots + .31*wisps + .26*wake;
+    // Work in the disk's tilted frame. Along-flow noise is deliberately coarse
+    // so that thin bands read as filaments rather than spots.
+    float filament(vec2 flow) {
+      float warp = noise(flow*vec2(2.8, 10.))*2.2 + noise(flow*vec2(7., 25.))*.65;
+      float broad = noise(vec2(flow.x*3.5, flow.y*22.+warp));
+      float fine = noise(vec2(flow.x*10., flow.y*91.+2.*warp));
+      float thread = noise(vec2(flow.x*15., flow.y*192.+4.*warp));
+      return (.24 + 1.05*pow(broad,1.7)) * (.38 + .76*fine + .43*thread);
     }
 
     // A narrow dust lane supplies a recognizable feature behind the lens.
@@ -190,53 +165,78 @@
       vec2 bend = p*(1.22/max(r*r,.15))*influence;
       vec2 lensedUv = vUv-bend*uRadius/uSize;
       vec3 color = sky(lensedUv);
-      // The compact composition places the spiral in front of the distant lens.
-      color += spiralGalaxy(mix(lensedUv,vUv,uGalaxyForeground))*mix(1.2,1.65,uGalaxyForeground);
-      vec2 q = mat2(.978,-.208,.208,.978)*p;
-      float shadow = 1.-smoothstep(.979,1.006,r);
-      color = mix(color,vec3(.006,.008,.012),shadow);
-      // Map the far side of the disk onto the upper and lower lensed images.
-      float upper = step(0.,q.y);
-      vec2 arcPoint = vec2(q.x,q.y/mix(.91,1.05,upper));
-      float arcR = length(arcPoint);
-      float arcDepth = (arcR-1.)/.29;
-      float arc = smoothstep(-.035,.09,arcDepth)*(1.-smoothstep(.28,1.18,arcDepth));
-      arc *= mix(.57,1.,upper) * (.28+.72*smoothstep(.05,.66,abs(q.y)));
-      float arcLight = 0.;
-      if (arc > 0.) {
-        float arcAngle = atan(arcPoint.y,arcPoint.x);
-        float stream = orbitLight(arcAngle + mix(.62,0.,upper),arcDepth,.59);
-        float ribbons = .5 + .5*cos(arcDepth*27. - 2.*sin(arcAngle*3. - uTime*.8));
-        arcLight = arc*stream*(.28+.72*ribbons);
+      vec2 q = mat2(.944,-.33,.33,.944)*p;
+      float shadow = 1.-smoothstep(.988,1.014,r);
+      vec3 shadowColor = mix(vec3(.030,.019,.027),vec3(.094,.065,.083),
+                             exp(-length((q-vec2(-.50,-.33))*1.40)));
+      color = mix(color,shadowColor,shadow);
+
+      // The far-side image is pulled into a high arch. Its luminous outer
+      // bands lean away from the shadow and flow into the near-side sheet.
+      float upper = smoothstep(-.96,1.02,q.y);
+      float displacement = max(r-1.,0.);
+      vec2 arcPoint = q + vec2(displacement*mix(-.06,.32,upper),0.);
+      arcPoint.y /= mix(.97,1.16,upper);
+      float depth = length(arcPoint)-1.;
+      float thickness = mix(.55,.92,upper);
+      float left = 1.-smoothstep(-.72,.81,q.x);
+      float arcFlux = 0.;
+      float arcHaze = 0.;
+      if (depth > -.04 && depth < 1.35) {
+        float aft = smoothstep(-.025,.135,depth);
+        float rolloff = 1.-smoothstep(thickness*.27,thickness,depth);
+        float angle = atan(arcPoint.y,arcPoint.x);
+        // Sine/cosine coordinates wrap continuously through the left shoulder.
+        float phase = angle-uTime*(.27-.09*min(depth,1.));
+        float along = .84*sin(phase)+.29*sin(2.*phase)+.29*cos(phase);
+        float lane = depth + .058*sin(3.*angle+depth*4.) + .033*sin(7.*angle-depth*7.);
+        float texture = filament(vec2(along,lane));
+        float lift = .38+.62*smoothstep(.05,.85,abs(q.y));
+        float shoulder = exp(-abs(q.y+.22)*3.5)*left;
+        arcFlux = aft*rolloff*texture*lift*mix(.79,1.60,upper) * (.48+.85*left);
+        arcFlux *= 1.-shoulder*.35;
+        arcHaze = aft*exp(-max(depth,0.)*3.0)*(.16+.16*left);
       }
 
-      vec2 diskPoint = vec2(q.x,(q.y+.09)/.13);
-      float diskR = length(diskPoint);
-      float disk = (1.-smoothstep(1.2,3.85,diskR))*smoothstep(.72,1.19,diskR);
-      // Near-side gas crosses the silhouette; the far half disappears behind it.
-      disk *= 1.-shadow*smoothstep(-.12,.025,q.y);
-      float diskLight = 0.;
-      if (disk > 0.) {
-        float diskAngle = atan(diskPoint.y,diskPoint.x);
-        float stream = orbitLight(diskAngle,diskR,.87/(.72+.24*diskR));
-        float spiral = .5 + .5*cos(diskR*24. - 2.6*sin(3.*diskAngle - uTime*1.85));
-        diskLight = disk*stream*(.30+.70*spiral);
+      // The foreground projects as an almost edge-on sheet. The upper side
+      // widens into the approaching gas on the left while its core stays thin.
+      float longitudinal = q.x;
+      float sheetY = q.y + .41 - .020*sin(q.x*1.5);
+      float reach = (1.-smoothstep(3.55,5.70,-longitudinal))
+                    *(1.-smoothstep(2.2,3.9,longitudinal));
+      float core = exp(-pow(abs(sheetY)/.095,1.42));
+      float wingWidth = mix(.125,.29,left) * mix(.7,1.38,smoothstep(-.05,.18,sheetY));
+      float wing = exp(-pow(abs(sheetY)/(wingWidth+.026*abs(q.x)),1.23));
+      float sheetFlux = 0.;
+      if (reach > .0 && abs(sheetY)<1.55) {
+        float flow = longitudinal-uTime*(.52-.14*smoothstep(0.,3.,abs(longitudinal)));
+        float y = sheetY + .006*sin(2.1*longitudinal+sheetY*4.);
+        float weave = (noise(vec2(flow*1.6,y*16.))-.5)*mix(.16,.47,left);
+        float lanes = noise(vec2(flow*.85,y*61.+weave));
+        float threads = noise(vec2(flow*3.1,y*203.+weave));
+        float strands = (.37+.91*pow(lanes,1.3))*(.52+.72*threads);
+        vec2 junction = vec2((longitudinal+1.52)*1.75,(sheetY-.17)*8.5);
+        float belt = exp(-dot(junction,junction));
+        float turbulence = noise(vec2(flow*8.0,y*51.))*noise(vec2(flow*21.,y*100.));
+        strands += belt*(.16+1.35*turbulence);
+        float fold = exp(-abs(sheetY-.16)*9.)*left;
+        // Against the shadow only the thin, optically dense foreground is visible.
+        float fringe = 1. - shadow * smoothstep(.11,.43,abs(sheetY)) * .92;
+        sheetFlux = reach * (1.17*core+(.87*wing+.24*fold)*fringe)*strands;
       }
 
-      float beam = mix(1.22,.65,smoothstep(-1.6,1.6,q.x));
-      float flux = beam*(diskLight*1.12+arcLight*1.37);
-      float photonWidth = max(.009,.72/uRadius);
+      float photonWidth = max(.005,.79/uRadius);
       float photon = 0.;
-      if (abs(r-1.008) < 3.*photonWidth) {
-        float photonDistance = (r-1.008)/photonWidth;
-        photon = exp(-photonDistance*photonDistance);
-        photon *= .26 + .36*orbitLight(atan(q.y,q.x),0.,.59);
+      if (abs(r-1.005)<3.*photonWidth) {
+        float rim = (r-1.005)/photonWidth;
+        photon = exp(-rim*rim)*(.10+.26*left+.26*exp(-abs(sheetY)*7.));
       }
-      float bloom = exp(-abs(arcR-1.09)*7.)*(1.-shadow)*mix(.040,.10,upper);
-      bloom += exp(-abs(q.y+.09)*7.)*exp(-abs(q.x)*.84)*.20*(1.-shadow);
-      vec3 emission = vec3(1.,.47,.12)*(flux+bloom) + vec3(1.,.90,.71)*photon;
-      emission += vec3(.83,.76,.65)*smoothstep(.36,1.25,flux);
-      color += (1.-min(color,vec3(1.)))*(1.-exp(-emission*1.65));
+      float warmHaze = reach*(.14*exp(-abs(sheetY)*3.0)+.12*wing)+arcHaze;
+      float flux = arcFlux+sheetFlux;
+      vec3 gas = mix(vec3(.87,.58,.42),vec3(1.0,.90,.76),smoothstep(.09,1.2,flux));
+      vec3 emission = gas*flux*1.62 + vec3(1.,.85,.66)*photon
+                    + vec3(.51,.23,.22)*warmHaze;
+      color += (1.-min(color,vec3(1.)))*(1.-exp(-emission));
       gl_FragColor = vec4(min(color,vec3(1.)),1.);
     }
   `;
@@ -322,14 +322,15 @@
     }
     // Draw opaque foreground bodies last so their unlit sides occlude the star field.
     const opaqueOffset = particles.length / 15;
-    point([0, 0, 0], [compact ? 1.45 : 6.7, compact ? -2.55 : -3.15, 5.5, 0], [0, 0], [.35, .52, .66, 1], compact ? 115 : 150, 5);
-    point([0, 0, 0], [compact ? -1.65 : -8, compact ? -4.1 : -4.8, 6.5, 0], [0, 0], [.48, .36, .58, 1], compact ? 58 : 76, 3);
+    point([0, 0, 0], [compact ? 3.65 : 8.35, compact ? -.88 : -4.35, 4.7, 0], [-.26, .94], [.37, .49, .57, 1], compact ? 38 : 56, 5);
+    point([0, 0, 0], [compact ? -1.15 : -6.18, compact ? -3.72 : 2.73, 6.5, 0], [.58, .8], [.56, .49, .43, 1], compact ? 10 : 17, 3);
     counts.worlds = 2;
     return { data: new Float32Array(particles), opaqueOffset, counts };
   }
 
   function mountUniverse(host) {
     const canvas = host.querySelector('canvas');
+    const fallbackVideo = host.querySelector('video');
     let gl;
     function acquireContext() {
       try {
@@ -340,7 +341,7 @@
     const controller = new AbortController();
     const { signal } = controller;
     const art = host.closest('.orbit-hero') || host.closest('.orbit-art') || host;
-    const compact = (window.innerWidth || host.clientWidth) < 769;
+    let compact = (window.innerWidth || host.clientWidth) < 769;
     let geometry;
     const pointer = [0, 0];
     const target = [0, 0];
@@ -426,7 +427,7 @@
         corner = gl.getAttribLocation(lensProgram,'aCorner');
         const locations = (target,names) => Object.fromEntries(names.map(name => [name,gl.getUniformLocation(target,name)]));
         uniforms = locations(program,['uTime','uAspect','uPixelRatio','uMaxPointSize','uPointer']);
-        lensUniforms = locations(lensProgram,['uSize','uCenter','uRadius','uGalaxyCenter','uGalaxyRadius','uGalaxyForeground','uTime','uSky']);
+        lensUniforms = locations(lensProgram,['uSize','uCenter','uRadius','uTime','uSky']);
         gl.useProgram(program);
         gl.uniform1f(uniforms.uMaxPointSize,gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1]);
         gl.bindTexture(gl.TEXTURE_2D,skyTexture);
@@ -474,11 +475,8 @@
       gl.uniform1i(lensUniforms.uSky,0);
       const narrow = (window.innerWidth || width) < 769;
       gl.uniform2f(lensUniforms.uSize,width,height);
-      gl.uniform2f(lensUniforms.uCenter,narrow ? .53 : .72,narrow ? .69 : .51);
-      gl.uniform1f(lensUniforms.uRadius,Math.min(width*(narrow ? .17 : .082),height*(narrow ? .15 : .185)));
-      gl.uniform2f(lensUniforms.uGalaxyCenter,narrow ? .18 : .50,narrow ? .76 : .65);
-      gl.uniform1f(lensUniforms.uGalaxyRadius,Math.min(width*(narrow ? .185 : .16),height*.325));
-      gl.uniform1f(lensUniforms.uGalaxyForeground,narrow ? 1 : 0);
+      gl.uniform2f(lensUniforms.uCenter,narrow ? .82 : .81,narrow ? .71 : .60);
+      gl.uniform1f(lensUniforms.uRadius,Math.min(width*(narrow ? .19 : .136),height*(narrow ? .19 : .29)));
       gl.uniform1f(lensUniforms.uTime,elapsed);
       gl.drawArrays(gl.TRIANGLES,0,3);
       gl.bindTexture(gl.TEXTURE_2D,null);
@@ -504,6 +502,7 @@
         posterOnly = true;
         host.dataset.universeQuality = 'poster';
         release();
+        sync();
       } else {
         qualityLevel++;
         resize();
@@ -526,7 +525,23 @@
       }
       if (canAnimate() && program) frame = requestAnimationFrame(tick);
     }
+    function syncFallback() {
+      if (!fallbackVideo) return;
+      if (!sceneIsActive() || host.dataset.universeReady === 'true') {
+        if (!fallbackVideo.paused) fallbackVideo.pause();
+        return;
+      }
+      const narrow = (window.innerWidth || host.clientWidth) < 769;
+      const source = '/images/atlas-horizon-' + (narrow ? 'compact' : 'wide') + '.mp4';
+      if (fallbackVideo.getAttribute('src') !== source) {
+        delete fallbackVideo.dataset.ready;
+        fallbackVideo.muted = true;
+        fallbackVideo.src = source;
+      }
+      if (fallbackVideo.paused) fallbackVideo.play().catch(() => {});
+    }
     function sync() {
+      syncFallback();
       host.dataset.sceneActive = String(sceneIsActive());
       if (canAnimate() && program && !frame) frame = requestAnimationFrame(tick);
       else if (!canAnimate() || !program) { cancelAnimationFrame(frame); frame = 0; previous = 0; resetSampleWindow(); }
@@ -535,6 +550,16 @@
       resetSampleWindow();
       width = Math.max(1, host.clientWidth);
       height = Math.max(1, host.clientHeight);
+      const narrow = (window.innerWidth || width) < 769;
+      if (compact !== narrow) {
+        compact = narrow;
+        geometry = null;
+        if (program && !lost && !posterOnly) {
+          geometry = createParticles(compact);
+          gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+          gl.bufferData(gl.ARRAY_BUFFER,geometry.data,gl.STATIC_DRAW);
+        }
+      }
       // A panoramic canvas should not multiply GPU cost on high-density 4K displays.
       pixelRatio = Math.min(window.devicePixelRatio || 1, compact ? 1.25 : 1.5, Math.sqrt(1600000 / (width * height))) * resolutionScales[qualityLevel];
       canvas.width = Math.max(1, Math.round(width * pixelRatio));
@@ -560,6 +585,9 @@
       sync();
     }
 
+    fallbackVideo?.addEventListener('playing', () => { fallbackVideo.dataset.ready = ''; }, { signal });
+    fallbackVideo?.addEventListener('error', () => { delete fallbackVideo.dataset.ready; }, { signal });
+    window.matchMedia?.('(max-width: 768px)').addEventListener?.('change', syncFallback, { signal });
     const sizeObserver = canvas ? new ResizeObserver(resize) : null;
     sizeObserver?.observe(host);
     const viewObserver = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
@@ -587,6 +615,7 @@
     else sync();
     return () => {
       disposed = true;
+      if (fallbackVideo && !fallbackVideo.paused) fallbackVideo.pause();
       cancelAnimationFrame(frame);
       controller.abort();
       sizeObserver?.disconnect();

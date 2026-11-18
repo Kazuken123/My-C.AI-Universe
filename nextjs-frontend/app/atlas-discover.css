@@ -18,8 +18,9 @@
 }
 
 .orbit-discover .orbit-hero.universe-hero {
-  min-height: clamp(325px, 49svh, 510px);
-  padding: 24px 0 38px;
+  align-items: flex-end;
+  min-height: clamp(405px, 56svh, 570px);
+  padding: clamp(130px, 19svh, 205px) 0 30px;
   scroll-margin-top: 74px;
   isolation: isolate;
 }
@@ -53,8 +54,8 @@
 }
 
 .orbit-discover .universe-art::after {
-  background: linear-gradient(90deg, var(--atlas-scene-veil), transparent 61%),
-    linear-gradient(0deg, var(--atlas-scene-edge), transparent 31%);
+  background: radial-gradient(ellipse 65% 55% at 8% 77%, var(--atlas-scene-veil) 15%, transparent 90%),
+    linear-gradient(0deg, var(--atlas-scene-edge), transparent 24%);
 }
 
 .orbit-discover .orbit-roster {
@@ -237,8 +238,8 @@
 }
 
 [data-theme="era-day"] .orbit-discover .universe-art::after {
-  background: linear-gradient(90deg, var(--atlas-scene-veil), transparent 61%),
-    linear-gradient(0deg, var(--atlas-scene-edge), transparent 31%);
+  background: radial-gradient(ellipse 65% 55% at 8% 77%, var(--atlas-scene-veil) 15%, transparent 90%),
+    linear-gradient(0deg, var(--atlas-scene-edge), transparent 24%);
 }
 
 @media (max-width: 768px) {
@@ -357,7 +358,7 @@
   }
 
   .orbit-discover .orbit-hero.universe-hero {
-    min-height: clamp(285px, 43svh, 335px);
-    padding-block: 18px 22px;
+    min-height: clamp(380px, 54svh, 420px);
+    padding-block-end: 22px;
   }
 }

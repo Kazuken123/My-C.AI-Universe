@@ -31,11 +31,7 @@ export function OrbitHero({ hidden }: { hidden: boolean }) {
       <div className="orbit-art universe-art" aria-hidden="true">
         <div className="universe-scene" data-universe-scene>
           <div className="universe-fallback">
-            <span className="universe-fallback-nebula" />
-            <span className="universe-fallback-galaxy" />
-            <span className="universe-fallback-core" />
-            <span className="universe-fallback-world" />
-            <span className="universe-fallback-horizon" />
+            <video muted playsInline loop preload="none" />
           </div>
           <canvas className="universe-canvas" aria-hidden="true" />
         </div>

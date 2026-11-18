@@ -11,9 +11,9 @@ These captures use fictional characters, personas and dialogue. Discover and Stu
 
 ## Galaxy playback and page loading
 
-The [black-hole animation](rim-motion.webp) shows three seconds of the WebGL shader in Edge. The camera stays fixed so you can follow bright gas around the upper and lower arcs and across the disk. The capture advances the renderer clock in 50 ms steps. The [first frame](discover-live-0s.webp) and [last frame](discover-live-3s.webp) are available separately.
+The [before-and-after comparison](discover-comparison.webp) shows how the black hole, galaxy and planet changed. The [desktop hero](rim-motion.webp) and [mobile hero](galaxy-playback.webp) show three seconds of the composited page in Edge, sampled at 16 fps with the video and galaxy clocks stepped together. The [initial WebGL frame](discover-live-0s.webp) and [WebGL frame at three seconds](discover-live-3s.webp) isolate the shader from the overlaid galaxy photograph.
 
-The [mobile recording](galaxy-playback.webp) shows the actual Discover hero at 390 px wide with WebGL disabled and reduced motion enabled. The rim, disk and spiral galaxy start moving on page load. The [saved chats loading capture](saved-chats-loading.webp) shows the first paint before the fixture returned its conversations.
+Edge played the matching fallback video automatically at 390, 820 and 1280 px with WebGL disabled and reduced motion enabled. Each loop uses 84 frames from the shader capture at 16 fps. Its last twelve frames blend into the beginning of the sequence. The [saved chats loading capture](saved-chats-loading.webp) shows the first paint before the fixture returned its conversations.
 
 ## Reproduce the interactions
 

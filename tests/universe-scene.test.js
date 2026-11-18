@@ -35,13 +35,11 @@ function harness({ width = 600, height = 400, unavailable = false, contextThrows
     getShaderParameter: () => !shaderFails, getProgramParameter: () => true,
     getAttribLocation: () => 0, getUniformLocation: (_, name) => name, getParameter: () => [1, 256],
     uniform1f(name, value) {
-      if (name === 'uGalaxyRadius') calls.galaxyRadius = value;
       if (name === 'uTime') calls.time = value;
     },
     uniform2f(name, x, y) {
       if (name === 'uPointer') calls.pointer = [x, y];
       if (name === 'uCenter') calls.center = [x, y];
-      if (name === 'uGalaxyCenter') calls.galaxyCenter = [x, y];
     },
     drawArrays(_, first, count) { calls.draws++; calls.particles += count; calls.batches.push({ mode: _, target: calls.target, first, count, blend: calls.blends.at(-1) }); },
     deleteBuffer() { calls.deletedBuffers++; }, deleteProgram() { calls.deletedPrograms++; },
@@ -53,7 +51,12 @@ function harness({ width = 600, height = 400, unavailable = false, contextThrows
   canvas.getContext = () => { if (contextThrows) throw new Error('GPU unavailable'); return unavailable ? null : gl; };
   const art = new Element();
   const host = new Element();
-  host.querySelector = () => fallbackOnly ? null : canvas;
+  const video = new Element();
+  video.paused = true;
+  video.getAttribute = name => video[name];
+  video.play = async () => { video.paused = false; video.dispatchEvent(new Event('playing')); };
+  video.pause = () => { video.paused = true; };
+  host.querySelector = selector => selector === 'video' ? video : (fallbackOnly ? null : canvas);
   host.closest = () => art;
   const document = new Element();
   document.readyState = 'complete';
@@ -79,7 +82,7 @@ function harness({ width = 600, height = 400, unavailable = false, contextThrows
     observers.find(o => o.target === document.body).callback([{ addedNodes: [], removedNodes: [host] }]);
     step(200);
   };
-  return { preference, canvas, host, art, document, context, calls, observers, frames, step, visibility, detach };
+  return { preference, canvas, video, host, art, document, context, calls, observers, frames, step, visibility, detach };
 }
 
 test('the visible scene animates automatically with reduced motion enabled', () => {
@@ -243,18 +246,49 @@ test('panoramic high-density displays stay inside the backing-pixel budget', () 
   assert.equal(h.frames.size, 0);
 });
 
-test('the lens uses dedicated desktop and mobile art direction', () => {
-  assert.deepEqual(harness({ width: 1200 }).calls.center, [.72, .51]);
-  assert.deepEqual(harness({ width: 340 }).calls.center, [.53, .69]);
+test('the fallback movie starts only on demand, pauses offscreen, and releases playback on detach', () => {
+  const live = harness({});
+  assert.equal(live.video.src, undefined);
+  for (const [width, format] of [[1200, 'wide'], [390, 'compact']]) {
+    const h = harness({ unavailable: true, reducedMotion: true, width });
+    assert.equal(h.video.src, '/images/atlas-horizon-' + format + '.mp4');
+    assert.equal(h.video.paused, false);
+    h.visibility(false);
+    assert.equal(h.video.paused, true);
+    h.visibility(true);
+    assert.equal(h.video.paused, false);
+    h.detach();
+    assert.equal(h.video.paused, true);
+  }
 });
 
-test('the main spiral has its own prominent position and size beside the lens', () => {
-  const desktop = harness({ width: 1320, height: 830 });
-  const mobile = harness({ width: 410, height: 940 });
-  assert.deepEqual(desktop.calls.galaxyCenter, [.50, .65]);
-  assert.deepEqual(mobile.calls.galaxyCenter, [.18, .76]);
-  assert.equal(desktop.calls.galaxyRadius,1320*.16);
-  assert.equal(mobile.calls.galaxyRadius,410*.185);
+test('the lens uses dedicated desktop and mobile art direction', () => {
+  assert.deepEqual(harness({ width: 1200 }).calls.center, [.81, .60]);
+  assert.deepEqual(harness({ width: 340 }).calls.center, [.82, .71]);
+});
+
+test('resizing across the breakpoint replaces the foreground bodies with the matching composition', () => {
+  const h = harness({ width: 1200 });
+  const desktop = h.calls.geometry;
+  h.context.window.innerWidth = h.host.clientWidth = 390;
+  h.observers.find(observer => observer.target === h.host).callback();
+  assert.ok(h.calls.geometry.length < desktop.length);
+  assert.deepEqual(h.calls.center, [.82, .71]);
+  h.context.window.innerWidth = h.host.clientWidth = 1200;
+  h.observers.find(observer => observer.target === h.host).callback();
+  assert.deepEqual(h.calls.geometry, desktop);
+});
+
+test('the left-side spiral uses the same overlay and image across both render paths', () => {
+  const css = readFileSync(new URL('../frontend/css/atlas-scene.css', import.meta.url), 'utf8');
+  const legacyPhoto = readFileSync(new URL('../frontend/images/atlas-spiral.webp', import.meta.url));
+  const nextPhoto = readFileSync(new URL('../nextjs-frontend/public/images/atlas-spiral.webp', import.meta.url));
+  assert.deepEqual(legacyPhoto, nextPhoto);
+  assert.equal(legacyPhoto.toString('ascii', 8, 12), 'WEBP');
+  assert.match(css, /\.universe-scene::after\s*\{[^}]*left: 14%;[^}]*atlas-spiral\.webp[^}]*animation: atlas-spiral-drift/);
+  assert.match(css, /\.universe-scene::after\s*\{[^}]*left: 17%;/);
+  assert.match(css, /\.universe-scene\[data-scene-active="true"\]::after\s*\{\s*animation-play-state: running/);
+  assert.doesNotMatch(source, /uniform \w+ uGalaxy|vec3 spiralGalaxy\(/);
 });
 test('fallback art and lens styles are identical in both frontends', () => {
   for (const format of ['wide','compact']) {
