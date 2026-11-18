@@ -1810,3 +1810,43 @@ kbd {
 
 
 
+
+/* Shared ERA chat interaction and atmosphere. */
+.msg-bubble { text-wrap: pretty; }
+:is(.drawer-action-pill, .drawer-new-chat-btn, .msg-tool-btn, .composer-send-btn, .composer-actions button, .chat-topbar-btn) {
+  transition: transform var(--dur-xs) var(--ease-tactile), background-color var(--dur-xs), color var(--dur-xs);
+}
+:is(.drawer-action-pill, .drawer-new-chat-btn, .msg-tool-btn, .composer-send-btn, .composer-actions button, .chat-topbar-btn):active:not(:disabled) { transform: scale(.97); }
+.drawer-action-pill { height: auto; min-block-size: 2.5em; line-height: 1.4; }
+#chat-right-drawer, .era-chat-drawer {
+  opacity: 1; translate: 0 0;
+  transition: opacity var(--dur-s) var(--ease-decel), translate var(--dur-s) var(--ease-decel), display var(--dur-s) allow-discrete;
+  transition-behavior: allow-discrete;
+}
+#chat-right-drawer.collapsed, .era-chat-drawer[hidden] { display: none; opacity: 0; translate: 100% 0; }
+.era-chat-backdrop[hidden] { display: none; }
+@starting-style {
+  #chat-right-drawer:not(.collapsed), .era-chat-drawer:not([hidden]) { opacity: 0; translate: 100% 0; }
+}
+[data-theme="era-day"] :is(.chat-topbar, .chat-right-drawer, .era-chat-drawer, .chat-history-drawer, .composer-box, .chat-intro-card) { background: var(--bg-core); color: var(--text-primary); }
+[data-theme="era-day"] .composer-box textarea::placeholder { color: var(--text-muted); }
+[data-theme="era-day"] :is(.msg-tool-btn, .swipe-btn, .drawer-action-pill, .drawer-menu-row, .chat-topbar-btn):hover { color: var(--text-primary); background: var(--bg-core-elevated); border-color: var(--border-subtle); }
+[data-theme="era-day"] :is(.composer-send-btn, .drawer-new-chat-btn) { background: var(--accent); color: var(--text-on-accent); }
+[data-theme="era-day"] :is(.composer-send-btn, .drawer-new-chat-btn):hover { background: var(--accent-hover); }
+@media (prefers-reduced-motion: reduce) {
+  #chat-right-drawer, .era-chat-drawer, .msg-row, .chat-main-column *, .chat-right-drawer * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+.chat-relationship-bar-pill { height: auto; min-block-size: 2em; line-height: 1.4; }
+[data-theme="era-day"] :is(.history-thread-time, .chat-history-close-btn:hover) { color: var(--text-primary); }
+[data-theme="era-day"] .chat-relationship-popover { background: var(--bg-core); }
+[data-theme="era-day"] .drawer-new-chat-btn i { color: inherit; }
+.era-chat-drawer { transform: none; }
+.era-chat-drawer button {
+  transition: transform var(--dur-xs) var(--ease-tactile), background-color var(--dur-xs);
+}
+.era-chat-drawer button:active:not(:disabled) { transform: scale(.97); }
+@media (prefers-reduced-motion: reduce) {
+  .era-chat-drawer *, .chat-history-drawer * { animation: none !important; transition: none !important; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}

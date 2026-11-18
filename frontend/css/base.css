@@ -5,6 +5,14 @@
    ============================================================================ */
 
 :root {
+  --dur-xs: 150ms;
+  --dur-s: 400ms;
+  --dur-m: 800ms;
+  --dur-l: 1200ms;
+  --ease-decel: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-cinema: cubic-bezier(0.76, 0, 0.24, 1);
+  --ease-tactile: cubic-bezier(0.23, 1, 0.32, 1);
+
   /* GetLayers Cinema (Default Master System) */
   --bg-canvas: #060606;
   --bg-canvas-mesh: radial-gradient(circle at 50% -10%, rgba(255, 165, 130, 0.14), transparent 55%),
@@ -3261,3 +3269,113 @@ body.mobile-drawer-locked {
     transition: none !important;
   }
 }
+
+/* Shared atmosphere and zoom-safe type. */
+:root:not([data-theme]), [data-theme="higgsfield"] {
+  color-scheme: dark;
+  --bg-canvas: #090b18;
+  --bg-canvas-mesh: radial-gradient(ellipse at 90% 0, #34215e50, transparent 60%), #090b18;
+  --bg-core: #121427;
+  --bg-core-elevated: #1c1d36;
+  --bg-secondary: #1c1d36;
+  --bg-shell: #17192d;
+  --bg-card-hover: #25213d;
+  --bg-rail: #0e1020;
+  --bg-input: #101225;
+  --bg-input-focus: #1d1b36;
+  --text-primary: #f4f2ff;
+  --text-secondary: #b7b6ce;
+  --text-muted: #9695b3;
+  --text-on-accent: #171126;
+  --accent: #c4b5fd;
+  --accent-hover: #ddd4ff;
+  --accent-soft: #c4b5fd12;
+  --accent-border: #c4b5fd55;
+  --accent-secondary: #79c9ef;
+  --accent-chrome: #e8e5ff;
+  --border-hairline: #d9d5ff14;
+  --border-subtle: #d9d5ff22;
+  --border-strong: #d9d5ff40;
+  --user-bubble: #29213f;
+  --user-bubble-border: #c4b5fd33;
+  --ai-bubble: #111326;
+  --ai-bubble-border: #d9d5ff14;
+}
+[data-theme="era-day"] {
+  color-scheme: light;
+  --bg-canvas: #f8f6f0;
+  --bg-canvas-mesh: none;
+  --bg-shell: #eae5d9;
+  --bg-core: #eae5d9;
+  --bg-secondary: #eae5d9;
+  --bg-core-elevated: #e2dbcb;
+  --bg-card-hover: #e2dbcb;
+  --bg-input: #eae5d9;
+  --bg-input-focus: #e2dbcb;
+  --bg-rail: #230c1e;
+  --text-primary: #141414;
+  --text-secondary: #5c534c;
+  --text-muted: #5c534c;
+  --text-on-accent: #f8f6f0;
+  --accent: #230c1e;
+  --accent-hover: #381531;
+  --accent-soft: #230c1e0d;
+  --accent-border: #230c1e55;
+  --accent-secondary: #c29b7f;
+  --accent-chrome: #381531;
+  --border-hairline: #230c1e26;
+  --border-subtle: #230c1e40;
+  --border-strong: #230c1e66;
+  --user-bubble: #e2dbcb;
+  --user-bubble-border: #230c1e40;
+  --ai-bubble: #eae5d9;
+  --ai-bubble-border: #230c1e26;
+  --shadow-ambient: 0 16px 48px #230c1e12;
+  --shadow-card: 0 8px 24px #230c1e0d;
+  --shadow-card-hover: 0 12px 28px #230c1e1a;
+}
+
+[data-theme="editorial"] {
+  --bg-canvas: #07070a;
+  --bg-core: #14141b;
+  --bg-core-elevated: #20202b;
+  --text-primary: #fafafa;
+  --text-secondary: #d4d4dc;
+  --text-muted: #aaaab8;
+  --border-hairline: #ffffff26;
+  --border-subtle: #ffffff40;
+}
+h1, h2, .orbit-title { text-wrap: balance; line-height: 1.1; }
+h1 { font-size: clamp(2rem, 1.2rem + 3vw, 4.5rem); }
+h2 { font-size: clamp(1.4rem, 1rem + 1.5vw, 2.4rem); }
+.orbit-description, .msg-bubble { text-wrap: pretty; }
+:is(.category-pill, .tag-badge, .mono-tag, .char-badge, .engine-telemetry, .eyebrow-pill, .soul-id-badge, .persona-badge-sub) {
+  height: auto;
+  block-size: auto;
+  min-block-size: 1.75em;
+  line-height: 1.4;
+}
+[data-theme="era-day"] .sidebar {
+  --text-primary: #f8f6f0;
+  --text-secondary: #eae5d9;
+  --text-muted: #cdbdab;
+  --accent: #eae5d9;
+  --accent-hover: #f8f6f0;
+  --text-on-accent: #230c1e;
+  --accent-soft: #f8f6f012;
+  --border-hairline: #f8f6f026;
+  --border-subtle: #f8f6f040;
+  background: #230c1e;
+  color: var(--text-primary);
+}
+[data-theme="era-day"] .sidebar .nav-item:hover { background: #381531; }
+[data-theme="era-day"] body::before { background: none; }
+[data-theme="era-day"] .ambient-motion-canvas { opacity: .05; }
+
+[data-theme="era-day"] :is(.select-control, .drawer-select) { color-scheme: light; }
+[data-theme="era-day"] :is(.select-control, .drawer-select) option {
+  background: var(--bg-core);
+  color: var(--text-primary);
+}
+[data-theme="era-day"] .custom-select-dropdown { background: var(--bg-core); }
+[data-theme="era-day"] .custom-select-option:is(:hover, .focused, .selected) { color: var(--text-primary); }

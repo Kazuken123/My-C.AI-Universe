@@ -1,5 +1,5 @@
 /* Orbit Studio. Shared by the Express and Next.js interfaces. */
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400;1,500&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&display=swap');
 
 :root {
   --font-display: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -46,7 +46,7 @@
 [data-theme="higgsfield"] .double-bezel-core { background: var(--bg-core); }
 [data-theme="higgsfield"] .sidebar { background: var(--bg-rail); }
 [data-theme="higgsfield"] :where(.mobile-header, .mobile-bottom-nav) { background: #0e1020f2; }
-.sidebar { width: 224px; padding: 28px 16px 18px; }
+.sidebar { width: 240px; padding: 28px 16px 18px; }
 .sidebar .brand-title { font-size: 1rem; letter-spacing: -.055em; }
 .sidebar .brand-version { color: var(--text-muted); font-size: .65rem; letter-spacing: .14em; }
 .sidebar .sidebar-header-sub { margin-top: 18px; }
@@ -88,7 +88,7 @@
 .orbit-title em { display: block; font-family: var(--font-serif); font-weight: 400; color: var(--accent); letter-spacing: -.045em; }
 .orbit-description { max-width: 39ch; color: var(--text-secondary); font-size: .9rem; line-height: 1.85; }
 .orbit-hero .hero-actions { gap: 18px; margin-top: 28px; flex-wrap: wrap; }
-.orbit-hero .btn-island { height: 48px; font-size: .82rem; }
+.orbit-hero .btn-island { min-block-size: 48px; height: auto; font-size: .82rem; }
 .orbit-hero .btn-ghost { font-size: .8rem; padding-left: 0; }
 .orbit-hero-note { display: flex; gap: 18px; margin-top: 32px; color: var(--text-muted); font-size: .66rem; }
 .orbit-hero-note span { display: flex; align-items: center; gap: 6px; }
@@ -382,14 +382,14 @@
 .orbit-discover .character-track .cai-card-name { font-size: .9rem; line-height: 1.45; }
 .orbit-discover .character-track .cai-card-creator { font-family: var(--font-sans); font-size: .63rem; margin-top: 3px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .orbit-discover .character-track .cai-card-tagline { font-size: .74rem; line-height: 1.55; margin-top: 7px; min-height: 0; -webkit-line-clamp: 3; }
-.orbit-discover .character-track .cai-card-tags { padding: 0; flex-wrap: nowrap; overflow: hidden; height: 21px; }
+.orbit-discover .character-track .cai-card-tags { padding: 0; flex-wrap: nowrap; overflow: hidden; min-block-size: 21px; height: auto; }
 .orbit-discover .character-track .tag-badge { font: .61rem var(--font-sans); white-space: nowrap; padding: 3px 7px; }
 .orbit-discover .character-track .cai-card-footer { padding: 8px 0 0; flex-wrap: nowrap; gap: 5px; }
 .orbit-discover .character-track .cai-card-stats { font-size: .62rem; gap: 7px; min-width: 0; }
 .orbit-discover .character-track .like-btn { font-size: .64rem; padding: 5px; min-height: 32px; }
 .orbit-discover .character-track .cai-card-actions { width: auto; gap: 4px; }
 .orbit-discover .character-track .cai-card-actions .icon-btn { width: 30px; height: 32px; }
-.orbit-discover .character-track .cai-card-actions .btn-secondary { min-height: 32px; height: 32px; padding: 5px 8px; font-size: .65rem; border-radius: 10px; }
+.orbit-discover .character-track .cai-card-actions .btn-secondary { min-block-size: 32px; height: auto; padding: 5px 8px; font-size: .65rem; border-radius: 10px; }
 .orbit-discover .character-track .cai-card-actions .btn-secondary span { display: none; }
 .orbit-discover .character-track .orbit-skeleton { min-height: 215px; height: 215px; border-radius: 18px; }
 .rail-arrow {
@@ -613,4 +613,154 @@ body:has(.orbit-discover) .ambient-grain { opacity: .035; }
   .universe-hero .orbit-title { font-size: 3.45rem; }
   .universe-hero .hero-actions { flex-direction: column; align-items: flex-start; gap: 10px; }
   .orbit-hero.universe-hero { min-height: 870px; }
+}
+
+/* ERA atmosphere, editorial detail and native motion. */
+.orbit-title .orbit-connector {
+  font-family: 'Cormorant Garamond', var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+}
+.universe-hero .orbit-title { font-size: clamp(2.8rem, 1.7rem + 4vw, 6.4rem); text-wrap: balance; }
+.universe-hero .orbit-title em { white-space: normal; }
+.era-seal { display: block; width: 64px; height: 64px; color: var(--accent); flex: 0 0 auto; }
+.roll-link { position: relative; display: inline-grid; overflow: hidden; line-height: 1.4; }
+.roll-link > span { grid-area: 1 / 1; transition: transform var(--dur-s) var(--ease-decel); }
+.roll-link > span:last-child { transform: translateY(105%); }
+:is(a, button):is(:hover, :focus-visible) .roll-link > span:first-child,
+.roll-link:is(:hover, :focus-visible) > span:first-child { transform: translateY(-105%); }
+:is(a, button):is(:hover, :focus-visible) .roll-link > span:last-child,
+.roll-link:is(:hover, :focus-visible) > span:last-child { transform: translateY(0%); }
+.atmosphere-toggle, [data-atmosphere-toggle] {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-block-size: 44px; padding: 10px 16px; border: 1px solid var(--border-subtle);
+  border-radius: 999px; background: var(--bg-core); color: var(--text-primary);
+  font: 500 .75rem/1.4 var(--font-sans); cursor: pointer; margin-inline-start: auto;
+  transition: background-color var(--dur-s) var(--ease-decel), transform var(--dur-xs) var(--ease-tactile);
+}
+.atmosphere-toggle::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.atmosphere-toggle:active { transform: scale(.97); }
+.orbit-discover .discover-topbar { position: relative; flex-wrap: wrap; }
+.orbit-discover .card-shell, .orbit-discover .cai-card {
+  transition: transform var(--dur-xs) var(--ease-tactile), background-color var(--dur-xs), border-color var(--dur-xs);
+}
+.orbit-discover .cai-card:active { transform: scale(0.97); }
+.orbit-discover .character-track .cai-card-tags { height: auto; min-block-size: 21px; flex-wrap: wrap; }
+.orbit-discover .tag-badge, .orbit-discover .category-pill { height: auto; min-block-size: 1.75em; line-height: 1.4; }
+[data-theme="era-day"] .orbit-discover {
+  --bg-canvas: #f8f6f0; --bg-core: #eae5d9; --bg-core-elevated: #e2dbcb;
+  --text-primary: #141414; --text-secondary: #5c534c; --text-muted: #5c534c;
+  --border-hairline: #230c1e26; --border-subtle: #230c1e40;
+  background: var(--bg-canvas);
+}
+[data-theme="era-day"] .orbit-discover::before { background: radial-gradient(ellipse at 85% 28%, #c29b7f40, transparent 60%); }
+[data-theme="era-day"] .orbit-discover .universe-art::after {
+  background: linear-gradient(90deg, #f8f6f0 0%, #f8f6f0cc 28%, #f8f6f040 65%), linear-gradient(0deg, #f8f6f0, transparent 70%);
+}
+[data-theme="era-day"] .orbit-discover .universe-scene { opacity: .35; mix-blend-mode: multiply; }
+[data-theme="era-day"] .orbit-discover :is(.orbit-title, .topbar-heading, .category-pill.active) { color: var(--text-primary); }
+[data-theme="era-day"] .orbit-discover :is(.orbit-eyebrow, .orbit-description, .topbar-index, .universe-hero-note, .universe-waypoint, .universe-coordinate, .universe-scroll-cue, .btn-ghost, .category-pill) { color: var(--text-secondary); }
+[data-theme="era-day"] .orbit-discover .orbit-title em { color: var(--accent); }
+[data-theme="era-day"] .orbit-discover :is(.discover-topbar, .universe-strip, .search-box, .card-shell, .atmosphere-toggle) { background: var(--bg-core); border-color: var(--border-subtle); }
+[data-theme="era-day"] .orbit-discover :is(.category-pill.active, .tag-badge) { background: var(--bg-core-elevated); border-color: var(--border-subtle); color: var(--text-primary); }
+[data-theme="era-day"] .orbit-discover .btn-island { background: var(--accent); color: var(--text-on-accent); }
+[data-theme="era-day"] .orbit-discover .btn-island:hover { background: var(--accent-hover); }
+[data-theme="era-day"] :is(.mobile-header, .mobile-bottom-nav, .island-menu) { background: #eae5d9; color: #141414; }
+[data-theme="era-day"] .universe-island { background: #230c1e; color: #f8f6f0; }
+.island-menu {
+  transition: opacity var(--dur-s) var(--ease-decel), transform var(--dur-s) var(--ease-decel), display var(--dur-s) allow-discrete;
+  transition-behavior: allow-discrete;
+}
+@starting-style {
+  .is-open .island-menu { opacity: 0; transform: translateY(-8px); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .era-seal { animation: era-seal-turn 20s linear infinite; }
+  .era-seal:hover, .orbit-hero-copy:focus-within .era-seal, .orbit-hero-copy:has(.hero-actions:hover) .era-seal { animation-play-state: paused; }
+  @supports ((animation-timeline: view()) and (animation-range: entry)) {
+    .orbit-discover .discover-topbar::after {
+      content: ''; position: absolute; inset: auto 0 0; height: 2px; background: var(--accent);
+      transform-origin: left; animation: era-progress linear both;
+      animation-timeline: scroll(block nearest);
+    }
+    .orbit-roster {
+      animation: era-portal linear both; animation-timeline: view(); animation-range: entry 0% entry 100%;
+    }
+    .character-track > .bento-cell {
+      animation: era-card-cadence linear both; animation-timeline: view(inline); animation-range: entry 0% entry 100%;
+    }
+  }
+}
+@keyframes era-seal-turn { to { transform: rotate(360deg); } }
+@keyframes era-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes era-portal { from { clip-path: ellipse(65% 30% at 50% 50%); } to { clip-path: ellipse(100% 100% at 50% 50%); } }
+@keyframes era-card-cadence { from { opacity: .65; translate: 16px 0; } to { opacity: 1; translate: 0 0; } }
+@media (max-width: 768px) {
+  .atmosphere-toggle { padding-inline: 12px; font-size: .68rem; }
+  .orbit-discover .discover-topbar { gap: 10px; }
+  .orbit-discover .universe-searchbar .search-controls { flex-basis: 100%; order: 1; }
+  [data-theme="era-day"] .orbit-discover .universe-art::after { background: linear-gradient(180deg, #f8f6f0 0%, #f8f6f0cc 35%, #f8f6f040 60%, #f8f6f0 100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orbit-discover *, .orbit-discover *::before, .orbit-discover *::after, .island-menu {
+    animation: none !important; transition: none !important; scroll-behavior: auto !important;
+  }
+  .orbit-reveal[data-reveal], .orbit-roster, .character-track > .bento-cell { opacity: 1; translate: none; clip-path: none; }
+  .orbit-art { transform: none; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
+
+[data-theme="higgsfield"] .sidebar { background: var(--bg-rail) !important; }
+@media (prefers-reduced-motion: reduce) {
+  .era-seal { animation: none !important; }
+}
+
+.orbit-discover .discover-topbar.is-scrolled::after {
+  content: ''; position: absolute; inset: auto 0 0; height: 2px; background: var(--accent);
+  transform: scaleX(var(--scroll-progress, 0)); transform-origin: left;
+}
+.orbit-roster:focus-within { animation: none; clip-path: none; }
+[data-theme="era-day"] .orbit-discover :is(.universe-scroll-cue > :last-child, .orbit-strip i) { color: var(--accent); }
+
+[data-theme="era-day"] .island-menu {
+  --text-primary: #141414; --text-secondary: #5c534c; --text-muted: #5c534c;
+  --accent: #230c1e; --accent-hover: #381531;
+  --border-subtle: #230c1e40;
+  color-scheme: light;
+}
+[data-theme="era-day"] .island-menu :is(.spark-heading h2, .spark-label, .spark-eyebrow, .spark-draft-tools button) { color: var(--accent); }
+[data-theme="era-day"] .island-menu :is(.spark-heading p, .spark-label > span, .spark-status, .spark-footnote) { color: var(--text-secondary); }
+[data-theme="era-day"] .island-menu :is(.spark-prompt, .spark-character, .spark-moods button) { background: #f8f6f0; color: var(--text-primary); border-color: var(--border-subtle); color-scheme: light; }
+[data-theme="era-day"] .island-menu .spark-moods button[aria-pressed="true"] { background: #e2dbcb; color: var(--accent); border-color: var(--accent); }
+[data-theme="era-day"] .island-menu .spark-start { background: var(--accent); color: #f8f6f0; }
+[data-theme="era-day"] .island-menu .spark-start:hover { background: var(--accent-hover); }
+[data-theme="era-day"] .universe-island :is(a, button, textarea, select):focus-visible { outline-color: #c29b7f; }
+@media (prefers-reduced-motion: reduce) {
+  .universe-island *, .universe-island *::before, .universe-island *::after { animation: none !important; transition: none !important; }
+}
+
+/* Keep the surrounding workspace and navigation readable in the Day atmosphere. */
+[data-theme="era-day"] body:has(.orbit-discover) .main-workspace { background: var(--bg-canvas); }
+[data-theme="era-day"] .orbit-discover .universe-searchbar .search-box {
+  background: var(--bg-core);
+  border-color: var(--border-subtle);
+}
+[data-theme="era-day"] .orbit-discover .rail-arrow { color: var(--accent); }
+[data-theme="era-day"] .orbit-discover .rail-arrow svg { filter: none; }
+[data-theme="era-day"] .sidebar :is(.sidebar-unified-card, .auth-launch-btn, .brand-mark) {
+  background: #381531;
+  color: var(--text-primary);
+}
+[data-theme="era-day"] .orbit-discover .btn-island {
+  background-image: none;
+  border-color: var(--accent);
+}
+.orbit-discover .card-shell:active .cai-card { transform: scale(0.97); }
+.orbit-discover .cai-avatar { transition-duration: var(--dur-xs); }
+@media (prefers-reduced-motion: reduce) {
+  .universe-island, .island-orb, .orbit-floating-label,
+  .orbit-skeleton, .skeleton-box, .skeleton-line, .skeleton-pill, .skeleton-btn-sm {
+    animation: none !important;
+    transition: none !important;
+  }
 }

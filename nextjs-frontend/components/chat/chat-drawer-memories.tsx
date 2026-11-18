@@ -90,7 +90,6 @@ export function ChatDrawerMemories({
     }
   };
 
-  if (!isOpen) return null;
 
   const pinnedMessages = (session?.messages || []).filter((m) => m.isPinned);
 
@@ -98,15 +97,19 @@ export function ChatDrawerMemories({
     <>
       {/* Backdrop */}
       <div
+        hidden={!isOpen}
         onClick={onClose}
-        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+        className="era-chat-backdrop fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
         aria-hidden="true"
       />
 
       {/* Drawer Panel */}
       <aside
+        ref={node => { if (node) node.inert = !isOpen; }}
+        hidden={!isOpen}
+        aria-hidden={!isOpen}
         className={cn(
-          'fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-border-hairline bg-rail backdrop-blur-2xl transition-transform duration-300',
+          'era-chat-drawer fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-border-hairline bg-rail backdrop-blur-2xl transition-transform duration-300',
           isOpen ? 'translate-x-0' : 'translate-x-full'
         )}
       >

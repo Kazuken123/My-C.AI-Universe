@@ -3,7 +3,8 @@ export { loadingBar } from './loading-bar.js';
 export { ambientCanvas } from './ambient-canvas.js';
 
 export const SKILL_THEMES = [
-  { id: 'higgsfield', label: 'Orbit Studio' },
+  { id: 'higgsfield', label: 'By Night · Cosmos' },
+  { id: 'era-day', label: 'By Day · Alabaster' },
   { id: 'vanguard', label: 'Vanguard' },
   { id: 'editorial', label: 'Editorial' },
   { id: 'telemetry', label: 'Telemetry' }
@@ -68,7 +69,8 @@ export function bindSpotlightHover(container = document.body) {
  * Initialize 4-Mode Theme Engine & Listener
  */
 export function initTheme() {
-  const savedTheme = localStorage.getItem('cai_skill_theme') || 'higgsfield';
+  let savedTheme = 'higgsfield';
+  try { savedTheme = localStorage.getItem('cai_skill_theme') || savedTheme; } catch {}
   const validTheme = SKILL_THEMES.find(t => t.id === savedTheme) ? savedTheme : 'higgsfield';
   document.documentElement.setAttribute('data-theme', validTheme);
 
@@ -90,7 +92,7 @@ export function initTheme() {
       const nextEntry = SKILL_THEMES[(currentIndex + 1) % SKILL_THEMES.length];
 
       document.documentElement.setAttribute('data-theme', nextEntry.id);
-      localStorage.setItem('cai_skill_theme', nextEntry.id);
+      try { localStorage.setItem('cai_skill_theme', nextEntry.id); } catch {}
       updateLabel(nextEntry.id);
       showToast(`Design System: ${nextEntry.label}`);
     });

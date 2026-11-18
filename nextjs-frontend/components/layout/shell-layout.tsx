@@ -7,7 +7,7 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { useNavigationShortcuts } from '@/hooks/use-navigation-shortcuts';
 import { cn } from '@/lib/utils';
 
-const THEMES = ['higgsfield', 'vanguard', 'editorial', 'telemetry'];
+const THEMES = ['higgsfield', 'era-day', 'vanguard', 'editorial', 'telemetry'];
 
 export function ShellLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -19,13 +19,18 @@ export function ShellLayout({ children }: { children: React.ReactNode }) {
   const [currentTheme, setCurrentTheme] = useState('higgsfield');
 
   useEffect(() => {
-    const savedCollapsed = localStorage.getItem('cai_sidebar_collapsed') === 'true';
+    let savedCollapsed = false;
+    try { savedCollapsed = localStorage.getItem('cai_sidebar_collapsed') === 'true'; } catch {}
     setIsCollapsed(savedCollapsed);
 
-    const savedTheme = localStorage.getItem('cai_skill_theme') || 'higgsfield';
+    let savedTheme = 'higgsfield';
+    try { savedTheme = localStorage.getItem('cai_skill_theme') || savedTheme; } catch {}
     const validTheme = THEMES.includes(savedTheme) ? savedTheme : 'higgsfield';
     setCurrentTheme(validTheme);
     document.documentElement.setAttribute('data-theme', validTheme);
+
+    const themeObserver = new MutationObserver(() => setCurrentTheme(document.documentElement.dataset.theme || 'higgsfield'));
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
     const handlePointerMove = (e: PointerEvent) => {
       const target = (e.target as HTMLElement)?.closest?.('.double-bezel-shell') as HTMLElement | null;
@@ -38,7 +43,7 @@ export function ShellLayout({ children }: { children: React.ReactNode }) {
       }
     };
     window.addEventListener('pointermove', handlePointerMove, { passive: true });
-    return () => window.removeEventListener('pointermove', handlePointerMove);
+    return () => { themeObserver.disconnect(); window.removeEventListener('pointermove', handlePointerMove); };
   }, []);
 
   useEffect(() => {
@@ -70,10 +75,10 @@ export function ShellLayout({ children }: { children: React.ReactNode }) {
   };
 
   const handleCycleTheme = () => {
-    const nextIndex = (THEMES.indexOf(currentTheme) + 1) % THEMES.length;
+    const nextIndex = (THEMES.indexOf(document.documentElement.dataset.theme || currentTheme) + 1) % THEMES.length;
     const nextTheme = THEMES[nextIndex];
     setCurrentTheme(nextTheme);
-    localStorage.setItem('cai_skill_theme', nextTheme);
+    try { localStorage.setItem('cai_skill_theme', nextTheme); } catch {}
     document.documentElement.setAttribute('data-theme', nextTheme);
   };
 

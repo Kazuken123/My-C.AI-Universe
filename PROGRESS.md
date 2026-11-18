@@ -1,5 +1,20 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-11-18 - Figma Design System & ERA-Inspired UI/UX & Native Motion Upgrade
+
+- **Figma Design System & Screen Comps (`My C.AI Universe — Orbit x ERA Design System`, `fileKey: IxfwtP1U93dB1vhxH3nYzx`)**:
+  - Created variable collections (`Primitives`, `Orbit x ERA Tokens` for Night/Cosmos and Day/Alabaster palettes, `Motion & Spacing`) with `WEB` CSS custom-property code syntax and 6 typography text styles (`Display H1 / Editorial`, `Editorial Connector / Script`, `Section H2`, `Card Title`, `Body Lead`, `Mono Index`).
+  - Built and visually verified 4 screen comps (`Discover — Night (Cosmos)`, `Discover — Day (Alabaster & Aubergine)`, `Discover — Mobile 390px`, and `Narrative Chatroom — Editorial Reading Mode`).
+- **Shared Design Tokens, Editorial Typography & Day/Night Atmospheric Switcher (`base.css`, `orbit.css`, `chat.css`)**:
+  - Added unified ERA-inspired motion tokens (`--dur-xs: 150ms`, `--dur-s: 400ms`, `--dur-m: 800ms`, `--dur-l: 1200ms`, `--ease-decel`, `--ease-cinema`, `--ease-tactile`), zoom-safe `clamp()` typography, `text-wrap: balance`/`pretty`, and `min-block-size` pill sizing.
+  - Added `[data-theme="era-day"]` (Alabaster `#f8f6f0`, Warm Sand `#eae5d9`, Deep Aubergine `#230c1e`, terracotta `#c29b7f`) alongside the default Midnight Cosmos dark palette, plus refined `[data-theme="editorial"]` contrast and `#chat-right-drawer` `@starting-style` + `transition-behavior: allow-discrete` transitions.
+- **Native CSS Scroll-Driven Animations, Seal, Roll-Over Links & Synchronized Controls (`orbit-motion.js`, `frontend/index.html`, `nextjs-frontend`)**:
+  - Added rotating circular emblem seal (`.era-seal`), `.orbit-connector` italic serif accent, `.roll-link` dual-layer CTA hover/focus-visible micro-interactions, and `[data-atmosphere-toggle]` Day/Night cross-fade switcher (using `document.startViewTransition()` when supported and `prefers-reduced-motion: no-preference`).
+  - Added native CSS Scroll-Driven Animations (`scroll(block nearest)` topbar progress, `view()` section iris reveal, `view(inline)` character rail cadence) gated by `@supports ((animation-timeline: view()) and (animation-range: entry))` and `@media (prefers-reduced-motion: no-preference)`.
+  - Resynchronized `frontend/css/orbit.css` ↔ `nextjs-frontend/app/orbit.css` and `frontend/js/orbit-motion.js` ↔ `nextjs-frontend/public/js/orbit-motion.js` to byte-identical parity while preserving all DOM IDs and `tests/ui-navigation.test.js` / `tests/universe-scene.test.js` contracts.
+- **Verification**:
+  - Executed via `BridgeStudio` (`Advisor` 50/50 Codex + Antigravity pipeline) and verified directly in `My C.AI Universe`: `npm run check`, `npm test` (58/58 test files), and `nextjs-frontend` (`npm run typecheck`, `npm run lint`, `npm test` 18/18, `npm run build`).
+
 ## 2026-11-15 - Antigravity Harness Engineering, Tiered Swarm Workflow, AI Studio MCP Offload & Strix CI
 
 - **Deterministic Antigravity Harness Gates (`.agents/hooks.json`, `.agents/hooks/pre-commit-gate.mjs`, `.agents/hooks/stop-verify.mjs`, plus global `~/.gemini/config/hooks.json`)**:

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import { flushSync } from 'react-dom';
 import type { Character, CharacterSortOption } from '@/types/character';
 import { CharacterCard } from './character-card';
 import { OrbitHero } from './orbit-hero';
@@ -9,6 +10,12 @@ import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 const CATEGORY_TABS = ['All Canon', 'Anime', 'Roleplay', 'Fantasy', 'Action', 'Slice of Life', 'Mystery', 'Mentor', 'Original'];
+
+function transitionCatalog(update: () => void) {
+  const run = (window as Window & { orbitViewTransition?: (callback: () => void) => unknown }).orbitViewTransition;
+  if (run) run(() => flushSync(update));
+  else update();
+}
 
 export function CharacterCatalog() {
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -28,11 +35,17 @@ export function CharacterCatalog() {
     try {
       const category = activeCategory === 'All Canon' ? undefined : activeCategory === 'Mentor' ? 'Helper' : activeCategory;
       const data = await api.getCharacters({ search: search.trim() || undefined, category, sort });
-      if (currentRequest === requestId.current) setCharacters(Array.isArray(data) ? data : []);
+      if (currentRequest === requestId.current) transitionCatalog(() => {
+        if (currentRequest === requestId.current) {
+          setCharacters(Array.isArray(data) ? data : []);
+          setLoading(false);
+        }
+      });
     } catch (err: unknown) {
-      if (currentRequest === requestId.current) setError(err instanceof Error ? err.message : 'Could not load characters.');
-    } finally {
-      if (currentRequest === requestId.current) setLoading(false);
+      if (currentRequest === requestId.current) {
+        setError(err instanceof Error ? err.message : 'Could not load characters.');
+        setLoading(false);
+      }
     }
   }, [search, activeCategory, sort]);
 
@@ -68,6 +81,7 @@ export function CharacterCatalog() {
             <kbd className="search-kbd">/</kbd>
           </div>
         </div>
+        <button className="atmosphere-toggle" data-atmosphere-toggle type="button" aria-label="Day atmosphere" aria-pressed="false"><span data-atmosphere-label>By Night · Cosmos</span></button>
       </header>
       {!hasFilters && <OrbitHero />}
       <section className="section-block orbit-roster" id="character-roster" aria-labelledby="roster-heading">
@@ -75,13 +89,13 @@ export function CharacterCatalog() {
           <div><h2 id="roster-heading">{hasFilters ? 'Find your kind of story' : 'Discover your next connection'}</h2><p role="status">{loading ? 'Finding your next connection…' : error ? 'Your universe will be right back.' : characters.length + ' characters. Endless ways to begin.'}</p></div>
           <div className="select-wrap">
             <i className="ph-light ph-funnel-simple select-icon" aria-hidden="true" />
-            <select className="select-control" id="discoverSort" value={sort} onChange={event => setSort(event.target.value as CharacterSortOption)} aria-label="Sort characters">
+            <select className="select-control" id="discoverSort" value={sort} onChange={event => { const value = event.target.value as CharacterSortOption; transitionCatalog(() => setSort(value)); }} aria-label="Sort characters">
               <option value="popular">Most interactions</option><option value="likes">Most loved</option><option value="newest">New arrivals</option><option value="name">Name A–Z</option>
             </select>
           </div>
         </div>
         <div className="roster-filter-bar"><div className="category-pills" id="category-pills" role="group" aria-label="Character Categories">
-          {CATEGORY_TABS.map(category => <button key={category} type="button" onClick={() => setActiveCategory(category)} className={cn('category-pill', activeCategory === category && 'active')} aria-pressed={activeCategory === category}>{category}</button>)}
+          {CATEGORY_TABS.map(category => <button key={category} type="button" onClick={() => transitionCatalog(() => setActiveCategory(category))} className={cn('category-pill', activeCategory === category && 'active')} aria-pressed={activeCategory === category}>{category}</button>)}
         </div></div>
         <div className="character-rail" data-character-rail>
         <button className="rail-arrow rail-prev" type="button" data-rail-prev aria-label="Previous characters" aria-controls="discover-grid" hidden>

@@ -127,7 +127,9 @@ class DashboardApp {
       const characters = await api.getCharacters({ search, category, sort });
       if (requestId !== this.requestId) return;
       this.characters = Array.isArray(characters) ? characters : [];
-      this.renderDiscoverGrid(this.characters);
+      const render = () => { if (requestId === this.requestId) this.renderDiscoverGrid(this.characters); };
+      if (window.orbitViewTransition) window.orbitViewTransition(render);
+      else render();
       this.preloadCharacterAvatars(this.characters);
       if (status) status.textContent = `${this.characters.length} characters. Endless ways to begin.`;
 

@@ -98,11 +98,70 @@ function bindSceneSpark(island, signal) {
   return () => observer?.disconnect();
 }
 
+function orbitMotionAllowed() {
+  return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: no-preference)').matches;
+}
+
+function orbitRevealFallbackAllowed() {
+  return orbitMotionAllowed() && !(window.CSS?.supports?.('(animation-timeline: view()) and (animation-range: entry)'));
+}
+
+/** Run the update exactly once, including browsers without View Transitions. */
+function orbitViewTransition(update) {
+  if (!orbitMotionAllowed() || typeof document.startViewTransition !== 'function') return update();
+  let updated = false;
+  let result;
+  const commit = () => {
+    if (!updated) { updated = true; result = update(); }
+    return result;
+  };
+  try {
+    const transition = document.startViewTransition(commit);
+    transition.ready?.catch(() => {});
+    transition.updateCallbackDone?.catch(() => {});
+    return transition;
+  } catch {
+    return commit();
+  }
+}
+
+function createAtmosphereControls() {
+  const root = document.documentElement;
+  const bound = new WeakSet();
+  try {
+    const saved = localStorage.getItem('cai_skill_theme');
+    if (saved === 'era-day' || saved === 'higgsfield') root.dataset.theme = saved;
+  } catch {}
+  function sync() {
+    const day = root.dataset.theme === 'era-day';
+    document.querySelectorAll('[data-atmosphere-toggle]').forEach(button => {
+      button.setAttribute('aria-pressed', String(day));
+      const label = button.querySelector('[data-atmosphere-label]');
+      const text = day ? 'By Day · Alabaster' : 'By Night · Cosmos';
+      if (label && label.textContent !== text) label.textContent = text;
+    });
+  }
+  new MutationObserver(sync).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+  return () => {
+    document.querySelectorAll('[data-atmosphere-toggle]').forEach(button => {
+      if (bound.has(button)) return;
+      bound.add(button);
+      button.addEventListener('click', () => orbitViewTransition(() => {
+        const theme = root.dataset.theme === 'era-day' ? 'higgsfield' : 'era-day';
+        root.dataset.theme = theme;
+        try { localStorage.setItem('cai_skill_theme', theme); } catch {}
+        sync();
+      }));
+    });
+    sync();
+  };
+}
+
 /** Dashboard controls shared by Express and Next. No duplicate API requests. */
 function createUniverseControls() {
   const islands = new Map();
   const rails = new Map();
-  const motionAllowed = () => true;
+  const motionAllowed = () => typeof window === 'undefined' || typeof window.matchMedia !== 'function' || orbitMotionAllowed();
 
   function bindIsland(island) {
     const trigger = island.querySelector('.island-trigger');
@@ -281,19 +340,22 @@ function initOrbitMotion() {
   window.__orbitMotion = true;
   const root = document.documentElement;
   const scanUniverseControls = createUniverseControls();
+  const scanAtmosphereControls = createAtmosphereControls();
+  window.orbitViewTransition = orbitViewTransition;
   // Motion is always on. Discard the obsolete pause preference from older builds.
   try { localStorage.removeItem('ambient_motion_disabled'); } catch {}
   root.dataset.orbitMotion = 'running';
   window.ambientCanvas?.forceStart();
-  const observed = new WeakSet();
+  let observed = new WeakSet();
   let scrollFrame = 0;
   function updateScroll() {
     scrollFrame = 0;
+    if (!orbitRevealFallbackAllowed()) return;
     document.querySelectorAll('.main-workspace').forEach(scroller => {
       // Mobile pages scroll the document; desktop uses the workspace panel.
       const source = getComputedStyle(scroller).overflowY === 'visible' ? document.scrollingElement : scroller;
       if (!source) return;
-      const bar = scroller.querySelector('.orbit-topbar');
+      const bar = scroller.querySelector('.discover-topbar');
       document.querySelector('[data-universe-island]')?.classList.toggle('is-scrolled', source.scrollTop > 24);
       bar?.classList.toggle('is-scrolled', source.scrollTop > 24);
       const max = source.scrollHeight - source.clientHeight;
@@ -304,33 +366,47 @@ function initOrbitMotion() {
   function queueScrollUpdate() {
     if (!scrollFrame) scrollFrame = requestAnimationFrame(updateScroll);
   }
-  window.addEventListener('scroll', queueScrollUpdate, { passive: true, capture: true });
-  window.addEventListener('resize', queueScrollUpdate, { passive: true });
+  window.addEventListener('scroll', () => { if (orbitRevealFallbackAllowed()) queueScrollUpdate(); }, { passive: true, capture: true });
+  window.addEventListener('resize', () => { if (orbitRevealFallbackAllowed()) queueScrollUpdate(); }, { passive: true });
   const revealSelector = '.orbit-hero-copy, .orbit-art, .orbit-strip, .orbit-section-heading, .bento-cell, .orbit-continue, .orbit-footer, .studio-card, .persona-card';
-  const observer = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
-    entries.forEach(({ target, isIntersecting }) => {
-      if (target.matches('.orbit-art')) target.dataset.inView = String(isIntersecting);
-      if (isIntersecting) {
-        target.dataset.reveal = 'visible';
-        if (!target.matches('.orbit-art')) observer.unobserve(target);
-      }
-    });
-  }, { threshold: .06 }) : null;
+  let observer = null;
+  function refreshRevealObserver() {
+    observer?.disconnect();
+    observed = new WeakSet();
+    observer = orbitRevealFallbackAllowed() && 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
+      entries.forEach(({ target, isIntersecting }) => {
+        if (target.matches('.orbit-art')) target.dataset.inView = String(isIntersecting);
+        if (isIntersecting) {
+          target.dataset.reveal = 'visible';
+          if (!target.matches('.orbit-art')) observer?.unobserve(target);
+        }
+      });
+    }, { threshold: .06 }) : null;
+  }
+  refreshRevealObserver();
 
   function scan() {
     scanUniverseControls();
+    scanAtmosphereControls();
     document.querySelectorAll(revealSelector).forEach((el, index) => {
       if (observed.has(el)) return;
       observed.add(el);
+      if (!orbitRevealFallbackAllowed()) { el.dataset.reveal = 'visible'; return; }
       el.classList.add('orbit-reveal');
       el.style.transitionDelay = `${Math.min(index % 4, 3) * 55}ms`;
       // Content remains visible if this enhancement cannot run.
       el.dataset.reveal = observer ? 'waiting' : 'visible';
       observer?.observe(el);
     });
-    queueScrollUpdate();
+    if (orbitRevealFallbackAllowed()) queueScrollUpdate();
 
   }
+
+  window.matchMedia?.('(prefers-reduced-motion: no-preference)').addEventListener?.('change', () => {
+    document.querySelectorAll('.orbit-reveal').forEach(el => { el.dataset.reveal = 'visible'; });
+    refreshRevealObserver();
+    scan();
+  });
 
   let scanPending = false;
   new MutationObserver(records => {
@@ -341,7 +417,7 @@ function initOrbitMotion() {
   // One delegated listener, no per-card handlers or continuous animation loop.
   let pointerFrame = 0;
   document.addEventListener('pointermove', event => {
-    if (event.pointerType !== 'mouse' || pointerFrame) return;
+    if (!orbitMotionAllowed() || event.pointerType !== 'mouse' || pointerFrame) return;
     const card = event.target.closest?.('.orbit-discover .card-shell');
     if (!card) return;
     pointerFrame = requestAnimationFrame(() => {

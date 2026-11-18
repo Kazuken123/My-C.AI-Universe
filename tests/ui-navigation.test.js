@@ -327,3 +327,129 @@ test('pointer return during the closing morph cancels the hide timer', () => {
   assert.equal(h.menu.hidden, false);
   assert.equal(h.trigger.getAttribute('aria-expanded'), 'true');
 });
+
+test('shared Orbit styles and controls have byte-identical frontend copies', () => {
+  for (const [express, next] of [
+    ['frontend/css/orbit.css', 'nextjs-frontend/app/orbit.css'],
+    ['frontend/js/orbit-motion.js', 'nextjs-frontend/public/js/orbit-motion.js'],
+  ]) {
+    assert.deepEqual(fs.readFileSync(new URL('../' + express, import.meta.url)), fs.readFileSync(new URL('../' + next, import.meta.url)));
+  }
+});
+
+test('Scene Spark preserves canonical Express query routes and encoded Next paths', () => {
+  const context = vm.createContext({ URLSearchParams });
+  vm.runInContext(controlsSource, context);
+  for (const base of ['/chat', '/chat.html', '/chat/']) {
+    context.base = base;
+    const href = vm.runInContext("sceneSparkHref(base, 'character/&?', '  An opening & a question?  ')", context);
+    const url = new URL(href, 'https://example.test');
+    assert.equal(url.pathname, base === '/chat/' ? '/chat/character%2F%26%3F' : '/chat');
+    assert.equal(url.searchParams.get('opener'), 'An opening & a question?');
+    if (base !== '/chat/') assert.equal(url.searchParams.get('id'), 'character/&?');
+  }
+});
+
+function atmosphereHarness({ saved = 'era-day', storageBlocked = false, reduced = false, native = false, transitions = true } = {}) {
+  const buttons = [];
+  const mutations = [];
+  const writes = [];
+  let snapshots = 0;
+  const root = { dataset: { theme: 'higgsfield' } };
+  const makeButton = () => {
+    const button = {
+      handlers: [], attributes: {}, label: {},
+      setAttribute(key, value) { this.attributes[key] = value; },
+      querySelector() { return this.label; },
+      addEventListener(type, callback) { this.handlers.push(callback); },
+      click() { this.handlers.forEach(callback => callback()); },
+    };
+    buttons.push(button);
+    return button;
+  };
+  const document = { documentElement: root, querySelectorAll: () => buttons };
+  if (transitions) document.startViewTransition = callback => {
+    snapshots++;
+    callback();
+    return { ready: Promise.resolve(), updateCallbackDone: Promise.resolve() };
+  };
+  const context = vm.createContext({
+    document,
+    window: { matchMedia: () => ({ matches: !reduced }), CSS: { supports: query => {
+      assert.equal(query, '(animation-timeline: view()) and (animation-range: entry)');
+      return native;
+    } } },
+    localStorage: {
+      getItem(key) { assert.equal(key, 'cai_skill_theme'); if (storageBlocked) throw Error('blocked'); return saved; },
+      setItem(key, value) { if (storageBlocked) throw Error('blocked'); writes.push([key, value]); },
+    },
+    MutationObserver: class { constructor(callback) { mutations.push(callback); } observe() {} },
+  });
+  vm.runInContext(controlsSource, context);
+  const scan = vm.runInContext('createAtmosphereControls()', context);
+  return { root, makeButton, scan, writes, context, mutations, snapshots: () => snapshots };
+}
+
+test('atmosphere restores preference, binds once and synchronizes newly mounted controls', () => {
+  const h = atmosphereHarness();
+  const first = h.makeButton();
+  h.scan(); h.scan();
+  assert.equal(first.handlers.length, 1);
+  assert.equal(first.attributes['aria-pressed'], 'true');
+  first.click();
+  assert.equal(h.root.dataset.theme, 'higgsfield');
+  assert.equal(first.attributes['aria-pressed'], 'false');
+  assert.deepEqual(h.writes, [['cai_skill_theme', 'higgsfield']]);
+  assert.equal(h.snapshots(), 1);
+  const second = h.makeButton(); h.scan();
+  assert.equal(second.attributes['aria-pressed'], 'false');
+  h.root.dataset.theme = 'era-day';
+  h.mutations[0]();
+  assert.equal(first.attributes['aria-pressed'], 'true');
+  assert.equal(second.attributes['aria-pressed'], 'true');
+  assert.match(second.label.textContent, /By Day/);
+});
+
+test('atmosphere works with blocked storage, reduced motion and unavailable View Transitions', () => {
+  for (const options of [{ storageBlocked: true }, { reduced: true }, { transitions: false }]) {
+    const h = atmosphereHarness({ saved: null, ...options });
+    const button = h.makeButton(); h.scan(); button.click();
+    assert.equal(h.root.dataset.theme, 'era-day');
+    assert.equal(button.attributes['aria-pressed'], 'true');
+    if (options.reduced || options.transitions === false) assert.equal(h.snapshots(), 0);
+  }
+});
+
+test('reveal fallback requires motion preference and unavailable native scroll timelines', () => {
+  for (const native of [false, true]) for (const reduced of [false, true]) {
+    const h = atmosphereHarness({ native, reduced });
+    assert.equal(vm.runInContext('orbitRevealFallbackAllowed()', h.context), !native && !reduced);
+  }
+  const source = fs.readFileSync(new URL('../frontend/js/orbit-motion.js', import.meta.url), 'utf8');
+  assert.match(source, /orbitRevealFallbackAllowed\(\) && 'IntersectionObserver' in window/);
+  assert.match(source, /if \(orbitRevealFallbackAllowed\(\)\) queueScrollUpdate\(\)/);
+  const css = fs.readFileSync(new URL('../frontend/css/orbit.css', import.meta.url), 'utf8');
+  assert.match(css, /@supports \(\(animation-timeline: view\(\)\) and \(animation-range: entry\)\)/);
+  assert.match(css, /animation-timeline: scroll\(block nearest\)/);
+  assert.match(css, /animation-timeline: view\(inline\)/);
+});
+
+
+test('reveal observer is refreshed when the motion preference changes', () => {
+  const source = fs.readFileSync(new URL('../frontend/js/orbit-motion.js', import.meta.url), 'utf8');
+  const initialization = source.split('/** Shared progressive enhancement.')[1];
+  assert.match(initialization, /function refreshRevealObserver\(\)\s*{\s*observer\?\.disconnect\(\);\s*observed = new WeakSet\(\);/);
+  assert.match(initialization, /addEventListener\?\.\('change', \(\) => {[^}]*[\s\S]*?refreshRevealObserver\(\);\s*scan\(\);/);
+});
+
+test('Day atmosphere covers the workspace, search, rail and chat history text', () => {
+  const css = fs.readFileSync(new URL('../frontend/css/orbit.css', import.meta.url), 'utf8');
+  assert.ok(css.includes('[data-theme="era-day"] body:has(.orbit-discover) .main-workspace'));
+  assert.ok(css.includes('[data-theme="era-day"] .orbit-discover .universe-searchbar .search-box'));
+  assert.ok(css.includes('[data-theme="era-day"] .orbit-discover .rail-arrow'));
+  for (const file of ['frontend/css/chat.css', 'nextjs-frontend/app/chat.css']) {
+    const chat = fs.readFileSync(new URL('../' + file, import.meta.url), 'utf8');
+    assert.ok(chat.includes('[data-theme="era-day"] :is(.history-thread-time, .chat-history-close-btn:hover)'));
+    assert.ok(chat.includes('.era-chat-drawer { transform: none; }'));
+  }
+});
