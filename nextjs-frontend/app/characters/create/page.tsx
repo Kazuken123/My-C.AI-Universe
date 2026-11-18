@@ -1,7 +1,7 @@
 import React, { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { CharacterStudio } from '@/components/characters/character-studio';
-import { EditorSkeleton } from '@/components/ui/editor-skeleton';
+import StudioLoading from './loading';
 
 export const metadata: Metadata = {
   title: 'Character Studio · My C.AI Universe',
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function CreateCharacterPage() {
   return (
-    <Suspense fallback={<EditorSkeleton label="Opening character editor" />}>
+    <Suspense fallback={<StudioLoading />}>
       <CharacterStudio />
     </Suspense>
   );

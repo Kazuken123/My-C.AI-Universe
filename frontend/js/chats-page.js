@@ -4,10 +4,14 @@ import { initSidebar, showToast, escapeHtml } from './common.js';
 class ChatsPageApp {
   constructor() {
     this.grid = document.getElementById('saved-chats-grid');
+    this.loadingMarkup = this.grid?.innerHTML;
   }
 
   async loadSessions() {
     if (!this.grid) return;
+    if (this.grid.getAttribute('aria-busy') !== 'true') {
+      this.grid.innerHTML = this.loadingMarkup;
+    }
     this.grid.setAttribute('aria-busy', 'true');
     try {
       const sessions = await api.getChatSessions();

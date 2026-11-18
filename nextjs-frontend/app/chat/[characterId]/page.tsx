@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { ChatView, ChatSkeleton } from '@/components/chat/chat-view';
+import { ChatView } from '@/components/chat/chat-view';
+import ChatLoading from './loading';
 
 interface ChatPageProps {
   params: {
@@ -20,7 +21,7 @@ export function generateMetadata(): Metadata {
 
 export default function ChatPage({ params, searchParams }: ChatPageProps) {
   return (
-    <Suspense fallback={<ChatSkeleton />}>
+    <Suspense fallback={<ChatLoading />}>
       <ChatView
         key={JSON.stringify([params.characterId, searchParams?.session])}
         characterId={params.characterId}

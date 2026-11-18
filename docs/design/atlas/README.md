@@ -9,6 +9,10 @@ These captures use fictional characters, personas and dialogue. Discover and Stu
 | Chat · Express | [Conversation](chat-static-desktop.png) | [Conversation](chat-static-mobile.png) |
 | Chat · Next.js | [Conversation](chat-next-desktop.png) | [Conversation](chat-next-mobile.png) |
 
+## Galaxy playback and page loading
+
+The [mobile recording](galaxy-playback.webp) shows the galaxy orbiting with WebGL disabled after pressing Play under an OS reduced-motion preference. Compare the live WebGL captures at [zero seconds](discover-live-0s.webp) and [three seconds](discover-live-3s.webp) to inspect the moving arms and accretion disk. The [saved chats loading capture](saved-chats-loading.webp) shows the first paint before the fixture returned its conversations.
+
 ## Reproduce the interactions
 
 - Start on Discover as a guest. Explore the cast, search, clear filters and use Scene Spark to open a draft. With two saved conversations for one character, compare the home resume target to the individual entries in Saved chats.

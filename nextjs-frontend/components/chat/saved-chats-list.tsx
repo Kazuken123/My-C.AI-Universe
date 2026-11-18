@@ -8,6 +8,7 @@ import { useAuth } from '@/context/auth-context';
 import { api } from '@/lib/api';
 import { resolveAvatarUrl } from '@/lib/character-utils';
 import { formatRelativeTime, removeSessionById } from '@/lib/chat-utils';
+import { SavedChatsSkeleton } from './saved-chats-skeleton';
 
 export function SavedChatsList() {
   const { user, loading: authLoading } = useAuth();
@@ -96,15 +97,6 @@ export function SavedChatsList() {
           </article>
         );
       })}
-    </div>
-  );
-}
-
-export function SavedChatsSkeleton() {
-  return (
-    <div className="atlas-saved-list" aria-busy="true">
-      <span className="atlas-sr-only" role="status">Loading saved chats</span>
-      {[0, 1, 2].map(index => <div key={index} className="atlas-saved-entry atlas-skeleton" aria-hidden="true" />)}
     </div>
   );
 }

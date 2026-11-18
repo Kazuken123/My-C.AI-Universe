@@ -8,6 +8,9 @@ class StudioPageApp {
     this.creatorHandle = '';
     this.form = document.getElementById('studio-form');
     this.heading = document.getElementById('studio-heading');
+    this.loadStatus = document.getElementById('studio-load-status');
+    this.loadingMarkup = this.loadStatus.innerHTML;
+    this.grid = document.querySelector('.studio-grid');
     this.charIdInput = document.getElementById('studioCharId');
     this.nameInput = document.getElementById('charNameInput');
     this.categoriesInput = document.getElementById('charCategoriesInput');
@@ -193,13 +196,8 @@ class StudioPageApp {
   }
 
   async loadCharacterForEdit(id) {
-    const status = document.getElementById('studio-load-status');
-    const grid = document.querySelector('.studio-grid');
-    grid.hidden = true;
-    status.hidden = false;
-    status.innerHTML = `<div class="atlas-editor-placeholder"><span class="atlas-sr-only">Loading character editor</span>
-      <i class="atlas-skeleton" aria-hidden="true"></i><div class="atlas-columns" aria-hidden="true">
-      ${[4, 3].map(count => '<section>' + '<i class="atlas-skeleton"></i>'.repeat(count) + '</section>').join('')}</div></div>`;
+    const status = this.loadStatus;
+    if (!status.querySelector('.atlas-editor-placeholder')) status.innerHTML = this.loadingMarkup;
     try {
       const char = await api.getCharacter(id);
       if (!char) throw new Error('Character unavailable');
@@ -254,8 +252,12 @@ class StudioPageApp {
       status.querySelector('button').addEventListener('click', () => this.loadCharacterForEdit(id), { once: true });
       return;
     }
-    status.hidden = true;
-    grid.hidden = false;
+    this.revealEditor();
+  }
+
+  revealEditor() {
+    this.loadStatus.hidden = true;
+    this.grid.hidden = false;
   }
 
   async init() {
@@ -267,7 +269,7 @@ class StudioPageApp {
     }
 
     this.creatorHandle = `@${currentUser.username}`;
-    await initSidebar('create');
+    const sidebarReady = initSidebar('create');
     if (this.creatorInput && !this.creatorInput.value && currentUser?.username) {
       this.creatorInput.value = `@${currentUser.username}`;
     }
@@ -486,7 +488,9 @@ class StudioPageApp {
       await this.loadCharacterForEdit(editId);
     } else {
       this.updatePreview();
+      this.revealEditor();
     }
+    await sidebarReady;
   }
 }
 

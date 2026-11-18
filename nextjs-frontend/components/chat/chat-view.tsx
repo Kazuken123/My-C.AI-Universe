@@ -12,6 +12,7 @@ import { useAuth } from '@/context/auth-context';
 import { ChatHeader } from './chat-header';
 import { ChatMessages } from './chat-messages';
 import { ChatInput } from './chat-input';
+import { ChatSkeleton } from './chat-skeleton';
 import { ChatDrawerMemories } from './chat-drawer-memories';
 import { ChatDrawerHistory } from './chat-drawer-history';
 import { RelationshipDirectorModal } from './relationship-director-modal';
@@ -739,19 +740,6 @@ export function ChatView({
         onSelectVoice={handleSelectSessionVoice}
         title={`Choose Voice for ${character?.name || 'Character'}`}
       />
-    </div>
-  );
-}
-
-export function ChatSkeleton() {
-  return (
-    <div className="atlas-chat-reader atlas-chat-loading" aria-busy="true">
-      <span className="atlas-sr-only" role="status">Opening chat</span>
-      <div className="atlas-chat-load-header atlas-skeleton" aria-hidden="true" />
-      <div className="atlas-chat-load-turn atlas-skeleton" aria-hidden="true" />
-      <div className="atlas-chat-load-turn atlas-chat-load-user atlas-skeleton" aria-hidden="true" />
-      <div className="atlas-chat-load-turn atlas-skeleton" aria-hidden="true" />
-      <div className="atlas-chat-load-composer atlas-skeleton" aria-hidden="true" />
     </div>
   );
 }

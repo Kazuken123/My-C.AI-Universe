@@ -8,6 +8,7 @@ test('OPT-06: Frontend skeleton screens and markup are present in static HTML', 
   const chatHtml = fs.readFileSync('frontend/chat.html', 'utf8');
   const chatsHtml = fs.readFileSync('frontend/chats.html', 'utf8');
   const personasHtml = fs.readFileSync('frontend/personas.html', 'utf8');
+  const studioHtml = fs.readFileSync('frontend/create.html', 'utf8');
 
   const discover = load(indexHtml);
   const shelf = discover('#discover-grid[aria-busy="true"]');
@@ -21,8 +22,18 @@ test('OPT-06: Frontend skeleton screens and markup are present in static HTML', 
 
   // Verify chats.html has initial skeleton cards
   const saved = load(chatsHtml);
-  assert.ok(saved('#saved-chats-grid[aria-busy="true"] .atlas-saved-entry.atlas-skeleton[aria-hidden="true"]').length >= 2,
+  const savedRows = saved('#saved-chats-grid[aria-busy="true"] .atlas-saved-placeholder[aria-hidden="true"]');
+  assert.ok(savedRows.length >= 2,
     'saved chats reserve individual session rows while loading');
+  for (const row of savedRows) {
+    assert.equal(saved(row).find('.atlas-saved-avatar.atlas-skeleton').length, 1);
+    assert.equal(saved(row).find('.atlas-saved-text .atlas-skeleton').length, 3);
+    assert.equal(saved(row).find('.atlas-saved-actions .atlas-skeleton').length, 2);
+  }
+
+  const studio = load(studioHtml);
+  assert.equal(studio('#studio-load-status:not([hidden]) .atlas-columns > section').length, 2);
+  assert.equal(studio('.studio-grid[hidden]').length, 1);
 
   // Verify personas.html has initial skeleton cards
   assert.ok(personasHtml.includes('skeleton-shell'), 'personas.html contains initial skeleton cards in personas-list');

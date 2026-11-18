@@ -1,0 +1,19 @@
+.atlas-discover-placeholder {
+  display: grid;
+  gap: 1rem;
+}
+
+.atlas-discover-placeholder .atlas-skeleton {
+  width: min(80%, 23rem);
+  height: 3rem;
+}
+
+.atlas-discover-placeholder .atlas-skeleton:nth-child(2) {
+  width: min(64%, 16rem);
+  height: 1rem;
+}
+
+.atlas-discover-placeholder .atlas-skeleton:last-child {
+  width: 9rem;
+  height: 2.5rem;
+}

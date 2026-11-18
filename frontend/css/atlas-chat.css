@@ -49,26 +49,76 @@
   flex-direction: column;
   gap: 1.5rem;
   padding: clamp(1rem, 4vw, 2rem);
+  border: 1px solid var(--border-hairline);
+  border-radius: 1rem;
 }
 
 .atlas-chat-load-header,
-.atlas-chat-load-composer {
-  height: 4rem;
+.atlas-chat-load-composer,
+.atlas-chat-load-turn {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+}
+
+.atlas-chat-load-avatar {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.atlas-chat-load-label {
+  width: min(48%, 12rem);
+}
+
+.atlas-chat-load-label .atlas-skeleton,
+.atlas-chat-load-bubble .atlas-skeleton {
+  width: 85%;
+  height: .8rem;
+}
+
+.atlas-chat-load-label .atlas-skeleton + .atlas-skeleton,
+.atlas-chat-load-bubble .atlas-skeleton + .atlas-skeleton {
+  width: 58%;
+  height: .62rem;
+  margin-block-start: .5rem;
+}
+
+.atlas-chat-load-header,
+.atlas-chat-load-composer,
+.atlas-chat-load-bubble {
+  padding: .8rem;
+  background: var(--bg-core);
+  border: 1px solid var(--border-hairline);
+}
+
+.atlas-chat-load-bubble {
+  flex: 1 1 auto;
+  border-radius: .75rem;
 }
 
 .atlas-chat-load-turn {
-  width: min(76%, 35rem);
-  height: 4.75rem;
+  width: min(86%, 35rem);
 }
 
 .atlas-chat-load-user {
   align-self: end;
-  width: min(50%, 23rem);
-  height: 3.25rem;
+  flex-direction: row-reverse;
+  width: min(64%, 23rem);
 }
 
 .atlas-chat-load-composer {
   margin-top: auto;
+}
+
+.atlas-chat-load-composer .atlas-skeleton {
+  height: 2.2rem;
+  flex: 1;
+}
+
+.atlas-chat-load-composer .atlas-skeleton:last-child {
+  flex: 0 0 2.2rem;
 }
 
 .atlas-chat-state {
@@ -172,6 +222,38 @@
 .atlas-saved-actions .icon-btn,
 .atlas-saved-actions a {
   min-height: 2.5rem;
+}
+
+.atlas-saved-placeholder .atlas-saved-avatar {
+  background: color-mix(in srgb, var(--text-primary) 10%, var(--bg-core));
+}
+
+.atlas-saved-placeholder .atlas-saved-text {
+  display: grid;
+  gap: .5rem;
+}
+
+.atlas-saved-placeholder .atlas-saved-text .atlas-skeleton {
+  width: min(84%, 22rem);
+  height: .65rem;
+}
+
+.atlas-saved-placeholder .atlas-saved-text .atlas-skeleton:first-child {
+  width: min(45%, 10rem);
+  height: .9rem;
+}
+
+.atlas-saved-placeholder .atlas-saved-text .atlas-skeleton:nth-child(2) {
+  width: min(65%, 14rem);
+}
+
+.atlas-saved-placeholder .atlas-saved-actions .atlas-skeleton {
+  width: 5rem;
+  height: 2.5rem;
+}
+
+.atlas-saved-placeholder .atlas-saved-actions .atlas-skeleton:last-child {
+  width: 2.5rem;
 }
 
 .atlas-history-open {

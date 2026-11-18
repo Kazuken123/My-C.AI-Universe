@@ -200,8 +200,17 @@
         </header>
 
         <a class="atlas-preview-link" href="#studio-preview">Preview character ↓</a>
-        <div id="studio-load-status" role="status" hidden></div>
-        <div class="studio-grid">
+        <div id="studio-load-status" role="status">
+          <div class="atlas-editor-placeholder">
+            <span class="atlas-sr-only">Loading character editor</span>
+            <i class="atlas-skeleton" aria-hidden="true"></i>
+            <div class="atlas-columns" aria-hidden="true">
+              <section><i class="atlas-skeleton"></i><i class="atlas-skeleton"></i><i class="atlas-skeleton"></i><i class="atlas-skeleton"></i></section>
+              <section><i class="atlas-skeleton"></i><i class="atlas-skeleton"></i><i class="atlas-skeleton"></i></section>
+            </div>
+          </div>
+        </div>
+        <div class="studio-grid" hidden>
           <div class="studio-left-col" id="studio-fields">
             <!-- Double-Bezel Automated Ingestion Card -->
             <div class="double-bezel-shell">
