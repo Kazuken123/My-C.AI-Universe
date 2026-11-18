@@ -5,6 +5,7 @@ import { openVoicePickerModal } from './voice-picker.js';
 
 class StudioPageApp {
   constructor() {
+    this.creatorHandle = '';
     this.form = document.getElementById('studio-form');
     this.heading = document.getElementById('studio-heading');
     this.charIdInput = document.getElementById('studioCharId');
@@ -66,7 +67,7 @@ class StudioPageApp {
     const tagline = this.taglineInput?.value.trim() || 'AI Roleplay Character';
     const avatar = this.avatarInput?.value.trim() || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(name)}`;
     const greeting = this.greetingInput?.value.trim() || '*Scene awaits first line...*';
-    const creator = this.creatorInput?.value.trim() || (api.getCurrentUser()?.username ? `@${api.getCurrentUser().username}` : '@community');
+    const creator = this.creatorInput?.value.trim() || this.creatorHandle || '@community';
     const categories = (this.categoriesInput?.value.trim() || 'Anime, Roleplay')
       .split(',')
       .map(t => t.trim())
@@ -76,7 +77,7 @@ class StudioPageApp {
     if (this.previewTagline) this.previewTagline.textContent = tagline;
     if (this.previewAvatar) this.previewAvatar.src = avatar;
     if (this.previewGreeting) this.previewGreeting.textContent = greeting;
-    if (this.previewCreator) this.previewCreator.textContent = `Authored by ${creator} · Relational SQL`;
+    if (this.previewCreator) this.previewCreator.textContent = `Authored by ${creator}`;
 
     if (this.previewTags) {
       this.previewTags.innerHTML = categories
@@ -182,24 +183,30 @@ class StudioPageApp {
     if (this.charIdInput) this.charIdInput.value = '';
     if (this.voiceIdInput) this.voiceIdInput.value = '';
     if (this.voiceNameInput) this.voiceNameInput.value = '';
-    if (this.heading) this.heading.textContent = 'Character Architecture Studio';
+    if (this.heading) this.heading.textContent = 'Character Studio';
     const btnSaveText = document.getElementById('btnSaveText');
-    if (btnSaveText) btnSaveText.textContent = 'Commit to SQL & Launch Scene';
+    if (btnSaveText) btnSaveText.textContent = 'Save and start scene';
     if (this.creatorInput) {
-      const user = api.getCurrentUser();
-      this.creatorInput.value = user?.username ? `@${user.username}` : '';
+      this.creatorInput.value = this.creatorHandle;
     }
     this.updatePreview();
   }
 
   async loadCharacterForEdit(id) {
+    const status = document.getElementById('studio-load-status');
+    const grid = document.querySelector('.studio-grid');
+    grid.hidden = true;
+    status.hidden = false;
+    status.innerHTML = `<div class="atlas-editor-placeholder"><span class="atlas-sr-only">Loading character editor</span>
+      <i class="atlas-skeleton" aria-hidden="true"></i><div class="atlas-columns" aria-hidden="true">
+      ${[4, 3].map(count => '<section>' + '<i class="atlas-skeleton"></i>'.repeat(count) + '</section>').join('')}</div></div>`;
     try {
       const char = await api.getCharacter(id);
-      if (!char) return;
+      if (!char) throw new Error('Character unavailable');
 
-      if (this.heading) this.heading.textContent = `Modify Architecture: ${char.name}`;
+      if (this.heading) this.heading.textContent = `Edit character · ${char.name}`;
       const btnSaveText = document.getElementById('btnSaveText');
-      if (btnSaveText) btnSaveText.textContent = 'Update SQL Architecture';
+      if (btnSaveText) btnSaveText.textContent = 'Save changes';
 
       if (this.charIdInput) this.charIdInput.value = char.id;
       if (this.nameInput) this.nameInput.value = char.name || '';
@@ -243,8 +250,12 @@ class StudioPageApp {
 
       this.updatePreview();
     } catch (err) {
-      showToast('Could not load character draft: ' + err.message);
+      status.innerHTML = '<p>The character could not be loaded.</p><button type="button" class="btn-secondary">Try again</button>';
+      status.querySelector('button').addEventListener('click', () => this.loadCharacterForEdit(id), { once: true });
+      return;
     }
+    status.hidden = true;
+    grid.hidden = false;
   }
 
   async init() {
@@ -255,6 +266,7 @@ class StudioPageApp {
       return;
     }
 
+    this.creatorHandle = `@${currentUser.username}`;
     await initSidebar('create');
     if (this.creatorInput && !this.creatorInput.value && currentUser?.username) {
       this.creatorInput.value = `@${currentUser.username}`;
@@ -442,7 +454,7 @@ class StudioPageApp {
           voiceId: this.voiceIdInput?.value?.trim() || '',
           voice_name: this.voiceNameInput?.value?.trim() || '',
           voiceName: this.voiceNameInput?.value?.trim() || '',
-          creator: (api.getCurrentUser()?.username ? `@${api.getCurrentUser().username}` : undefined)
+          creator: this.creatorInput?.value.trim() || this.creatorHandle
         };
 
         const submitBtn = document.getElementById('btnSaveCharacter');
@@ -452,10 +464,10 @@ class StudioPageApp {
           let saved;
           if (id) {
             saved = await api.updateCharacter(id, payload);
-            showToast(`Updated ${saved.name} in SQL.`);
+            showToast(`Updated ${saved.name}.`);
           } else {
             saved = await api.createCharacter(payload);
-            showToast(`Committed ${saved.name} to SQLite.`);
+            showToast(`Saved ${saved.name}.`);
           }
 
           setTimeout(() => {

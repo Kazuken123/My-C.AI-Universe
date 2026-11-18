@@ -86,7 +86,7 @@ export function Sidebar({
             </span>
             <div className="brand-text-wrap">
               <span className="brand-title">C.AI Universe</span>
-              <span className="brand-version">ORBIT STUDIO</span>
+              <span className="brand-version">SPACE ATLAS</span>
             </div>
           </Link>
           <div className="sidebar-header-actions">

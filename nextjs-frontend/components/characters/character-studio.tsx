@@ -1,5 +1,6 @@
 'use client';
 
+import { EditorSkeleton } from '@/components/ui/editor-skeleton';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -12,7 +13,6 @@ import {
   AlertCircle,
   HelpCircle,
   User,
-  Radio,
   Sliders,
   Mic,
   X,
@@ -37,6 +37,7 @@ export function CharacterStudio() {
   const { user } = useAuth();
 
   const [loadingInitial, setLoadingInitial] = useState(Boolean(editId));
+  const [editLoadFailed, setEditLoadFailed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -71,6 +72,7 @@ export function CharacterStudio() {
   const loadForEdit = useCallback(async (id: string) => {
     try {
       setLoadingInitial(true);
+      setEditLoadFailed(false);
       const char = await api.getCharacter(id);
       setName(char.name || '');
       setTagline(char.tagline || '');
@@ -97,6 +99,7 @@ export function CharacterStudio() {
       setRelationshipDynamic(char.relationshipDynamic || char.relationship_dynamic || '');
       setWikiUrl(char.wiki || char.wikiUrl || char.wiki_url || '');
     } catch (err: unknown) {
+      setEditLoadFailed(true);
       const msg = err instanceof Error ? err.message : 'Failed to load character data';
       setStatusMessage({ type: 'error', text: msg });
     } finally {
@@ -262,37 +265,36 @@ export function CharacterStudio() {
     }
   };
 
-  if (loadingInitial) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="flex flex-col items-center gap-3 text-text-muted">
-          <Loader2 className="h-8 w-8 animate-spin text-accent" />
-          <p className="font-mono text-xs">Loading character architecture...</p>
-        </div>
-      </div>
-    );
-  }
+  if (editLoadFailed && editId && !loadingInitial) return (
+    <div className="content-container" role="alert">
+      <p>The character could not be loaded.</p>
+      <button className="btn-secondary" onClick={() => loadForEdit(editId)}>Try again</button>
+    </div>
+  );
+  if (loadingInitial) return <EditorSkeleton label="Loading character editor" />;
 
   return (
-    <div className="content-container space-y-8">
+    <div className="content-container atlas-workspace space-y-8">
       {/* Studio Header */}
       <div>
         <h1 className="font-display text-3xl font-extrabold text-text-primary">
-          {editId ? `Modify Architecture: ${name || 'Character'}` : 'Character Architecture Studio'}
+          {editId ? `Edit character · ${name || 'Character'}` : 'Character Studio'}
         </h1>
         <p className="text-sm text-text-secondary mt-1">
-          Synthesize deep autonomous roleplay personas with relational SQL lore, dynamic demeanors, and voice traits.
+          Create a character, shape their voice, and write your first scene.
         </p>
       </div>
 
+      <a className="atlas-preview-link" href="#studio-preview">Preview character ↓</a>
+
       {/* Synthesis Accelerators: AI & Wiki Tools */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* AI Concept Synthesizer */}
+        {/* Start from a concept */}
         <DoubleBezel coreClassName="p-5 space-y-3">
           <div className="flex items-center gap-2 text-accent">
             <Sparkles className="h-4 w-4" />
             <h2 className="font-display text-sm font-bold text-text-primary">
-              AI Concept Synthesizer
+              Start from a concept
             </h2>
           </div>
           <p className="text-xs text-text-muted leading-relaxed">
@@ -384,11 +386,11 @@ export function CharacterStudio() {
       {/* Main Form + Live Preview Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         {/* Form Fields (2 columns) */}
-        <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
+        <form id="studio-fields" onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
           {/* Section 1: Core Persona Identification */}
           <DoubleBezel coreClassName="p-6 space-y-4">
             <h2 className="font-display text-base font-bold text-text-primary border-b border-border-hairline pb-2">
-              1. Core Identification
+              Identity
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -533,7 +535,7 @@ export function CharacterStudio() {
           {/* Section 2: Deep Definition & Lore */}
           <DoubleBezel coreClassName="p-6 space-y-4">
             <h2 className="font-display text-base font-bold text-text-primary border-b border-border-hairline pb-2">
-              2. Deep Definition & Lore
+              Voice and backstory
             </h2>
 
             <div className="space-y-1.5">
@@ -635,10 +637,8 @@ export function CharacterStudio() {
           {/* Section 3: Dynamic Demeanor & Relationship Mechanics */}
           <DoubleBezel coreClassName="p-6 space-y-4">
             <h2 className="font-display text-base font-bold text-text-primary border-b border-border-hairline pb-2 flex items-center justify-between">
-              <span>3. Relational Baseline Dynamics</span>
-              <span className="font-mono text-xs text-accent font-normal">
-                SQL Persisted
-              </span>
+              <span>Starting relationship</span>
+
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -708,7 +708,7 @@ export function CharacterStudio() {
               disabled={submitting}
               className="btn-island py-2.5 px-6 text-sm"
             >
-              <span>{submitting ? 'Committing to SQL...' : editId ? 'Save & Launch Scene' : 'Commit & Launch Scene'}</span>
+              <span>{submitting ? 'Saving…' : editId ? 'Save & Launch Scene' : 'Save and start scene'}</span>
               <span className="btn-island-icon">
                 {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
               </span>
@@ -716,16 +716,13 @@ export function CharacterStudio() {
           </div>
         </form>
 
-        {/* Live Dossier Preview (Right Column) */}
-        <div className="sticky top-6 space-y-4">
+        {/* Character preview (Right Column) */}
+        <div id="studio-preview" tabIndex={-1} className="lg:sticky top-6 space-y-4">
           <div className="flex items-center justify-between px-1">
             <span className="font-mono text-xs font-semibold uppercase tracking-wider text-text-muted">
-              Live Dossier Preview
+              Character preview
             </span>
-            <span className="inline-flex items-center gap-1 rounded border border-border-hairline bg-white/5 px-2 py-0.5 font-mono text-[10px] text-emerald-400">
-              <Radio className="h-2 w-2 animate-pulse" />
-              SYNCHRONIZED
-            </span>
+            <a className="atlas-preview-link" href="#studio-fields">Back to editor ↑</a>
           </div>
 
           <DoubleBezel coreClassName="p-6 space-y-4">
@@ -737,7 +734,6 @@ export function CharacterStudio() {
                   alt={name || 'Preview'}
                   className="h-full w-full object-cover"
                 />
-                <span className="absolute bottom-1 right-1 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-core" />
               </div>
 
               <div className="min-w-0 flex-1 space-y-1">
@@ -745,7 +741,7 @@ export function CharacterStudio() {
                   {name || 'New Character'}
                 </h3>
                 <p className="font-mono text-[11px] text-text-muted truncate">
-                  {user?.username ? `@${user.username}` : '@you'} · Relational SQL
+                  {user?.username ? `@${user.username}` : '@you'}
                 </p>
                 <p className="text-xs text-text-secondary line-clamp-2">
                   {tagline || 'AI Roleplay Persona'}

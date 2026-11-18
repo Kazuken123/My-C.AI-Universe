@@ -7,6 +7,10 @@ import './personas.css';
 import './chat.css';
 import './auth.css';
 import './orbit.css';
+import './atlas.css';
+import './atlas-scene.css';
+import './atlas-discover.css';
+import './atlas-chat.css';
 import Script from 'next/script';
 import { AuthProvider } from '@/context/auth-context';
 import { AmbientCanvas } from '@/components/layout/ambient-canvas';
@@ -40,9 +44,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="stylesheet" href="/assets/vendor/phosphor/2.1.1/style.css" />
-        <script type="module" src="/js/ambient-canvas.js" async></script>
       </head>
       <body>
+        <Script type="module" src="/js/ambient-canvas.js" strategy="afterInteractive" />
         <Script src="/js/orbit-motion.js" strategy="afterInteractive" />
         <Script src="/js/universe-scene.js" strategy="afterInteractive" />
         <AuthProvider>

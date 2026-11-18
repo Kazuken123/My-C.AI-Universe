@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="C.AI Universe" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <title>Roleplay Identities — My C.AI Universe</title>
+  <title>Your personas — My C.AI Universe</title>
   <meta name="description" content="Configure multiple user personas injected into LLM system prompts so characters recognize your backstory." />
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -28,6 +28,7 @@
   <script type="module" src="/js/ambient-canvas.js"></script>
   <link rel="stylesheet" href="/css/orbit.css" />
   <script type="module" src="/js/orbit-motion.js"></script>
+  <link rel="stylesheet" href="/css/atlas.css" />
 </head>
 <body>
   <!-- Ambient Kinetic Motion Canvas Engine -->
@@ -71,7 +72,7 @@
             </span>
             <div class="brand-text-wrap">
               <span class="brand-title">C.AI Universe</span>
-              <span class="brand-version">ORBIT STUDIO</span>
+              <span class="brand-version">SPACE ATLAS</span>
             </div>
           </a>
           <div class="sidebar-header-actions">
@@ -181,26 +182,27 @@
 
     <!-- Main Workspace -->
     <main class="main-workspace">
-      <div class="content-container">
+      <div class="content-container atlas-workspace">
         <header class="view-header">
           <div>
-            <h1 class="view-title">Roleplay Identities</h1>
+            <h1 class="view-title">Your personas</h1>
             <p class="view-subtitle">Configure the user persona injected into the prompt so characters address you by name and backstory.</p>
           </div>
         </header>
 
         <div class="personas-grid-layout">
           <div>
-                        <div class="personas-stack" id="personas-list">
-              <div class="persona-card-shell double-bezel-shell skeleton-shell"><div class="persona-card-core double-bezel-core"><div class="persona-card-header"><div class="persona-card-meta" style="flex: 1;"><div class="persona-glyph-badge skeleton-box" style="width: 44px; height: 44px; border-radius: 12px;"></div><div class="persona-card-title-group" style="flex: 1;"><div class="skeleton-line" style="width: 50%; height: 16px;"></div><div class="skeleton-line" style="width: 30%; height: 10px; margin: 0;"></div></div></div></div><div class="persona-card-desc" style="margin-top: 12px;"><div class="skeleton-line" style="width: 90%; height: 12px;"></div><div class="skeleton-line" style="width: 70%; height: 12px; margin: 0;"></div></div></div></div>
-              <div class="persona-card-shell double-bezel-shell skeleton-shell"><div class="persona-card-core double-bezel-core"><div class="persona-card-header"><div class="persona-card-meta" style="flex: 1;"><div class="persona-glyph-badge skeleton-box" style="width: 44px; height: 44px; border-radius: 12px;"></div><div class="persona-card-title-group" style="flex: 1;"><div class="skeleton-line" style="width: 50%; height: 16px;"></div><div class="skeleton-line" style="width: 30%; height: 10px; margin: 0;"></div></div></div></div><div class="persona-card-desc" style="margin-top: 12px;"><div class="skeleton-line" style="width: 90%; height: 12px;"></div><div class="skeleton-line" style="width: 70%; height: 12px; margin: 0;"></div></div></div></div>
+                        <div class="personas-stack" id="personas-list" aria-busy="true">
+              <span class="atlas-sr-only" role="status">Loading personas</span>
+              <div class="persona-card-shell double-bezel-shell skeleton-shell" aria-hidden="true"><div class="persona-card-core double-bezel-core"><div class="persona-card-header"><div class="persona-card-meta" style="flex: 1;"><div class="persona-glyph-badge skeleton-box" style="width: 44px; height: 44px; border-radius: 12px;"></div><div class="persona-card-title-group" style="flex: 1;"><div class="skeleton-line" style="width: 50%; height: 16px;"></div><div class="skeleton-line" style="width: 30%; height: 10px; margin: 0;"></div></div></div></div><div class="persona-card-desc" style="margin-top: 12px;"><div class="skeleton-line" style="width: 90%; height: 12px;"></div><div class="skeleton-line" style="width: 70%; height: 12px; margin: 0;"></div></div></div></div>
+              <div class="persona-card-shell double-bezel-shell skeleton-shell" aria-hidden="true"><div class="persona-card-core double-bezel-core"><div class="persona-card-header"><div class="persona-card-meta" style="flex: 1;"><div class="persona-glyph-badge skeleton-box" style="width: 44px; height: 44px; border-radius: 12px;"></div><div class="persona-card-title-group" style="flex: 1;"><div class="skeleton-line" style="width: 50%; height: 16px;"></div><div class="skeleton-line" style="width: 30%; height: 10px; margin: 0;"></div></div></div></div><div class="persona-card-desc" style="margin-top: 12px;"><div class="skeleton-line" style="width: 90%; height: 12px;"></div><div class="skeleton-line" style="width: 70%; height: 12px; margin: 0;"></div></div></div></div>
             </div>
           </div>
           <div>
             <div class="double-bezel-shell persona-register-shell">
               <div class="double-bezel-core studio-card persona-register-core">
                 <div class="card-header-row">
-                  <h2 class="card-heading">Register Identity</h2>
+                  <h2 class="card-heading">Create a persona</h2>
                   <span class="mono-tag">PERSONA</span>
                 </div>
                 <p class="card-subtext">Characters adapt their opening greeting and dialogue tone to match your chosen identity.</p>
@@ -228,7 +230,7 @@
                   </div>
 
                   <button type="submit" class="btn-island btn-island-full">
-                    <span>Save Identity to SQL</span>
+                    <span>Save persona</span>
                     <span class="btn-island-icon" aria-hidden="true">
                       <i class="ph-light ph-check"></i>
                     </span>

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { load } from 'cheerio';
 
 test('OPT-06: Frontend skeleton screens and markup are present in static HTML', () => {
   const indexHtml = fs.readFileSync('frontend/index.html', 'utf8');
@@ -8,9 +9,10 @@ test('OPT-06: Frontend skeleton screens and markup are present in static HTML', 
   const chatsHtml = fs.readFileSync('frontend/chats.html', 'utf8');
   const personasHtml = fs.readFileSync('frontend/personas.html', 'utf8');
 
-  // Verify discover-grid has initial skeleton cards
-  assert.ok(indexHtml.includes('skeleton-shell'), 'index.html contains initial skeleton cards in discover-grid');
-  assert.ok(indexHtml.includes('skeleton-avatar-box'), 'index.html has skeleton avatar boxes');
+  const discover = load(indexHtml);
+  const shelf = discover('#discover-grid[aria-busy="true"]');
+  assert.ok(shelf.find('.atlas-portrait-skeleton[aria-hidden="true"]').length >= 2,
+    'the server-rendered shelf reserves space for multiple portraits');
 
   // Verify chat.html has initial skeleton stream
   assert.ok(chatHtml.includes('chat-skeleton-stream'), 'chat.html contains initial chat-skeleton-stream');
@@ -18,7 +20,9 @@ test('OPT-06: Frontend skeleton screens and markup are present in static HTML', 
   assert.ok(chatHtml.includes('msg-skeleton-row'), 'chat.html contains msg-skeleton-row');
 
   // Verify chats.html has initial skeleton cards
-  assert.ok(chatsHtml.includes('skeleton-shell'), 'chats.html contains initial skeleton cards in saved-chats-grid');
+  const saved = load(chatsHtml);
+  assert.ok(saved('#saved-chats-grid[aria-busy="true"] .atlas-saved-entry.atlas-skeleton[aria-hidden="true"]').length >= 2,
+    'saved chats reserve individual session rows while loading');
 
   // Verify personas.html has initial skeleton cards
   assert.ok(personasHtml.includes('skeleton-shell'), 'personas.html contains initial skeleton cards in personas-list');

@@ -342,10 +342,10 @@ function initOrbitMotion() {
   const scanUniverseControls = createUniverseControls();
   const scanAtmosphereControls = createAtmosphereControls();
   window.orbitViewTransition = orbitViewTransition;
-  // Motion is always on. Discard the obsolete pause preference from older builds.
-  try { localStorage.removeItem('ambient_motion_disabled'); } catch {}
-  root.dataset.orbitMotion = 'running';
-  window.ambientCanvas?.forceStart();
+  const updateMotionMode = () => {
+    root.dataset.orbitMotion = orbitMotionAllowed() ? 'running' : 'paused';
+  };
+  updateMotionMode();
   let observed = new WeakSet();
   let scrollFrame = 0;
   function updateScroll() {
@@ -403,6 +403,7 @@ function initOrbitMotion() {
   }
 
   window.matchMedia?.('(prefers-reduced-motion: no-preference)').addEventListener?.('change', () => {
+    updateMotionMode();
     document.querySelectorAll('.orbit-reveal').forEach(el => { el.dataset.reveal = 'visible'; });
     refreshRevealObserver();
     scan();

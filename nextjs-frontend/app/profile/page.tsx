@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { DoubleBezel } from '@/components/ui/double-bezel';
+import { EditorSkeleton } from '@/components/ui/editor-skeleton';
 import { ProfileEditor } from '@/components/profile/profile-editor';
 
 export default function ProfilePage() {
@@ -31,19 +32,7 @@ export default function ProfilePage() {
   }, [loading, user, router]);
 
   // Loading skeleton during authentication check
-  if (loading || !user) {
-    return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center space-y-4">
-        <div className="relative flex h-14 w-14 items-center justify-center">
-          <div className="absolute inset-0 rounded-full border-2 border-accent/20 border-t-accent animate-spin" />
-          <UserIcon className="h-6 w-6 text-accent" />
-        </div>
-        <p className="font-mono text-xs uppercase tracking-widest text-text-muted animate-pulse">
-          Authenticating Profile Session...
-        </p>
-      </div>
-    );
-  }
+  if (loading || !user) return <EditorSkeleton label="Loading profile" />;
 
   const isImageUrl = (val: string) => /^(https?:\/\/|\/(?!\/)|data:image\/(png|jpeg|jpg|webp|gif);base64,)/i.test(val?.trim() || '');
   const memberSince = user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', {
@@ -53,20 +42,20 @@ export default function ProfilePage() {
   }) : 'Recently';
 
   return (
-    <div className="content-container space-y-8">
+    <div className="content-container atlas-workspace space-y-8">
       {/* Breadcrumb Navigation Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <nav className="flex items-center gap-1.5 font-mono text-xs text-text-muted pb-1.5">
             <Link href="/" className="hover:text-text-primary transition-colors">Universe</Link>
             <ChevronRight className="h-3 w-3" />
-            <span className="text-text-secondary">Pilot Account</span>
+            <span className="text-text-secondary">Account</span>
           </nav>
           <h1 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight text-text-primary">
-            Account Profile &amp; Identity
+            Your profile
           </h1>
           <p className="text-sm text-text-secondary mt-1">
-            Manage your public credentials, avatar portrait, and roleplay identity across storylines.
+            Manage your portrait, public name and roleplay identity.
           </p>
         </div>
 

@@ -8,6 +8,7 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/css/response-lab.css" />
   <script type="module" src="/js/response-lab.js"></script>
+  <link rel="stylesheet" href="/css/atlas.css" />
 </head>
 <body class="lab-page">
   <a class="skip-link" href="#workspace">Skip to workspace</a>
@@ -45,7 +46,7 @@
       <p class="aside-note">Choose what feels true to the character.<br />No written explanation needed.</p>
     </aside>
     <section class="review-panel" aria-label="Response review">
-      <div class="intro"><div class="section-label">Explore / Keep / Challenge</div><h1>Find the response<br /><em>that feels right.</em></h1><p>Your picks advance. Up to five new challengers can join each round after repeated or inconsistent replies are filtered out.</p></div>
+      <div class="intro"><h1>Compare responses</h1><p>Your picks advance. Up to five new challengers can join each round after repeated or inconsistent replies are filtered out.</p></div>
       <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
       <div id="authNotice" class="notice" hidden>Sign in to create a private lab. <a href="/auth?return=/response-lab">Sign in →</a></div>
       <form id="promptForm">
@@ -64,7 +65,7 @@
           <p id="roundHint" class="hint round-hint"></p>
         </div>
       </section>
-      <div id="emptyState" class="empty-state"><span class="empty-symbol" aria-hidden="true">↗</span><h2>A place to explore, not commit.</h2><p>Alternatives stay outside your story until you choose “Continue with this.” Saved choices guide future writing. They do not make events in the examples part of your story.</p></div>
+      <div id="emptyState" class="empty-state"><span class="empty-symbol" aria-hidden="true">↗</span><h2>No responses yet</h2><p>Alternatives stay outside your story until you choose “Continue with this.” Saved choices guide future writing. They do not make events in the examples part of your story.</p></div>
     </section>
   </main>
 </body>

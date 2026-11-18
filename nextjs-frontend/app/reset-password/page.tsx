@@ -17,7 +17,7 @@ function ResetPasswordSkeleton() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="w-full max-w-[480px] mx-auto flex flex-col gap-5 py-6 px-3 sm:px-0">
+    <div className="atlas-account w-full max-w-[480px] mx-auto flex flex-col gap-5 py-6 px-3 sm:px-0">
       {/* Top Bar Navigation */}
       <div className="flex items-center justify-between">
         <Link

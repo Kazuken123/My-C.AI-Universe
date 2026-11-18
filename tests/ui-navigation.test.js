@@ -244,23 +244,22 @@ test('scene moods reroll without immediately repeating and encode draft URLs saf
   assert.equal(vm.runInContext("sceneSparkHref('https://external.test', 'char', 'hello')", context), '');
 });
 
-test('legacy pause preference is cleared and ambient motion is resumed on initialization', () => {
-  const fullSource = fs.readFileSync(new URL('../frontend/js/orbit-motion.js', import.meta.url), 'utf8');
-  const removed = [];
-  let resumed = 0;
+test('orbit motion follows live OS preference changes', () => {
+  const source = fs.readFileSync(new URL('../frontend/js/orbit-motion.js', import.meta.url), 'utf8');
+  let changed;
+  const preference = { matches: false, addEventListener(type, callback) { changed = callback; } };
   const document = {
-    readyState: 'complete', documentElement: { dataset: { orbitMotion: 'paused' } },
+    readyState: 'complete', documentElement: { dataset: {} },
     body: {}, querySelectorAll: () => [], addEventListener() {},
   };
-  vm.runInNewContext(fullSource, {
-    document,
-    window: { addEventListener() {}, ambientCanvas: { forceStart() { resumed++; } } },
-    localStorage: { removeItem(key) { removed.push(key); } },
+  vm.runInNewContext(source, {
+    document, window: { addEventListener() {}, matchMedia: () => preference },
     MutationObserver: class { observe() {} }, requestAnimationFrame() { return 1; },
   });
+  assert.equal(document.documentElement.dataset.orbitMotion, 'paused');
+  preference.matches = true;
+  changed();
   assert.equal(document.documentElement.dataset.orbitMotion, 'running');
-  assert.deepEqual(removed, ['ambient_motion_disabled']);
-  assert.equal(resumed, 1);
 });
 
 test('Scene Spark uses loaded characters, edits a draft, handles copy failure and cleans up', async () => {
@@ -330,7 +329,10 @@ test('pointer return during the closing morph cancels the hide timer', () => {
 
 test('shared Orbit styles and controls have byte-identical frontend copies', () => {
   for (const [express, next] of [
-    ['frontend/css/orbit.css', 'nextjs-frontend/app/orbit.css'],
+    ...['orbit', 'atlas', 'atlas-chat', 'atlas-discover', 'atlas-scene'].map(name => [
+      `frontend/css/${name}.css`, `nextjs-frontend/app/${name}.css`,
+    ]),
+    ['frontend/js/ambient-canvas.js', 'nextjs-frontend/public/js/ambient-canvas.js'],
     ['frontend/js/orbit-motion.js', 'nextjs-frontend/public/js/orbit-motion.js'],
   ]) {
     assert.deepEqual(fs.readFileSync(new URL('../' + express, import.meta.url)), fs.readFileSync(new URL('../' + next, import.meta.url)));

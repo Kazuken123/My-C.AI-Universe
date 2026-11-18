@@ -27,15 +27,15 @@ Used in desktop and mobile web browsers across two primary modes:
 ## Capabilities and Constraints
 
 - Dual-frontend parity: Express static HTML/CSS/JS (`frontend/`) and Next.js 14 App Router (`nextjs-frontend/`) sharing unified CSS design tokens and layout architecture.
-- Multi-theme architecture led by **Orbit Studio** (persisted key: `higgsfield`), with midnight green, ivory and sage. Other workspace themes remain selectable.
-- 60fps HTML5 Canvas ambient motion backdrop (`AmbientMotionCanvas`) with user-toggleable motion control.
+- Multi-theme architecture led by **Space Atlas** (persisted key: `higgsfield`), with ink blue, warm ivory and violet. Other workspace themes remain selectable.
+- The ambient canvas follows the operating system’s reduced-motion preference.
 - Real-time voice synthesis (Web Speech API TTS) and Fandom/Wikipedia canon ingestion.
 
 ## Brand Commitments
 
-- **Brand Name**: My C.AI Universe (Orbit Studio)
+- **Brand Name**: My C.AI Universe (Space Atlas)
 - **Brand Mark**: `/favicon.svg`
-- **Visual Direction**: Cinematic editorial discovery, portrait cards, a procedural 3D universe with galaxies and nebulae and quiet green reading surfaces. See DESIGN.md for the current tokens and motion system.
+- **Visual Direction**: Cinematic editorial discovery, portrait cards, a lensed black hole and ink-blue reading surfaces. See DESIGN.md for the current tokens and motion system.
 - **Typography**: Manrope for UI and prose, Newsreader for editorial headings, JetBrains Mono for numeric metadata.
 
 ## Evidence on Hand
@@ -48,10 +48,10 @@ Used in desktop and mobile web browsers across two primary modes:
 1. **Narrative Immersion First**: Chrome recedes during active roleplay; typography, line measure (65ch), and contrast prioritize effortless long-form reading.
 2. **Instant Tactile Receipt**: Every take swipe, like toggle, and drawer toggle responds immediately in the DOM with physical compression (`scale(0.97)`) and zero layout shift.
 3. **Psychological Permanence**: Relationship state, pinned memories, and thread branches are always transparent, inspectable, and controllable by the user.
-4. **Cinematic Craft Without AI Slop**: Reject generic violet neon glows and flat templates in favor of machined double-bezel surfaces, specular top rims, and calibrated atmospheric lighting.
+4. **Cinematic Craft Without AI Slop**: Reject generic violet neon glows and flat templates in favor of clear typography, portrait-led browsing, and visible gravitational lensing.
 
 ## Accessibility & Inclusion
 
-- Default Orbit Studio text and action color pairs are checked against the WCAG AA 4.5:1 target. Visible focus, keyboard actions and an animation pause control are provided.
+- Default Space Atlas text and action color pairs are checked against the WCAG AA 4.5:1 target. Visible focus, keyboard actions and OS reduced-motion support are provided.
 - Minimum 11px (`0.72rem` at `16px` root) functional UI typography floor across all badges, keycaps, and metadata labels.
 - Full keyboard navigation (`/` to search, `1–4` workspace shortcuts, `[` sidebar collapse, `<-`/`->` take swiping, visible `:focus-visible` rings, and skip-to-workspace link).
