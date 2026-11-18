@@ -18,3 +18,43 @@
     transition: none;
   }
 }
+
+/* Rotate the face-on star field inside its inclined plane on the low-cost scene. */
+.universe-art .universe-fallback { container-type: size; }
+.universe-art .universe-scene .universe-fallback-galaxy {
+  display: block;
+  inset: 35% auto auto 50%;
+  width: min(32cqw, 65cqh);
+  height: auto;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) rotate(-18deg) scaleY(.62);
+  background: none;
+  mask-image: none;
+  filter: none;
+  opacity: 1;
+  mix-blend-mode: screen;
+}
+.universe-art .universe-fallback-galaxy::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('/images/atlas-spiral.webp') center / contain no-repeat;
+  animation: atlas-spiral-orbit 52s linear infinite paused !important;
+}
+@keyframes atlas-spiral-orbit { to { transform: rotate(-1turn); } }
+.universe-scene[data-scene-active="true"]:not([data-universe-ready="true"]) .universe-fallback-galaxy::before {
+  animation-play-state: running !important;
+}
+@media (max-width: 768px) {
+  .universe-art .universe-scene .universe-fallback-galaxy {
+    left: 18%;
+    top: 24%;
+    width: 37cqw;
+  }
+}
+
+/* Keep both celestial silhouettes readable against the Day atmosphere veil. */
+[data-theme="era-day"] .orbit-discover .universe-scene {
+  opacity: .95;
+  mix-blend-mode: normal;
+}

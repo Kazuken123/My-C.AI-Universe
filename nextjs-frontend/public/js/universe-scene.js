@@ -125,6 +125,9 @@
     uniform vec2 uSize;
     uniform vec2 uCenter;
     uniform float uRadius;
+    uniform vec2 uGalaxyCenter;
+    uniform float uGalaxyRadius;
+    uniform float uGalaxyForeground;
     uniform float uTime;
     varying vec2 vUv;
 
@@ -137,6 +140,27 @@
       vec2 i = floor(p), f = fract(p);
       f = f*f*(3.-2.*f);
       return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+1.),f.x),f.y);
+    }
+    vec3 spiralGalaxy(vec2 uv) {
+      vec2 p = (uv-uGalaxyCenter)*uSize/uGalaxyRadius;
+      if (dot(p,p) > 1.25) return vec3(0.);
+      vec2 q = mat2(.951,-.309,.309,.951)*p;
+      q.y /= .62;
+      float r = length(q);
+      if (r > 1.) return vec3(0.);
+      float phase = atan(q.y,q.x) - uTime*.12;
+      vec2 orbit = vec2(cos(phase),sin(phase))*r;
+      float cloud = noise(orbit*9.)*.63 + noise(orbit*21.)*.25 + noise(orbit*49.)*.12;
+      float winding = phase*2. + log(1.+r*10.)*3.7 + .35*noise(orbit*8.);
+      float arms = pow(.5+.5*cos(winding),4.);
+      float dust = pow(.5+.5*cos(winding-.83),7.)*smoothstep(.12,.34,r);
+      float fade = (1.-smoothstep(.52,1.,r))*exp(-r*1.34);
+      float gas = arms*fade*(.75+.65*cloud)*(1.-dust*.65);
+      float haze = exp(-r*4.2)*(.08+.12*cloud);
+      float bulge = exp(-r*9.)*.42 + exp(-r*r*90.)*.55;
+      float knots = pow(noise(orbit*54.),11.)*arms*fade*2.5;
+      vec3 tint = mix(vec3(.8,.48,.76),vec3(.32,.53,1.),smoothstep(.1,.82,r));
+      return tint*(gas+haze) + vec3(1.,.76,.45)*bulge + vec3(.66,.83,1.)*knots;
     }
     // A narrow dust lane supplies a recognizable feature behind the lens.
     vec3 sky(vec2 uv) {
@@ -154,7 +178,10 @@
       // Inverse screen-space lens mapping. Distant background samples stay fixed.
       float influence = 1.-smoothstep(2.1,4.8,r);
       vec2 bend = p*(1.22/max(r*r,.15))*influence;
-      vec3 color = sky(vUv-bend*uRadius/uSize);
+      vec2 lensedUv = vUv-bend*uRadius/uSize;
+      vec3 color = sky(lensedUv);
+      // The compact composition places the spiral in front of the distant lens.
+      color += spiralGalaxy(mix(lensedUv,vUv,uGalaxyForeground))*mix(1.2,1.65,uGalaxyForeground);
       vec2 q = mat2(.978,-.208,.208,.978)*p;
       float azimuth = atan(q.y,q.x);
       float shadow = 1.-smoothstep(.979,1.006,r);
@@ -300,7 +327,11 @@
     let uniforms;
     let lensProgram, quad, skyTexture, framebuffer, lensUniforms, corner;
     let attributes = [];
-    const paused = () => Boolean(reduced?.matches || document.documentElement.dataset.orbitMotion === 'paused');
+    function paused() {
+      const playback = host.dataset.scenePlayback;
+      if (playback === 'playing' || playback === 'paused') return playback === 'paused';
+      return Boolean(reduced?.matches || document.documentElement.dataset.orbitMotion === 'paused');
+    }
 
     let frame = 0;
     let visible = true;
@@ -378,7 +409,7 @@
         corner = gl.getAttribLocation(lensProgram,'aCorner');
         const locations = (target,names) => Object.fromEntries(names.map(name => [name,gl.getUniformLocation(target,name)]));
         uniforms = locations(program,['uTime','uAspect','uPixelRatio','uMaxPointSize','uPointer']);
-        lensUniforms = locations(lensProgram,['uSize','uCenter','uRadius','uTime','uSky']);
+        lensUniforms = locations(lensProgram,['uSize','uCenter','uRadius','uGalaxyCenter','uGalaxyRadius','uGalaxyForeground','uTime','uSky']);
         gl.useProgram(program);
         gl.uniform1f(uniforms.uMaxPointSize,gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1]);
         gl.bindTexture(gl.TEXTURE_2D,skyTexture);
@@ -428,6 +459,9 @@
       gl.uniform2f(lensUniforms.uSize,width,height);
       gl.uniform2f(lensUniforms.uCenter,narrow ? .53 : .72,narrow ? .69 : .51);
       gl.uniform1f(lensUniforms.uRadius,Math.min(width*(narrow ? .17 : .082),height*(narrow ? .15 : .185)));
+      gl.uniform2f(lensUniforms.uGalaxyCenter,narrow ? .18 : .50,narrow ? .76 : .65);
+      gl.uniform1f(lensUniforms.uGalaxyRadius,Math.min(width*(narrow ? .185 : .16),height*.325));
+      gl.uniform1f(lensUniforms.uGalaxyForeground,narrow ? 1 : 0);
       gl.uniform1f(lensUniforms.uTime,elapsed);
       gl.drawArrays(gl.TRIANGLES,0,3);
       gl.bindTexture(gl.TEXTURE_2D,null);
@@ -509,6 +543,7 @@
       }
       sync();
     }
+    host.addEventListener('atlas-scene-playback',motionChanged,{signal});
     reduced?.addEventListener('change',motionChanged,{signal});
     const motionObserver = new MutationObserver(motionChanged);
     motionObserver.observe(document.documentElement,{attributes:true,attributeFilter:['data-orbit-motion']});
@@ -517,6 +552,7 @@
     sizeObserver.observe(host);
     const viewObserver = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
       visible = entries[0].isIntersecting;
+      host.dataset.universeVisible = String(visible);
       sync();
     }) : null;
     viewObserver?.observe(host);
@@ -544,6 +580,7 @@
       sizeObserver.disconnect();
       viewObserver?.disconnect();
       delete host.dataset.universeQuality;
+      delete host.dataset.universeVisible;
       release();
       delete host.dataset.universeReady;
     };

@@ -106,6 +106,67 @@ function orbitRevealFallbackAllowed() {
   return orbitMotionAllowed() && !(window.CSS?.supports?.('(animation-timeline: view()) and (animation-range: entry)'));
 }
 
+function createScenePlaybackControls() {
+  const scenes = new Map();
+  let playing = orbitMotionAllowed();
+
+  function syncActivity(host, scene) {
+    host.dataset.sceneActive = String(playing && scene.inView && !document.hidden);
+  }
+
+  function syncPlayback(host, scene) {
+    const playback = playing ? 'playing' : 'paused';
+    scene.button.setAttribute('aria-pressed', String(playing));
+    syncActivity(host, scene);
+    if (host.dataset.scenePlayback === playback) return;
+    host.dataset.scenePlayback = playback;
+    host.dispatchEvent(new Event('atlas-scene-playback'));
+  }
+
+  const observer = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
+    for (const { target, isIntersecting } of entries) {
+      const scene = scenes.get(target);
+      if (!scene) continue;
+      scene.inView = isIntersecting;
+      syncActivity(target, scene);
+    }
+  }) : null;
+
+  document.addEventListener('visibilitychange', () => {
+    scenes.forEach((scene, host) => syncActivity(host, scene));
+  });
+
+  function reset() {
+    playing = orbitMotionAllowed();
+    scenes.forEach((scene, host) => syncPlayback(host, scene));
+  }
+
+  function scan() {
+    for (const [host, scene] of scenes) {
+      if (host.isConnected && scene.button.isConnected) continue;
+      observer?.unobserve(host);
+      scene.controller.abort();
+      scenes.delete(host);
+    }
+    document.querySelectorAll('[data-scene-playback-toggle]').forEach(button => {
+      const host = button.closest('.universe-hero')?.querySelector('[data-universe-scene]');
+      if (!host || scenes.has(host)) return;
+      const controller = new AbortController();
+      const scene = { button, controller, inView: !observer };
+      scenes.set(host, scene);
+      button.addEventListener('click', () => {
+        playing = !playing;
+        scenes.forEach((entry, element) => syncPlayback(element, entry));
+      }, { signal: controller.signal });
+      observer?.observe(host);
+      syncPlayback(host, scene);
+      button.hidden = false;
+    });
+  }
+
+  return { scan, reset };
+}
+
 /** Run the update exactly once, including browsers without View Transitions. */
 function orbitViewTransition(update) {
   if (!orbitMotionAllowed() || typeof document.startViewTransition !== 'function') return update();
@@ -341,6 +402,7 @@ function initOrbitMotion() {
   const root = document.documentElement;
   const scanUniverseControls = createUniverseControls();
   const scanAtmosphereControls = createAtmosphereControls();
+  const scenePlayback = createScenePlaybackControls();
   window.orbitViewTransition = orbitViewTransition;
   const updateMotionMode = () => {
     root.dataset.orbitMotion = orbitMotionAllowed() ? 'running' : 'paused';
@@ -388,6 +450,7 @@ function initOrbitMotion() {
   function scan() {
     scanUniverseControls();
     scanAtmosphereControls();
+    scenePlayback.scan();
     document.querySelectorAll(revealSelector).forEach((el, index) => {
       if (observed.has(el)) return;
       observed.add(el);
@@ -404,6 +467,7 @@ function initOrbitMotion() {
 
   window.matchMedia?.('(prefers-reduced-motion: no-preference)').addEventListener?.('change', () => {
     updateMotionMode();
+    scenePlayback.reset();
     document.querySelectorAll('.orbit-reveal').forEach(el => { el.dataset.reveal = 'visible'; });
     refreshRevealObserver();
     scan();

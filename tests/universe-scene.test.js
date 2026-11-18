@@ -34,7 +34,12 @@ function harness({ width = 600, height = 400, unavailable = false, contextThrows
     createProgram: () => ({}), createShader: () => ({}), createBuffer: () => ({}),
     getShaderParameter: () => !shaderFails, getProgramParameter: () => true,
     getAttribLocation: () => 0, getUniformLocation: (_, name) => name, getParameter: () => [1, 256],
-    uniform1f() {}, uniform2f(name, x, y) { if (name === 'uPointer') calls.pointer = [x, y]; if(name === 'uCenter') calls.center = [x, y]; },
+    uniform1f(name, value) { if (name === 'uGalaxyRadius') calls.galaxyRadius = value; },
+    uniform2f(name, x, y) {
+      if (name === 'uPointer') calls.pointer = [x, y];
+      if (name === 'uCenter') calls.center = [x, y];
+      if (name === 'uGalaxyCenter') calls.galaxyCenter = [x, y];
+    },
     drawArrays(_, first, count) { calls.draws++; calls.particles += count; calls.batches.push({ mode: _, target: calls.target, first, count, blend: calls.blends.at(-1) }); },
     deleteBuffer() { calls.deletedBuffers++; }, deleteProgram() { calls.deletedPrograms++; },
   };
@@ -96,8 +101,10 @@ test('explicit pause and system reduced motion use the poster and resume on pref
 test('offscreen scenes and hidden tabs stop scheduling animation', () => {
   const h = harness();
   h.visibility(false);
+  assert.equal(h.host.dataset.universeVisible, 'false');
   assert.equal(h.frames.size, 0);
   h.visibility(true);
+  assert.equal(h.host.dataset.universeVisible, 'true');
   assert.equal(h.frames.size, 1);
   h.document.hidden = true;
   h.document.dispatchEvent(new Event('visibilitychange'));
@@ -105,6 +112,24 @@ test('offscreen scenes and hidden tabs stop scheduling animation', () => {
   h.document.hidden = false;
   h.document.dispatchEvent(new Event('visibilitychange'));
   assert.equal(h.frames.size, 1);
+});
+
+test('local playback can override reduced motion and still stops offscreen', () => {
+  const h = harness({ paused: true, reducedMotion: true });
+  const setPlayback = value => {
+    h.host.dataset.scenePlayback = value;
+    h.host.dispatchEvent(new Event('atlas-scene-playback'));
+  };
+  setPlayback('playing');
+  assert.equal(h.host.dataset.universeReady, 'true');
+  assert.equal(h.frames.size, 1);
+  h.visibility(false);
+  assert.equal(h.frames.size, 0);
+  h.visibility(true);
+  assert.equal(h.frames.size, 1);
+  setPlayback('paused');
+  assert.equal(h.host.dataset.universeReady, undefined);
+  assert.equal(h.frames.size, 0);
 });
 
 test('compact layouts use fewer stars and cap display density', () => {
@@ -219,6 +244,15 @@ test('panoramic high-density displays stay inside the backing-pixel budget', () 
 test('the lens uses dedicated desktop and mobile art direction', () => {
   assert.deepEqual(harness({ width: 1200 }).calls.center, [.72, .51]);
   assert.deepEqual(harness({ width: 340 }).calls.center, [.53, .69]);
+});
+
+test('the main spiral has its own prominent position and size beside the lens', () => {
+  const desktop = harness({ width: 1320, height: 830 });
+  const mobile = harness({ width: 410, height: 940 });
+  assert.deepEqual(desktop.calls.galaxyCenter, [.50, .65]);
+  assert.deepEqual(mobile.calls.galaxyCenter, [.18, .76]);
+  assert.equal(desktop.calls.galaxyRadius,1320*.16);
+  assert.equal(mobile.calls.galaxyRadius,410*.185);
 });
 test('fallback art and lens styles are identical in both frontends', () => {
   for (const format of ['wide','compact']) {

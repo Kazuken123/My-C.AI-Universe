@@ -40,6 +40,12 @@ export function OrbitHero({ hidden }: { hidden: boolean }) {
           <canvas className="universe-canvas" aria-hidden="true" />
         </div>
       </div>
+      <button className="atlas-scene-playback" type="button" data-scene-playback-toggle aria-label="Animate galaxy" aria-pressed="false" title="Animate galaxy" hidden>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path className="atlas-scene-play" d="M8 5v14l11-7z" />
+          <path className="atlas-scene-pause" d="M7 5h3v14H7zm7 0h3v14h-3z" />
+        </svg>
+      </button>
       <div className="orbit-hero-copy">
         <h1 id="orbit-title" className="orbit-title">A universe. <em>Of your own.</em></h1>
         <p className="orbit-description">Meet a character and see where the conversation takes you.</p>

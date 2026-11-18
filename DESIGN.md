@@ -15,9 +15,9 @@ Discover pairs the search and portrait shelf with a guest entry point and an aut
 
 ## Runtime and states
 
-The live scene renders distant light to a texture, lenses it around the shadow and then composites nearer objects. Desktop and portrait posters come from the live shader. Reduced motion, unavailable WebGL and lost contexts show the still. The live renderer pauses offscreen and in hidden tabs and releases its resources when removed.
+The live scene renders distant light to a texture, lenses it around the shadow and then composites nearer objects. A separate rotating spiral sits beside the black hole. Desktop and portrait fallback artwork combines the captured horizon with a transparent galaxy rotating on its inclined plane. The scene follows the OS motion preference until the reader explicitly changes playback. The Animate galaxy button also works during WebGL loss and low-performance fallback. The live renderer pauses offscreen and in hidden tabs and releases its resources when removed.
 
-Use the OS motion setting on initial render and on preference changes. Keep interactive feedback brief. Keep content visible under reduced motion. Use placeholders shaped like the eventual portrait, conversation, saved row or editor. Keep a user's text during failed operations and provide a retry at the failed region.
+Use the OS motion setting on initial render and on preference changes. A manual scene override applies only to the Discover artwork. Keep interactive feedback brief. Keep content visible under reduced motion. Use placeholders shaped like the eventual portrait, conversation, saved row or editor. Keep a user's text during failed operations and provide a retry at the failed region.
 
 The shared Atlas styles, Orbit motion and both canvas scripts have mirrored Express and Next copies. Verify byte parity and run navigation and renderer tests. Check the real page with motion enabled and disabled.
 
