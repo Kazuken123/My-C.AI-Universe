@@ -1,6 +1,6 @@
 # Discover black-hole renderer review
 
-The three frames show the previous renderer, the redesign with background deflection disabled, and the shipped effect. The dark center, bright upper arc and foreground disk are identical in the last two frames. Follow the dust lane as it approaches the shadow to see which part of the image the lens moves.
+This report records the initial lensing redesign. The frames show the earlier renderer, the redesign with background deflection disabled, and the effect with deflection enabled. Follow the dust lane as it approaches the shadow. For the current rim motion and fallback, see the [Discover browser recordings](atlas/README.md).
 
 ![Black-hole renderer comparison](black-hole-lensing-comparison.webp)
 

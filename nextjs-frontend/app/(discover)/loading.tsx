@@ -9,7 +9,7 @@ export default function DiscoverLoading() {
       <p className="atlas-sr-only" role="status">Loading Discover</p>
       <div className="orbit-hero universe-hero" aria-hidden="true">
         <div className="orbit-art universe-art">
-          <div className="universe-scene">
+          <div className="universe-scene" data-universe-scene>
             <div className="universe-fallback">
               <span className="universe-fallback-nebula" />
               <span className="universe-fallback-galaxy" />

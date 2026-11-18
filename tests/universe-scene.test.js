@@ -5,7 +5,7 @@ import vm from 'node:vm';
 
 const source = readFileSync(new URL('../frontend/js/universe-scene.js', import.meta.url), 'utf8');
 
-function harness({ width = 600, height = 400, unavailable = false, contextThrows = false, shaderFails = false, framebufferFails = false, paused = false, reducedMotion = false } = {}) {
+function harness({ width = 600, height = 400, unavailable = false, contextThrows = false, shaderFails = false, framebufferFails = false, paused = false, reducedMotion = false, fallbackOnly = false } = {}) {
   const frames = new Map();
   const observers = [];
   const calls = { draws: 0, deletedBuffers: 0, deletedPrograms: 0, particles: 0, pointer: [0, 0], batches: [], blends: [], geometry: null };
@@ -34,7 +34,10 @@ function harness({ width = 600, height = 400, unavailable = false, contextThrows
     createProgram: () => ({}), createShader: () => ({}), createBuffer: () => ({}),
     getShaderParameter: () => !shaderFails, getProgramParameter: () => true,
     getAttribLocation: () => 0, getUniformLocation: (_, name) => name, getParameter: () => [1, 256],
-    uniform1f(name, value) { if (name === 'uGalaxyRadius') calls.galaxyRadius = value; },
+    uniform1f(name, value) {
+      if (name === 'uGalaxyRadius') calls.galaxyRadius = value;
+      if (name === 'uTime') calls.time = value;
+    },
     uniform2f(name, x, y) {
       if (name === 'uPointer') calls.pointer = [x, y];
       if (name === 'uCenter') calls.center = [x, y];
@@ -50,7 +53,7 @@ function harness({ width = 600, height = 400, unavailable = false, contextThrows
   canvas.getContext = () => { if (contextThrows) throw new Error('GPU unavailable'); return unavailable ? null : gl; };
   const art = new Element();
   const host = new Element();
-  host.querySelector = () => canvas;
+  host.querySelector = () => fallbackOnly ? null : canvas;
   host.closest = () => art;
   const document = new Element();
   document.readyState = 'complete';
@@ -67,69 +70,53 @@ function harness({ width = 600, height = 400, unavailable = false, contextThrows
   });
   vm.runInContext(source, context);
   const step = now => { const pending = [...frames.values()]; frames.clear(); pending.forEach(callback => callback(now)); };
-  const motion = value => {
-    document.documentElement.dataset.orbitMotion = value;
-    observers.filter(o => o.target === document.documentElement && !o.disconnected).forEach(o => o.callback([]));
-  };
   const visibility = value => {
     observers.filter(o => o.target === host && !o.options && !o.disconnected).at(-1).callback([{ isIntersecting: value }]);
   };
+  visibility(true);
   const detach = () => {
     host.isConnected = false;
     observers.find(o => o.target === document.body).callback([{ addedNodes: [], removedNodes: [host] }]);
     step(200);
   };
-  return { preference, canvas, host, art, document, context, calls, observers, frames, step, motion, visibility, detach };
+  return { preference, canvas, host, art, document, context, calls, observers, frames, step, visibility, detach };
 }
 
-test('explicit pause and system reduced motion use the poster and resume on preference change', () => {
-  for (const options of [{ paused: true }, { reducedMotion: true }]) {
-    const h = harness(options);
-    assert.equal(h.frames.size, 0);
-    assert.equal(h.calls.draws, 0);
-    assert.equal(h.host.dataset.universeReady, undefined);
-    if (options.paused) h.motion('running');
-    else { h.preference.matches = false; h.preference.dispatchEvent(new Event('change')); }
-    assert.equal(h.host.dataset.universeReady, 'true');
-    assert.equal(h.frames.size, 1);
-    h.motion('paused');
-    assert.equal(h.frames.size, 0);
-    assert.equal(h.host.dataset.universeReady, undefined);
-  }
+test('the visible scene animates automatically with reduced motion enabled', () => {
+  const h = harness({ paused: true, reducedMotion: true });
+  h.visibility(true);
+  assert.equal(h.host.dataset.universeReady, 'true');
+  assert.equal(h.host.dataset.sceneActive, 'true');
+  assert.equal(h.frames.size, 1);
+  h.step(100);
+  const draws = h.calls.draws;
+  h.step(400);
+  assert.ok(h.calls.draws > draws);
+  assert.equal(h.calls.time, 0.3);
+
+  h.visibility(false);
+  h.visibility(true);
+  h.step(4000);
+  assert.equal(h.calls.time, 0.3);
 });
 
 test('offscreen scenes and hidden tabs stop scheduling animation', () => {
   const h = harness();
   h.visibility(false);
   assert.equal(h.host.dataset.universeVisible, 'false');
+  assert.equal(h.host.dataset.sceneActive, 'false');
   assert.equal(h.frames.size, 0);
   h.visibility(true);
   assert.equal(h.host.dataset.universeVisible, 'true');
+  assert.equal(h.host.dataset.sceneActive, 'true');
   assert.equal(h.frames.size, 1);
   h.document.hidden = true;
   h.document.dispatchEvent(new Event('visibilitychange'));
+  assert.equal(h.host.dataset.sceneActive, 'false');
   assert.equal(h.frames.size, 0);
   h.document.hidden = false;
   h.document.dispatchEvent(new Event('visibilitychange'));
   assert.equal(h.frames.size, 1);
-});
-
-test('local playback can override reduced motion and still stops offscreen', () => {
-  const h = harness({ paused: true, reducedMotion: true });
-  const setPlayback = value => {
-    h.host.dataset.scenePlayback = value;
-    h.host.dispatchEvent(new Event('atlas-scene-playback'));
-  };
-  setPlayback('playing');
-  assert.equal(h.host.dataset.universeReady, 'true');
-  assert.equal(h.frames.size, 1);
-  h.visibility(false);
-  assert.equal(h.frames.size, 0);
-  h.visibility(true);
-  assert.equal(h.frames.size, 1);
-  setPlayback('paused');
-  assert.equal(h.host.dataset.universeReady, undefined);
-  assert.equal(h.frames.size, 0);
 });
 
 test('compact layouts use fewer stars and cap display density', () => {
@@ -160,6 +147,7 @@ test('route removal releases GPU resources, observers and animation', () => {
   assert.equal(h.calls.deletedPrograms, 2);
   assert.equal(h.frames.size, 0);
   assert.equal(h.host.dataset.universeReady, undefined);
+  assert.equal(h.host.dataset.sceneActive, undefined);
   assert.ok(h.observers.filter(o => o.target !== h.document.body).every(o => o.disconnected));
   h.document.dispatchEvent(new Event('visibilitychange'));
   assert.equal(h.frames.size, 0);
@@ -177,13 +165,27 @@ test('context loss displays the fallback and restoration resumes the scene', () 
   assert.equal(h.frames.size, 1);
 });
 
-test('unavailable WebGL, context errors and shader errors retain the static fallback', () => {
+test('unavailable WebGL, context errors and shader errors keep the fallback active while visible', () => {
   for (const options of [{ unavailable: true }, { contextThrows: true }, { shaderFails: true }, { framebufferFails: true }]) {
     const h = harness(options);
     assert.equal(h.host.dataset.universeReady, undefined);
+    assert.equal(h.host.dataset.sceneActive, 'true');
     assert.equal(h.frames.size, 0);
     assert.equal(h.calls.draws, 0);
   }
+});
+
+test('the loading scene activates visible fallback layers without WebGL', () => {
+  const source = readFileSync(new URL('../nextjs-frontend/app/(discover)/loading.tsx', import.meta.url), 'utf8');
+  assert.match(source, /className="universe-scene" data-universe-scene/);
+  const h = harness({ fallbackOnly: true, reducedMotion: true });
+  assert.equal(h.host.dataset.sceneActive, 'true');
+  assert.equal(h.calls.draws, 0);
+  assert.equal(h.frames.size, 0);
+  h.visibility(false);
+  assert.equal(h.host.dataset.sceneActive, 'false');
+  h.detach();
+  assert.equal(h.host.dataset.sceneActive, undefined);
 });
 
 test('duplicate script execution does not create a second renderer', () => {
@@ -301,8 +303,6 @@ test('sustained slow drawing reduces resolution before releasing the renderer to
   const draws = h.calls.draws;
   h.visibility(false);
   h.visibility(true);
-  h.motion('paused');
-  h.motion('running');
   assert.equal(h.frames.size, 0);
   assert.equal(h.calls.draws, draws);
 });

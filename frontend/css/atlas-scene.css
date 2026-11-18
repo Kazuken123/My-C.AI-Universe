@@ -19,8 +19,73 @@
   }
 }
 
+.universe-art .universe-fallback {
+  container-type: size;
+  --poster-width: max(100cqw, 211.765cqh);
+  --poster-height: max(47.222cqw, 100cqh);
+}
+
+/* Follow the lensed rim, with a brighter crown and subtler light below the disk. */
+.universe-art .universe-scene .universe-fallback-core {
+  display: block;
+  inset: calc(49% - var(--poster-height) * .017) auto auto
+    calc(72% - var(--poster-width) * .004);
+  width: calc(var(--poster-width) * .193);
+  height: auto;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: none;
+  mix-blend-mode: screen;
+  mask-image: linear-gradient(#000 0 45%, #0006 70%, #0009 100%);
+}
+.universe-art .universe-fallback-core::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(from 25deg,
+    transparent, #fbaa6288 25deg, #ffe7bbc0 55deg, transparent 63deg,
+    #df874e50 146deg, #ffe0a7a0 172deg, transparent 182deg,
+    #ef984668 254deg, #ffcc89bc 292deg, transparent 304deg);
+  mask-image: radial-gradient(circle closest-side,
+    transparent 83%, #000 87% 90%, transparent 94% 95%, #0009 97%, transparent 100%);
+  animation: atlas-accretion-orbit 5.5s linear infinite paused !important;
+}
+
+/* Match the disk to the cover-scaled poster before projecting its circular tracks. */
+.universe-art .universe-scene .universe-fallback-horizon {
+  display: block;
+  inset: calc(49% + var(--poster-height) * .022) auto auto
+    calc(72% - var(--poster-width) * .004);
+  width: calc(var(--poster-width) * .55);
+  height: auto;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) rotate(-12deg) scaleY(.15);
+  background: none;
+  filter: none;
+  mix-blend-mode: screen;
+  /* On the far side, the event horizon hides the inner tracks. */
+  mask-image: linear-gradient(to top, #000 0 49%, transparent 58%),
+    linear-gradient(to right, #000 0 30%, transparent 35% 65%, #000 70%);
+}
+.universe-art .universe-fallback-horizon::before {
+  z-index: auto;
+  inset: 0;
+  background: conic-gradient(from 27deg,
+    transparent, #d0712d20 24deg, #ffd794b0 51deg, transparent 61deg,
+    #ffc87930 130deg, #ffd6a0dc 161deg, transparent 169deg,
+    #b65b2310 213deg, #ffc37095 237deg, transparent 250deg,
+    #e88c4435 313deg, #fff0bebb 344deg, transparent 352deg);
+  mask-image: radial-gradient(circle closest-side,
+    transparent 30%, #000 39% 42%, transparent 44% 47%,
+    #000 49% 51%, transparent 53% 57%, #000 59% 61%,
+    transparent 63% 67%, #000b 69% 71%, transparent 73% 78%,
+    #0008 80% 82%, transparent 84% 89%, #0005 91% 92%, transparent 95%);
+  animation: atlas-accretion-orbit 7s linear infinite paused !important;
+}
+.universe-art .universe-fallback-horizon::after { content: none; }
+@keyframes atlas-accretion-orbit { to { transform: rotate(1turn); } }
+
 /* Rotate the face-on star field inside its inclined plane on the low-cost scene. */
-.universe-art .universe-fallback { container-type: size; }
 .universe-art .universe-scene .universe-fallback-galaxy {
   display: block;
   inset: 35% auto auto 50%;
@@ -42,10 +107,26 @@
   animation: atlas-spiral-orbit 52s linear infinite paused !important;
 }
 @keyframes atlas-spiral-orbit { to { transform: rotate(-1turn); } }
-.universe-scene[data-scene-active="true"]:not([data-universe-ready="true"]) .universe-fallback-galaxy::before {
+.universe-scene[data-scene-active="true"]:not([data-universe-ready="true"]) .universe-fallback-galaxy::before,
+.universe-scene[data-scene-active="true"]:not([data-universe-ready="true"]) .universe-fallback-core::before,
+.universe-scene[data-scene-active="true"]:not([data-universe-ready="true"]) .universe-fallback-horizon::before {
   animation-play-state: running !important;
 }
 @media (max-width: 768px) {
+  .universe-art .universe-fallback {
+    --poster-width: max(100cqw, 66.154cqh);
+    --poster-height: max(151.163cqw, 100cqh);
+  }
+  .universe-art .universe-scene .universe-fallback-core {
+    inset: calc(31% - var(--poster-height) * .018) auto auto
+      calc(53% - var(--poster-width) * .006);
+    width: calc(var(--poster-width) * .397);
+  }
+  .universe-art .universe-scene .universe-fallback-horizon {
+    inset: calc(31% + var(--poster-height) * .015) auto auto
+      calc(53% - var(--poster-width) * .002);
+    width: calc(var(--poster-width) * 1.05);
+  }
   .universe-art .universe-scene .universe-fallback-galaxy {
     left: 18%;
     top: 24%;

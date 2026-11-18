@@ -11,14 +11,16 @@ These captures use fictional characters, personas and dialogue. Discover and Stu
 
 ## Galaxy playback and page loading
 
-The [mobile recording](galaxy-playback.webp) shows the galaxy orbiting with WebGL disabled after pressing Play under an OS reduced-motion preference. Compare the live WebGL captures at [zero seconds](discover-live-0s.webp) and [three seconds](discover-live-3s.webp) to inspect the moving arms and accretion disk. The [saved chats loading capture](saved-chats-loading.webp) shows the first paint before the fixture returned its conversations.
+The [black-hole animation](rim-motion.webp) shows three seconds of the WebGL shader in Edge. The camera stays fixed so you can follow bright gas around the upper and lower arcs and across the disk. The capture advances the renderer clock in 50 ms steps. The [first frame](discover-live-0s.webp) and [last frame](discover-live-3s.webp) are available separately.
+
+The [mobile recording](galaxy-playback.webp) shows the actual Discover hero at 390 px wide with WebGL disabled and reduced motion enabled. The rim, disk and spiral galaxy start moving on page load. The [saved chats loading capture](saved-chats-loading.webp) shows the first paint before the fixture returned its conversations.
 
 ## Reproduce the interactions
 
 - Start on Discover as a guest. Explore the cast, search, clear filters and use Scene Spark to open a draft. With two saved conversations for one character, compare the home resume target to the individual entries in Saved chats.
 - Open a saved conversation, switch a response take and load earlier messages. Open the memory and history drawers with the keyboard and press Escape to return focus. Simulate a failed first request, retry and confirm the same conversation opens.
 - In Studio, type a character name and opening line. On mobile, jump to the preview and back. Save, open the chat and reopen the saved character. Create a persona, set it as the default and check the profile screen.
-- Enable reduced motion before visiting Discover, then change it while the page is open. Inspect the composed poster, the live scene, context loss and the transition to a poster on slow devices. See the [renderer measurements](../black-hole-renderer-review.md).
+- Visit Discover with reduced motion enabled. Observe the disk and arcs immediately, scroll the hero out of view, then return. Repeat with WebGL disabled and compare the motion. The [initial lensing review](../black-hole-renderer-review.md) records the earlier renderer's adaptive-resolution measurements.
 
 ## Recorded checks
 

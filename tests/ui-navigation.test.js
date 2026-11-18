@@ -352,80 +352,22 @@ test('Scene Spark preserves canonical Express query routes and encoded Next path
   }
 });
 
-function atmosphereHarness({ saved = 'era-day', storageBlocked = false, reduced = false, native = false, transitions = true } = {}) {
-  const buttons = [];
-  const mutations = [];
-  const writes = [];
-  let snapshots = 0;
-  const root = { dataset: { theme: 'higgsfield' } };
-  const makeButton = () => {
-    const button = {
-      handlers: [], attributes: {}, label: {},
-      setAttribute(key, value) { this.attributes[key] = value; },
-      querySelector() { return this.label; },
-      addEventListener(type, callback) { this.handlers.push(callback); },
-      click() { this.handlers.forEach(callback => callback()); },
-    };
-    buttons.push(button);
-    return button;
-  };
-  const document = { documentElement: root, querySelectorAll: () => buttons };
-  if (transitions) document.startViewTransition = callback => {
-    snapshots++;
-    callback();
-    return { ready: Promise.resolve(), updateCallbackDone: Promise.resolve() };
-  };
+function revealHarness({ reduced, native }) {
   const context = vm.createContext({
-    document,
+    document: { readyState: 'loading', addEventListener() {} },
     window: { matchMedia: () => ({ matches: !reduced }), CSS: { supports: query => {
       assert.equal(query, '(animation-timeline: view()) and (animation-range: entry)');
       return native;
     } } },
-    localStorage: {
-      getItem(key) { assert.equal(key, 'cai_skill_theme'); if (storageBlocked) throw Error('blocked'); return saved; },
-      setItem(key, value) { if (storageBlocked) throw Error('blocked'); writes.push([key, value]); },
-    },
-    MutationObserver: class { constructor(callback) { mutations.push(callback); } observe() {} },
   });
   vm.runInContext(controlsSource, context);
-  const scan = vm.runInContext('createAtmosphereControls()', context);
-  return { root, makeButton, scan, writes, context, mutations, snapshots: () => snapshots };
+  return context;
 }
-
-test('atmosphere restores preference, binds once and synchronizes newly mounted controls', () => {
-  const h = atmosphereHarness();
-  const first = h.makeButton();
-  h.scan(); h.scan();
-  assert.equal(first.handlers.length, 1);
-  assert.equal(first.attributes['aria-pressed'], 'true');
-  first.click();
-  assert.equal(h.root.dataset.theme, 'higgsfield');
-  assert.equal(first.attributes['aria-pressed'], 'false');
-  assert.deepEqual(h.writes, [['cai_skill_theme', 'higgsfield']]);
-  assert.equal(h.snapshots(), 1);
-  const second = h.makeButton(); h.scan();
-  assert.equal(second.attributes['aria-pressed'], 'false');
-  h.root.dataset.theme = 'era-day';
-  h.mutations[0]();
-  assert.equal(first.attributes['aria-pressed'], 'true');
-  assert.equal(second.attributes['aria-pressed'], 'true');
-  assert.match(second.label.textContent, /By Day/);
-});
-
-test('atmosphere works with blocked storage, reduced motion and unavailable View Transitions', () => {
-  for (const options of [{ storageBlocked: true }, { reduced: true }, { transitions: false }]) {
-    const h = atmosphereHarness({ saved: null, ...options });
-    const button = h.makeButton(); h.scan(); button.click();
-    assert.equal(h.root.dataset.theme, 'era-day');
-    assert.equal(button.attributes['aria-pressed'], 'true');
-    if (options.reduced || options.transitions === false) assert.equal(h.snapshots(), 0);
-  }
-});
 
 test('reveal fallback requires motion preference and unavailable native scroll timelines', () => {
   for (const native of [false, true]) for (const reduced of [false, true]) {
-    const h = atmosphereHarness({ native, reduced });
-    assert.equal(vm.runInContext('orbitRevealFallbackAllowed()', h.context), !native && !reduced);
+    const context = revealHarness({ native, reduced });
+    assert.equal(vm.runInContext('orbitRevealFallbackAllowed()', context), !native && !reduced);
   }
   const source = fs.readFileSync(new URL('../frontend/js/orbit-motion.js', import.meta.url), 'utf8');
   assert.match(source, /orbitRevealFallbackAllowed\(\) && 'IntersectionObserver' in window/);

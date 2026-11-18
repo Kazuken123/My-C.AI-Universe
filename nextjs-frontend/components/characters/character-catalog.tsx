@@ -90,7 +90,6 @@ export function CharacterCatalog() {
     <div className="content-container orbit-discover">
       <header className="discover-topbar universe-searchbar">
         <span className="topbar-heading">Discover</span>
-        <button className="atmosphere-toggle" data-atmosphere-toggle type="button" aria-label="Day atmosphere" aria-pressed="false"><span data-atmosphere-label>By Night · Cosmos</span></button>
       </header>
       <OrbitHero hidden={hasFilters} />
       <section className="section-block orbit-roster" id="character-roster" aria-labelledby="roster-heading" tabIndex={-1}>

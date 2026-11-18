@@ -31,29 +31,6 @@
   z-index: 2;
 }
 
-.atlas-scene-playback:not([hidden]) {
-  position: absolute;
-  inset-block-start: 12px;
-  inset-inline-end: 0;
-  z-index: 3;
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border: 1px solid #ffffff61;
-  border-radius: 50%;
-  background: #090c1dcc;
-  color: #f5f4ff;
-  cursor: pointer;
-}
-
-.atlas-scene-playback:hover { background: #1d2342; }
-.atlas-scene-playback:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
-.atlas-scene-playback svg { width: 19px; height: 19px; }
-.atlas-scene-playback[aria-pressed="true"] .atlas-scene-play,
-.atlas-scene-playback[aria-pressed="false"] .atlas-scene-pause { display: none; }
-
 .orbit-discover .universe-hero .orbit-title {
   font-size: clamp(2.65rem, 5.2vw, 5.7rem);
   margin-block-end: 14px;

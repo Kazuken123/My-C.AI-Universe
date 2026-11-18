@@ -162,6 +162,16 @@
       vec3 tint = mix(vec3(.8,.48,.76),vec3(.32,.53,1.),smoothstep(.1,.82,r));
       return tint*(gas+haze) + vec3(1.,.76,.45)*bulge + vec3(.66,.83,1.)*knots;
     }
+    // Follow the gas around each projected image. Radial shear stretches a knot
+    // into a filament across adjacent bands.
+    float orbitLight(float angle, float radius, float speed) {
+      float orbit = angle - uTime * speed + radius * 1.65;
+      float knots = pow(.5 + .5*cos(5.*orbit + .78*sin(3.*orbit + radius)), 5.);
+      float wisps = pow(.5 + .5*cos(11.*orbit - radius*3.4), 3.);
+      float wake = .5 + .5*cos(3.*orbit + radius*.9);
+      return .27 + .92*knots + .31*wisps + .26*wake;
+    }
+
     // A narrow dust lane supplies a recognizable feature behind the lens.
     vec3 sky(vec2 uv) {
       vec2 p = (uv-uCenter)*uSize/uRadius;
@@ -183,36 +193,50 @@
       // The compact composition places the spiral in front of the distant lens.
       color += spiralGalaxy(mix(lensedUv,vUv,uGalaxyForeground))*mix(1.2,1.65,uGalaxyForeground);
       vec2 q = mat2(.978,-.208,.208,.978)*p;
-      float azimuth = atan(q.y,q.x);
       float shadow = 1.-smoothstep(.979,1.006,r);
       color = mix(color,vec3(.006,.008,.012),shadow);
-      // Trace the same flowing bands along the direct disk and its two far-side images.
+      // Map the far side of the disk onto the upper and lower lensed images.
       float upper = step(0.,q.y);
-      float arcR = length(vec2(q.x,q.y/mix(.80,1.06,upper)));
+      vec2 arcPoint = vec2(q.x,q.y/mix(.91,1.05,upper));
+      float arcR = length(arcPoint);
       float arcDepth = (arcR-1.)/.29;
-      float arc = smoothstep(-.06,.1,arcDepth)*(1.-smoothstep(.12,1.25,arcDepth));
-      arc *= mix(.22,1.,upper) * (.55+.45*smoothstep(.0,.44,abs(q.y)));
-      float diskR = length(vec2(q.x,(q.y+.09)/.13));
-      float disk = (1.-smoothstep(1.15,3.95,diskR))*smoothstep(.4,1.05,diskR);
+      float arc = smoothstep(-.035,.09,arcDepth)*(1.-smoothstep(.28,1.18,arcDepth));
+      arc *= mix(.57,1.,upper) * (.28+.72*smoothstep(.05,.66,abs(q.y)));
+      float arcLight = 0.;
+      if (arc > 0.) {
+        float arcAngle = atan(arcPoint.y,arcPoint.x);
+        float stream = orbitLight(arcAngle + mix(.62,0.,upper),arcDepth,.59);
+        float ribbons = .5 + .5*cos(arcDepth*27. - 2.*sin(arcAngle*3. - uTime*.8));
+        arcLight = arc*stream*(.28+.72*ribbons);
+      }
+
+      vec2 diskPoint = vec2(q.x,(q.y+.09)/.13);
+      float diskR = length(diskPoint);
+      float disk = (1.-smoothstep(1.2,3.85,diskR))*smoothstep(.72,1.19,diskR);
       // Near-side gas crosses the silhouette; the far half disappears behind it.
       disk *= 1.-shadow*smoothstep(-.12,.025,q.y);
-      float phase = uTime*.17;
-      float diskAngle = atan((q.y+.09)/.13,q.x);
-      vec2 orbit = vec2(cos(diskAngle-phase),sin(diskAngle-phase));
-      float diskGrain = noise(orbit*7.+diskR*8.);
-      float softness = smoothstep(40.,120.,uRadius);
-      float ribbons = sin(diskR*31.+diskGrain*4.);
-      float detail = sin(diskR*62.+diskGrain*7.);
-      float bands = .65 + .22*ribbons + .09*detail*softness + .11*(diskGrain-.5);
-      float arcGrain = noise(vec2(cos(azimuth-phase),sin(azimuth-phase))*8.+arcR*22.);
-      float contours = .67+.19*sin(arcDepth*20.+3.6*arcGrain)+.09*sin(arcDepth*48.)*softness;
-      float beam = mix(1.35,.54,smoothstep(-1.4,1.4,q.x));
-      float flux = beam*(disk*bands*(.8+.4*diskGrain)+arc*contours);
-      float photon = exp(-abs(r-.994)*112.)*(.46+.22*sin(azimuth));
-      float bloom = exp(-abs(arcR-1.08)*7.)*(1.-shadow)*mix(.025,.12,upper);
-      bloom += exp(-abs(q.y+.09)*6.2)*exp(-abs(q.x)*.94)*.20*(1.-shadow);
-      color += vec3(.92,.43,.15)*(flux+bloom);
-      color += vec3(.63,.61,.55)*(smoothstep(.22,.95,flux)*.85+photon);
+      float diskLight = 0.;
+      if (disk > 0.) {
+        float diskAngle = atan(diskPoint.y,diskPoint.x);
+        float stream = orbitLight(diskAngle,diskR,.87/(.72+.24*diskR));
+        float spiral = .5 + .5*cos(diskR*24. - 2.6*sin(3.*diskAngle - uTime*1.85));
+        diskLight = disk*stream*(.30+.70*spiral);
+      }
+
+      float beam = mix(1.22,.65,smoothstep(-1.6,1.6,q.x));
+      float flux = beam*(diskLight*1.12+arcLight*1.37);
+      float photonWidth = max(.009,.72/uRadius);
+      float photon = 0.;
+      if (abs(r-1.008) < 3.*photonWidth) {
+        float photonDistance = (r-1.008)/photonWidth;
+        photon = exp(-photonDistance*photonDistance);
+        photon *= .26 + .36*orbitLight(atan(q.y,q.x),0.,.59);
+      }
+      float bloom = exp(-abs(arcR-1.09)*7.)*(1.-shadow)*mix(.040,.10,upper);
+      bloom += exp(-abs(q.y+.09)*7.)*exp(-abs(q.x)*.84)*.20*(1.-shadow);
+      vec3 emission = vec3(1.,.47,.12)*(flux+bloom) + vec3(1.,.90,.71)*photon;
+      emission += vec3(.83,.76,.65)*smoothstep(.36,1.25,flux);
+      color += (1.-min(color,vec3(1.)))*(1.-exp(-emission*1.65));
       gl_FragColor = vec4(min(color,vec3(1.)),1.);
     }
   `;
@@ -306,8 +330,6 @@
 
   function mountUniverse(host) {
     const canvas = host.querySelector('canvas');
-    if (!canvas) return () => {};
-    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
     let gl;
     function acquireContext() {
       try {
@@ -327,14 +349,8 @@
     let uniforms;
     let lensProgram, quad, skyTexture, framebuffer, lensUniforms, corner;
     let attributes = [];
-    function paused() {
-      const playback = host.dataset.scenePlayback;
-      if (playback === 'playing' || playback === 'paused') return playback === 'paused';
-      return Boolean(reduced?.matches || document.documentElement.dataset.orbitMotion === 'paused');
-    }
-
     let frame = 0;
-    let visible = true;
+    let visible = !('IntersectionObserver' in window);
     let lost = false;
     let disposed = false;
     let elapsed = 0;
@@ -352,7 +368,8 @@
     function resetSampleWindow() {
       sampleStart = samples = slowSamples = lastDraw = 0;
     }
-    const canAnimate = () => !disposed && !lost && visible && !document.hidden && !paused() && !posterOnly;
+    const sceneIsActive = () => visible && !document.hidden;
+    const canAnimate = () => !disposed && !lost && sceneIsActive() && !posterOnly;
 
     function release() {
       if (buffer) gl.deleteBuffer(buffer);
@@ -433,7 +450,7 @@
       gl.enable(gl.BLEND);
     }
     function draw() {
-      if (!program || lost || disposed || paused()) return;
+      if (!program || lost || disposed) return;
       gl.viewport(0,0,canvas.width,canvas.height);
       gl.bindFramebuffer(gl.FRAMEBUFFER,framebuffer);
       gl.clearColor(0,0,0,1);
@@ -496,7 +513,7 @@
     function tick(now) {
       frame = 0;
       if (!canAnimate()) { previous = 0; return; }
-      if (previous) elapsed += Math.min((now - previous) / 1000, 0.05);
+      if (previous) elapsed += (now - previous) / 1000;
       previous = now;
       // 30fps is plenty for this slow scene and keeps laptop GPU use modest.
       if (now - lastDraw >= 1000 / 30) {
@@ -510,6 +527,7 @@
       if (canAnimate() && program) frame = requestAnimationFrame(tick);
     }
     function sync() {
+      host.dataset.sceneActive = String(sceneIsActive());
       if (canAnimate() && program && !frame) frame = requestAnimationFrame(tick);
       else if (!canAnimate() || !program) { cancelAnimationFrame(frame); frame = 0; previous = 0; resetSampleWindow(); }
     }
@@ -521,7 +539,7 @@
       pixelRatio = Math.min(window.devicePixelRatio || 1, compact ? 1.25 : 1.5, Math.sqrt(1600000 / (width * height))) * resolutionScales[qualityLevel];
       canvas.width = Math.max(1, Math.round(width * pixelRatio));
       canvas.height = Math.max(1, Math.round(height * pixelRatio));
-      if (!program || lost || paused() || posterOnly) return;
+      if (!program || lost || posterOnly) return;
       host.dataset.universeQuality = String(resolutionScales[qualityLevel]);
       gl.bindTexture(gl.TEXTURE_2D,skyTexture);
       gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,canvas.width,canvas.height,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
@@ -534,22 +552,16 @@
       draw();
     }
 
-    function motionChanged() {
-      if (paused()) {
-        delete host.dataset.universeReady;
-      } else if (!lost && !posterOnly) {
+    function start() {
+      if (!lost && !posterOnly) {
         gl ||= acquireContext();
         if (gl && (program || setup())) resize();
       }
       sync();
     }
-    host.addEventListener('atlas-scene-playback',motionChanged,{signal});
-    reduced?.addEventListener('change',motionChanged,{signal});
-    const motionObserver = new MutationObserver(motionChanged);
-    motionObserver.observe(document.documentElement,{attributes:true,attributeFilter:['data-orbit-motion']});
 
-    const sizeObserver = new ResizeObserver(resize);
-    sizeObserver.observe(host);
+    const sizeObserver = canvas ? new ResizeObserver(resize) : null;
+    sizeObserver?.observe(host);
     const viewObserver = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
       visible = entries[0].isIntersecting;
       host.dataset.universeVisible = String(visible);
@@ -564,21 +576,22 @@
       target[1] = ((event.clientY - bounds.top) / bounds.height - 0.5) * 0.12;
     }, { passive: true, signal });
     art.addEventListener('pointerleave', () => { target[0] = 0; target[1] = 0; }, { signal });
-    canvas.addEventListener('webglcontextlost', event => {
+    canvas?.addEventListener('webglcontextlost', event => {
       event.preventDefault(); lost = true; delete host.dataset.universeReady; sync();
     }, { signal });
-    canvas.addEventListener('webglcontextrestored', () => {
+    canvas?.addEventListener('webglcontextrestored', () => {
       lost = false;
-      release(); motionChanged();
+      release(); start();
     }, { signal });
-    motionChanged();
+    if (canvas) start();
+    else sync();
     return () => {
       disposed = true;
       cancelAnimationFrame(frame);
       controller.abort();
-      motionObserver.disconnect();
-      sizeObserver.disconnect();
+      sizeObserver?.disconnect();
       viewObserver?.disconnect();
+      delete host.dataset.sceneActive;
       delete host.dataset.universeQuality;
       delete host.dataset.universeVisible;
       release();
