@@ -7,7 +7,7 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { useNavigationShortcuts } from '@/hooks/use-navigation-shortcuts';
 import { cn } from '@/lib/utils';
 
-const THEMES = ['higgsfield', 'era-day', 'vanguard', 'editorial', 'telemetry'];
+const THEMES = ['higgsfield', 'vanguard', 'editorial', 'telemetry'];
 
 export function ShellLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

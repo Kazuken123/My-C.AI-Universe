@@ -3264,12 +3264,6 @@ body.mobile-drawer-locked {
   display: none !important;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .top-loading-bar-progress {
-    transition: none !important;
-  }
-}
-
 /* Shared atmosphere and zoom-safe type. */
 :root:not([data-theme]), [data-theme="higgsfield"] {
   color-scheme: dark;

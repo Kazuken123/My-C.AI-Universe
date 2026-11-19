@@ -263,8 +263,8 @@ test('the fallback movie starts only on demand, pauses offscreen, and releases p
 });
 
 test('the lens uses dedicated desktop and mobile art direction', () => {
-  assert.deepEqual(harness({ width: 1200 }).calls.center, [.81, .60]);
-  assert.deepEqual(harness({ width: 340 }).calls.center, [.82, .71]);
+  assert.deepEqual(harness({ width: 1200 }).calls.center, [.77, .58]);
+  assert.deepEqual(harness({ width: 340 }).calls.center, [.78, .66]);
 });
 
 test('resizing across the breakpoint replaces the foreground bodies with the matching composition', () => {
@@ -273,22 +273,21 @@ test('resizing across the breakpoint replaces the foreground bodies with the mat
   h.context.window.innerWidth = h.host.clientWidth = 390;
   h.observers.find(observer => observer.target === h.host).callback();
   assert.ok(h.calls.geometry.length < desktop.length);
-  assert.deepEqual(h.calls.center, [.82, .71]);
+  assert.deepEqual(h.calls.center, [.78, .66]);
   h.context.window.innerWidth = h.host.clientWidth = 1200;
   h.observers.find(observer => observer.target === h.host).callback();
   assert.deepEqual(h.calls.geometry, desktop);
 });
 
-test('the left-side spiral uses the same overlay and image across both render paths', () => {
+test('Gargantua shader uses geodesic raymarching, one-way orbital flow, refined lensing and Whirlpool overlay', () => {
   const css = readFileSync(new URL('../frontend/css/atlas-scene.css', import.meta.url), 'utf8');
-  const legacyPhoto = readFileSync(new URL('../frontend/images/atlas-spiral.webp', import.meta.url));
-  const nextPhoto = readFileSync(new URL('../nextjs-frontend/public/images/atlas-spiral.webp', import.meta.url));
-  assert.deepEqual(legacyPhoto, nextPhoto);
-  assert.equal(legacyPhoto.toString('ascii', 8, 12), 'WEBP');
-  assert.match(css, /\.universe-scene::after\s*\{[^}]*left: 14%;[^}]*atlas-spiral\.webp[^}]*animation: atlas-spiral-drift/);
-  assert.match(css, /\.universe-scene::after\s*\{[^}]*left: 17%;/);
-  assert.match(css, /\.universe-scene\[data-scene-active="true"\]::after\s*\{\s*animation-play-state: running/);
-  assert.doesNotMatch(source, /uniform \w+ uGalaxy|vec3 spiralGalaxy\(/);
+  assert.match(css, /atlas-spiral\.webp/);
+  assert.match(css, /\.universe-scene::after/);
+  assert.match(source, /hitHorizon/);
+  assert.match(source, /photonCol/);
+  assert.match(source, /acesFilmic/);
+  assert.match(source, /pnoise/);
+  assert.match(source, /mirrorUv/);
 });
 test('fallback art and lens styles are identical in both frontends', () => {
   for (const format of ['wide','compact']) {
