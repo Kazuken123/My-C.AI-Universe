@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-test('Discover removes galaxy playback toggle and restores atmosphere toggle in both frontends', () => {
+test('Discover removes galaxy playback toggle and day/night atmosphere toggle in both frontends', () => {
   for (const file of [
     '../frontend/index.html',
     '../nextjs-frontend/components/characters/character-catalog.tsx',
@@ -10,12 +10,6 @@ test('Discover removes galaxy playback toggle and restores atmosphere toggle in 
   ]) {
     const source = readFileSync(new URL(file, import.meta.url), 'utf8');
     assert.doesNotMatch(source, /data-scene-playback-toggle/);
-  }
-  for (const file of [
-    '../frontend/index.html',
-    '../nextjs-frontend/components/characters/character-catalog.tsx',
-  ]) {
-    const source = readFileSync(new URL(file, import.meta.url), 'utf8');
-    assert.match(source, /data-atmosphere-toggle/);
+    assert.doesNotMatch(source, /data-atmosphere-toggle/);
   }
 });

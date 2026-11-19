@@ -1,16 +1,20 @@
-/* Gargantua deep-field CSS fallback while WebGL initializes or when WebGL is unavailable. */
+/* The poster is a fixed-time frame of the live shader, art-directed per viewport. */
 .universe-art .universe-scene .universe-fallback {
-  background:
-    radial-gradient(circle at 77% 42%, #050d14 0 13%, #c8e6f844 13.6%, transparent 15.5%),
-    radial-gradient(circle at 77% 42%, #ffd79a55 13%, #e66b2833 24%, transparent 45%),
-    #030a10;
+  background: #05080c url("/images/atlas-horizon-wide.webp") 77% 42% / cover no-repeat;
 }
 .universe-scene .universe-fallback > :not(video),
 .universe-scene .universe-fallback::before,
 .universe-scene .universe-fallback::after {
   display: none;
 }
+@media (max-width: 768px) {
+  .universe-art .universe-scene .universe-fallback {
+    background-position: 78% 34%;
+    background-image: url("/images/atlas-horizon-compact.webp");
+  }
+}
 
+/* Play a capture of the same shader when the live canvas is unavailable. */
 .universe-scene .universe-fallback video {
   display: block;
   width: 100%;
@@ -21,8 +25,39 @@
 }
 .universe-fallback video[data-ready] { opacity: 1; }
 
-/* Keep celestial contrast legible against the Day atmosphere veil. */
-[data-theme="era-day"] .orbit-discover .universe-scene {
-  opacity: .42;
-  mix-blend-mode: multiply;
+/* Share the photographed Whirlpool spiral galaxy across the live canvas, poster and loading scene. */
+.universe-art .universe-scene {
+  container-type: size;
+}
+
+.universe-art .universe-scene::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: 20%;
+  left: 16%;
+  width: min(19%, 24cqh, 210px);
+  aspect-ratio: 666 / 460;
+  translate: -38.4% -49.1%;
+  transform-origin: 38.4% 49.1%;
+  background: url('/images/atlas-spiral.webp') center / contain no-repeat;
+  mask-image: linear-gradient(90deg, transparent, #000 12% 90%, transparent),
+    linear-gradient(transparent, #000 13% 86%, transparent);
+  mask-composite: intersect;
+  mix-blend-mode: screen;
+  opacity: .88;
+  animation: atlas-spiral-drift 16s ease-in-out infinite alternate paused;
+}
+.universe-art .universe-scene[data-scene-active="true"]::after {
+  animation-play-state: running;
+}
+
+@keyframes atlas-spiral-drift { to { rotate: -13deg; } }
+@media (max-width: 768px) {
+  .universe-scene .universe-fallback video { object-position: 78% 34%; }
+  .universe-art .universe-scene::after {
+    top: 28%;
+    left: 17%;
+    width: min(40%, 235px);
+  }
 }

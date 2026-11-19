@@ -125,38 +125,6 @@ function orbitViewTransition(update) {
   }
 }
 
-function createAtmosphereControls() {
-  const root = document.documentElement;
-  const bound = new WeakSet();
-  try {
-    const saved = localStorage.getItem('cai_skill_theme');
-    if (saved === 'era-day' || saved === 'higgsfield') root.dataset.theme = saved;
-  } catch {}
-  function sync() {
-    const day = root.dataset.theme === 'era-day';
-    document.querySelectorAll('[data-atmosphere-toggle]').forEach(button => {
-      button.setAttribute('aria-pressed', String(day));
-      const label = button.querySelector('[data-atmosphere-label]');
-      const text = day ? 'By Day · Alabaster' : 'By Night · Cosmos';
-      if (label && label.textContent !== text) label.textContent = text;
-    });
-  }
-  new MutationObserver(sync).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
-  return () => {
-    document.querySelectorAll('[data-atmosphere-toggle]').forEach(button => {
-      if (bound.has(button)) return;
-      bound.add(button);
-      button.addEventListener('click', () => orbitViewTransition(() => {
-        const theme = root.dataset.theme === 'era-day' ? 'higgsfield' : 'era-day';
-        root.dataset.theme = theme;
-        try { localStorage.setItem('cai_skill_theme', theme); } catch {}
-        sync();
-      }));
-    });
-    sync();
-  };
-}
-
 /** Dashboard controls shared by Express and Next. No duplicate API requests. */
 function createUniverseControls() {
   const islands = new Map();
@@ -201,7 +169,7 @@ function createUniverseControls() {
         pinned = false;
         menu.inert = true;
         island.classList.remove('is-open');
-        hideTimer = setTimeout(() => { if (!open) menu.hidden = true; }, motionAllowed() ? 550 : 0);
+        hideTimer = setTimeout(() => { if (!open) menu.hidden = true; }, motionAllowed() ? 640 : 0);
         if (restoreFocus) {
           ignoreFocus = true;
           trigger.focus({ preventScroll: true });
@@ -344,10 +312,15 @@ function initOrbitMotion() {
   window.__orbitMotion = true;
   const root = document.documentElement;
   const scanUniverseControls = createUniverseControls();
-  const scanAtmosphereControls = createAtmosphereControls();
   window.orbitViewTransition = orbitViewTransition;
-  // Keep smooth motion and scroll choreography active in browser.
-  try { localStorage.removeItem('ambient_motion_disabled'); } catch {}
+  // Remove legacy Day atmosphere override and keep motion running smoothly.
+  try {
+    if (root.dataset.theme === 'era-day' || localStorage.getItem('cai_skill_theme') === 'era-day') {
+      root.dataset.theme = 'higgsfield';
+      localStorage.removeItem('cai_skill_theme');
+    }
+    localStorage.removeItem('ambient_motion_disabled');
+  } catch {}
   root.dataset.orbitMotion = 'running';
   window.ambientCanvas?.forceStart?.();
   let observed = new WeakSet();
@@ -391,7 +364,6 @@ function initOrbitMotion() {
 
   function scan() {
     scanUniverseControls();
-    scanAtmosphereControls();
     document.querySelectorAll(revealSelector()).forEach((el, index) => {
       if (observed.has(el)) return;
       observed.add(el);
@@ -410,24 +382,44 @@ function initOrbitMotion() {
     scanPending = true;
     requestAnimationFrame(() => { scanPending = false; scan(); });
   }).observe(document.body, { childList: true, subtree: true });
-  // One delegated listener, no per-card handlers or continuous animation loop.
-  let pointerFrame = 0;
+  // Smoothly interpolated fluid card sheen (eliminates blocky 3D tilt & raw snaps).
+  let activeCard = null;
+  let sheenCurX = 0;
+  let sheenCurY = 0;
+  let sheenTargetX = 0;
+  let sheenTargetY = 0;
+  let sheenFrame = 0;
+  function stepSheen() {
+    sheenFrame = 0;
+    if (!activeCard || !activeCard.isConnected) { activeCard = null; return; }
+    sheenCurX += (sheenTargetX - sheenCurX) * 0.14;
+    sheenCurY += (sheenTargetY - sheenCurY) * 0.14;
+    activeCard.style.setProperty('--fluid-x', `${sheenCurX.toFixed(1)}px`);
+    activeCard.style.setProperty('--fluid-y', `${sheenCurY.toFixed(1)}px`);
+    if (Math.abs(sheenTargetX - sheenCurX) > 0.35 || Math.abs(sheenTargetY - sheenCurY) > 0.35) {
+      sheenFrame = requestAnimationFrame(stepSheen);
+    }
+  }
   document.addEventListener('pointermove', event => {
-    if (event.pointerType !== 'mouse' || pointerFrame) return;
+    if (event.pointerType !== 'mouse') return;
     const card = event.target.closest?.('.orbit-discover .card-shell');
     if (!card) return;
-    pointerFrame = requestAnimationFrame(() => {
-      pointerFrame = 0;
-      const rect = card.getBoundingClientRect();
-      card.style.setProperty('--tilt-x', `${((event.clientX - rect.left) / rect.width - .5) * 5}deg`);
-      card.style.setProperty('--tilt-y', `${((event.clientY - rect.top) / rect.height - .5) * -4}deg`);
-    });
+    const rect = card.getBoundingClientRect();
+    const nx = event.clientX - rect.left;
+    const ny = event.clientY - rect.top;
+    if (card !== activeCard) {
+      activeCard = card;
+      sheenCurX = nx;
+      sheenCurY = ny;
+    }
+    sheenTargetX = nx;
+    sheenTargetY = ny;
+    if (!sheenFrame) sheenFrame = requestAnimationFrame(stepSheen);
   }, { passive: true });
   document.addEventListener('pointerout', event => {
     const card = event.target.closest?.('.orbit-discover .card-shell');
     if (!card || card.contains(event.relatedTarget)) return;
-    card.style.removeProperty('--tilt-x');
-    card.style.removeProperty('--tilt-y');
+    if (activeCard === card) activeCard = null;
   }, { passive: true });
   document.addEventListener('visibilitychange', () => root.classList.toggle('orbit-page-hidden', document.hidden));
   scan();

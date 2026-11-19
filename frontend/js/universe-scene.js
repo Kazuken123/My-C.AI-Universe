@@ -59,22 +59,21 @@
       vec2 q = p / radius;
       float r = dot(q, q);
       if (r > 1.13) return vec4(0.);
-      float edge = 1.0 - smoothstep(.95, 1.015, r);
+      float edge = 1.0 - smoothstep(.965, 1.025, r);
       vec3 n = vec3(q.x, -q.y, sqrt(max(0., 1.0 - r)));
-      // A luminous source behind and to the right lights one crisp crescent limb.
+      // A source behind the silhouette lights one crescent of its visible sphere.
       vec3 star = normalize(vec3(vShape, mix(-.83, -.25, atmosphere)));
       float light = max(0., dot(n, star));
       vec2 surfaceUv = n.xy + n.z * vec2(.37, .68);
       float terrain = .64 * noise(surfaceUv * 7.) + .36 * noise(surfaceUv * 23. + 8.);
       float surface = .28 + .72 * smoothstep(.15, .85, terrain);
-      vec3 darkBase = vec3(.008, .016, .025);
-      vec3 color = darkBase + vColor.rgb * surface * light * mix(.65, 1.05, atmosphere);
-      float litLimb = pow(max(.0001, dot(normalize(n.xy + vec2(.0001)), normalize(star.xy))), 2.6);
+      vec3 color = vec3(.008, .011, .019) + vColor.rgb * surface * light * mix(.65, 1.05, atmosphere);
+      float litLimb = pow(max(.0001, dot(normalize(n.xy + vec2(.0001)), normalize(star.xy))), 2.2);
       float rim = exp(-n.z * mix(7., 12., atmosphere)) * litLimb;
-      vec3 rimColor = mix(vColor.rgb, vec3(.96, .95, .92), atmosphere * .75);
-      color += rimColor * rim * mix(.18, 1.35, atmosphere);
-      float halo = exp(-max(0., r - 1.) * 51.) * litLimb * .24 * atmosphere;
-      return vec4(mix(darkBase, color, edge), max(edge, halo));
+      vec3 rimColor = mix(vColor.rgb, vec3(.78, .73, .66), atmosphere * .5);
+      color += rimColor * rim * mix(.15, .72, atmosphere);
+      float halo = exp(-max(0., r - 1.) * 51.) * litLimb * .22 * atmosphere;
+      return vec4(mix(vColor.rgb * .58, color, edge), max(edge, halo));
     }
     void main() {
       vec2 p = gl_PointCoord * 2.0 - 1.0;
@@ -143,67 +142,98 @@
       );
     }
 
-    // Silky periodic Keplerian filament sampler in log-radius + orbital phase (zero atan seam).
-    float diskFilaments(float hr, float ang, float speed) {
-      float phase = ang - uTime * speed;
-      vec2 orb = vec2(cos(phase), sin(phase));
+    // Exact integer-periodic angular noise for strictly one-way, seam-free orbital flow.
+    float pnoise(float u, float v, float period) {
+      float iu = floor(u);
+      float fu = u - iu;
+      fu = fu * fu * (3.0 - 2.0 * fu);
+      float iv = floor(v);
+      float fv = v - iv;
+      fv = fv * fv * (3.0 - 2.0 * fv);
+      float u0 = mod(iu, period);
+      u0 = floor(u0 + 0.5);
+      if (u0 < 0.0) u0 += period;
+      if (u0 >= period) u0 -= period;
+      float u1 = u0 + 1.0;
+      if (u1 >= period) u1 -= period;
+      return mix(
+        mix(hash(vec2(u0, iv)), hash(vec2(u1, iv)), fu),
+        mix(hash(vec2(u0, iv + 1.0)), hash(vec2(u1, iv + 1.0)), fu),
+        fv
+      );
+    }
+
+    // Co-moving domain-warped braided silk filaments: strictly one-way orbital advection,
+    // zero radial pumping, zero half-orbit reversal, zero atan seam.
+    float diskFilaments(float hr, float ang, float archMix, float leftWing, float coreGlow) {
       float lr = log(max(hr, 1.05));
-      float shear = noise(orb * 1.9 + vec2(lr * 3.1, 1.7));
-      float rings = noise(vec2(orb.x * 1.4 + shear * 0.35, lr * 13.5 + shear * 0.42));
-      float fine = noise(vec2(orb.y * 2.8 - shear * 0.25, lr * 34.0 + orb.x * 1.1));
-      float wisps = noise(vec2(orb.x * 4.2 + orb.y * 1.8, lr * 72.0));
-      float bands = 0.64 + 0.42 * rings;
-      float hair = 0.68 + 0.26 * fine + 0.14 * wisps;
-      return bands * hair;
+      float phase = ang / 6.2831853 + 0.5 + fract(uTime * 0.048);
+      float warpAmp = mix(0.42, 1.08, archMix);
+      float warp = (pnoise(phase * 4.0, lr * 7.5, 4.0) * 1.95 + pnoise(phase * 10.0, lr * 18.0, 10.0) * 0.60) * warpAmp;
+      float broad = pnoise(phase * 5.0, lr * 15.0 + warp, 5.0);
+      float fine = pnoise(phase * 14.0, lr * 56.0 + warp * 2.0, 14.0);
+      float thread = pnoise(phase * 22.0, lr * 112.0 + warp * 3.8, 22.0);
+      float threadFade = 1.0 - smoothstep(5.2, 13.0, hr);
+      float lanes = 0.16 + 1.18 * pow(max(broad, 0.0001), 1.72);
+      float threads = 0.34 + 0.78 * fine + 0.46 * thread * threadFade;
+      float turb = pnoise(phase * 16.0, lr * 34.0, 16.0) * pnoise(phase * 32.0, lr * 68.0, 32.0);
+      return lanes * threads + leftWing * coreGlow * 0.45 * turb;
     }
 
     vec4 evalDisk(vec3 hit, vec3 rayVel, float layerScale) {
       float hr = length(hit.xz);
-      if (hr < 1.36 || hr > 15.0) return vec4(0.0);
+      if (hr < 1.36 || hr > 16.5) return vec4(0.0);
 
       // Approaching left wing stretches diagonally into space; front/right wraps softly around the shadow.
       float ang = atan(hit.z, hit.x);
       float leftRatio = smoothstep(0.30, -0.92, hit.x / max(hr, 0.001));
-      float backTrim = smoothstep(4.0, 0.3, hit.z);
-      float leftWing = leftRatio * mix(0.22, 1.0, backTrim);
-      float outerExtent = mix(6.2, 14.8, leftWing);
+      float backTrim = smoothstep(4.2, 0.3, hit.z);
+      float leftWing = leftRatio * mix(0.24, 1.0, backTrim);
+      float outerExtent = mix(6.5, 17.0, leftWing);
 
-      float innerEdge = smoothstep(1.38, 1.98, hr);
+      float innerEdge = smoothstep(1.36, 1.92, hr);
       // Soft exponential atmospheric decay so outer edges dissolve like glowing mist.
-      float radialDiff = max(hr - 2.05, 0.0) / max(outerExtent * 0.42, 1.0);
-      float outerMist = exp(-pow(max(radialDiff, 0.0001), 1.55));
-      float coreGlow = exp(-max(hr - 1.85, 0.0) * mix(0.55, 0.20, leftWing));
+      float radialDiff = max(hr - 2.0, 0.0) / max(outerExtent * 0.48, 1.0);
+      float outerMist = exp(-pow(max(radialDiff, 0.0001), 1.50));
+      float coreGlow = exp(-max(hr - 1.85, 0.0) * mix(0.55, 0.18, leftWing));
       float mask = innerEdge * outerMist * (0.34 + 0.78 * coreGlow) * layerScale;
       if (mask < 0.002) return vec4(0.0);
 
-      float speed = 0.52 / pow(max(hr, 1.15), 1.12);
-      float tex = diskFilaments(hr, ang, speed);
+      float archMix = smoothstep(1.2, -1.2, hit.z);
+      float tex = diskFilaments(hr, ang, archMix, leftWing, coreGlow);
 
       // Relativistic Doppler beaming: approaching gas on the left (-x) beams toward the camera (+z).
       vec3 tang = normalize(vec3(hit.z, 0.0, -hit.x));
-      float doppler = clamp(1.0 + 0.58 * dot(tang, -normalize(rayVel)) / sqrt(max(hr, 1.35)), 0.38, 2.25);
+      float doppler = clamp(1.0 + 0.56 * dot(tang, -normalize(rayVel)) / sqrt(max(hr, 1.35)), 0.40, 2.20);
 
       float intensity = mask * tex * doppler;
-      float diffuseHalo = innerEdge * outerMist * 0.26 * doppler * layerScale;
+      float diffuseHalo = innerEdge * outerMist * 0.06 * doppler * layerScale;
       float total = intensity + diffuseHalo;
-      float heat = clamp(total * (0.58 + 0.78 * exp(-(hr - 1.65) * 0.38)), 0.0, 2.8);
+      float heat = clamp(total * (0.58 + 0.76 * exp(-(hr - 1.65) * 0.38)), 0.0, 2.8);
 
-      // Gargantua blackbody spectrum: deep burnt copper -> fiery orange-amber -> warm gold -> cream -> incandescent white-gold.
-      vec3 col = mix(vec3(0.52, 0.12, 0.02), vec3(0.98, 0.40, 0.09), smoothstep(0.02, 0.42, heat));
-      col = mix(col, vec3(1.00, 0.68, 0.28), smoothstep(0.36, 0.96, heat));
-      col = mix(col, vec3(1.00, 0.89, 0.60), smoothstep(0.85, 1.58, heat));
-      col = mix(col, vec3(1.00, 0.98, 0.90), smoothstep(1.48, 2.35, heat));
+      // Braided champagne-ivory over deep smoky espresso-sepia valleys.
+      vec3 col = mix(vec3(0.24, 0.13, 0.11), vec3(0.76, 0.49, 0.36), smoothstep(0.02, 0.42, heat));
+      col = mix(col, vec3(0.96, 0.84, 0.70), smoothstep(0.36, 0.96, heat));
+      col = mix(col, vec3(1.00, 0.94, 0.84), smoothstep(0.85, 1.58, heat));
+      col = mix(col, vec3(1.00, 0.98, 0.94), smoothstep(1.45, 2.35, heat));
 
       float alpha = clamp(total * mix(0.36, 0.92, exp(-(hr - 1.7) * 0.24)), 0.0, 0.95);
-      return vec4(col * (total * 1.42), alpha);
+      return vec4(col * (total * 1.38), alpha);
     }
 
-    vec3 sky(vec2 uv, vec2 p) {
-      float grain = noise(p * 1.9) * 0.5 + noise(p * 5.8) * 0.3 + noise(p * 16.0) * 0.2;
-      float lane = p.y + 0.12 * p.x - 0.55 + 0.16 * sin(p.x * 0.7);
-      float cloud = exp(-abs(lane) * 2.4) * pow(max(grain, 0.0001), 2.2) * 0.16;
-      vec3 field = texture2D(uSky, clamp(uv, vec2(0.001), vec2(0.999))).rgb;
-      return vec3(0.008, 0.023, 0.036) + field * vec3(0.62, 0.66, 0.72) + vec3(0.10, 0.24, 0.32) * cloud;
+    vec2 mirrorUv(vec2 uv) {
+      vec2 w = mod(mod(uv + 1.0, 2.0) + 2.0, 2.0);
+      return clamp(abs(w - 1.0), vec2(0.002), vec2(0.998));
+    }
+
+    vec3 sky(vec2 uv) {
+      vec2 safeUv = mirrorUv(uv);
+      vec2 p = (safeUv - uCenter) * uSize / max(uRadius, 1.0);
+      float grain = noise(p * 2.0) * 0.5 + noise(p * 6.0) * 0.3 + noise(p * 17.0) * 0.2;
+      float lane = p.y - 0.35 * p.x - 0.62 + 0.2 * sin(p.x * 0.8);
+      float cloud = exp(-abs(lane) * 2.8) * pow(max(grain, 0.0001), 2.0) + exp(-abs(lane + 0.24) * 9.0) * grain * 0.36;
+      vec3 field = texture2D(uSky, safeUv).rgb;
+      return vec3(0.014, 0.018, 0.032) + field * vec3(0.56, 0.53, 0.52) + vec3(0.30, 0.34, 0.44) * cloud;
     }
 
     vec3 acesFilmic(vec3 x) {
@@ -241,14 +271,14 @@
       vec3 bestPos = pos;
       vec3 bestVel = vel;
 
-      // Skip full geodesic integration in far-field corners outside 15.5 Schwarzschild radii.
-      if (h2 <= 240.0) {
+      // Skip full geodesic integration in far-field corners outside 16.5 Schwarzschild radii.
+      if (h2 <= 280.0) {
         for (int i = 0; i < 48; i++) {
           float r2 = dot(pos, pos);
           float r = sqrt(r2);
           if (r < 1.04) { hitHorizon = true; break; }
           if (r > 24.0 && dot(pos, vel) > 0.0) break;
-          if (abs(pos.y) < bestY && r < 14.8) { bestY = abs(pos.y); bestPos = pos; bestVel = vel; }
+          if (abs(pos.y) < bestY && r < 16.2) { bestY = abs(pos.y); bestPos = pos; bestVel = vel; }
 
           float speed = length(vel);
           float dt = clamp(r * 0.25 / max(speed, 0.55), 0.085, 2.20);
@@ -271,7 +301,7 @@
                 }
               }
             } else if (farTransmit > 0.02) {
-              float farScale = vel.y >= 0.0 ? 0.58 : 1.0;
+              float farScale = mix(0.62, 1.0, smoothstep(0.18, -0.18, vel.y));
               vec4 farSample = evalDisk(hit, vel, farScale);
               if (farSample.a > 0.002) {
                 crossed = true;
@@ -302,38 +332,40 @@
       if (hitHorizon) {
         farAccum = vec3(0.0);
         farTransmit = 1.0;
-        float dome = exp(-length((p - vec2(-0.35, 0.15)) * 1.15));
-        float rimHaze = smoothstep(0.45, 1.0, sr);
-        bg = mix(vec3(0.020, 0.048, 0.072), vec3(0.075, 0.145, 0.205), clamp(dome * 0.55 + rimHaze * 0.65, 0.0, 1.0));
+        float dome = exp(-length((p - vec2(-0.46, -0.26)) * 1.38));
+        float rimHaze = smoothstep(0.55, 1.0, sr);
+        bg = mix(vec3(0.014, 0.009, 0.014), vec3(0.052, 0.032, 0.042), clamp(dome * 0.65 + rimHaze * 0.35, 0.0, 1.0));
       } else {
-        vec2 dP;
-        if (h2 <= 240.0) {
+        vec2 dP = vec2(0.0);
+        if (sr < 4.4 && h2 <= 280.0) {
           vec3 deflect = normalize(vel) - initVel;
           dP = vec2(dot(deflect, right), dot(deflect, up)) / fovScale;
-        } else {
-          dP = -p * (2.6 / max(dot(p, p), 1.0)) * (1.0 - smoothstep(10.0, 22.0, sr));
+          // Refined astronomical gravitational bend without over-stretching nearby nebulae into rings.
+          dP = (dP / (1.0 + length(dP) * 0.45)) * 0.42 * (1.0 - smoothstep(1.8, 4.4, sr));
         }
         vec2 dSp = mat2(0.9239, 0.3827, -0.3827, 0.9239) * dP;
         vec2 lensedUv = vUv + dSp * uRadius / uSize;
-        bg = sky(lensedUv, p);
+        bg = sky(lensedUv);
+        // Delicate Einstein-ring background magnification hugging the photon sphere.
+        float einsteinBand = exp(-max(sr - 1.015, 0.0) * 6.0) * smoothstep(0.99, 1.04, sr);
+        bg *= (1.0 + 0.22 * einsteinBand);
       }
 
-      // Razor-sharp icy cyan-white inner photon ring hugging the shadow rim behind the foreground sheet.
+      // Delicate warm ivory-gold inner photon ring hugging the shadow rim behind the foreground sheet.
       float pw = max(0.0045, 0.85 / max(uRadius, 1.0));
       float pr = (sr - 1.003) / pw;
       float pRing = exp(-pr * pr);
-      float rimGlow = exp(-max(sr - 1.003, 0.0) * 24.0) * step(0.995, sr) * 0.28;
-      float ringAsym = 0.44 + 0.66 * smoothstep(0.65, -0.85, p.x);
-      vec3 photonCol = mix(vec3(0.76, 0.92, 1.0), vec3(1.0, 0.93, 0.80), smoothstep(0.0, 0.8, abs(p.y) < 0.28 ? 0.5 : 0.0));
-      vec3 photon = photonCol * (pRing * 1.15 + rimGlow) * ringAsym * mix(0.24, 1.0, fgTransmit);
+      float rimGlow = exp(-max(sr - 1.003, 0.0) * 24.0) * step(0.995, sr);
+      float ringAsym = 0.42 + 0.68 * smoothstep(0.65, -0.85, p.x);
+      vec3 photonCol = vec3(1.00, 0.91, 0.78);
+      vec3 photon = photonCol * (pRing * 0.62 + rimGlow * 0.14) * ringAsym * mix(0.24, 1.0, fgTransmit);
 
-      // Soft warm shoulder bloom + atmospheric amber scatter around the outer left arch & tail.
-      vec3 shoulderBloom = vec3(1.0, 0.52, 0.18) * exp(-length((p - vec2(-1.28, -0.04)) * vec2(0.72, 1.25)) * 1.35) * 0.34;
-      vec3 ringAtmosphere = vec3(0.92, 0.38, 0.10) * exp(-abs(sr - 1.38) * 1.95) * (0.09 + 0.14 * smoothstep(0.3, -1.0, p.x));
-      vec3 cyanScatter = vec3(0.18, 0.44, 0.58) * exp(-abs(sr - 1.03) * 4.2) * 0.11 * mix(0.3, 1.0, fgTransmit);
+      // Soft champagne shoulder bloom + restrained dusty sepia-rose atmospheric scatter.
+      vec3 shoulderBloom = vec3(0.88, 0.66, 0.50) * exp(-length((p - vec2(-1.26, -0.04)) * vec2(0.72, 1.25)) * 1.40) * 0.24;
+      vec3 ringAtmosphere = vec3(0.46, 0.22, 0.22) * exp(-abs(sr - 1.38) * 2.05) * (0.08 + 0.14 * smoothstep(0.3, -1.0, p.x));
 
       vec3 behindFg = bg * farTransmit + farAccum + photon;
-      vec3 raw = behindFg * fgTransmit + fgAccum + shoulderBloom + ringAtmosphere + cyanScatter;
+      vec3 raw = behindFg * fgTransmit + fgAccum + shoulderBloom + ringAtmosphere;
       vec3 mapped = acesFilmic(raw);
       gl_FragColor = vec4(mapped, 1.0);
     }
@@ -347,22 +379,22 @@
     const bell = () => (random() + random() + random() - 1.5) * 1.15;
     const particles = [];
     const mix = (a, b, t) => a.map((value, i) => value + (b[i] - value) * t);
-    const white = [.92, .95, 1], slate = [.26, .48, .66], iceBlue = [.42, .72, .90], amber = [.95, .64, .34];
+    const white = [.96, .93, 1], violet = [.48, .3, .84], blue = [.28, .6, .91], gold = [1, .7, .38];
     function point(position, center, tilt, color, size, kind = 0) {
       particles.push(...position, ...center, ...tilt, ...color, size, kind);
     }
     const still = [0, 0, 0, 0];
     const counts = { stars: 0, galaxies: 0, filaments: 0, nebulae: 0, worlds: 0 };
     for (let i = 0; i < (compact ? 850 : 2200); i++) {
-      const bright = random() > .978;
+      const bright = random() > .975;
       point([(random() - .5) * 49, (random() - .5) * 31, random() * 28 - 22], still, [0, 0],
-        [...mix(iceBlue, white, random()), bright ? .92 : .18 + random() * .48], bright ? 3.5 + random() * 2.5 : 1.05 + random() * 1.45);
+        [...mix(blue, white, random()), bright ? .95 : .22 + random() * .55], bright ? 4 + random() * 3 : 1.15 + random() * 1.7);
       counts.stars++;
     }
-    // Distant background galaxies kept subtle and cool so Gargantua owns the composition.
+    // Distant galaxies have distinct silhouettes, temperatures and inclinations.
     for (let i = 0; i < (compact ? 30 : 76); i++) {
-      point([0, 0, 0], [(random() - .5) * (compact ? 14 : 43), (random() - .5) * 25, -8 - random() * 15, 0],
-        [.23 + random() * .65, random() * 6.28], [...mix(slate, amber, random()), .16 + random() * .20], 5 + random() * 14, 2);
+      point([0, 0, 0], [(random() - .5) * (compact ? 14 : 43), (random() - .5) * 25, -4 - random() * 19, 0],
+        [.23 + random() * .65, random() * 6.28], [...mix(blue, gold, random()), .45 + random() * .45], 7 + random() * 24, 2);
       counts.galaxies++;
     }
     function galaxy(center, tilt, radius, count, arms) {
@@ -370,24 +402,24 @@
       for (let i = 0; i < count; i++) {
         const distance = Math.pow(random(), .68), r = distance * radius;
         const angle = (i % arms) / arms * Math.PI * 2 + distance * 8.2 + bell() * (.15 + distance * .34);
-        const color = distance < .25 ? mix(amber, white, distance * 4) : mix(slate, iceBlue, distance);
+        const color = distance < .25 ? mix(gold, white, distance * 4) : mix(violet, blue, distance);
         point([Math.cos(angle) * r + bell() * .09, Math.sin(angle) * r + bell() * .09, bell() * (.025 + distance * .08)],
-          center, tilt, [...color, .10 + random() * .16], .9 + random() * 1.1);
+          center, tilt, [...color, .28 + random() * .65], 1 + random() * 1.55);
       }
       for (let i = 0; i < count / 15; i++) {
         const d = random(), angle = (i % arms) / arms * Math.PI * 2 + d * 8.2;
         point([Math.cos(angle) * d * radius, Math.sin(angle) * d * radius, bell() * .08], center, tilt,
-          [...mix(slate, iceBlue, d), .03 + random() * .04], 10 + random() * 18, 1);
+          [...mix(violet, blue, d), .08 + random() * .07], 12 + random() * 28, 1);
       }
-      point([0, 0, 0], center, tilt, [...amber, .18], 16, 1);
-      point([0, 0, .03], center, tilt, [...white, .45], 3);
+      point([0, 0, 0], center, tilt, [...gold, .55], 27, 1);
+      point([0, 0, .03], center, tilt, [...white, .95], 4);
     }
-    galaxy([compact ? 1.5 : 5.4, compact ? -1.9 : 1.4, -12, .065], [.78, -.45], 1.5, compact ? 1250 : 2850, 4);
-    galaxy([compact ? -2.2 : -5.8, compact ? -3.6 : 4.6, -15, -.047], [1.12, .65], 1.1, compact ? 240 : 650, 3);
-    galaxy([compact ? 2.6 : 9.2, compact ? 2.5 : -4.2, -16, .08], [.42, .3], .95, compact ? 180 : 420, 3);
+    galaxy([compact ? 1.3 : 1.4, compact ? -1.8 : 2.2, -3.5, .065], [.78, -.45], 2.2, compact ? 1250 : 2850, 4);
+    galaxy([compact ? -2 : -4.6, compact ? -3.8 : 4.2, -4, -.047], [1.12, .65], 1.4, compact ? 240 : 650, 3);
+    galaxy([compact ? 2.4 : 8.1, compact ? 2.4 : -3.7, -7.5, .08], [.42, .3], 1.1, compact ? 180 : 420, 3);
 
-    // Sparse, subtle deep-space filaments across dark voids.
-    const nodes = [[-11,5,-14],[-6,2,-10],[-2,5,-15],[3,4,-11],[8,6,-17],[11,1,-12],[6,-2,-9],[1,-5,-15],[-5,-3,-12],[-10,-6,-18]];
+    // Sparse, curved filaments join clusters across dark voids.
+    const nodes = [[-11,5,-12],[-6,2,-8],[-2,5,-13],[3,4,-9],[8,6,-16],[11,1,-10],[6,-2,-7],[1,-5,-14],[-5,-3,-10],[-10,-6,-17]];
     const links = [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[1,8],[3,6],[2,7]];
     if (compact) nodes.forEach(node => { node[0] *= .4; });
     for (const [from, to] of links) {
@@ -396,33 +428,32 @@
       for (let i = 0; i < steps; i++) {
         const t = i / steps, bend = Math.sin(t * Math.PI);
         const position = a.map((v, j) => v + (b[j] - v) * t + bell() * .14 + (j === 1 ? bend * .65 : 0));
-        point(position, still, [0, from * .4], [...mix(slate, iceBlue, t), .05 + random() * .10], 1.0 + random() * 0.9);
-        if (i % 10 === 0) point(position, still, [from, t], [...slate, .035], 20 + random() * 24, 1);
+        point(position, still, [0, from * .4], [...mix(blue, violet, t), .13 + random() * .24], 1.2 + random() * 1.1);
+        if (i % 10 === 0) point(position, still, [from, t], [...violet, .085], 25 + random() * 30, 1);
       }
     }
     nodes.forEach((node, index) => {
       for (let i = 0; i < (compact ? 24 : 70); i++) {
-        point(node.map(v => v + bell() * .56), still, [0, 0], [...mix(amber, white, random()), .12 + random() * .20], .9 + random() * 1.3);
+        point(node.map(v => v + bell() * .56), still, [0, 0], [...mix(gold, white, random()), .28 + random() * .4], 1.1 + random() * 1.7);
       }
-      point([0, 0, 0], [...node, 0], [.35 + random() * .4, index], [...white, .28], 10 + random() * 10, 2);
+      point([0, 0, 0], [...node, 0], [.35 + random() * .4, index], [...white, .75], 14 + random() * 14, 2);
       counts.galaxies++;
     });
 
-    // Subtle cool petrol-slate background nebulae.
+    // Broad nebular rivers: cool teal-violet gas and a restrained amber star nursery.
     for (let i = 0; i < (compact ? 105 : 195); i++) {
       const t = random(), branch = i % 3;
       const x = (t - .5) * (compact ? 12 : 31);
       const y = Math.sin(t * 5.2 + branch * .7) * 3.6 + (branch - 1) * 2.6 + bell() * 1.2;
-      const tint = branch === 2 ? mix([.12, .22, .30], [.18, .16, .24], t) : mix([.05, .18, .26], slate, t);
-      point([x, y, -8 - random() * 10], still, [random() * 5, random() * 5],
-        [...tint, .04 + random() * .06], 90 + random() * 95, 1);
+      const tint = branch === 2 ? mix([.78, .27, .13], [.4, .22, .6], t) : mix([.13, .4, .5], violet, t);
+      point([x, y, -6 - random() * 9], still, [random() * 5, random() * 5],
+        [...tint, .12 + random() * .13], 100 + random() * 105, 1);
       counts.nebulae++;
     }
     // Draw opaque foreground bodies last so their unlit sides occlude the star field.
-    // The iconic tiny crescent-lit dark planet sits in dark space left of Gargantua's outer bend.
     const opaqueOffset = particles.length / 15;
-    point([0, 0, 0], [compact ? -0.95 : -0.45, compact ? 0.85 : 0.85, 6.2, 0], [1.25, 0.18], [.44, .58, .66, 1], compact ? 10 : 13, 5);
-    point([0, 0, 0], [compact ? 2.2 : 8.8, compact ? -3.4 : -4.4, 6.5, 0], [-.95, .55], [.24, .32, .38, 1], compact ? 7 : 10, 3);
+    point([0, 0, 0], [compact ? 3.4 : 5.7, compact ? -1.4 : -3.85, 4.7, 0], [-.26, .94], [.37, .49, .57, 1], compact ? 38 : 56, 5);
+    point([0, 0, 0], [compact ? -1.15 : -6.18, compact ? -3.72 : 2.73, 6.5, 0], [.58, .8], [.56, .49, .43, 1], compact ? 10 : 17, 3);
     counts.worlds = 2;
     return { data: new Float32Array(particles), opaqueOffset, counts };
   }

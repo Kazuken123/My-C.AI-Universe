@@ -3,8 +3,7 @@ export { loadingBar } from './loading-bar.js';
 export { ambientCanvas } from './ambient-canvas.js';
 
 export const SKILL_THEMES = [
-  { id: 'higgsfield', label: 'By Night · Cosmos' },
-  { id: 'era-day', label: 'By Day · Alabaster' },
+  { id: 'higgsfield', label: 'Cosmos' },
   { id: 'vanguard', label: 'Vanguard' },
   { id: 'editorial', label: 'Editorial' },
   { id: 'telemetry', label: 'Telemetry' }

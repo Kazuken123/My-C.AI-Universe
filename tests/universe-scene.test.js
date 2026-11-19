@@ -279,13 +279,15 @@ test('resizing across the breakpoint replaces the foreground bodies with the mat
   assert.deepEqual(h.calls.geometry, desktop);
 });
 
-test('Gargantua shader uses geodesic raymarching without upper-left spiral overlay', () => {
+test('Gargantua shader uses geodesic raymarching, one-way orbital flow, refined lensing and Whirlpool overlay', () => {
   const css = readFileSync(new URL('../frontend/css/atlas-scene.css', import.meta.url), 'utf8');
-  assert.doesNotMatch(css, /atlas-spiral\.webp/);
-  assert.doesNotMatch(css, /\.universe-scene::after/);
+  assert.match(css, /atlas-spiral\.webp/);
+  assert.match(css, /\.universe-scene::after/);
   assert.match(source, /hitHorizon/);
   assert.match(source, /photonCol/);
   assert.match(source, /acesFilmic/);
+  assert.match(source, /pnoise/);
+  assert.match(source, /mirrorUv/);
 });
 test('fallback art and lens styles are identical in both frontends', () => {
   for (const format of ['wide','compact']) {

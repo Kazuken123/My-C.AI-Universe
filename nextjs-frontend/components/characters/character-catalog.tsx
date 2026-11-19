@@ -82,7 +82,6 @@ export function CharacterCatalog() {
             <kbd className="search-kbd">/</kbd>
           </div>
         </div>
-        <button className="atmosphere-toggle" data-atmosphere-toggle type="button" aria-label="Day atmosphere" aria-pressed="false"><span data-atmosphere-label>By Night · Cosmos</span></button>
       </header>
       {!hasFilters && <OrbitHero />}
       <section className="section-block orbit-roster" id="character-roster" aria-labelledby="roster-heading">
