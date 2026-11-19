@@ -1833,9 +1833,6 @@ kbd {
 [data-theme="era-day"] :is(.msg-tool-btn, .swipe-btn, .drawer-action-pill, .drawer-menu-row, .chat-topbar-btn):hover { color: var(--text-primary); background: var(--bg-core-elevated); border-color: var(--border-subtle); }
 [data-theme="era-day"] :is(.composer-send-btn, .drawer-new-chat-btn) { background: var(--accent); color: var(--text-on-accent); }
 [data-theme="era-day"] :is(.composer-send-btn, .drawer-new-chat-btn):hover { background: var(--accent-hover); }
-@media (prefers-reduced-motion: reduce) {
-  #chat-right-drawer, .era-chat-drawer, .msg-row, .chat-main-column *, .chat-right-drawer * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
-}
 
 .chat-relationship-bar-pill { height: auto; min-block-size: 2em; line-height: 1.4; }
 [data-theme="era-day"] :is(.history-thread-time, .chat-history-close-btn:hover) { color: var(--text-primary); }
@@ -1846,7 +1843,3 @@ kbd {
   transition: transform var(--dur-xs) var(--ease-tactile), background-color var(--dur-xs);
 }
 .era-chat-drawer button:active:not(:disabled) { transform: scale(.97); }
-@media (prefers-reduced-motion: reduce) {
-  .era-chat-drawer *, .chat-history-drawer * { animation: none !important; transition: none !important; }
-  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
-}

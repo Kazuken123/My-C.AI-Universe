@@ -1,5 +1,19 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-11-19 - Restored Orbit Discover Layout, Always-On Smooth & Scroll Motions, and Schwarzschild Gargantua Shader
+
+- **Restored Old Orbit Discover Layout (`frontend/index.html`, `frontend/js/dashboard.js`, `nextjs-frontend/components/characters/orbit-hero.tsx`, `character-catalog.tsx`)**:
+  - Removed `atlas-discover.css` overrides and restored the full-height Orbit Studio / Orbit x ERA Discover layout across both Express and Next.js (`YOUR UNIVERSE | Discover` topbar with search pill and `By Night · Cosmos` atmosphere toggle, hero eyebrow, `.era-seal`, `.roll-link` buttons, space waypoints/scroll cue, `.orbit-strip`, `#continue-chatting-section`, `"Discover your next connection"` horizontal-header card rail, and `.orbit-footer`), while removing the ink-blue palette override from `atlas.css`.
+- **Restored Always-On Smooth UI Transitions & Scrolling Choreography (`orbit.css`, `orbit-motion.js`, `ambient-canvas.js`, `atlas.css`, `base.css`, `chat.css`)**:
+  - Removed the global `@media (prefers-reduced-motion: reduce)` `.01ms` / `none !important` kill switches and restored `orbitMotionAllowed()` / `AmbientMotionCanvas` always-on motion so Scene Spark (`.universe-island` 550ms morph), drawer transitions, card tilt/scale (`450ms` / `700ms`), and `.era-seal` rotation stay fluid regardless of OS reduced-motion settings.
+  - Restored `.orbit-art.universe-art` `--orbit-parallax` transform, un-gated `@supports (animation-timeline)` scroll-driven timelines (`era-progress`, `era-portal`, `era-card-cadence`), ran `updateScroll()` unconditionally for `--scroll-progress` / `--orbit-parallax` / `.is-scrolled` plus `IntersectionObserver` `.orbit-reveal` staggers, and scheduled Scene Spark `ResizeObserver` updates via `requestAnimationFrame`.
+- **Rebuilt Gargantua Black Hole Shader (`universe-scene.js`, `atlas-scene.css`)**:
+  - Removed the upper-left Whirlpool photo overlay (`atlas-spiral.webp` on `.universe-scene::after`) and replaced the 2D striped black hole shader with a 48-step WebGL1 Schwarzschild geodesic raymarcher (`evalDisk`, periodic Keplerian `diskFilaments`, Doppler beaming, copper-amber-gold-cream blackbody palette, cool cyan-slate shadow dome haze, icy cyan-white inner photon ring, ACES filmic tonemapping, and the small silver-crescent moon positioned left of the bend).
+- **Verification**:
+  - Live browser (`http://localhost:3000/`, `1440x900`): `data-universe-ready="true"`, `data-universe-quality="1"`, zero console errors, smooth Scene Spark intermediate morph frames, active scroll parallax/timelines, and visual parity with the Gargantua reference.
+  - Root checks: `npm run check` (190/190 JS files) and `npm test` (59/59 test files passed).
+  - Next.js checks: `npm run typecheck`, `npm run lint`, `npm test` (18/18 passed), and `npm run build` (12/12 routes) all succeeded.
+
 ## 2026-11-18 - Figma Design System & ERA-Inspired UI/UX & Native Motion Upgrade
 
 - **Figma Design System & Screen Comps (`My C.AI Universe — Orbit x ERA Design System`, `fileKey: IxfwtP1U93dB1vhxH3nYzx`)**:

@@ -532,22 +532,22 @@ body:has(.orbit-discover) .ambient-grain { opacity: .035; }
 .universe-live-dot { height: 5px; width: 5px; border-radius: 50%; background: #83a8d2; box-shadow: 0 0 10px #83a8d244; flex-shrink: 0; }
 .orbit-art.universe-art {
   position: absolute; z-index: 0; inset: -150px calc(clamp(28px, 4vw, 72px) * -1) -70px;
-  width: auto; height: auto; max-width: none; margin: 0; transform: none; perspective: none;
+  width: auto; height: auto; max-width: none; margin: 0; transform: translateY(var(--orbit-parallax, 0px)); will-change: transform; perspective: none;
   pointer-events: none; isolation: isolate;
 }
 .universe-art::before { display: none; }
 .universe-art::after {
   content: ''; position: absolute; z-index: 1; inset: 0; pointer-events: none;
-  background: linear-gradient(90deg, #050610ee 0%, #050610af 26%, #05061015 54%, transparent 74%),
-    linear-gradient(0deg, #050610 0%, #05061022 21%, transparent 45%, transparent 83%, #05061077 100%);
+  background: linear-gradient(90deg, #050610d8 0%, #05061082 24%, #05061012 50%, transparent 70%),
+    linear-gradient(0deg, #050610 0%, #05061028 18%, transparent 42%, transparent 84%, #05061066 100%);
 }
 .universe-art .universe-scene { inset: 0; overflow: hidden; mask-image: linear-gradient(#000 0%, #000 82%, transparent 100%); }
 .universe-art .universe-canvas, .universe-art .universe-fallback { width: 100%; height: 100%; }
-.universe-coordinate { position: absolute; z-index: 2; top: 130px; right: 5%; font: .54rem var(--font-mono); letter-spacing: .18em; color: #8d9bbc; }
+.universe-coordinate { position: absolute; z-index: 2; top: 175px; right: 32%; font: .54rem var(--font-mono); letter-spacing: .18em; color: #8d9bbc; }
 .universe-coordinate::before { content: '+'; margin-right: 12px; color: #b9c6eb; }
 .universe-waypoint { position: absolute; z-index: 2; color: #a5b4d1; font: .59rem var(--font-sans); letter-spacing: .03em; display: flex; align-items: center; gap: 9px; }
 .universe-waypoint > span { width: 4px; height: 4px; background: #c1c9ed; border-radius: 50%; box-shadow: 0 0 9px #aebce788; }
-.universe-waypoint.far { top: 34%; right: 23%; }
+.universe-waypoint.far { top: 29%; right: 42%; }
 .universe-waypoint.near { bottom: 23%; right: 5%; }
 .universe-horizon-line { position: absolute; z-index: 2; right: 8%; bottom: 16%; width: 30%; height: 1px; background: linear-gradient(90deg,transparent,#a1b2e330,transparent); }
 .universe-scroll-cue { position: absolute; bottom: 32px; left: 0; display: flex; align-items: center; gap: 14px; min-height: 44px; color: #8e9bb6; font: .54rem var(--font-mono); letter-spacing: .12em; text-decoration: none; z-index: 3; }
@@ -641,7 +641,13 @@ body:has(.orbit-discover) .ambient-grain { opacity: .035; }
 .atmosphere-toggle::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
 .atmosphere-toggle:active { transform: scale(.97); }
 .orbit-discover .discover-topbar { position: relative; flex-wrap: wrap; }
-.orbit-discover .card-shell, .orbit-discover .cai-card {
+.orbit-discover .card-shell {
+  transition: transform .45s var(--orbit-ease), border-color .3s, box-shadow .3s;
+}
+.orbit-discover .character-track .card-shell:hover {
+  transform: perspective(900px) rotateX(var(--tilt-y, 0deg)) rotateY(var(--tilt-x, 0deg)) translateY(-5px);
+}
+.orbit-discover .cai-card {
   transition: transform var(--dur-xs) var(--ease-tactile), background-color var(--dur-xs), border-color var(--dur-xs);
 }
 .orbit-discover .cai-card:active { transform: scale(0.97); }
@@ -668,27 +674,21 @@ body:has(.orbit-discover) .ambient-grain { opacity: .035; }
 [data-theme="era-day"] :is(.mobile-header, .mobile-bottom-nav, .island-menu) { background: #eae5d9; color: #141414; }
 [data-theme="era-day"] .universe-island { background: #230c1e; color: #f8f6f0; }
 .island-menu {
-  transition: opacity var(--dur-s) var(--ease-decel), transform var(--dur-s) var(--ease-decel), display var(--dur-s) allow-discrete;
-  transition-behavior: allow-discrete;
+  transition: opacity .26s var(--orbit-ease), transform .45s var(--orbit-ease);
 }
-@starting-style {
-  .is-open .island-menu { opacity: 0; transform: translateY(-8px); }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .era-seal { animation: era-seal-turn 20s linear infinite; }
-  .era-seal:hover, .orbit-hero-copy:focus-within .era-seal, .orbit-hero-copy:has(.hero-actions:hover) .era-seal { animation-play-state: paused; }
-  @supports ((animation-timeline: view()) and (animation-range: entry)) {
-    .orbit-discover .discover-topbar::after {
-      content: ''; position: absolute; inset: auto 0 0; height: 2px; background: var(--accent);
-      transform-origin: left; animation: era-progress linear both;
-      animation-timeline: scroll(block nearest);
-    }
-    .orbit-roster {
-      animation: era-portal linear both; animation-timeline: view(); animation-range: entry 0% entry 100%;
-    }
-    .character-track > .bento-cell {
-      animation: era-card-cadence linear both; animation-timeline: view(inline); animation-range: entry 0% entry 100%;
-    }
+.era-seal { animation: era-seal-turn 20s linear infinite; }
+.era-seal:hover, .orbit-hero-copy:focus-within .era-seal, .orbit-hero-copy:has(.hero-actions:hover) .era-seal { animation-play-state: paused; }
+@supports ((animation-timeline: view()) and (animation-range: entry)) {
+  .orbit-discover .discover-topbar::after {
+    content: ''; position: absolute; inset: auto 0 0; height: 2px; background: var(--accent);
+    transform-origin: left; animation: era-progress linear both;
+    animation-timeline: scroll(block nearest);
+  }
+  .orbit-roster {
+    animation: era-portal linear both; animation-timeline: view(); animation-range: entry 0% entry 100%;
+  }
+  .character-track > .bento-cell {
+    animation: era-card-cadence linear both; animation-timeline: view(inline); animation-range: entry 0% entry 100%;
   }
 }
 @keyframes era-seal-turn { to { transform: rotate(360deg); } }
@@ -701,19 +701,8 @@ body:has(.orbit-discover) .ambient-grain { opacity: .035; }
   .orbit-discover .universe-searchbar .search-controls { flex-basis: 100%; order: 1; }
   [data-theme="era-day"] .orbit-discover .universe-art::after { background: linear-gradient(180deg, #f8f6f0 0%, #f8f6f0cc 35%, #f8f6f040 60%, #f8f6f0 100%); }
 }
-@media (prefers-reduced-motion: reduce) {
-  .orbit-discover *, .orbit-discover *::before, .orbit-discover *::after, .island-menu {
-    animation: none !important; transition: none !important; scroll-behavior: auto !important;
-  }
-  .orbit-reveal[data-reveal], .orbit-roster, .character-track > .bento-cell { opacity: 1; translate: none; clip-path: none; }
-  .orbit-art { transform: none; }
-  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
-}
 
 [data-theme="higgsfield"] .sidebar { background: var(--bg-rail) !important; }
-@media (prefers-reduced-motion: reduce) {
-  .era-seal { animation: none !important; }
-}
 
 .orbit-discover .discover-topbar.is-scrolled::after {
   content: ''; position: absolute; inset: auto 0 0; height: 2px; background: var(--accent);
@@ -735,9 +724,6 @@ body:has(.orbit-discover) .ambient-grain { opacity: .035; }
 [data-theme="era-day"] .island-menu .spark-start { background: var(--accent); color: #f8f6f0; }
 [data-theme="era-day"] .island-menu .spark-start:hover { background: var(--accent-hover); }
 [data-theme="era-day"] .universe-island :is(a, button, textarea, select):focus-visible { outline-color: #c29b7f; }
-@media (prefers-reduced-motion: reduce) {
-  .universe-island *, .universe-island *::before, .universe-island *::after { animation: none !important; transition: none !important; }
-}
 
 /* Keep the surrounding workspace and navigation readable in the Day atmosphere. */
 [data-theme="era-day"] body:has(.orbit-discover) .main-workspace { background: var(--bg-canvas); }
@@ -756,11 +742,4 @@ body:has(.orbit-discover) .ambient-grain { opacity: .035; }
   border-color: var(--accent);
 }
 .orbit-discover .card-shell:active .cai-card { transform: scale(0.97); }
-.orbit-discover .cai-avatar { transition-duration: var(--dur-xs); }
-@media (prefers-reduced-motion: reduce) {
-  .universe-island, .island-orb, .orbit-floating-label,
-  .orbit-skeleton, .skeleton-box, .skeleton-line, .skeleton-pill, .skeleton-btn-sm {
-    animation: none !important;
-    transition: none !important;
-  }
-}
+.orbit-discover .cai-avatar { transition: transform .7s var(--orbit-ease), filter .7s; }

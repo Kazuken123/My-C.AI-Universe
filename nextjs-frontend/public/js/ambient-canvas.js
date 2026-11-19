@@ -42,13 +42,9 @@ export class AmbientMotionCanvas {
   }
 
   #init() {
-    const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
-    this.reducedMotion = preference.matches;
-    preference.addEventListener('change', ({ matches }) => {
-      this.reducedMotion = matches;
-      if (matches) this.pause();
-      else this.resume();
-    });
+    // Keep ambient motion active in browser even when OS animations are turned off.
+    this.reducedMotion = false;
+    try { localStorage.removeItem('ambient_motion_disabled'); } catch {}
 
     this.#initDom();
     this.#updateTheme();
@@ -76,6 +72,15 @@ export class AmbientMotionCanvas {
       attributeFilter: ['data-theme']
     });
 
+    this.resume();
+  }
+
+  // Compatibility for callers that toggle or force-start ambient motion.
+  toggleMotion() { this.forceStart(); return true; }
+
+  forceStart() {
+    this.reducedMotion = false;
+    try { localStorage.removeItem('ambient_motion_disabled'); } catch {}
     this.resume();
   }
 

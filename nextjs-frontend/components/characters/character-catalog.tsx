@@ -22,7 +22,7 @@ export function CharacterCatalog() {
   const requestId = useRef(0);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All Canon');
   const [sort, setSort] = useState<CharacterSortOption>('popular');
@@ -30,7 +30,8 @@ export function CharacterCatalog() {
   const fetchCharacters = useCallback(async () => {
     const currentRequest = ++requestId.current;
     setLoading(true);
-    setError(false);
+    document.getElementById('discover-grid')?.scrollTo({ left: 0, behavior: 'instant' });
+    setError(null);
     try {
       const category = activeCategory === 'All Canon' ? undefined : activeCategory === 'Mentor' ? 'Helper' : activeCategory;
       const data = await api.getCharacters({ search: search.trim() || undefined, category, sort });
@@ -40,9 +41,9 @@ export function CharacterCatalog() {
           setLoading(false);
         }
       });
-    } catch {
+    } catch (err: unknown) {
       if (currentRequest === requestId.current) {
-        setError(true);
+        setError(err instanceof Error ? err.message : 'Could not load characters.');
         setLoading(false);
       }
     }
@@ -50,9 +51,6 @@ export function CharacterCatalog() {
 
   useEffect(() => {
     const pendingRequests = requestId;
-    setLoading(true);
-    setError(false);
-    document.getElementById('discover-grid')?.scrollTo({ left: 0, behavior: 'instant' });
     const timer = setTimeout(fetchCharacters, 180);
     return () => { clearTimeout(timer); pendingRequests.current++; };
   }, [fetchCharacters]);
@@ -70,42 +68,27 @@ export function CharacterCatalog() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const resetFilters = () => {
-    setSearch('');
-    setActiveCategory('All Canon');
-  };
-  const retry = () => {
-    document.getElementById('discover-grid')?.focus({ preventScroll: true });
-    void fetchCharacters();
-  };
-  const hasFilters = Boolean(search.trim() || activeCategory !== 'All Canon');
-  const hasCharacters = characters.length > 0;
-  const status = loading
-    ? hasCharacters ? 'Updating characters… Showing previous results.' : 'Loading characters…'
-    : error
-      ? hasCharacters ? 'Couldn’t update characters. Showing previous results.' : ''
-      : `${characters.length} ${characters.length === 1 ? 'character' : 'characters'}`;
+  const resetFilters = () => { setSearch(''); setActiveCategory('All Canon'); };
+  const hasFilters = Boolean(search || activeCategory !== 'All Canon');
 
   return (
     <div className="content-container orbit-discover">
       <header className="discover-topbar universe-searchbar">
-        <span className="topbar-heading">Discover</span>
-      </header>
-      <OrbitHero hidden={hasFilters} />
-      <section className="section-block orbit-roster" id="character-roster" aria-labelledby="roster-heading" tabIndex={-1}>
-        <div className="orbit-section-heading">
-          <h2 id="roster-heading">Characters</h2>
-          <a className="btn-ghost atlas-return" href="#universe-hero" onClick={() => { if (hasFilters) flushSync(resetFilters); }}>Return to scene <span aria-hidden="true">↑</span></a>
-        </div>
-        <div className="atlas-roster-controls">
-          <div className="search-controls">
-            <div className="search-box">
-              <i className="ph-light ph-magnifying-glass search-icon" aria-hidden="true" />
-              <input ref={searchInputRef} type="search" id="discoverSearch" value={search} onChange={event => setSearch(event.target.value)} aria-label="Search characters" placeholder="Search" autoComplete="off" />
-              <kbd className="search-kbd" aria-hidden="true">/</kbd>
-            </div>
+        <div className="topbar-title-group"><span className="topbar-index">YOUR UNIVERSE</span><span className="topbar-heading">Discover</span></div>
+        <div className="search-controls">
+          <div className="search-box">
+            <i className="ph-light ph-magnifying-glass search-icon" aria-hidden="true" />
+            <input ref={searchInputRef} type="search" id="discoverSearch" value={search} onChange={event => setSearch(event.target.value)} aria-label="Search characters" placeholder="Search characters, worlds, stories..." autoComplete="off" />
+            <kbd className="search-kbd">/</kbd>
           </div>
-          <div className="atlas-sort">
+        </div>
+        <button className="atmosphere-toggle" data-atmosphere-toggle type="button" aria-label="Day atmosphere" aria-pressed="false"><span data-atmosphere-label>By Night · Cosmos</span></button>
+      </header>
+      {!hasFilters && <OrbitHero />}
+      <section className="section-block orbit-roster" id="character-roster" aria-labelledby="roster-heading">
+        <div className="orbit-section-heading">
+          <div><h2 id="roster-heading">{hasFilters ? 'Find your kind of story' : 'Discover your next connection'}</h2><p role="status">{loading ? 'Finding your next connection…' : error ? 'Your universe will be right back.' : characters.length + ' characters. Endless ways to begin.'}</p></div>
+          <div className="select-wrap">
             <i className="ph-light ph-funnel-simple select-icon" aria-hidden="true" />
             <select className="select-control" id="discoverSort" value={sort} onChange={event => { const value = event.target.value as CharacterSortOption; transitionCatalog(() => setSort(value)); }} aria-label="Sort characters">
               <option value="popular">Most interactions</option><option value="likes">Most loved</option><option value="newest">New arrivals</option><option value="name">Name A–Z</option>
@@ -115,38 +98,24 @@ export function CharacterCatalog() {
         <div className="roster-filter-bar"><div className="category-pills" id="category-pills" role="group" aria-label="Character Categories">
           {CATEGORY_TABS.map(category => <button key={category} type="button" onClick={() => transitionCatalog(() => setActiveCategory(category))} className={cn('category-pill', activeCategory === category && 'active')} aria-pressed={activeCategory === category}>{category}</button>)}
         </div></div>
-        <div className="atlas-roster-feedback">
-          <p role="status">{status}</p>
-          {error && hasCharacters && <button className="btn-ghost" type="button" onClick={retry}>Retry</button>}
-        </div>
         <div className="character-rail" data-character-rail>
-          <button className="rail-arrow rail-prev" type="button" data-rail-prev aria-label="Previous characters" aria-controls="discover-grid" hidden>
-            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
-          </button>
-          <div className="bento-character-grid character-track" id="discover-grid" aria-busy={loading} tabIndex={0} role="region" aria-roledescription="carousel" aria-label="Characters. Use left and right arrow keys to browse.">
-            {hasCharacters ? characters.map(character => <CharacterCard key={character.id} character={character} />) : loading ? (
-              Array.from({ length: 4 }, (_, index) => <div className="orbit-skeleton atlas-portrait-skeleton" key={index} aria-hidden="true" />)
-            ) : error ? (
-              <div className="orbit-state" role="alert">
-                <h3>Couldn’t load characters</h3>
-                <p>Try again to reload the roster.</p>
-                <button className="btn-island" type="button" onClick={retry}>Try again</button>
-              </div>
-            ) : (
-              <div className="orbit-state">
-                <h3>{hasFilters ? 'No characters found' : 'No characters yet'}</h3>
-                {hasFilters ? (
-                  <><p>Try a different name or category.</p><button className="btn-island" type="button" onClick={() => { searchInputRef.current?.focus({ preventScroll: true }); resetFilters(); }}>Clear filters</button></>
-                ) : <Link className="btn-island" href="/create">Create a character</Link>}
-              </div>
-            )}
-          </div>
-          <button className="rail-arrow rail-next" type="button" data-rail-next aria-label="Next characters" aria-controls="discover-grid" hidden>
-            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
-          </button>
-          <span className="sr-only" data-rail-status role="status" aria-live="polite" />
+        <button className="rail-arrow rail-prev" type="button" data-rail-prev aria-label="Previous characters" aria-controls="discover-grid" hidden>
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+        </button>
+        <div className="bento-character-grid character-track" id="discover-grid" aria-busy={loading} tabIndex={0} role="region" aria-roledescription="carousel" aria-label="Characters. Use left and right arrow keys to browse.">
+          {loading ? Array.from({ length: 8 }, (_, index) => <div className="orbit-skeleton" key={index} aria-hidden="true" />) : error ? (
+            <div className="orbit-state" role="alert"><h3>A little pause in the story.</h3><p>We couldn’t load the characters. Please try again.</p><button className="btn-island" type="button" onClick={fetchCharacters}>Try again <span aria-hidden="true">↗</span></button></div>
+          ) : characters.length ? characters.map(character => <CharacterCard key={character.id} character={character} />) : (
+            <div className="orbit-state"><h3>{hasFilters ? 'No characters found. Yet.' : 'Your universe starts here.'}</h3><p>{hasFilters ? 'Try a different name or explore another genre.' : 'Create your first character and give a new story a beginning.'}</p>{hasFilters ? <button className="btn-island" type="button" onClick={resetFilters}>Clear filters</button> : <Link className="btn-island" href="/create">Create a character ↗</Link>}</div>
+          )}
+        </div>
+        <button className="rail-arrow rail-next" type="button" data-rail-next aria-label="Next characters" aria-controls="discover-grid" hidden>
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+        </button>
+        <span className="sr-only" data-rail-status role="status" aria-live="polite" />
         </div>
       </section>
+      <footer className="orbit-footer"><strong>Made for the stories only you can tell.</strong><span>My C.AI Universe · Your imagination, in motion.</span></footer>
     </div>
   );
 }

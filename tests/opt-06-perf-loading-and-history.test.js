@@ -12,8 +12,9 @@ test('OPT-06: Frontend skeleton screens and markup are present in static HTML', 
 
   const discover = load(indexHtml);
   const shelf = discover('#discover-grid[aria-busy="true"]');
-  assert.ok(shelf.find('.atlas-portrait-skeleton[aria-hidden="true"]').length >= 2,
-    'the server-rendered shelf reserves space for multiple portraits');
+  assert.ok(shelf.find('.skeleton-shell').length >= 2,
+    'the server-rendered shelf reserves space for character cards');
+  assert.ok(indexHtml.includes('skeleton-avatar-box'), 'index.html has skeleton avatar boxes');
 
   // Verify chat.html has initial skeleton stream
   assert.ok(chatHtml.includes('chat-skeleton-stream'), 'chat.html contains initial chat-skeleton-stream');

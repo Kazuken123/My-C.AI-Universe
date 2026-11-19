@@ -208,6 +208,7 @@ test('expanded island uses a fixed panel width and clamps height to the viewport
   assert.equal(h.island.style['--island-height'], '348px');
   h.menu.scrollHeight = 900;
   h.observations[0].callback();
+  h.flush();
   assert.equal(h.island.style['--island-height'], '648px');
 });
 
@@ -244,10 +245,9 @@ test('scene moods reroll without immediately repeating and encode draft URLs saf
   assert.equal(vm.runInContext("sceneSparkHref('https://external.test', 'char', 'hello')", context), '');
 });
 
-test('orbit motion follows live OS preference changes', () => {
+test('orbit motion keeps animations running even when OS reduced-motion is set', () => {
   const source = fs.readFileSync(new URL('../frontend/js/orbit-motion.js', import.meta.url), 'utf8');
-  let changed;
-  const preference = { matches: false, addEventListener(type, callback) { changed = callback; } };
+  const preference = { matches: false, addEventListener() {} };
   const document = {
     readyState: 'complete', documentElement: { dataset: {} },
     body: {}, querySelectorAll: () => [], addEventListener() {},
@@ -256,9 +256,6 @@ test('orbit motion follows live OS preference changes', () => {
     document, window: { addEventListener() {}, matchMedia: () => preference },
     MutationObserver: class { observe() {} }, requestAnimationFrame() { return 1; },
   });
-  assert.equal(document.documentElement.dataset.orbitMotion, 'paused');
-  preference.matches = true;
-  changed();
   assert.equal(document.documentElement.dataset.orbitMotion, 'running');
 });
 
@@ -329,11 +326,12 @@ test('pointer return during the closing morph cancels the hide timer', () => {
 
 test('shared Orbit styles and controls have byte-identical frontend copies', () => {
   for (const [express, next] of [
-    ...['orbit', 'atlas', 'atlas-chat', 'atlas-discover', 'atlas-scene'].map(name => [
+    ...['orbit', 'atlas', 'atlas-chat', 'atlas-scene'].map(name => [
       `frontend/css/${name}.css`, `nextjs-frontend/app/${name}.css`,
     ]),
     ['frontend/js/ambient-canvas.js', 'nextjs-frontend/public/js/ambient-canvas.js'],
     ['frontend/js/orbit-motion.js', 'nextjs-frontend/public/js/orbit-motion.js'],
+    ['frontend/js/universe-scene.js', 'nextjs-frontend/public/js/universe-scene.js'],
   ]) {
     assert.deepEqual(fs.readFileSync(new URL('../' + express, import.meta.url)), fs.readFileSync(new URL('../' + next, import.meta.url)));
   }
@@ -352,38 +350,83 @@ test('Scene Spark preserves canonical Express query routes and encoded Next path
   }
 });
 
-function revealHarness({ reduced, native }) {
+function atmosphereHarness({ saved = 'era-day', storageBlocked = false, reduced = false, native = false, transitions = true } = {}) {
+  const buttons = [];
+  const mutations = [];
+  const writes = [];
+  let snapshots = 0;
+  const root = { dataset: { theme: 'higgsfield' } };
+  const makeButton = () => {
+    const button = {
+      handlers: [], attributes: {}, label: {},
+      setAttribute(key, value) { this.attributes[key] = value; },
+      querySelector() { return this.label; },
+      addEventListener(type, callback) { this.handlers.push(callback); },
+      click() { this.handlers.forEach(callback => callback()); },
+    };
+    buttons.push(button);
+    return button;
+  };
+  const document = { documentElement: root, querySelectorAll: () => buttons };
+  if (transitions) document.startViewTransition = callback => {
+    snapshots++;
+    callback();
+    return { ready: Promise.resolve(), updateCallbackDone: Promise.resolve() };
+  };
   const context = vm.createContext({
-    document: { readyState: 'loading', addEventListener() {} },
-    window: { matchMedia: () => ({ matches: !reduced }), CSS: { supports: query => {
-      assert.equal(query, '(animation-timeline: view()) and (animation-range: entry)');
-      return native;
-    } } },
+    document,
+    window: { matchMedia: () => ({ matches: !reduced }), CSS: { supports: () => native } },
+    localStorage: {
+      getItem(key) { assert.equal(key, 'cai_skill_theme'); if (storageBlocked) throw Error('blocked'); return saved; },
+      setItem(key, value) { if (storageBlocked) throw Error('blocked'); writes.push([key, value]); },
+    },
+    MutationObserver: class { constructor(callback) { mutations.push(callback); } observe() {} },
   });
   vm.runInContext(controlsSource, context);
-  return context;
+  const scan = vm.runInContext('createAtmosphereControls()', context);
+  return { root, makeButton, scan, writes, context, mutations, snapshots: () => snapshots };
 }
 
-test('reveal fallback requires motion preference and unavailable native scroll timelines', () => {
-  for (const native of [false, true]) for (const reduced of [false, true]) {
-    const context = revealHarness({ native, reduced });
-    assert.equal(vm.runInContext('orbitRevealFallbackAllowed()', context), !native && !reduced);
+test('atmosphere restores preference, binds once and synchronizes newly mounted controls', () => {
+  const h = atmosphereHarness();
+  const first = h.makeButton();
+  h.scan(); h.scan();
+  assert.equal(first.handlers.length, 1);
+  assert.equal(first.attributes['aria-pressed'], 'true');
+  first.click();
+  assert.equal(h.root.dataset.theme, 'higgsfield');
+  assert.equal(first.attributes['aria-pressed'], 'false');
+  assert.deepEqual(h.writes, [['cai_skill_theme', 'higgsfield']]);
+  assert.equal(h.snapshots(), 1);
+  const second = h.makeButton(); h.scan();
+  assert.equal(second.attributes['aria-pressed'], 'false');
+  h.root.dataset.theme = 'era-day';
+  h.mutations[0]();
+  assert.equal(first.attributes['aria-pressed'], 'true');
+  assert.equal(second.attributes['aria-pressed'], 'true');
+  assert.match(second.label.textContent, /By Day/);
+});
+
+test('atmosphere works with blocked storage, reduced motion and unavailable View Transitions', () => {
+  for (const options of [{ storageBlocked: true }, { reduced: true }, { transitions: false }]) {
+    const h = atmosphereHarness({ saved: null, ...options });
+    const button = h.makeButton(); h.scan(); button.click();
+    assert.equal(h.root.dataset.theme, 'era-day');
+    assert.equal(button.attributes['aria-pressed'], 'true');
+    if (options.transitions === false) assert.equal(h.snapshots(), 0);
   }
+});
+
+test('scroll updates run regardless of native timeline support and CSS enables scroll timelines', () => {
   const source = fs.readFileSync(new URL('../frontend/js/orbit-motion.js', import.meta.url), 'utf8');
-  assert.match(source, /orbitRevealFallbackAllowed\(\) && 'IntersectionObserver' in window/);
-  assert.match(source, /if \(orbitRevealFallbackAllowed\(\)\) queueScrollUpdate\(\)/);
+  assert.match(source, /orbitScrollTimelinesSupported\(\)/);
+  assert.match(source, /window\.addEventListener\('scroll', queueScrollUpdate/);
+  assert.match(source, /'--orbit-parallax'/);
   const css = fs.readFileSync(new URL('../frontend/css/orbit.css', import.meta.url), 'utf8');
   assert.match(css, /@supports \(\(animation-timeline: view\(\)\) and \(animation-range: entry\)\)/);
   assert.match(css, /animation-timeline: scroll\(block nearest\)/);
+  assert.match(css, /animation-timeline: view\(\)/);
   assert.match(css, /animation-timeline: view\(inline\)/);
-});
-
-
-test('reveal observer is refreshed when the motion preference changes', () => {
-  const source = fs.readFileSync(new URL('../frontend/js/orbit-motion.js', import.meta.url), 'utf8');
-  const initialization = source.split('/** Shared progressive enhancement.')[1];
-  assert.match(initialization, /function refreshRevealObserver\(\)\s*{\s*observer\?\.disconnect\(\);\s*observed = new WeakSet\(\);/);
-  assert.match(initialization, /addEventListener\?\.\('change', \(\) => {[^}]*[\s\S]*?refreshRevealObserver\(\);\s*scan\(\);/);
 });
 
 test('Day atmosphere covers the workspace, search, rail and chat history text', () => {

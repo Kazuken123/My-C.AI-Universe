@@ -9,7 +9,6 @@ import './auth.css';
 import './orbit.css';
 import './atlas.css';
 import './atlas-scene.css';
-import './atlas-discover.css';
 import './atlas-chat.css';
 import Script from 'next/script';
 import { AuthProvider } from '@/context/auth-context';
