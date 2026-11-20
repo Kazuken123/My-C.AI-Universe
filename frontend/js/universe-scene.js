@@ -125,6 +125,7 @@
     uniform vec2 uCenter;
     uniform float uRadius;
     uniform float uTime;
+    uniform vec2 uPointer;
     varying vec2 vUv;
 
     float hash(vec2 p) {
@@ -228,7 +229,8 @@
 
     vec3 sky(vec2 uv) {
       vec2 safeUv = mirrorUv(uv);
-      vec2 p = (safeUv - uCenter) * uSize / max(uRadius, 1.0);
+      vec2 dynamicCenter = uCenter + vec2(uPointer.x * 0.14, uPointer.y * 0.14);
+      vec2 p = (safeUv - dynamicCenter + uPointer * 0.18) * uSize / max(uRadius, 1.0);
       float grain = noise(p * 2.0) * 0.5 + noise(p * 6.0) * 0.3 + noise(p * 17.0) * 0.2;
       float lane = p.y - 0.35 * p.x - 0.62 + 0.2 * sin(p.x * 0.8);
       float cloud = exp(-abs(lane) * 2.8) * pow(max(grain, 0.0001), 2.0) + exp(-abs(lane + 0.24) * 9.0) * grain * 0.36;
@@ -241,13 +243,17 @@
     }
 
     void main() {
-      vec2 sp = (vUv - uCenter) * uSize / max(uRadius, 1.0);
-      // Tilt equatorial plane ~22.5 deg from bottom-left to top-right.
-      vec2 p = mat2(0.9239, -0.3827, 0.3827, 0.9239) * sp;
+      vec2 dynamicCenter = uCenter + vec2(uPointer.x * 0.14, uPointer.y * 0.14);
+      vec2 sp = (vUv - dynamicCenter) * uSize / max(uRadius, 1.0);
+      // Tilt equatorial plane ~22.5 deg from bottom-left to top-right, reacting subtly in 3D to pointer orbit.
+      float roll = -0.3927 + uPointer.x * 0.18;
+      float cR = cos(roll);
+      float sR = sin(roll);
+      vec2 p = mat2(cR, sR, -sR, cR) * sp;
       float sr = length(p);
 
       float camDist = 14.0;
-      float inc = 0.095;
+      float inc = clamp(0.095 - uPointer.y * 0.24, 0.04, 0.17);
       float fovScale = 0.189;
       float sInc = sin(inc), cInc = cos(inc);
       vec3 camPos = vec3(0.0, camDist * sInc, camDist * cInc);
@@ -343,7 +349,7 @@
           // Refined astronomical gravitational bend without over-stretching nearby nebulae into rings.
           dP = (dP / (1.0 + length(dP) * 0.45)) * 0.42 * (1.0 - smoothstep(1.8, 4.4, sr));
         }
-        vec2 dSp = mat2(0.9239, 0.3827, -0.3827, 0.9239) * dP;
+        vec2 dSp = mat2(cR, -sR, sR, cR) * dP;
         vec2 lensedUv = vUv + dSp * uRadius / uSize;
         bg = sky(lensedUv);
         // Delicate Einstein-ring background magnification hugging the photon sphere.
@@ -557,7 +563,7 @@
         corner = gl.getAttribLocation(lensProgram,'aCorner');
         const locations = (target,names) => Object.fromEntries(names.map(name => [name,gl.getUniformLocation(target,name)]));
         uniforms = locations(program,['uTime','uAspect','uPixelRatio','uMaxPointSize','uPointer']);
-        lensUniforms = locations(lensProgram,['uSize','uCenter','uRadius','uTime','uSky']);
+        lensUniforms = locations(lensProgram,['uSize','uCenter','uRadius','uTime','uSky','uPointer']);
         gl.useProgram(program);
         gl.uniform1f(uniforms.uMaxPointSize,gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1]);
         gl.bindTexture(gl.TEXTURE_2D,skyTexture);
@@ -608,6 +614,7 @@
       gl.uniform2f(lensUniforms.uCenter,narrow ? .78 : .77,narrow ? .66 : .58);
       gl.uniform1f(lensUniforms.uRadius,Math.min(width*(narrow ? .21 : .168),height*(narrow ? .19 : .31)));
       gl.uniform1f(lensUniforms.uTime,elapsed);
+      gl.uniform2f(lensUniforms.uPointer,pointer[0],pointer[1]);
       gl.drawArrays(gl.TRIANGLES,0,3);
       gl.bindTexture(gl.TEXTURE_2D,null);
       gl.disableVertexAttribArray(corner);
@@ -615,6 +622,8 @@
       bindParticles();
       gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
       gl.drawArrays(gl.POINTS,geometry.opaqueOffset,geometry.data.length/15-geometry.opaqueOffset);
+      host.style?.setProperty?.('--pointer-x', pointer[0].toFixed(4));
+      host.style?.setProperty?.('--pointer-y', pointer[1].toFixed(4));
       host.dataset.universeReady = 'true';
     }
     // Ignore startup, GPU reallocation and hidden time. Eight slow submissions
@@ -724,16 +733,30 @@
       visible = entries[0].isIntersecting;
       host.dataset.universeVisible = String(visible);
       sync();
-    }) : null;
+    }, { rootMargin: '140px 0px' }) : null;
     viewObserver?.observe(host);
     document.addEventListener('visibilitychange', sync, { signal });
-    art.addEventListener('pointermove', event => {
+    const updatePointerFromEvent = (event, preferBounds) => {
       if (event.pointerType !== 'mouse' || !program || !canAnimate()) return;
-      const bounds = art.getBoundingClientRect();
-      target[0] = ((event.clientX - bounds.left) / bounds.width - 0.5) * 0.18;
-      target[1] = ((event.clientY - bounds.top) / bounds.height - 0.5) * 0.12;
-    }, { passive: true, signal });
-    art.addEventListener('pointerleave', () => { target[0] = 0; target[1] = 0; }, { signal });
+      const bounds = preferBounds && art.getBoundingClientRect ? art.getBoundingClientRect() : null;
+      const useBounds = bounds && bounds.width > 0 && bounds.height > 0 && bounds.top >= -4;
+      const w = useBounds ? bounds.width : (window.innerWidth || width || 1);
+      const h = useBounds ? bounds.height : (window.innerHeight || height || 1);
+      const left = useBounds ? bounds.left : 0;
+      const top = useBounds ? bounds.top : 0;
+      const nx = Math.max(-0.5, Math.min(0.5, (event.clientX - left) / w - 0.5));
+      const ny = Math.max(-0.5, Math.min(0.5, (event.clientY - top) / h - 0.5));
+      target[0] = nx * 0.22;
+      target[1] = ny * 0.15;
+    };
+    const resetPointer = () => { target[0] = 0; target[1] = 0; };
+    art.addEventListener('pointermove', event => updatePointerFromEvent(event, true), { passive: true, signal });
+    art.addEventListener('pointerleave', event => { if (!event.relatedTarget) resetPointer(); }, { signal });
+    document.addEventListener('pointermove', event => updatePointerFromEvent(event, false), { passive: true, signal });
+    document.addEventListener('pointerleave', resetPointer, { signal });
+    if (typeof window.addEventListener === 'function') {
+      window.addEventListener('blur', resetPointer, { signal });
+    }
     canvas?.addEventListener('webglcontextlost', event => {
       event.preventDefault(); lost = true; delete host.dataset.universeReady; sync();
     }, { signal });

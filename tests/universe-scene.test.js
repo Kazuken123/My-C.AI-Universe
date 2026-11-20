@@ -141,6 +141,28 @@ test('pointer changes perspective while touch does not steer the camera', () => 
   assert.ok(h.calls.pointer[1] < 0);
 });
 
+test('document pointer steering updates lens uPointer, CSS vars, and resets on leave', () => {
+  const h = harness();
+  const styleProps = {};
+  if (h.host) h.host.style = { setProperty(k, v) { styleProps[k] = v; } };
+  h.document.dispatchEvent(Object.assign(new Event('pointermove'), { pointerType: 'mouse', clientX: 1200, clientY: 0 }));
+  h.step(200);
+  assert.ok(h.calls.pointer[0] > 0);
+  assert.ok(h.calls.pointer[1] < 0);
+  if (h.host) {
+    assert.ok(Number(styleProps['--pointer-x']) > 0);
+    assert.ok(Number(styleProps['--pointer-y']) < 0);
+  }
+  h.document.dispatchEvent(new Event('pointerleave'));
+  for (let i = 1; i <= 60; i++) h.step(200 + i * 35);
+  assert.ok(Math.abs(h.calls.pointer[0]) < 0.01);
+  assert.ok(Math.abs(h.calls.pointer[1]) < 0.01);
+  const src = readFileSync(new URL('../frontend/js/universe-scene.js', import.meta.url), 'utf8');
+  assert.match(src, /lensUniforms\.uPointer/);
+  assert.match(src, /dynamicCenter/);
+  assert.match(src, /host\.style\?\.setProperty\?\.\('--pointer-x'/);
+});
+
 test('route removal releases GPU resources, observers and animation', () => {
   const h = harness();
   h.detach();

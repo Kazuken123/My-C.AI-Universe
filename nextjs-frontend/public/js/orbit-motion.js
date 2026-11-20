@@ -223,6 +223,7 @@ function createUniverseControls() {
     const { signal } = controller;
     let frame;
     let statusTimer;
+    let swipeTimer;
     const cards = () => [...track.querySelectorAll(':scope > .bento-cell:has([data-char-card])')];
 
     function preloadUpcomingCards() {
@@ -279,6 +280,21 @@ function createUniverseControls() {
       if (!item) return;
       const stride = item.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 0);
       const count = Math.max(1, Math.floor(track.clientWidth / stride));
+      if (motionAllowed()) {
+        const allItems = cards();
+        allItems.forEach((card, idx) => {
+          card.style?.setProperty?.('--swipe-order', String(idx % Math.max(1, count + 2)));
+        });
+        rail.dataset.swipeDir = direction > 0 ? 'next' : 'prev';
+        rail.classList.remove('is-swiping');
+        void rail.offsetWidth;
+        rail.classList.add('is-swiping');
+        clearTimeout(swipeTimer);
+        swipeTimer = setTimeout(() => {
+          rail.classList.remove('is-swiping');
+          delete rail.dataset.swipeDir;
+        }, 460);
+      }
       track.scrollBy({ left: direction * stride * count, behavior: motionAllowed() ? 'smooth' : 'instant' });
     }
     previous.addEventListener('click', () => move(-1), { signal });
@@ -297,7 +313,7 @@ function createUniverseControls() {
     const content = new MutationObserver(queueUpdate); content.observe(track, { childList: true, attributes: true, attributeFilter: ['aria-busy'] });
     update();
     preloadUpcomingCards();
-    return () => { controller.abort(); size.disconnect(); content.disconnect(); cancelAnimationFrame(frame); clearTimeout(statusTimer); };
+    return () => { controller.abort(); size.disconnect(); content.disconnect(); cancelAnimationFrame(frame); clearTimeout(statusTimer); clearTimeout(swipeTimer); };
   }
   return () => {
     for (const collection of [islands, rails]) for (const [element, cleanup] of collection) if (!element.isConnected) { cleanup(); collection.delete(element); }
@@ -336,7 +352,10 @@ function initOrbitMotion() {
       bar?.classList.toggle('is-scrolled', source.scrollTop > 24);
       const max = source.scrollHeight - source.clientHeight;
       bar?.style.setProperty('--scroll-progress', String(max > 0 ? source.scrollTop / max : 0));
-      scroller.querySelector('.orbit-art')?.style.setProperty('--orbit-parallax', `${Math.min(source.scrollTop * .08, 36)}px`);
+      const art = scroller.querySelector('.orbit-art');
+      if (art && !art.classList?.contains('universe-art')) {
+        art.style.setProperty('--orbit-parallax', `${Math.min(source.scrollTop * .08, 36)}px`);
+      }
     });
   }
   function queueScrollUpdate() {

@@ -1,5 +1,23 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-11-19 - 3D Cursor Parallax for Gargantua & Whirlpool, Smooth Scroll Containment, Cosmic Glass Sidebar, and Carousel Swipe Choreography
+
+- **Preserved Current Space Design & 3D Cursor Parallax (`frontend/js/universe-scene.js`, `frontend/css/atlas-scene.css`, `nextjs-frontend/` mirrors)**:
+  - Merged `codex/space-atlas-redesign` (`34838a2`) into `main` so the current Gargantua geodesic raymarching shader and Whirlpool galaxy hero framing remain the baseline.
+  - Added `uPointer` (`lensUniforms.uPointer`) into `lensFragment`, shifting `dynamicCenter` (`uCenter + vec2(uPointer.x * 0.14, uPointer.y * 0.14)`) and modulating 3D viewing inclination (`inc`) and equatorial `roll` so cursor movement physically shifts and tilts Gargantua in 3D space rather than leaving it frozen over moving stars.
+  - Synced `--pointer-x` and `--pointer-y` CSS custom properties on `host` in `draw()`, driving `translate` and `perspective(520px) rotateX(...) rotateY(...)` on `.universe-art .universe-scene::after` so the far-left Whirlpool galaxy moves in counter-depth parallax.
+  - Added viewport-stable `document` `pointermove` / `pointerleave` and `window` `blur` listeners alongside scrolled-bounds checks (`bounds.top >= -4`) so cursor tracking continues smoothly across interactive UI layers (`pointer-events: none` hero backdrop) and partial page scroll without `NaN` or center-snapping jumps.
+- **Scroll Smoothness & Compositor Containment (`frontend/js/orbit-motion.js`, `frontend/css/orbit.css`, `frontend/js/universe-scene.js`)**:
+  - Stopped `updateScroll()` from mutating `--orbit-parallax` on `.universe-art`, set `.orbit-art.universe-art` to `transform: none; will-change: auto;`, GPU-isolated `.universe-scene` / `.universe-canvas`, expanded `viewObserver` `rootMargin` to `'140px 0px'`, and replaced `@keyframes era-portal` `clip-path` transitions with compositor-friendly `opacity` + `translate`.
+- **Cosmic Glass Sidebar Upgrade (`frontend/css/orbit.css`, `nextjs-frontend/app/orbit.css`)**:
+  - Upgraded `.sidebar` and `[data-theme="higgsfield"] .sidebar` to match the Orbit Studio dashboard aesthetic with layered obsidian-indigo glass translucency, luminous `.brand-mark` glow, pill `.engine-telemetry` telemetry capsule, glowing left active indicator bar (`.nav-item::before`), `.nav-kbd` / `.mono-counter` pills, `.recent-chat-item` cards, and glass `.sidebar-unified-card` / `.auth-user-view:has(> .auth-user-meta-wrap)` footer dock.
+- **Directional Carousel `< >` Swipe Motion (`frontend/js/orbit-motion.js`, `frontend/css/orbit.css`)**:
+  - Upgraded `.rail-arrow` into tactile `44px` floating glass capsules (`38px` on `@media (hover: none)`) and added staggered directional card glide choreography (`is-swiping`, `data-swipe-dir`, `--swipe-order`, `orbitRailSwipeNext`, `orbitRailSwipePrev`) when clicking prev/next arrows.
+- **Verification**:
+  - Updated `tests/universe-scene.test.js` (`22/22` passed) and `tests/ui-navigation.test.js` (`16/16` passed), plus byte-identical parity checks across all 4 shared `frontend/` and `nextjs-frontend/` files.
+  - Express checks: `npm run check` (`190` JS files, `0` failed) and `npm test` (`59/59` test files passed).
+  - Next.js checks: `npm --prefix nextjs-frontend test` (`18/18` passed), `npm --prefix nextjs-frontend run build` (`12/12` static pages), `typecheck`, and `lint` succeeded.
+
 ## 2026-11-19 - One-Way Braided Silk Black Hole Shader, Restored Cosmos & Whirlpool Galaxy, Removed Atmosphere Toggle, and Fluid Hover Physics
 
 - **Black Hole Flow, Rim Texture, Color Palette & Space Bend (`frontend/js/universe-scene.js`, `nextjs-frontend/public/js/universe-scene.js`)**:

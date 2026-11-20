@@ -38,7 +38,8 @@
   left: 16%;
   width: min(19%, 24cqh, 210px);
   aspect-ratio: 666 / 460;
-  translate: -38.4% -49.1%;
+  translate: calc(-38.4% + var(--pointer-x, 0) * 165px) calc(-49.1% - var(--pointer-y, 0) * 135px);
+  transform: perspective(520px) rotateX(calc(var(--pointer-y, 0) * -38deg)) rotateY(calc(var(--pointer-x, 0) * 42deg));
   transform-origin: 38.4% 49.1%;
   background: url('/images/atlas-spiral.webp') center / contain no-repeat;
   mask-image: linear-gradient(90deg, transparent, #000 12% 90%, transparent),
@@ -46,6 +47,7 @@
   mask-composite: intersect;
   mix-blend-mode: screen;
   opacity: .88;
+  will-change: transform, translate;
   animation: atlas-spiral-drift 16s ease-in-out infinite alternate paused;
 }
 .universe-art .universe-scene[data-scene-active="true"]::after {
