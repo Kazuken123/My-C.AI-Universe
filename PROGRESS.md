@@ -1,5 +1,33 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-11-21 - Per-Character Deduplication, SSE Keepalive, `<thought>` Collision Fix & Gemini Timeout Resilience
+
+- **Restored Per-Character Deduplication (`common.js`, `chat-utils.ts`, `chats-page.js`, `saved-chats-list.tsx`)**:
+  - Added `clearActiveSessionForCharacter(characterId, expectedSessionId)` to clear stale `cai_active_session_by_char` entries when a session is deleted.
+  - Hardened `deduplicateSessionsByCharacter(sessions)` to deterministically pick the active session (if present) or the newest session by `updatedAt || createdAt` even if input isn't pre-sorted.
+  - Stored `this.rawSessions` in `chats-page.js` and rendered `deduplicateSessionsByCharacter(this.rawSessions)` (1 newest/current card per character). On delete: remove the deleted ID from `this.rawSessions`, clear `cai_active_session_by_char` if it matched, and re-render so any older thread for that character promotes immediately without reload.
+  - Added `onerror="this.onerror=null;this.src='/favicon.svg'"` fallback on `.atlas-saved-avatar`.
+  - Mirrored `getActiveSessionForCharacter` / `clearActiveSessionForCharacter` and `updatedAt`-aware `deduplicateSessionsByCharacter` in `chat-utils.ts`.
+  - Restored `rawSessions` state + `useMemo(() => deduplicateSessionsByCharacter(rawSessions), [rawSessions])` (`EBAP-01`) + broken-avatar fallback in `SavedChatsList`.
+  - Left the in-room History Drawer (`renderCharacterHistory` / `chat-drawer-history.tsx`) untouched so older threads remain accessible inside each character's chat room.
+- **Fixed Gemini Latency, `<thought>` Collision & Failover (`index.js`, `characterPrompt.js`, `gemini.js`, `appraisal.service.js`, `memoryClient.js`)**:
+  - Added `GEMINI_APPRAISAL_MODEL` (defaulting to `'gemini-3.1-flash-lite'`) and `GEMINI_STREAM_TIMEOUT` (default `18000` ms).
+  - Added `options.omitThoughtTag` support in `characterPrompt.js`: when `true`, omit section `0. INTERNAL COGNITIVE MONOLOGUE (<thought>)` and strip `<thought>...</thought>` blocks from `manyShotBlock` so `gemini-3.5-*` never hits the reserved-tag parser hang.
+  - Detected `gemini-3.5-*` models (`isGemini35Model`) in `gemini.js` and built each candidate model's system prompt with `omitThoughtTag: isGemini35Model(currentModel)`.
+  - Passed `httpOptions: { timeout: options.timeout || config.GEMINI_STREAM_TIMEOUT || 18000 }` (and `abortSignal` when supplied) to `generateContentStream()`.
+  - Stopped retrying the same model on `MALFORMED_RESPONSE`, incomplete-stream errors, `504 DEADLINE_EXCEEDED`, or timeouts — fail over immediately to the next model in `#getModelsToTry()`. Only retry fast transient `429`/`503` errors once (`800ms` backoff, only when the failed attempt took `< 5s`).
+  - Used `config.GEMINI_APPRAISAL_MODEL || 'gemini-3.1-flash-lite'` and capped appraisal timeout at `6000ms` (returning `null` gracefully on timeout without stalling chat generation).
+  - Extended failed-probe cooldown to `5 minutes` in `memoryClient.js` when running in production without an explicit `MEMORY_SERVICE_URL`.
+- **SSE Proxy Resilience & Chat UI Responsiveness (`chat.controller.js`, `api.js`, `api.ts`, `chat.js`)**:
+  - For standard streaming turns (`isStreaming && !regenerate && !isContinue`), kept all validation before headers, then immediately flushed proxy-safe SSE headers (`Content-Type: text/event-stream; charset=utf-8`, `Cache-Control: no-cache, no-transform`, `Connection: keep-alive`, `X-Accel-Buffering: no`) + `: connected\n\n` and a 15s `: keepalive\n\n` interval (cleared in `finally` / `res.on('close')`) before `prepareResponseContext` and `chatStream`.
+  - Normalized CRLF before splitting SSE frames, flushed trailing buffered frames at EOF, ignored `:` keepalive comments, and added a `60s` client inactivity timeout (`AbortController` reset on every received chunk) in `api.js` & `api.ts` so dead sockets recover automatically instead of hanging indefinitely on `▌`.
+  - Disabled `#sendBtn` / `#continueBtn` visually while `isSending` is active and showed a subtle thinking state until the first token arrives in `chat.js`.
+  - Finalized the turn immediately (`0ms`) from `donePayload.userMessage` & `donePayload.aiMessage` instead of blocking on an extra `GET /api/chats/:sessionId` roundtrip to Turso (falling back to `getChatSession` only if payload data is missing or stream errored).
+- **Verification**:
+  - Added `tests/chats-dedup-and-stream-resilience.test.mjs` covering `/chats` deduplication & multi-thread deletion, `omitThoughtTag`, `GeminiProvider` timeout & immediate failover on `MALFORMED_RESPONSE`, and SSE headers/keepalive cleanup.
+  - Express checks: `npm run check` (`191` JS files, `0` failed) and `npm test` (`59/60` test files passed, code 0).
+  - Next.js checks: `npm --prefix nextjs-frontend test` (`18/18` passed), updated `EBAP-01` test to verify `rawSessions` + `useMemo`, `typecheck`, and `lint` succeeded.
+
 ## 2026-11-19 - 3D Cursor Parallax for Gargantua & Whirlpool, Smooth Scroll Containment, Cosmic Glass Sidebar, and Carousel Swipe Choreography
 
 - **Preserved Current Space Design & 3D Cursor Parallax (`frontend/js/universe-scene.js`, `frontend/css/atlas-scene.css`, `nextjs-frontend/` mirrors)**:

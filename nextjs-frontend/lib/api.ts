@@ -334,46 +334,67 @@ export class ApiClient {
     onToken: (token: string) => void,
     onDone?: (doneChunk: ChatStreamDoneChunk) => Promise<void> | void
   ): Promise<void> {
-    const token = getAuthToken();
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      Accept: 'text/event-stream',
-      ...(token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {}),
+    const inactivityTimeoutMs = 60000;
+    let timeoutHandle: NodeJS.Timeout | null = null;
+    const resetTimeout = () => {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
+      timeoutHandle = setTimeout(() => {
+        console.warn('[API SSE] Client 60s inactivity timeout reached');
+        abortController.abort(new Error('SSE inactivity timeout'));
+      }, inactivityTimeoutMs);
     };
 
-    const response = await fetch(`${this.baseUrl}/api/chat?stream=true`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
-    });
+    const abortController = new AbortController();
+    try {
+      const token = getAuthToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+        ...(token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {}),
+      };
 
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({}));
-      const message = data?.error?.message || `HTTP ${response.status}: Chat stream failed`;
-      throw new ApiError(message, response.status, data?.error?.code);
-    }
+      resetTimeout();
 
-    if (!response.body) {
-      throw new ApiError('ReadableStream not supported by response body', 500);
-    }
+      const response = await fetch(`${this.baseUrl}/api/chat?stream=true`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+        signal: abortController.signal,
+      });
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder('utf-8');
-    let buffer = '';
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        const message = data?.error?.message || `HTTP ${response.status}: Chat stream failed`;
+        throw new ApiError(message, response.status, data?.error?.code);
+      }
+
+      if (!response.body) {
+        throw new ApiError('ReadableStream not supported by response body', 500);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
       let receivedDone = false;
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        resetTimeout();
 
-      buffer += decoder.decode(value, { stream: true });
-      const events = buffer.split('\n\n');
-      buffer = events.pop() || '';
+        buffer += decoder.decode(value, { stream: true });
+        // Normalize CRLF to LF
+        buffer = buffer.replace(/\r\n/g, '\n');
 
-      for (const event of events) {
-        const trimmed = event.trim();
-        if (!trimmed.startsWith('data:')) continue;
-        const jsonStr = trimmed.slice(5).trim();
+        const events = buffer.split('\n\n');
+        buffer = events.pop() || '';
+
+        for (const event of events) {
+          const trimmed = event.trim();
+          // Ignore : keepalive comments
+          if (!trimmed || trimmed.startsWith(':')) continue;
+          if (!trimmed.startsWith('data:')) continue;
+          const jsonStr = trimmed.slice(5).trim();
           const parsed = JSON.parse(jsonStr);
           if (parsed.error) throw new Error(typeof parsed.error === 'string' ? parsed.error : parsed.error.message);
           if (parsed.token) onToken(parsed.token);
@@ -381,9 +402,28 @@ export class ApiClient {
             receivedDone = true;
             if (typeof onDone === 'function') await onDone(parsed);
           }
+        }
       }
+
+      // Flush trailing buffered frames at EOF
+      if (buffer.trim()) {
+        const trimmed = buffer.trim();
+        if (trimmed.startsWith('data:')) {
+          const jsonStr = trimmed.slice(5).trim();
+          const parsed = JSON.parse(jsonStr);
+          if (parsed.error) throw new Error(typeof parsed.error === 'string' ? parsed.error : parsed.error.message);
+          if (parsed.token) onToken(parsed.token);
+          if (parsed.done) {
+            receivedDone = true;
+            if (typeof onDone === 'function') await onDone(parsed);
+          }
+        }
+      }
+
+      if (!receivedDone) throw new Error('Stream ended before the turn was saved');
+    } finally {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
     }
-    if (!receivedDone) throw new Error('Stream ended before the turn was saved');
   }
 
   updateChatMessage(

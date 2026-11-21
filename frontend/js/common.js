@@ -125,29 +125,53 @@ export function setActiveSessionForCharacter(characterId, sessionId) {
 }
 
 /**
- * Deduplicate chat sessions by characterId while keeping the current (active or most recent) session
- * and counting total chats per character.
+ * Clear the remembered active session for a character. When `expectedSessionId` is provided,
+ * the entry is only cleared if it still points at that session (avoids clobbering a newer choice).
+ */
+export function clearActiveSessionForCharacter(characterId, expectedSessionId) {
+  if (!characterId || typeof localStorage === 'undefined') return;
+  try {
+    const raw = localStorage.getItem(ACTIVE_SESSION_STORAGE_KEY);
+    if (!raw) return;
+    const map = JSON.parse(raw);
+    if (!map || typeof map !== 'object' || !(characterId in map)) return;
+    if (expectedSessionId && map[characterId] !== expectedSessionId) return;
+    delete map[characterId];
+    localStorage.setItem(ACTIVE_SESSION_STORAGE_KEY, JSON.stringify(map));
+  } catch {
+    // ignore storage error
+  }
+}
+
+function sessionTimestamp(s) {
+  const t = Date.parse(s?.updatedAt || s?.createdAt || '');
+  return Number.isFinite(t) ? t : 0;
+}
+
+/**
+ * Deduplicate chat sessions by characterId. For each character keeps exactly one session:
+ * the remembered active session if it is present in the input, otherwise the newest session by
+ * `updatedAt || createdAt` (input order does not matter). Adds `threadCount`/`chatCount`.
+ * Output is sorted newest-first by the chosen session's timestamp.
  */
 export function deduplicateSessionsByCharacter(sessions = []) {
   if (!Array.isArray(sessions)) return [];
-  const map = new Map();
+  const groups = new Map();
   for (const s of sessions) {
     if (!s || !s.characterId) continue;
-    const activeSessionId = getActiveSessionForCharacter(s.characterId);
-    if (!map.has(s.characterId)) {
-      map.set(s.characterId, { ...s, threadCount: 1, chatCount: 1 });
-    } else {
-      const existing = map.get(s.characterId);
-      const nextCount = (existing.threadCount || 1) + 1;
-      if (activeSessionId && s.id === activeSessionId && existing.id !== activeSessionId) {
-        map.set(s.characterId, { ...s, threadCount: nextCount, chatCount: nextCount });
-      } else {
-        existing.threadCount = nextCount;
-        existing.chatCount = nextCount;
-      }
-    }
+    if (!groups.has(s.characterId)) groups.set(s.characterId, []);
+    groups.get(s.characterId).push(s);
   }
-  return Array.from(map.values());
+  const result = [];
+  for (const [characterId, list] of groups) {
+    const activeId = getActiveSessionForCharacter(characterId);
+    let chosen = activeId ? list.find(s => s.id === activeId) : null;
+    if (!chosen) {
+      chosen = list.reduce((best, s) => (sessionTimestamp(s) > sessionTimestamp(best) ? s : best), list[0]);
+    }
+    result.push({ ...chosen, threadCount: list.length, chatCount: list.length });
+  }
+  return result.sort((a, b) => sessionTimestamp(b) - sessionTimestamp(a));
 }
 
 /**

@@ -277,6 +277,9 @@ export function generateCharacterPrompt(character, options = {}) {
   } = options;
 
   const manyShotBlock = getCharacterManyShotExemplars(character.name);
+  const cleanManyShotBlock = options.omitThoughtTag && manyShotBlock
+    ? manyShotBlock.replace(/<thought>[\s\S]*?<\/thought>\n*/gi, '')
+    : manyShotBlock;
 
   // Scan user message, recent memory, and pinned messages for Lorebook keywords
   const textToScan = [
@@ -374,7 +377,7 @@ Format:
 
 IMPORTANT RULE: When the user asks a factual or meta question (including questions about previous messages, conversation history, or direct queries), answer it naturally in character first, then continue the roleplay scene.
 
-Formatting & Style Guidelines (Light Novel Roleplay Style):
+Formatting & Style Guidelines (Light Novel Roleplay Style):${options.omitThoughtTag ? '' : `
 0. INTERNAL COGNITIVE MONOLOGUE & SENSORY SUBTEXT (MANDATORY FIRST STEP):
    Before generating any spoken dialogue, narration, or visible roleplay text, you MUST FIRST generate an internal cognitive thought block enclosed within <thought>...</thought> tracking ${character.name}'s mental state:
    <thought>
@@ -383,7 +386,7 @@ Formatting & Style Guidelines (Light Novel Roleplay Style):
    Sensory & Scene Anchor: <Physical actions, stage/room details, and micro-expressions>
    Recalled Memory: <Which detail from earlier turns or the Lorebook applies right now>
    </thought>
-   Immediately follow </thought> on a new line with your formatted roleplay response (*italic actions*, ${character.name}: "Dialogue").
+   Immediately follow </thought> on a new line with your formatted roleplay response (*italic actions*, ${character.name}: "Dialogue").`}
 1. Format your replies for clear readability with natural paragraph breaks.
 2. Start spoken dialogue lines with: ${character.name}: "Dialogue"
 3. Put narration, actions, internal feelings, or scene descriptions on their own lines wrapped in single asterisks *like this*.
@@ -416,8 +419,8 @@ ${options.labAlternatives
 [CHARACTER PROFILE & CORE PERSONA]
 ${baseSystemPrompt}`;
 
-  if (manyShotBlock && !options.skipExemplars) {
-    staticPrompt += `\n\n${manyShotBlock}`;
+  if (cleanManyShotBlock && !options.skipExemplars) {
+    staticPrompt += `\n\n${cleanManyShotBlock}`;
   }
 
   let dynamicBlocks = '';

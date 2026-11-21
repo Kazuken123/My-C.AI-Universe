@@ -529,6 +529,26 @@
   filter: brightness(0.95);
 }
 
+.composer-send-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.composer-send-btn.thinking::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid var(--accent);
+  border-top-color: transparent;
+  animation: thinking-spin 1s linear infinite;
+}
+
+@keyframes thinking-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Editorial Mode Composer Send Button: Quiet Luxury Dark Slab */
 [data-theme="editorial"] .composer-send-btn {
   background: #181820;

@@ -86,7 +86,7 @@ Extract only memories supported by exact quotes from latestUserText. Memory cont
 Scene is optional; omit it unless the latest message explicitly establishes the scene. Do not invent locations or user actions.
 DATA: ${JSON.stringify(data)}`;
         try {
-            const response = this.generate ? await this.generate(prompt, APPRAISAL_SCHEMA) : session.provider === 'ollama' ? await this.appraiseLocal(prompt) : await new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }).models.generateContent({ model: config.GEMINI_MODEL, contents: prompt, config: { responseMimeType: 'application/json', responseJsonSchema: APPRAISAL_SCHEMA, temperature: 0.1, httpOptions: { timeout: 12000 } } });
+            const response = this.generate ? await this.generate(prompt, APPRAISAL_SCHEMA) : session.provider === 'ollama' ? await this.appraiseLocal(prompt) : await new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }).models.generateContent({ model: config.GEMINI_APPRAISAL_MODEL || 'gemini-3.1-flash-lite', contents: prompt, config: { responseMimeType: 'application/json', responseJsonSchema: APPRAISAL_SCHEMA, temperature: 0.1, httpOptions: { timeout: 6000 } } });
             return validateAppraisal(JSON.parse(typeof response === 'string' ? response : response.text), userText, memories);
         }
         catch {

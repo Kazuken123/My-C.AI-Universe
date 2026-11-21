@@ -82,23 +82,80 @@ export type DedupedChatSession = ChatSessionSummary & {
   threadCount: number;
 };
 
+const ACTIVE_SESSION_STORAGE_KEY = 'cai_active_session_by_char';
+
+export function getActiveSessionForCharacter(characterId?: string | null): string | null {
+  if (!characterId || typeof localStorage === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(ACTIVE_SESSION_STORAGE_KEY);
+    if (!raw) return null;
+    const map = JSON.parse(raw);
+    return map && typeof map === 'object' ? (map[characterId] || null) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setActiveSessionForCharacter(characterId?: string | null, sessionId?: string | null): void {
+  if (!characterId || !sessionId || typeof localStorage === 'undefined') return;
+  try {
+    const raw = localStorage.getItem(ACTIVE_SESSION_STORAGE_KEY);
+    const map = raw ? JSON.parse(raw) : {};
+    map[characterId] = sessionId;
+    localStorage.setItem(ACTIVE_SESSION_STORAGE_KEY, JSON.stringify(map));
+  } catch {
+    // ignore storage error
+  }
+}
+
 /**
- * Deduplicate chat sessions by characterId while keeping the most recent session
- * and counting total thread branches per character.
+ * Clear the remembered active session for a character. When `expectedSessionId` is provided,
+ * the entry is only cleared if it still points at that session (avoids clobbering a newer choice).
  */
-export function deduplicateSessionsByCharacter<T extends { characterId?: string }>(
+export function clearActiveSessionForCharacter(characterId?: string | null, expectedSessionId?: string | null): void {
+  if (!characterId || typeof localStorage === 'undefined') return;
+  try {
+    const raw = localStorage.getItem(ACTIVE_SESSION_STORAGE_KEY);
+    if (!raw) return;
+    const map = JSON.parse(raw);
+    if (!map || typeof map !== 'object' || !(characterId in map)) return;
+    if (expectedSessionId && map[characterId] !== expectedSessionId) return;
+    delete map[characterId];
+    localStorage.setItem(ACTIVE_SESSION_STORAGE_KEY, JSON.stringify(map));
+  } catch {
+    // ignore storage error
+  }
+}
+
+function sessionTimestamp(s: { updatedAt?: string | Date | null; createdAt?: string | Date | null }): number {
+  const t = Date.parse(String(s?.updatedAt || s?.createdAt || ''));
+  return Number.isFinite(t) ? t : 0;
+}
+
+/**
+ * Deduplicate chat sessions by characterId. For each character keeps exactly one session:
+ * the remembered active session if it is present in the input, otherwise the newest session by
+ * `updatedAt || createdAt` (input order does not matter). Adds `threadCount`.
+ * Output is sorted newest-first by the chosen session's timestamp.
+ */
+export function deduplicateSessionsByCharacter<T extends { id?: string; characterId?: string; updatedAt?: string | Date | null; createdAt?: string | Date | null }>(
   sessions?: T[] | null
 ): (T & { threadCount: number })[] {
   if (!Array.isArray(sessions)) return [];
-  const map = new Map<string, T & { threadCount: number }>();
+  const groups = new Map<string, T[]>();
   for (const s of sessions) {
     if (!s || !s.characterId) continue;
-    if (!map.has(s.characterId)) {
-      map.set(s.characterId, { ...s, threadCount: 1 });
-    } else {
-      const existing = map.get(s.characterId)!;
-      existing.threadCount += 1;
-    }
+    if (!groups.has(s.characterId)) groups.set(s.characterId, []);
+    groups.get(s.characterId)!.push(s);
   }
-  return Array.from(map.values());
+  const result: (T & { threadCount: number })[] = [];
+  for (const [characterId, list] of groups) {
+    const activeId = getActiveSessionForCharacter(characterId);
+    let chosen = activeId ? list.find(s => s.id === activeId) : null;
+    if (!chosen) {
+      chosen = list.reduce((best, s) => (sessionTimestamp(s) > sessionTimestamp(best) ? s : best), list[0]);
+    }
+    result.push({ ...chosen!, threadCount: list.length });
+  }
+  return result.sort((a, b) => sessionTimestamp(b) - sessionTimestamp(a));
 }

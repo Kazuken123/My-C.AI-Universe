@@ -142,6 +142,23 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
   let isSending = false;
   const pendingVariantSyncs = new Map();
 
+  /**
+   * Locks or unlocks the chat composer controls while streaming.
+   * @param {boolean} busy - true to lock, false to unlock
+   * @param {boolean} showThinking - true to show subtle thinking spinner
+   */
+  function setComposerBusy(busy, showThinking = false) {
+    if (sendBtn) sendBtn.disabled = busy;
+    if (continueBtn) continueBtn.disabled = busy;
+    // For thinking state, optionally add an indicator to the composer or sendBtn
+    if (busy && showThinking) {
+      sendBtn?.classList.add('thinking');
+    } else {
+      sendBtn?.classList.remove('thinking');
+    }
+  }
+
+
   function queueVariantSync(sessionId, msgId, selectedVariantIndex) {
     if (pendingVariantSyncs.has(msgId)) {
       clearTimeout(pendingVariantSyncs.get(msgId));
@@ -1716,6 +1733,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     isSending = true;
     chatInput.value = '';
     chatInput.style.height = 'auto';
+    setComposerBusy(true, true);
 
     const userPersona = appState.personas?.find(p => p.id === session.personaId) || appState.activePersona || { name: 'Traveler' };
     const userMonogram = getInitials(userPersona.name, 'TR');
@@ -1773,39 +1791,80 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         },
         // onToken: update typewriter effect in real-time
         (token) => {
+          setComposerBusy(true, false); // Clear thinking spinner on first token
           accumulatedText += token;
           if (streamTextEl) {
             streamTextEl.innerHTML = formatRoleplayText(accumulatedText);
           }
           scrollToBottom();
         },
-        // onDone: stream finished and recorded in DB
+        // onDone: stream finished and recorded in DB — finalize immediately from donePayload
         async (donePayload) => {
           isFinished = true;
-          const updatedSession = await api.getChatSession(donePayload.sessionId || session.id);
-          if (Date.now() - lastDirectorOverrideTime < 4000 && appState.activeSession) {
-            updatedSession.affinity = appState.activeSession.affinity;
-            updatedSession.trust = appState.activeSession.trust;
-            updatedSession.strain = appState.activeSession.strain;
-            updatedSession.relationshipStage = appState.activeSession.relationshipStage;
-            updatedSession.relationshipMood = appState.activeSession.relationshipMood;
-          }
-          appState.activeSession = updatedSession;
-          renderChatStream(appState.activeCharacter, updatedSession);
-          renderRelationshipBar(updatedSession, appState.activeCharacter);
-          updateLocalSessionPreview(updatedSession.id, donePayload.response || accumulatedText);
-          refreshRightDrawer(appState.activeCharacter, updatedSession).catch(() => {});
+          let updatedSession = appState.activeSession;
+          // Use donePayload data first; only fall back to GET if missing
+          if (donePayload.userMessage && donePayload.aiMessage && donePayload.relationship) {
+            // Update session state directly from payload
+            updatedSession = {
+              ...updatedSession,
+              affinity: donePayload.relationship.affinity,
+              trust: donePayload.relationship.trust,
+              strain: donePayload.relationship.strain,
+              relationshipStage: donePayload.relationship.relationshipStage,
+              relationshipMood: donePayload.relationship.relationshipMood
+            };
+            // Apply director overrides if recent
+            if (Date.now() - lastDirectorOverrideTime < 4000 && appState.activeSession) {
+              updatedSession.affinity = appState.activeSession.affinity;
+              updatedSession.trust = appState.activeSession.trust;
+              updatedSession.strain = appState.activeSession.strain;
+              updatedSession.relationshipStage = appState.activeSession.relationshipStage;
+              updatedSession.relationshipMood = appState.activeSession.relationshipMood;
+            }
+            appState.activeSession = updatedSession;
+            renderChatStream(appState.activeCharacter, updatedSession);
+            renderRelationshipBar(updatedSession, appState.activeCharacter);
+            updateLocalSessionPreview(updatedSession.id, donePayload.response || accumulatedText);
+            refreshRightDrawer(appState.activeCharacter, updatedSession).catch(() => {});
 
-          const lastModelRow = streamInner?.querySelector('.msg-row.model:last-of-type');
-          const lastModelBubble = lastModelRow?.querySelector('.msg-bubble');
-          if (lastModelBubble) {
-            lastModelBubble.classList.add('take-reveal');
-          }
+            const lastModelRow = streamInner?.querySelector('.msg-row.model:last-of-type');
+            const lastModelBubble = lastModelRow?.querySelector('.msg-bubble');
+            if (lastModelBubble) {
+              lastModelBubble.classList.add('take-reveal');
+            }
 
-          if (autoSpeakTTS && donePayload.response) {
-            const latestMsgs = updatedSession.messages || [];
-            const lastAiMsg = donePayload.aiMessage || latestMsgs[latestMsgs.length - 1];
-            speakText(donePayload.response, lastAiMsg?.id || null, lastAiMsg?.selectedVariantIndex ?? 0, updatedSession.id);
+            if (autoSpeakTTS && donePayload.response) {
+              const latestMsgs = updatedSession.messages || [];
+              const lastAiMsg = donePayload.aiMessage || latestMsgs[latestMsgs.length - 1];
+              speakText(donePayload.response, lastAiMsg?.id || null, lastAiMsg?.selectedVariantIndex ?? 0, updatedSession.id);
+            }
+          } else {
+            // Fallback to GET if payload is missing data
+            const freshSession = await api.getChatSession(donePayload.sessionId || session.id);
+            if (Date.now() - lastDirectorOverrideTime < 4000 && appState.activeSession) {
+              freshSession.affinity = appState.activeSession.affinity;
+              freshSession.trust = appState.activeSession.trust;
+              freshSession.strain = appState.activeSession.strain;
+              freshSession.relationshipStage = appState.activeSession.relationshipStage;
+              freshSession.relationshipMood = appState.activeSession.relationshipMood;
+            }
+            appState.activeSession = freshSession;
+            renderChatStream(appState.activeCharacter, freshSession);
+            renderRelationshipBar(freshSession, appState.activeCharacter);
+            updateLocalSessionPreview(freshSession.id, donePayload.response || accumulatedText);
+            refreshRightDrawer(appState.activeCharacter, freshSession).catch(() => {});
+
+            const lastModelRow = streamInner?.querySelector('.msg-row.model:last-of-type');
+            const lastModelBubble = lastModelRow?.querySelector('.msg-bubble');
+            if (lastModelBubble) {
+              lastModelBubble.classList.add('take-reveal');
+            }
+
+            if (autoSpeakTTS && donePayload.response) {
+              const latestMsgs = freshSession.messages || [];
+              const lastAiMsg = donePayload.aiMessage || latestMsgs[latestMsgs.length - 1];
+              speakText(donePayload.response, lastAiMsg?.id || null, lastAiMsg?.selectedVariantIndex ?? 0, freshSession.id);
+            }
           }
         }
       );
@@ -1845,6 +1904,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       showToast('Connection interrupted. Review the conversation before sending again.');
     } finally {
       isSending = false;
+      setComposerBusy(false);
     }
   }
 
@@ -1871,6 +1931,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
       : '';
 
     isSending = true;
+    setComposerBusy(true, true);
     if (btnElement) {
       btnElement.disabled = true;
       btnElement.classList.add('is-spinning');
@@ -1970,6 +2031,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
     const lastMsg = messages[messages.length - 1];
     isSending = true;
+    setComposerBusy(true, true);
 
     const avatarUrl = character.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(character.name)}`;
     const tempIndicator = document.createElement('div');

@@ -22,6 +22,8 @@ export const config = {
   AI_PROVIDER: process.env.AI_PROVIDER || 'gemini',
   GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
   GEMINI_FALLBACK_MODEL: process.env.GEMINI_FALLBACK_MODEL || 'gemini-3.1-flash-lite',
+  GEMINI_APPRAISAL_MODEL: process.env.GEMINI_APPRAISAL_MODEL || 'gemini-3.1-flash-lite',
+  GEMINI_STREAM_TIMEOUT: Number(process.env.GEMINI_STREAM_TIMEOUT) || 18000,
   GEMINI_TRANSLATION_MODEL: process.env.GEMINI_TRANSLATION_MODEL || 'gemini-3.1-flash-lite',
   FISH_AUDIO_API_KEY: process.env.FISH_AUDIO_API_KEY || '',
   FISH_AUDIO_BASE_URL: process.env.FISH_AUDIO_BASE_URL || 'https://api.fish.audio',

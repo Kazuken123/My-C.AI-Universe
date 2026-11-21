@@ -211,8 +211,8 @@ test('M4: deduplicateSessionsByCharacter groups sessions by character and counts
   assert.equal(result[1].threadCount, 1);
 });
 
-test('EBAP-01: saved chats list and remove individual sessions independently', async () => {
-  const { removeSessionById } = await import('../../lib/chat-utils.ts');
+test('EBAP-01: saved chats list stores rawSessions and deduplicates on render', async () => {
+  const { removeSessionById, deduplicateSessionsByCharacter } = await import('../../lib/chat-utils.ts');
   const { readFileSync } = await import('node:fs');
   const source = readFileSync(new URL('../../components/chat/saved-chats-list.tsx', import.meta.url), 'utf8');
 
@@ -225,10 +225,10 @@ test('EBAP-01: saved chats list and remove individual sessions independently', a
   assert.deepEqual(removeSessionById(sessions, 'sess_newest'), [sessions[1], sessions[2]]);
   assert.deepEqual(removeSessionById(sessions, 'sess_older'), [sessions[0], sessions[2]]);
   assert.equal(sessions.length, 3);
-  assert.match(source, /sessions\.map\(/);
-  assert.match(source, /session=\$\{encodeURIComponent\(session\.id\)\}/);
+  assert.match(source, /const sessions = useMemo/);
+  assert.match(source, /deduplicateSessionsByCharacter\(rawSessions\)/);
   assert.match(source, /removeSessionById\(prev, sessionId\)/);
-  assert.doesNotMatch(source, /deduplicateSessionsByCharacter/);
+  assert.match(source, /clearActiveSessionForCharacter/);
 });
 
 test('EBAP-02: every Next.js AI_PROVIDERS option is accepted by backend normalizeProviderName and legacy providers normalize safely', async () => {

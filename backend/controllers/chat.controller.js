@@ -627,12 +627,48 @@ Rules:
       };
 
       if (isStreaming) {
-        res.setHeader('Content-Type', 'text/event-stream');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Connection', 'keep-alive');
-        res.flushHeaders?.();
+        // For standard streaming turns (not regenerate, not continue), flush proxy-safe SSE headers immediately
+        // before prepareResponseContext and chatStream to prevent buffering and allow instant connection acknowledgment.
+        if (!regenerate && !isContinue) {
+          res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-cache, no-transform');
+          res.setHeader('Connection', 'keep-alive');
+          res.setHeader('X-Accel-Buffering', 'no');
+          res.write(': connected\n\n');
+          res.flushHeaders?.();
+        } else {
+          res.setHeader('Content-Type', 'text/event-stream');
+          res.setHeader('Cache-Control', 'no-cache');
+          res.setHeader('Connection', 'keep-alive');
+          res.flushHeaders?.();
+        }
 
-        const userMsgObj = session.addMessage({
+        let keepaliveTimer = null;
+        const startKeepalive = () => {
+          keepaliveTimer = setInterval(() => {
+            if (!res.writableEnded) res.write(': keepalive\n\n');
+          }, 15000);
+        };
+        const stopKeepalive = () => {
+          if (keepaliveTimer) {
+            clearInterval(keepaliveTimer);
+            keepaliveTimer = null;
+          }
+        };
+
+        // Start keepalive for standard streaming turns
+        if (!regenerate && !isContinue) {
+          startKeepalive();
+        }
+
+        const cleanup = () => {
+          stopKeepalive();
+        };
+
+        res.on('close', cleanup);
+
+        try {
+          const userMsgObj = session.addMessage({
           role: 'user',
           content: message.trim()
         });
@@ -681,15 +717,18 @@ Rules:
 
         this.#schedulePostTurnTasks({ userText: message, aiText: cleanText, character, session });
 
-        res.write(`data: ${JSON.stringify({
-          done: true,
-          sessionId: session.id,
-          userMessage: userMsgObj.toJSON(),
-          aiMessage: aiMsgObj.toJSON(),
-          response: cleanText,
-          relationship: newRelState
-        })}\n\n`);
-        return res.end();
+          res.write(`data: ${JSON.stringify({
+            done: true,
+            sessionId: session.id,
+            userMessage: userMsgObj.toJSON(),
+            aiMessage: aiMsgObj.toJSON(),
+            response: cleanText,
+            relationship: newRelState
+          })}\n\n`);
+          return res.end();
+        } finally {
+          cleanup();
+        }
       }
 
       const userMsgObj = session.addMessage({

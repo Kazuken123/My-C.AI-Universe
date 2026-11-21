@@ -27,6 +27,16 @@ export function sanitizePromptForGemini(text) {
 }
 
 /**
+ * Detect Gemini 3.5-family models. The 3.5 generation reserves the <thought> tag
+ * for its own reasoning channel; prompting it to emit <thought> blocks triggers
+ * the reserved-tag parser and hangs the stream. These models must never see the
+ * monologue section in the system prompt.
+ */
+export function isGemini35Model(model) {
+  return typeof model === 'string' && /^gemini-3\.5(-|$)/.test(model);
+}
+
+/**
  * Concrete Gemini AI Provider Class (extends BaseAIProvider)
  */
 export class GeminiProvider extends BaseAIProvider {
@@ -135,17 +145,31 @@ export class GeminiProvider extends BaseAIProvider {
   }
 
   /**
+   * Returns a closure that builds the system prompt on-demand for each candidate model,
+   * with omitThoughtTag determined per model to avoid <thought> collisions in 3.5.
+   */
+  #systemPromptBuilder(character, promptOptions) {
+    return (model) => sanitizePromptForGemini(
+      this.buildSystemPrompt(character, {
+        ...promptOptions,
+        omitThoughtTag: isGemini35Model(model)
+      })
+    );
+  }
+
+  /**
    * Polymorphic implementation of generateReply using Google Gemini
    */
   async generateReply(character, userMsg, memory = null, options = {}) {
     const ai = this.#getClient();
-    const systemPrompt = sanitizePromptForGemini(this.buildSystemPrompt(character, { ...options, userMsg, memory }));
-    const contents = this.#buildContents(memory, userMsg, options, character);
     const modelsToTry = options.modelOverride ? [options.modelOverride] : this.#getModelsToTry();
+    const contents = this.#buildContents(memory, userMsg, options, character);
     let lastError = null;
+    const promptFor = this.#systemPromptBuilder(character, { ...options, userMsg, memory });
 
     for (let i = 0; i < modelsToTry.length; i++) {
       const currentModel = modelsToTry[i];
+      const systemPrompt = promptFor(currentModel);
       let attempt = 0;
       const maxRetries = 1;
 
@@ -188,18 +212,26 @@ export class GeminiProvider extends BaseAIProvider {
           if (options.signal?.aborted) throw options.signal.reason || error;
           lastError = error;
 
+          const isFatalError =
+            error.message?.includes('MALFORMED_RESPONSE') ||
+            error.message?.includes('DEADLINE_EXCEEDED') ||
+            error.message?.includes('504') ||
+            error.message?.toLowerCase().includes('timeout');
+
+          if (isFatalError) {
+            console.warn(`[GEMINI PROVIDER] Non-retryable error on '${currentModel}'. Failing over immediately.`);
+            break;
+          }
+
           const isTransientError =
-            error.status === 503 ||
-            error.message?.includes('503') ||
-            error.message?.includes('high demand') ||
-            error.message?.includes('temporarily unavailable') ||
             error.status === 429 ||
+            error.status === 503 ||
             error.message?.includes('RESOURCE_EXHAUSTED');
 
           if (isTransientError && attempt < maxRetries) {
             attempt++;
-            console.warn(`[GEMINI PROVIDER] Transient error on '${currentModel}', retrying after 1500ms backoff (attempt ${attempt}/${maxRetries})...`);
-            await new Promise(res => setTimeout(res, 1500));
+            console.warn(`[GEMINI PROVIDER] Transient error on '${currentModel}', retrying after 800ms backoff (attempt ${attempt}/${maxRetries})...`);
+            await new Promise(res => setTimeout(res, 800));
             continue;
           }
 
@@ -241,25 +273,30 @@ export class GeminiProvider extends BaseAIProvider {
    */
   async *generateReplyStream(character, userMsg, memory = null, options = {}) {
     const ai = this.#getClient();
-    const systemPrompt = sanitizePromptForGemini(this.buildSystemPrompt(character, { ...options, userMsg, memory }));
     const contents = this.#buildContents(memory, userMsg, options, character);
     const modelsToTry = this.#getModelsToTry();
+    const promptFor = this.#systemPromptBuilder(character, { ...options, userMsg, memory });
+    const streamTimeout = options.timeout || config.GEMINI_STREAM_TIMEOUT || 18000;
     let lastError = null;
 
     for (let i = 0; i < modelsToTry.length; i++) {
       const currentModel = modelsToTry[i];
+      const systemPrompt = promptFor(currentModel);
       let attempt = 0;
       const maxRetries = 1;
       let hasYielded = false;
 
       while (attempt <= maxRetries) {
+        const startedAt = Date.now();
         try {
           const stream = await ai.models.generateContentStream({
             model: currentModel,
             contents,
             config: {
               systemInstruction: systemPrompt,
+              ...(options.signal ? { abortSignal: options.signal } : {}),
               temperature: options.isRegenerate ? 0.95 : 0.85,
+              httpOptions: { timeout: streamTimeout },
               safetySettings: PERMISSIVE_SAFETY_SETTINGS
             }
           });
@@ -287,18 +324,31 @@ export class GeminiProvider extends BaseAIProvider {
             throw new AIError(err.message || 'Stream interrupted mid-generation', 503, err);
           }
 
+          // Non-retryable stream failures: malformed responses, incomplete streams,
+          // gateway timeouts and timeouts mean the model is wedged — fail over now.
+          const isFatalStreamError =
+            err.message?.includes('MALFORMED_RESPONSE') ||
+            err.message?.includes('DEADLINE_EXCEEDED') ||
+            err.message?.includes('504') ||
+            err.message?.toLowerCase().includes('timeout') ||
+            err.message?.includes('Stream ended without a completion marker') ||
+            err.message?.includes('did not complete');
+
+          if (isFatalStreamError) {
+            console.warn(`[GEMINI PROVIDER:STREAM] ${currentModel} hit a non-retryable stream error (${err.message}). Failing over immediately.`);
+            break;
+          }
+
           const isTransientError =
-            err.status === 503 ||
-            err.message?.includes('503') ||
-            err.message?.includes('high demand') ||
-            err.message?.includes('temporarily unavailable') ||
             err.status === 429 ||
+            err.status === 503 ||
             err.message?.includes('RESOURCE_EXHAUSTED');
 
-          if (isTransientError && attempt < maxRetries) {
+          // Only retry fast 429/503 blips, and only when the failed attempt was quick.
+          if (isTransientError && attempt < maxRetries && Date.now() - startedAt < 5000) {
             attempt++;
-            console.warn(`[GEMINI PROVIDER:STREAM] Transient error on '${currentModel}', retrying after 1500ms backoff (attempt ${attempt}/${maxRetries})...`);
-            await new Promise(res => setTimeout(res, 1500));
+            console.warn(`[GEMINI PROVIDER:STREAM] Transient error on '${currentModel}', retrying after 800ms backoff (attempt ${attempt}/${maxRetries})...`);
+            await new Promise(res => setTimeout(res, 800));
             continue;
           }
 

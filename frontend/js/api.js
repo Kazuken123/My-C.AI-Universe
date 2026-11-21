@@ -307,6 +307,17 @@ export class ApiClient {
   }
 
   async sendChatMessageStream(payload, onToken, onDone) {
+    const inactivityTimeoutMs = 60000;
+    let timeoutHandle = null;
+    const resetTimeout = () => {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
+      timeoutHandle = setTimeout(() => {
+        console.warn('[API SSE] Client 60s inactivity timeout reached');
+        if (typeof abortController !== 'undefined') abortController.abort(new Error('SSE inactivity timeout'));
+      }, inactivityTimeoutMs);
+    };
+
+    const abortController = new AbortController();
     try {
       const token = this.getToken();
       const headers = {
@@ -315,10 +326,13 @@ export class ApiClient {
         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       };
 
+      resetTimeout();
+
       const response = await fetch(`${this.baseUrl}/api/chat?stream=true`, {
         method: 'POST',
         headers,
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: abortController.signal
       });
 
       if (!response.ok) {
@@ -334,13 +348,19 @@ export class ApiClient {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        resetTimeout();
         buffer += decoder.decode(value, { stream: true });
+
+        // Normalize CRLF to LF
+        buffer = buffer.replace(/\r\n/g, '\n');
 
         const lines = buffer.split('\n\n');
         buffer = lines.pop() || '';
 
         for (const line of lines) {
           const trimmed = line.trim();
+          // Ignore : keepalive comments
+          if (!trimmed || trimmed.startsWith(':')) continue;
           if (!trimmed.startsWith('data:')) continue;
           const jsonStr = trimmed.slice(5).trim();
           const parsed = JSON.parse(jsonStr);
@@ -352,9 +372,25 @@ export class ApiClient {
           }
         }
       }
+
+      // Flush trailing buffered frames at EOF
+      if (buffer.trim()) {
+        const trimmed = buffer.trim();
+        if (trimmed.startsWith('data:')) {
+          const jsonStr = trimmed.slice(5).trim();
+          const parsed = JSON.parse(jsonStr);
+          if (parsed.error) throw new Error(typeof parsed.error === 'string' ? parsed.error : parsed.error.message);
+          if (parsed.token) onToken(parsed.token);
+          if (parsed.done) {
+            receivedDone = true;
+            if (typeof onDone === 'function') await onDone(parsed);
+          }
+        }
+      }
+
       if (!receivedDone) throw new Error('Stream ended before the turn was saved');
     } finally {
-      // Stream completed cleanly without page-loader flicker
+      if (timeoutHandle) clearTimeout(timeoutHandle);
     }
   }
 

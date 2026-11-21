@@ -11,7 +11,9 @@ class MemoryClient {
     this.serviceUrl = this.isAllowedServiceUrl(configuredUrl) ? configuredUrl.replace(/\/+$/, '') : 'http://localhost:5001';
     this.isRunning = false;
     this.lastHealthCheckFailedAt = 0;
-    this.healthCheckCooldownMs = 30000;
+    // Longer cooldown in production without an explicit MEMORY_SERVICE_URL
+    const isProdWithoutExplicitUrl = process.env.NODE_ENV === 'production' && !process.env.MEMORY_SERVICE_URL;
+    this.healthCheckCooldownMs = isProdWithoutExplicitUrl ? 300000 : 30000;
     this.requestTimeoutMs = 3000;
   }
 
