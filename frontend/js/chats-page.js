@@ -48,8 +48,8 @@ class ChatsPageApp {
       return `<article class="atlas-saved-entry">
         <img class="atlas-saved-avatar" src="${escapeHtml(s.characterAvatar || '/favicon.svg')}" alt="" onerror="this.onerror=null;this.src='/favicon.svg'" />
         <div class="atlas-saved-text">
-          <h2><a href="${href}">${escapeHtml(s.title || s.characterName)}</a></h2>
-          <p class="atlas-saved-meta">${escapeHtml(s.characterName)} · ${s.messageCount ?? 0} messages${threadLabel} · ${escapeHtml(updated)}</p>
+          <h2><a href="${href}">${escapeHtml(s.characterName || s.title || 'Character')}</a></h2>
+          <p class="atlas-saved-meta">${s.messageCount ?? 0} messages${threadLabel} · ${escapeHtml(updated)}</p>
           <p class="atlas-saved-preview">${escapeHtml(preview)}</p>
         </div>
         <div class="atlas-saved-actions">

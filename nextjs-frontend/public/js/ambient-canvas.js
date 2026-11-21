@@ -1,11 +1,7 @@
 /**
  * AmbientMotionCanvas Singleton
  * High-Performance 60fps HTML5 Canvas Kinetic Motion Engine
- * Delivers living, kinetic thematic backdrops for all design modes:
  * - Higgsfield: Dynamic traveling starfield, undulating chromatic aurora waves & shooting stars
- * - Vanguard: 3D perspective cyber grid warp, streaming data packets & pulse ripples
- * - Telemetry: 360° tactical avionics radar PPI beam sweep with phosphor blip echoes & scanline
- * - Editorial: Volumetric ambient architectural light ray & drifting archival dust motes
  */
 
 export class AmbientMotionCanvas {
@@ -26,16 +22,6 @@ export class AmbientMotionCanvas {
     this.shootingStarCooldown = 2.5;
     this.auroraPhase = 0;
 
-    this.cyberGridProgress = 0;
-    this.cyberStreams = [];
-    this.cyberRipples = [];
-
-    this.radarAngle = 0;
-    this.radarBlips = [];
-    this.radarScanY = 0;
-
-    this.editorialMotes = [];
-
     if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       this.#init();
     }
@@ -47,7 +33,6 @@ export class AmbientMotionCanvas {
     try { localStorage.removeItem('ambient_motion_disabled'); } catch {}
 
     this.#initDom();
-    this.#updateTheme();
     this.#resize();
     this.#initParticles();
 
@@ -62,14 +47,6 @@ export class AmbientMotionCanvas {
       } else if (!this.reducedMotion) {
         this.resume();
       }
-    });
-
-    const themeObserver = new MutationObserver(() => {
-      this.#updateTheme();
-    });
-    themeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme']
     });
 
     this.resume();
@@ -111,14 +88,6 @@ export class AmbientMotionCanvas {
     this.ctx = el.getContext('2d', { alpha: true });
   }
 
-  #updateTheme() {
-    const theme = document.documentElement.getAttribute('data-theme') || 'higgsfield';
-    if (this.currentTheme !== theme) {
-      this.currentTheme = theme;
-      this.#initParticles();
-    }
-  }
-
   #resize() {
     if (!this.canvas) return;
     this.dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -137,78 +106,23 @@ export class AmbientMotionCanvas {
     const w = this.width || 1200;
     const h = this.height || 800;
 
-    // 1. HIGGSFIELD
-    if (this.currentTheme === 'higgsfield') {
-      this.stars = [];
-      const starCount = 135;
-      for (let i = 0; i < starCount; i++) {
-        this.stars.push({
-          x: Math.random() * w,
-          y: Math.random() * h,
-          vx: (Math.random() - 0.5) * 0.4 + 0.25, // Gentle rightward drift
-          vy: (Math.random() - 0.5) * 0.3 - 0.2, // Gentle upward drift
-          size: Math.random() * 1.8 + 0.8,
-          baseAlpha: Math.random() * 0.45 + 0.4,
-          twinkleSpeed: Math.random() * 0.03 + 0.015,
-          twinkleOffset: Math.random() * Math.PI * 2,
-          colorType: Math.random()
-        });
-      }
-      this.shootingStars = [];
-      this.shootingStarCooldown = 1.5;
+    this.stars = [];
+    const starCount = 135;
+    for (let i = 0; i < starCount; i++) {
+      this.stars.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.4 + 0.25, // Gentle rightward drift
+        vy: (Math.random() - 0.5) * 0.3 - 0.2, // Gentle upward drift
+        size: Math.random() * 1.8 + 0.8,
+        baseAlpha: Math.random() * 0.45 + 0.4,
+        twinkleSpeed: Math.random() * 0.03 + 0.015,
+        twinkleOffset: Math.random() * Math.PI * 2,
+        colorType: Math.random()
+      });
     }
-
-    // 2. VANGUARD
-    if (this.currentTheme === 'vanguard') {
-      this.cyberStreams = [];
-      const streamCount = 34;
-      for (let i = 0; i < streamCount; i++) {
-        this.cyberStreams.push({
-          lane: (Math.random() - 0.5) * 1.4,
-          progress: Math.random(),
-          speed: Math.random() * 0.007 + 0.004,
-          length: Math.random() * 0.18 + 0.06,
-          color: Math.random() > 0.35 ? '#f59e0b' : '#e8eaef'
-        });
-      }
-      this.cyberRipples = [
-        { progress: 0.1, maxRadius: Math.max(w, h) * 0.7, speed: 0.12 },
-        { progress: 0.6, maxRadius: Math.max(w, h) * 0.7, speed: 0.12 }
-      ];
-    }
-
-    // 3. TELEMETRY
-    if (this.currentTheme === 'telemetry') {
-      this.radarAngle = 0;
-      this.radarScanY = 0;
-      this.radarBlips = [
-        { xRatio: 0.18, yRatio: 0.22, label: 'TRG-01', intensity: 0.8 },
-        { xRatio: 0.84, yRatio: 0.28, label: 'SAT-CANON', intensity: 0.3 },
-        { xRatio: 0.92, yRatio: 0.68, label: 'NODE-X', intensity: 0.5 },
-        { xRatio: 0.14, yRatio: 0.78, label: 'EVA-09', intensity: 0.2 },
-        { xRatio: 0.78, yRatio: 0.88, label: 'TAC-44', intensity: 0.7 },
-        { xRatio: 0.28, yRatio: 0.48, label: 'ALPHA-9', intensity: 0.4 }
-      ];
-    }
-
-    // 4. EDITORIAL
-    if (this.currentTheme === 'editorial') {
-      this.editorialMotes = [];
-      const moteCount = 75;
-      for (let i = 0; i < moteCount; i++) {
-        this.editorialMotes.push({
-          x: Math.random() * w,
-          y: Math.random() * h,
-          radius: Math.random() * 1.6 + 0.7,
-          vx: (Math.random() - 0.5) * 0.35,
-          vy: -(Math.random() * 0.5 + 0.2), // Distinct upward drift
-          alpha: Math.random() * 0.35 + 0.25,
-          pulseSpeed: Math.random() * 0.025 + 0.01,
-          pulseOffset: Math.random() * Math.PI * 2,
-          isWarm: Math.random() > 0.6
-        });
-      }
-    }
+    this.shootingStars = [];
+    this.shootingStarCooldown = 1.5;
   }
 
   resume() {
@@ -240,23 +154,7 @@ export class AmbientMotionCanvas {
     const h = this.height;
 
     ctx.clearRect(0, 0, w, h);
-
-    switch (this.currentTheme) {
-      case 'higgsfield':
-        this.#renderHiggsfield(ctx, now, dt, w, h);
-        break;
-      case 'vanguard':
-        this.#renderVanguard(ctx, now, dt, w, h);
-        break;
-      case 'telemetry':
-        this.#renderTelemetry(ctx, now, dt, w, h);
-        break;
-      case 'editorial':
-        this.#renderEditorial(ctx, now, dt, w, h);
-        break;
-      default:
-        this.#renderHiggsfield(ctx, now, dt, w, h);
-    }
+    this.#renderHiggsfield(ctx, now, dt, w, h);
   }
 
   // --------------------------------------------------------------------------
@@ -416,230 +314,6 @@ export class AmbientMotionCanvas {
       ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
       ctx.beginPath();
       ctx.arc(headX, headY, 2.5, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  // --------------------------------------------------------------------------
-  // 2. VANGUARD: 3D Perspective Cyber-Grid Warp, High-Speed Streams & Sonar Rings
-  // --------------------------------------------------------------------------
-  #renderVanguard(ctx, now, dt, w, h) {
-    const horizon = h * 0.35;
-    const vpX = w * 0.5;
-
-    // A. Perspective Cyber Grid Floor
-    this.cyberGridProgress = (this.cyberGridProgress + 0.28 * dt) % 1;
-    const gridLineCount = 18;
-
-    for (let i = 0; i < gridLineCount; i++) {
-      const prog = (i / gridLineCount + this.cyberGridProgress) % 1;
-      const y = horizon + Math.pow(prog, 2.6) * (h - horizon);
-      const alpha = Math.sin(prog * Math.PI) * 0.32;
-
-      ctx.strokeStyle = `rgba(245, 158, 11, ${alpha})`;
-      ctx.lineWidth = 1 + prog * 1.5;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-      ctx.stroke();
-    }
-
-    // Perspective ray lines radiating outward
-    const rayCount = 22;
-    for (let i = -rayCount / 2; i <= rayCount / 2; i++) {
-      const spreadX = vpX + (i / (rayCount / 2)) * w * 1.1;
-      ctx.strokeStyle = 'rgba(245, 158, 11, 0.12)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(vpX, horizon);
-      ctx.lineTo(spreadX, h);
-      ctx.stroke();
-    }
-
-    // B. High-Speed Digital Data Packets
-    for (const stream of this.cyberStreams) {
-      stream.progress += stream.speed * 60 * dt;
-      if (stream.progress >= 1) {
-        stream.progress = 0;
-        stream.lane = (Math.random() - 0.5) * 1.4;
-      }
-
-      const p1 = stream.progress;
-      const p2 = Math.min(1, stream.progress + stream.length);
-
-      const y1 = horizon + Math.pow(p1, 2.6) * (h - horizon);
-      const x1 = vpX + stream.lane * (w * 0.65) * Math.pow(p1, 1.6);
-
-      const y2 = horizon + Math.pow(p2, 2.6) * (h - horizon);
-      const x2 = vpX + stream.lane * (w * 0.65) * Math.pow(p2, 1.6);
-
-      const alpha = Math.sin(stream.progress * Math.PI) * 0.85;
-      ctx.strokeStyle = stream.color === '#f59e0b'
-        ? `rgba(245, 158, 11, ${alpha})`
-        : `rgba(232, 234, 239, ${alpha})`;
-
-      ctx.lineWidth = 2.4;
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-
-      // Glowing data head
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(x2, y2, 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // C. Concentric Cybernetic Sonar Rings
-    for (const ripple of this.cyberRipples) {
-      ripple.progress = (ripple.progress + ripple.speed * dt) % 1;
-      const radius = ripple.progress * ripple.maxRadius;
-      const alpha = Math.sin((1 - ripple.progress) * Math.PI * 0.5) * 0.22;
-
-      ctx.strokeStyle = `rgba(245, 158, 11, ${alpha})`;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(vpX, horizon + 50, radius, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-  }
-
-  // --------------------------------------------------------------------------
-  // 3. TELEMETRY: 360° Tactical Military PPI Radar Sweep & Phosphor Blips
-  // --------------------------------------------------------------------------
-  #renderTelemetry(ctx, now, dt, w, h) {
-    const rx = w * 0.5;
-    const ry = h * 0.45;
-    const maxRadius = Math.max(w, h) * 0.72;
-
-    // Rotate sweep: 1 full turn every 4 seconds
-    const sweepSpeed = (Math.PI * 2 / 4) * dt;
-    this.radarAngle = (this.radarAngle + sweepSpeed) % (Math.PI * 2);
-
-    // CRT Scanline bar
-    this.radarScanY = (this.radarScanY + 140 * dt) % (h + 100);
-    const scanBarY = this.radarScanY - 50;
-    const scanGrad = ctx.createLinearGradient(0, scanBarY - 40, 0, scanBarY + 40);
-    scanGrad.addColorStop(0, 'transparent');
-    scanGrad.addColorStop(0.5, 'rgba(230, 25, 25, 0.08)');
-    scanGrad.addColorStop(1, 'transparent');
-    ctx.fillStyle = scanGrad;
-    ctx.fillRect(0, scanBarY - 40, w, 80);
-
-    // Range rings
-    ctx.strokeStyle = 'rgba(230, 25, 25, 0.12)';
-    ctx.lineWidth = 1;
-    for (let r = 0.2; r <= 1; r += 0.2) {
-      ctx.beginPath();
-      ctx.arc(rx, ry, maxRadius * r, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-
-    // Crosshairs
-    ctx.beginPath();
-    ctx.moveTo(rx - maxRadius, ry);
-    ctx.lineTo(rx + maxRadius, ry);
-    ctx.moveTo(rx, ry - maxRadius);
-    ctx.lineTo(rx, ry + maxRadius);
-    ctx.stroke();
-
-    // Phosphor sweep fan
-    const tailAngle = 0.65; // ~37 degrees
-    const steps = 24;
-    for (let i = 0; i < steps; i++) {
-      const a1 = this.radarAngle - (i / steps) * tailAngle;
-      const a2 = this.radarAngle - ((i + 1) / steps) * tailAngle;
-      const alpha = Math.pow(1 - i / steps, 1.8) * 0.25;
-
-      ctx.fillStyle = `rgba(230, 25, 25, ${alpha})`;
-      ctx.beginPath();
-      ctx.moveTo(rx, ry);
-      ctx.arc(rx, ry, maxRadius, a2, a1);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // Leading sweep beam
-    ctx.strokeStyle = 'rgba(255, 120, 120, 0.85)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(rx, ry);
-    ctx.lineTo(rx + Math.cos(this.radarAngle) * maxRadius, ry + Math.sin(this.radarAngle) * maxRadius);
-    ctx.stroke();
-
-    // Tactical Target Blips
-    for (const blip of this.radarBlips) {
-      const bx = blip.xRatio * w;
-      const by = blip.yRatio * h;
-
-      const blipAngle = Math.atan2(by - ry, bx - rx);
-      let angleDiff = (this.radarAngle - blipAngle) % (Math.PI * 2);
-      if (angleDiff < 0) angleDiff += Math.PI * 2;
-
-      // Ping when swept
-      if (angleDiff < 0.1) {
-        blip.intensity = 1.0;
-      } else {
-        blip.intensity = Math.max(0.12, blip.intensity - 0.45 * dt);
-      }
-
-      const alpha = blip.intensity;
-
-      // Outer ping echo ring
-      if (alpha > 0.4) {
-        ctx.strokeStyle = `rgba(230, 25, 25, ${(alpha - 0.4) * 0.6})`;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.arc(bx, by, 14 * (1.5 - alpha * 0.5), 0, Math.PI * 2);
-        ctx.stroke();
-      }
-
-      // Blip square
-      ctx.fillStyle = `rgba(255, 60, 60, ${alpha})`;
-      ctx.fillRect(bx - 3, by - 3, 6, 6);
-
-      // Blip tag
-      ctx.font = '10px "JetBrains Mono", monospace';
-      ctx.fillStyle = `rgba(230, 25, 25, ${alpha * 0.85})`;
-      ctx.fillText(blip.label, bx + 10, by + 3);
-    }
-  }
-
-  // --------------------------------------------------------------------------
-  // 4. EDITORIAL: Volumetric Ambient Architectural Light & Archival Dust Motes
-  // --------------------------------------------------------------------------
-  #renderEditorial(ctx, now, dt, w, h) {
-    // A. Volumetric Architectural Light Ray
-    const lightSway = Math.sin(now * 0.0006) * 0.08;
-    const grad = ctx.createLinearGradient(0, 0, w * (0.85 + lightSway), h);
-    grad.addColorStop(0, 'rgba(255, 255, 255, 0.045)');
-    grad.addColorStop(0.4, 'rgba(255, 255, 255, 0.018)');
-    grad.addColorStop(1, 'transparent');
-
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, h);
-
-    // B. Floating Archival Dust Motes
-    const speedMultiplier = 60 * dt;
-    for (const mote of this.editorialMotes) {
-      mote.x += (mote.vx + Math.sin(now * 0.001 + mote.pulseOffset) * 0.3) * speedMultiplier;
-      mote.y += mote.vy * speedMultiplier;
-
-      // Wrap around seamlessly
-      if (mote.y < -15) mote.y = h + 15;
-      if (mote.x < -15) mote.x = w + 15;
-      if (mote.x > w + 15) mote.x = -15;
-
-      const pulse = 0.65 + 0.35 * Math.sin(now * mote.pulseSpeed + mote.pulseOffset);
-      const alpha = mote.alpha * pulse;
-
-      ctx.fillStyle = mote.isWarm
-        ? `rgba(251, 191, 36, ${alpha})` // Warm archival parchment gold
-        : `rgba(244, 244, 245, ${alpha})`; // Crisp museum ivory
-
-      ctx.beginPath();
-      ctx.arc(mote.x, mote.y, mote.radius, 0, Math.PI * 2);
       ctx.fill();
     }
   }

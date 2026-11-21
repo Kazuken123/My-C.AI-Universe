@@ -97,9 +97,9 @@ export function SavedChatsList() {
               onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/favicon.svg'; }}
             />
             <div className="atlas-saved-text">
-              <h2><Link href={href}>{session.title || session.characterName}</Link></h2>
+              <h2><Link href={href}>{session.characterName || session.title || 'Character'}</Link></h2>
               <p className="atlas-saved-meta">
-                {session.characterName} · {session.messageCount ?? 0} messages
+                {session.messageCount ?? 0} messages
                 {session.threadCount > 1 ? ` · ${session.threadCount} threads` : ''} · {formatRelativeTime(session.updatedAt)}
               </p>
               <p className="atlas-saved-preview">{preview}</p>

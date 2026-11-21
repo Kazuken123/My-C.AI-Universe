@@ -339,14 +339,12 @@
 [data-theme="higgsfield"] .sidebar .engine-telemetry .status-dot {
   box-shadow: 0 0 9px rgba(52, 211, 153, 0.72);
 }
-[data-theme="higgsfield"] .sidebar .sidebar-collapse-btn,
-[data-theme="higgsfield"] .sidebar .theme-toggle-btn {
+[data-theme="higgsfield"] .sidebar .sidebar-collapse-btn {
   background: rgba(19, 24, 44, 0.6);
   border-color: rgba(172, 187, 243, 0.16);
   color: #b7b6ce;
 }
-[data-theme="higgsfield"] .sidebar .sidebar-collapse-btn:hover,
-[data-theme="higgsfield"] .sidebar .theme-toggle-btn:hover {
+[data-theme="higgsfield"] .sidebar .sidebar-collapse-btn:hover {
   background: rgba(196, 181, 253, 0.14);
   border-color: rgba(196, 181, 253, 0.36);
   color: #f4f2ff;
@@ -877,26 +875,6 @@ body:has(.orbit-discover) .ambient-grain { opacity: .035; }
 .orbit-discover .cai-card:active { transform: scale(0.98); }
 .orbit-discover .character-track .cai-card-tags { height: auto; min-block-size: 21px; flex-wrap: wrap; }
 .orbit-discover .tag-badge, .orbit-discover .category-pill { height: auto; min-block-size: 1.75em; line-height: 1.4; }
-[data-theme="era-day"] .orbit-discover {
-  --bg-canvas: #f8f6f0; --bg-core: #eae5d9; --bg-core-elevated: #e2dbcb;
-  --text-primary: #141414; --text-secondary: #5c534c; --text-muted: #5c534c;
-  --border-hairline: #230c1e26; --border-subtle: #230c1e40;
-  background: var(--bg-canvas);
-}
-[data-theme="era-day"] .orbit-discover::before { background: radial-gradient(ellipse at 85% 28%, #c29b7f40, transparent 60%); }
-[data-theme="era-day"] .orbit-discover .universe-art::after {
-  background: linear-gradient(90deg, #f8f6f0 0%, #f8f6f0cc 28%, #f8f6f040 65%), linear-gradient(0deg, #f8f6f0, transparent 70%);
-}
-[data-theme="era-day"] .orbit-discover .universe-scene { opacity: .35; mix-blend-mode: multiply; }
-[data-theme="era-day"] .orbit-discover :is(.orbit-title, .topbar-heading, .category-pill.active) { color: var(--text-primary); }
-[data-theme="era-day"] .orbit-discover :is(.orbit-eyebrow, .orbit-description, .topbar-index, .universe-hero-note, .universe-waypoint, .universe-coordinate, .universe-scroll-cue, .btn-ghost, .category-pill) { color: var(--text-secondary); }
-[data-theme="era-day"] .orbit-discover .orbit-title em { color: var(--accent); }
-[data-theme="era-day"] .orbit-discover :is(.discover-topbar, .universe-strip, .search-box, .card-shell) { background: var(--bg-core); border-color: var(--border-subtle); }
-[data-theme="era-day"] .orbit-discover :is(.category-pill.active, .tag-badge) { background: var(--bg-core-elevated); border-color: var(--border-subtle); color: var(--text-primary); }
-[data-theme="era-day"] .orbit-discover .btn-island { background: var(--accent); color: var(--text-on-accent); }
-[data-theme="era-day"] .orbit-discover .btn-island:hover { background: var(--accent-hover); }
-[data-theme="era-day"] :is(.mobile-header, .mobile-bottom-nav, .island-menu) { background: #eae5d9; color: #141414; }
-[data-theme="era-day"] .universe-island { background: #230c1e; color: #f8f6f0; }
 .island-menu {
   transition: opacity .38s var(--fluid-ease), transform .54s var(--fluid-ease), filter .42s var(--fluid-ease);
 }
@@ -922,7 +900,6 @@ body:has(.orbit-discover) .ambient-grain { opacity: .035; }
 @media (max-width: 768px) {
   .orbit-discover .discover-topbar { gap: 10px; }
   .orbit-discover .universe-searchbar .search-controls { flex-basis: 100%; order: 1; }
-  [data-theme="era-day"] .orbit-discover .universe-art::after { background: linear-gradient(180deg, #f8f6f0 0%, #f8f6f0cc 35%, #f8f6f040 60%, #f8f6f0 100%); }
 }
 
 .orbit-discover .discover-topbar.is-scrolled::after {
@@ -930,47 +907,5 @@ body:has(.orbit-discover) .ambient-grain { opacity: .035; }
   transform: scaleX(var(--scroll-progress, 0)); transform-origin: left;
 }
 .orbit-roster:focus-within { animation: none; clip-path: none; }
-[data-theme="era-day"] .orbit-discover :is(.universe-scroll-cue > :last-child, .orbit-strip i) { color: var(--accent); }
-
-[data-theme="era-day"] .island-menu {
-  --text-primary: #141414; --text-secondary: #5c534c; --text-muted: #5c534c;
-  --accent: #230c1e; --accent-hover: #381531;
-  --border-subtle: #230c1e40;
-  color-scheme: light;
-}
-[data-theme="era-day"] .island-menu :is(.spark-heading h2, .spark-label, .spark-eyebrow, .spark-draft-tools button) { color: var(--accent); }
-[data-theme="era-day"] .island-menu :is(.spark-heading p, .spark-label > span, .spark-status, .spark-footnote) { color: var(--text-secondary); }
-[data-theme="era-day"] .island-menu :is(.spark-prompt, .spark-character, .spark-moods button) { background: #f8f6f0; color: var(--text-primary); border-color: var(--border-subtle); color-scheme: light; }
-[data-theme="era-day"] .island-menu .spark-moods button[aria-pressed="true"] { background: #e2dbcb; color: var(--accent); border-color: var(--accent); }
-[data-theme="era-day"] .island-menu .spark-start { background: var(--accent); color: #f8f6f0; }
-[data-theme="era-day"] .island-menu .spark-start:hover { background: var(--accent-hover); }
-[data-theme="era-day"] .universe-island :is(a, button, textarea, select):focus-visible { outline-color: #c29b7f; }
-
-/* Keep the surrounding workspace and navigation readable in the Day atmosphere. */
-[data-theme="era-day"] body:has(.orbit-discover) .main-workspace { background: var(--bg-canvas); }
-[data-theme="era-day"] .orbit-discover .universe-searchbar .search-box {
-  background: var(--bg-core);
-  border-color: var(--border-subtle);
-}
-[data-theme="era-day"] .orbit-discover .rail-arrow {
-  color: var(--accent);
-  background: rgba(248, 246, 240, 0.88);
-  border-color: rgba(35, 12, 30, 0.22);
-  box-shadow: 0 8px 20px rgba(35, 12, 30, 0.14);
-}
-[data-theme="era-day"] .orbit-discover .rail-arrow:hover {
-  background: #f8f6f0;
-  border-color: rgba(35, 12, 30, 0.45);
-  color: var(--accent);
-}
-[data-theme="era-day"] .orbit-discover .rail-arrow svg { filter: none; }
-[data-theme="era-day"] .sidebar :is(.sidebar-unified-card, .auth-launch-btn, .brand-mark, .persona-pill, .auth-user-view:has(> .auth-user-meta-wrap)) {
-  background: #381531;
-  color: var(--text-primary);
-}
-[data-theme="era-day"] .orbit-discover .btn-island {
-  background-image: none;
-  border-color: var(--accent);
-}
 .orbit-discover .card-shell:active .cai-card { transform: scale(0.98); }
 .orbit-discover .cai-avatar { transition: transform .78s var(--fluid-ease), filter .72s var(--fluid-ease-soft); }

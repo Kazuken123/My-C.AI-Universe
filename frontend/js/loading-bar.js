@@ -16,12 +16,12 @@ export class TopLoadingBar {
     this.progressEl = null;
 
     if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-      // Early Theme Hydration to prevent theme flash
+      // Enforce fixed Cosmos theme and drop any stale theme preference
       try {
-        const savedTheme = localStorage.getItem('cai_skill_theme');
-        if (savedTheme && document.documentElement.getAttribute('data-theme') !== savedTheme) {
-          document.documentElement.setAttribute('data-theme', savedTheme);
+        if (document.documentElement.getAttribute('data-theme') !== 'higgsfield') {
+          document.documentElement.setAttribute('data-theme', 'higgsfield');
         }
+        localStorage.removeItem('cai_skill_theme');
       } catch {}
 
       this.#initDom();

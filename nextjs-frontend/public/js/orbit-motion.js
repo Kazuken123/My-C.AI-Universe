@@ -329,9 +329,9 @@ function initOrbitMotion() {
   const root = document.documentElement;
   const scanUniverseControls = createUniverseControls();
   window.orbitViewTransition = orbitViewTransition;
-  // Remove legacy Day atmosphere override and keep motion running smoothly.
+  // Clear any legacy non-higgsfield theme override and keep motion running smoothly.
   try {
-    if (root.dataset.theme === 'era-day' || localStorage.getItem('cai_skill_theme') === 'era-day') {
+    if (root.dataset.theme !== 'higgsfield' || localStorage.getItem('cai_skill_theme') !== null) {
       root.dataset.theme = 'higgsfield';
       localStorage.removeItem('cai_skill_theme');
     }

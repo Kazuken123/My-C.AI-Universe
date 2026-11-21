@@ -15,8 +15,6 @@ interface SidebarProps {
   onMobileClose: () => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
-  currentTheme: string;
-  onCycleTheme: () => void;
 }
 
 export function Sidebar({
@@ -24,8 +22,6 @@ export function Sidebar({
   onMobileClose,
   isCollapsed,
   onToggleCollapse,
-  currentTheme,
-  onCycleTheme,
 }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
@@ -344,20 +340,6 @@ export function Sidebar({
             </div>
             <i className="ph-light ph-caret-up-down persona-caret" />
           </Link>
-
-          <button
-            className="icon-btn theme-toggle-btn"
-            id="themeToggleBtn"
-            aria-label="Change color theme"
-            type="button"
-            title={`Cycle Theme (Current: ${currentTheme})`}
-            onClick={onCycleTheme}
-          >
-            <i className="ph-light ph-sliders-horizontal" id="themeToggleIcon" />
-            <span className="theme-mode-label sr-only" id="themeModeLabel">
-              {currentTheme}
-            </span>
-          </button>
         </div>
       </div>
     </aside>

@@ -359,29 +359,31 @@ test('Scene Spark preserves canonical Express query routes and encoded Next path
   }
 });
 
-test('orbit motion clears legacy era-day theme and removes atmosphere switcher', () => {
+test('orbit motion clears legacy non-higgsfield themes and removes theme toggle controls', () => {
   const fullSource = fs.readFileSync(new URL('../frontend/js/orbit-motion.js', import.meta.url), 'utf8');
   assert.doesNotMatch(fullSource, /createAtmosphereControls|data-atmosphere-toggle/);
-  let removedKey = null;
-  const document = {
-    readyState: 'complete',
-    documentElement: { dataset: { theme: 'era-day' } },
-    body: {},
-    querySelectorAll: () => [],
-    addEventListener() {},
-  };
-  vm.runInNewContext(fullSource, {
-    document,
-    window: { addEventListener() {}, matchMedia: () => ({ matches: false, addEventListener() {} }) },
-    localStorage: {
-      getItem: key => (key === 'cai_skill_theme' ? 'era-day' : null),
-      removeItem: key => { if (key === 'cai_skill_theme') removedKey = key; },
-    },
-    MutationObserver: class { observe() {} },
-    requestAnimationFrame() { return 1; },
-  });
-  assert.equal(document.documentElement.dataset.theme, 'higgsfield');
-  assert.equal(removedKey, 'cai_skill_theme');
+  for (const legacyTheme of ['era-day', 'vanguard', 'editorial', 'telemetry']) {
+    let removedKey = null;
+    const document = {
+      readyState: 'complete',
+      documentElement: { dataset: { theme: legacyTheme } },
+      body: {},
+      querySelectorAll: () => [],
+      addEventListener() {},
+    };
+    vm.runInNewContext(fullSource, {
+      document,
+      window: { addEventListener() {}, matchMedia: () => ({ matches: false, addEventListener() {} }) },
+      localStorage: {
+        getItem: key => (key === 'cai_skill_theme' ? legacyTheme : null),
+        removeItem: key => { if (key === 'cai_skill_theme') removedKey = key; },
+      },
+      MutationObserver: class { observe() {} },
+      requestAnimationFrame() { return 1; },
+    });
+    assert.equal(document.documentElement.dataset.theme, 'higgsfield');
+    assert.equal(removedKey, 'cai_skill_theme');
+  }
 });
 
 test('scroll updates run regardless of native timeline support and CSS enables scroll timelines', () => {
@@ -396,14 +398,41 @@ test('scroll updates run regardless of native timeline support and CSS enables s
   assert.match(css, /animation-timeline: view\(inline\)/);
 });
 
-test('Day atmosphere covers the workspace, search, rail and chat history text', () => {
-  const css = fs.readFileSync(new URL('../frontend/css/orbit.css', import.meta.url), 'utf8');
-  assert.ok(css.includes('[data-theme="era-day"] body:has(.orbit-discover) .main-workspace'));
-  assert.ok(css.includes('[data-theme="era-day"] .orbit-discover .universe-searchbar .search-box'));
-  assert.ok(css.includes('[data-theme="era-day"] .orbit-discover .rail-arrow'));
+test('single-mode higgsfield theme removes extra theme rules and toggle buttons', () => {
+  const forbiddenThemeRe = /\[data-theme="(era-day|vanguard|editorial|telemetry)"\]/;
+  for (const file of [
+    'frontend/css/orbit.css',
+    'nextjs-frontend/app/orbit.css',
+    'frontend/css/chat.css',
+    'nextjs-frontend/app/chat.css',
+    'frontend/css/base.css',
+    'nextjs-frontend/app/base.css',
+    'frontend/css/dashboard.css',
+    'nextjs-frontend/app/dashboard.css',
+    'frontend/css/auth.css',
+    'frontend/css/personas.css',
+    'nextjs-frontend/app/personas.css',
+    'nextjs-frontend/app/globals.css',
+  ]) {
+    const css = fs.readFileSync(new URL('../' + file, import.meta.url), 'utf8');
+    assert.doesNotMatch(css, forbiddenThemeRe, `${file} must not contain removed themes`);
+  }
   for (const file of ['frontend/css/chat.css', 'nextjs-frontend/app/chat.css']) {
     const chat = fs.readFileSync(new URL('../' + file, import.meta.url), 'utf8');
-    assert.ok(chat.includes('[data-theme="era-day"] :is(.history-thread-time, .chat-history-close-btn:hover)'));
     assert.ok(chat.includes('.era-chat-drawer { transform: none; }'));
+  }
+  for (const html of [
+    'frontend/index.html',
+    'frontend/chat.html',
+    'frontend/chats.html',
+    'frontend/create.html',
+    'frontend/personas.html',
+    'frontend/js/common.js',
+    'nextjs-frontend/components/layout/shell-layout.tsx',
+    'nextjs-frontend/components/layout/sidebar.tsx',
+    'nextjs-frontend/components/layout/mobile-header.tsx',
+  ]) {
+    const src = fs.readFileSync(new URL('../' + html, import.meta.url), 'utf8');
+    assert.doesNotMatch(src, /themeToggleBtn|mobileThemeBtn|handleCycleTheme|onCycleTheme/, `${html} must not contain theme toggle buttons`);
   }
 });

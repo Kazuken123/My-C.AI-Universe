@@ -5,10 +5,7 @@ import { PersonaManager } from './personas.js';
 import { AuthManager } from './auth.js';
 
 const SKILL_THEMES = [
-  { id: 'higgsfield', label: 'Higgsfield Cinema' },
-  { id: 'vanguard', label: 'Vanguard' },
-  { id: 'editorial', label: 'Editorial' },
-  { id: 'telemetry', label: 'Telemetry' }
+  { id: 'higgsfield', label: 'Higgsfield Cinema' }
 ];
 
 /**
@@ -81,32 +78,8 @@ export class CAIUniverseApp {
   }
 
   initTheme() {
-    const savedTheme = localStorage.getItem('cai_skill_theme') || 'higgsfield';
-    const validTheme = SKILL_THEMES.find(t => t.id === savedTheme) ? savedTheme : 'higgsfield';
-    document.documentElement.setAttribute('data-theme', validTheme);
-
-    const themeBtn = document.getElementById('themeToggleBtn');
-    const themeLabel = document.getElementById('themeModeLabel');
-
-    const updateThemeLabel = (themeId) => {
-      const entry = SKILL_THEMES.find(t => t.id === themeId) || SKILL_THEMES[0];
-      if (themeLabel) themeLabel.textContent = entry.label;
-    };
-
-    updateThemeLabel(validTheme);
-
-    if (themeBtn) {
-      themeBtn.addEventListener('click', () => {
-        const current = document.documentElement.getAttribute('data-theme') || 'vanguard';
-        const currentIndex = SKILL_THEMES.findIndex(t => t.id === current);
-        const nextEntry = SKILL_THEMES[(currentIndex + 1) % SKILL_THEMES.length];
-
-        document.documentElement.setAttribute('data-theme', nextEntry.id);
-        localStorage.setItem('cai_skill_theme', nextEntry.id);
-        updateThemeLabel(nextEntry.id);
-        this.showToast(`Design System: ${nextEntry.label}`);
-      });
-    }
+    document.documentElement.setAttribute('data-theme', 'higgsfield');
+    try { localStorage.removeItem('cai_skill_theme'); } catch {}
   }
 
   async init() {

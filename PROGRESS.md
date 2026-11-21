@@ -1,5 +1,18 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-11-21 - Saved Chats Card Titles, Top-Cropped Avatars & Single Cosmos Theme
+
+- **Character Name Titles on `/chats` (`frontend/js/chats-page.js`, `nextjs-frontend/components/chat/saved-chats-list.tsx`)**:
+  - Updated Saved Chats card headings to display `characterName` (`s.characterName || s.title || 'Character'`) instead of `Storyline HH:MM` session titles, and removed the redundant repeated character name from `.atlas-saved-meta`.
+- **Portrait Framing on `/chats` (`frontend/css/atlas-chat.css`, `nextjs-frontend/app/atlas-chat.css`)**:
+  - Added `object-position: center top;` to `.atlas-saved-avatar` (kept byte-identical across both frontends) so tall full-body portraits (e.g., Kana Arima, Satoru Gojo) crop to the character's head/upper portrait instead of centering on torso/legs.
+- **Single-Mode `higgsfield` Cosmos Theme Cleanup (`frontend/`, `nextjs-frontend/`)**:
+  - Removed `#themeToggleBtn` and `#mobileThemeBtn` / `onCycleTheme` buttons from all Express HTML pages, `common.js`, `app.js`, and Next.js layout components (`shell-layout.tsx`, `sidebar.tsx`, `mobile-header.tsx`).
+  - Removed all `vanguard`, `editorial`, `telemetry`, and `era-day` CSS theme blocks across `base.css`, `dashboard.css`, `chat.css`, `orbit.css`, `auth.css`, `personas.css`, and `globals.css`, plus non-`higgsfield` renderers from `ambient-canvas.js`; enforced `data-theme="higgsfield"` and cleared stale `cai_skill_theme` entries in `common.js`, `app.js`, `loading-bar.js`, `orbit-motion.js`, and `shell-layout.tsx`.
+- **Verification**:
+  - Updated `tests/ui-navigation.test.js` and `tests/chats-dedup-and-stream-resilience.test.mjs` to enforce single-mode `higgsfield` parity, removed toggle controls, character-name `/chats` titles, and top-cropped `.atlas-saved-avatar` framing.
+  - Checks: `npm run check` (`191` JS files, `0` failed), `npm test` (`60/60` test files passed, `0` failed), and `nextjs-frontend` `test` (`18/18`), `typecheck`, `lint`, and `build` succeeded.
+
 ## 2026-11-21 - Response Lab Admin Access Fix & 14-Day Auth Cookie Sync
 
 - **Unwrapped `/api/auth/me` Payload in Response Lab (`frontend/js/response-lab.js`)**:

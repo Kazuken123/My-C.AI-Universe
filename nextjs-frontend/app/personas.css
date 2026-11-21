@@ -82,24 +82,6 @@
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
 }
 
-[data-theme="vanguard"] .persona-glyph-badge {
-  background: rgba(245, 158, 11, 0.14);
-  border-color: rgba(245, 158, 11, 0.34);
-  color: #f59e0b;
-}
-
-[data-theme="editorial"] .persona-glyph-badge {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-}
-
-[data-theme="telemetry"] .persona-glyph-badge {
-  background: rgba(230, 25, 25, 0.12);
-  border-color: rgba(230, 25, 25, 0.4);
-  color: #e61919;
-}
-
 .persona-card-title-group {
   display: flex;
   flex-direction: column;

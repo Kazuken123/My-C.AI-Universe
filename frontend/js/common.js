@@ -3,10 +3,7 @@ export { loadingBar } from './loading-bar.js';
 export { ambientCanvas } from './ambient-canvas.js';
 
 export const SKILL_THEMES = [
-  { id: 'higgsfield', label: 'Cosmos' },
-  { id: 'vanguard', label: 'Vanguard' },
-  { id: 'editorial', label: 'Editorial' },
-  { id: 'telemetry', label: 'Telemetry' }
+  { id: 'higgsfield', label: 'Cosmos' }
 ];
 
 export function escapeHtml(str) {
@@ -65,37 +62,11 @@ export function bindSpotlightHover(container = document.body) {
 }
 
 /**
- * Initialize 4-Mode Theme Engine & Listener
+ * Initialize fixed Cosmos theme
  */
 export function initTheme() {
-  let savedTheme = 'higgsfield';
-  try { savedTheme = localStorage.getItem('cai_skill_theme') || savedTheme; } catch {}
-  const validTheme = SKILL_THEMES.find(t => t.id === savedTheme) ? savedTheme : 'higgsfield';
-  document.documentElement.setAttribute('data-theme', validTheme);
-
-  const themeBtn = document.getElementById('themeToggleBtn');
-  const themeLabel = document.getElementById('themeModeLabel');
-
-  const updateLabel = (id) => {
-    const entry = SKILL_THEMES.find(t => t.id === id) || SKILL_THEMES[0];
-    if (themeLabel) themeLabel.textContent = entry.label;
-  };
-
-  updateLabel(validTheme);
-
-  if (themeBtn && !themeBtn.__themeBound) {
-    themeBtn.__themeBound = true;
-    themeBtn.addEventListener('click', () => {
-      const current = document.documentElement.getAttribute('data-theme') || 'higgsfield';
-      const currentIndex = SKILL_THEMES.findIndex(t => t.id === current);
-      const nextEntry = SKILL_THEMES[(currentIndex + 1) % SKILL_THEMES.length];
-
-      document.documentElement.setAttribute('data-theme', nextEntry.id);
-      try { localStorage.setItem('cai_skill_theme', nextEntry.id); } catch {}
-      updateLabel(nextEntry.id);
-      showToast(`Design System: ${nextEntry.label}`);
-    });
-  }
+  document.documentElement.setAttribute('data-theme', 'higgsfield');
+  try { localStorage.removeItem('cai_skill_theme'); } catch {}
 }
 
 const ACTIVE_SESSION_STORAGE_KEY = 'cai_active_session_by_char';
@@ -462,11 +433,7 @@ export function initMobileNavigation(activePage = 'discover') {
           </span>
           <span class="brand-title">C.AI Universe</span>
         </a>
-        <div class="mobile-header-actions">
-          <button class="icon-btn mobile-theme-btn" id="mobileThemeBtn" type="button" aria-label="Cycle Theme" title="Theme">
-            <i class="ph-light ph-sliders-horizontal"></i>
-          </button>
-        </div>
+        <div class="mobile-header-actions"></div>
       `;
       document.body.prepend(mobileHeader);
     }
@@ -475,15 +442,6 @@ export function initMobileNavigation(activePage = 'discover') {
     if (menuBtn && !menuBtn.__mobileBound) {
       menuBtn.__mobileBound = true;
       menuBtn.addEventListener('click', openSidebar);
-    }
-
-    const mobileThemeBtn = document.getElementById('mobileThemeBtn');
-    if (mobileThemeBtn && !mobileThemeBtn.__mobileBound) {
-      mobileThemeBtn.__mobileBound = true;
-      mobileThemeBtn.addEventListener('click', () => {
-        const themeBtn = document.getElementById('themeToggleBtn');
-        if (themeBtn) themeBtn.click();
-      });
     }
 
     // 4. Ensure Mobile Bottom Navigation exists

@@ -393,4 +393,20 @@ describe('ApiClient SSE parsing & Chat UI regression checks', () => {
     const sendBtnCss = chatCss.match(/\.composer-send-btn\s*\{[^}]*\}/);
     assert.ok(sendBtnCss && /position:\s*relative/.test(sendBtnCss[0]), '.composer-send-btn defines position: relative');
   });
+
+  it('/chats cards display character name as title and top-crop avatars', () => {
+    const chatsPageSource = readFileSync(new URL('../frontend/js/chats-page.js', import.meta.url), 'utf8');
+    const savedChatsTsx = readFileSync(new URL('../nextjs-frontend/components/chat/saved-chats-list.tsx', import.meta.url), 'utf8');
+    const atlasChatExpress = readFileSync(new URL('../frontend/css/atlas-chat.css', import.meta.url), 'utf8');
+    const atlasChatNext = readFileSync(new URL('../nextjs-frontend/app/atlas-chat.css', import.meta.url), 'utf8');
+
+    assert.match(chatsPageSource, /<h2><a href="\$\{href\}">\$\{escapeHtml\(s\.characterName \|\| s\.title \|\| 'Character'\)\}<\/a><\/h2>/);
+    assert.doesNotMatch(chatsPageSource, /<h2><a href="\$\{href\}">\$\{escapeHtml\(s\.title/);
+    assert.match(savedChatsTsx, /<h2><Link href=\{href\}>\{session\.characterName \|\| session\.title \|\| 'Character'\}<\/Link><\/h2>/);
+    assert.doesNotMatch(savedChatsTsx, /<h2><Link href=\{href\}>\{session\.title/);
+
+    const avatarRule = atlasChatExpress.match(/\.atlas-saved-avatar\s*\{[^}]*\}/);
+    assert.ok(avatarRule && /object-position:\s*center\s+top\s*;/.test(avatarRule[0]), '.atlas-saved-avatar crops from center top');
+    assert.equal(atlasChatExpress, atlasChatNext, 'atlas-chat.css remains byte-identical across frontends');
+  });
 });

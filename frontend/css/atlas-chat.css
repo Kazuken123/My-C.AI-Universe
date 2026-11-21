@@ -177,6 +177,7 @@
   width: 3.2rem;
   height: 3.2rem;
   object-fit: cover;
+  object-position: center top;
   border-radius: .65rem;
   background: var(--bg-base);
 }

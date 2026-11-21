@@ -550,48 +550,6 @@
   to { transform: rotate(360deg); }
 }
 
-/* Editorial Mode Composer Send Button: Quiet Luxury Dark Slab */
-[data-theme="editorial"] .composer-send-btn {
-  background: #181820;
-  color: #f4f4f5;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 4px;
-}
-[data-theme="editorial"] .composer-send-btn:hover {
-  background: #f4f4f5;
-  color: #0b0b0f;
-  border-color: #ffffff;
-  box-shadow: none;
-}
-
-/* Telemetry Mode Composer Send Button: Tactical Military Trigger */
-[data-theme="telemetry"] .composer-send-btn {
-  background: rgba(230, 25, 25, 0.12);
-  color: #ff6b6b;
-  border: 1px solid rgba(230, 25, 25, 0.5);
-  border-radius: 0;
-}
-[data-theme="telemetry"] .composer-send-btn:hover {
-  background: #b91c1c;
-  color: #ffffff;
-  border-color: #ff4d4d;
-  box-shadow: none;
-}
-
-/* Vanguard Mode Composer Send Button: Titanium & Solar Amber Trigger */
-[data-theme="vanguard"] .composer-send-btn {
-  background: rgba(245, 158, 11, 0.12);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.4);
-  border-radius: 6px;
-}
-[data-theme="vanguard"] .composer-send-btn:hover {
-  background: #f59e0b;
-  color: #07090e;
-  border-color: #fbbf24;
-  box-shadow: none;
-}
-
 .composer-hint-bar {
   display: flex;
   justify-content: space-between;
@@ -2033,16 +1991,8 @@ kbd {
 @starting-style {
   #chat-right-drawer:not(.collapsed), .era-chat-drawer:not([hidden]) { opacity: 0; translate: 100% 0; }
 }
-[data-theme="era-day"] :is(.chat-topbar, .chat-right-drawer, .era-chat-drawer, .chat-history-drawer, .composer-box, .chat-intro-card) { background: var(--bg-core); color: var(--text-primary); }
-[data-theme="era-day"] .composer-box textarea::placeholder { color: var(--text-muted); }
-[data-theme="era-day"] :is(.msg-tool-btn, .swipe-btn, .drawer-action-pill, .drawer-menu-row, .chat-topbar-btn):hover { color: var(--text-primary); background: var(--bg-core-elevated); border-color: var(--border-subtle); }
-[data-theme="era-day"] :is(.composer-send-btn, .drawer-new-chat-btn) { background: var(--accent); color: var(--text-on-accent); }
-[data-theme="era-day"] :is(.composer-send-btn, .drawer-new-chat-btn):hover { background: var(--accent-hover); }
 
 .chat-relationship-bar-pill { height: auto; min-block-size: 2em; line-height: 1.4; }
-[data-theme="era-day"] :is(.history-thread-time, .chat-history-close-btn:hover) { color: var(--text-primary); }
-[data-theme="era-day"] .chat-relationship-popover { background: var(--bg-core); }
-[data-theme="era-day"] .drawer-new-chat-btn i { color: inherit; }
 .era-chat-drawer { transform: none; }
 .era-chat-drawer button {
   transition: transform var(--dur-xs) var(--ease-tactile), background-color var(--dur-xs);
