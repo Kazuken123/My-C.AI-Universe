@@ -1801,70 +1801,56 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         // onDone: stream finished and recorded in DB — finalize immediately from donePayload
         async (donePayload) => {
           isFinished = true;
-          let updatedSession = appState.activeSession;
-          // Use donePayload data first; only fall back to GET if missing
-          if (donePayload.userMessage && donePayload.aiMessage && donePayload.relationship) {
-            // Update session state directly from payload
-            updatedSession = {
-              ...updatedSession,
+          const finalizeTurnSession = (nextSession) => {
+            if (Date.now() - lastDirectorOverrideTime < 4000 && appState.activeSession) {
+              nextSession.affinity = appState.activeSession.affinity;
+              nextSession.trust = appState.activeSession.trust;
+              nextSession.strain = appState.activeSession.strain;
+              nextSession.relationshipStage = appState.activeSession.relationshipStage;
+              nextSession.relationshipMood = appState.activeSession.relationshipMood;
+            }
+            appState.activeSession = nextSession;
+            renderChatStream(appState.activeCharacter, nextSession);
+            renderRelationshipBar(nextSession, appState.activeCharacter);
+            updateLocalSessionPreview(nextSession.id, donePayload.response || accumulatedText);
+            refreshRightDrawer(appState.activeCharacter, nextSession).catch(() => {});
+
+            const lastModelRow = streamInner?.querySelector('.msg-row.model:last-of-type');
+            const lastModelBubble = lastModelRow?.querySelector('.msg-bubble');
+            if (lastModelBubble) {
+              lastModelBubble.classList.add('take-reveal');
+            }
+
+            if (autoSpeakTTS && donePayload.response) {
+              const latestMsgs = nextSession.messages || [];
+              const lastAiMsg = donePayload.aiMessage || latestMsgs[latestMsgs.length - 1];
+              speakText(donePayload.response, lastAiMsg?.id || null, lastAiMsg?.selectedVariantIndex ?? 0, nextSession.id);
+            }
+          };
+
+          if (donePayload.userMessage && donePayload.aiMessage && donePayload.relationship && appState.activeSession) {
+            const baseMessages = Array.isArray(appState.activeSession.messages) ? [...appState.activeSession.messages] : [];
+            if (!baseMessages.some(m => m.id === donePayload.userMessage.id)) {
+              baseMessages.push(donePayload.userMessage);
+            }
+            if (!baseMessages.some(m => m.id === donePayload.aiMessage.id)) {
+              baseMessages.push(donePayload.aiMessage);
+            }
+            const updatedSession = {
+              ...appState.activeSession,
+              id: donePayload.sessionId || appState.activeSession.id,
+              messages: baseMessages,
+              updatedAt: new Date().toISOString(),
               affinity: donePayload.relationship.affinity,
               trust: donePayload.relationship.trust,
               strain: donePayload.relationship.strain,
               relationshipStage: donePayload.relationship.relationshipStage,
               relationshipMood: donePayload.relationship.relationshipMood
             };
-            // Apply director overrides if recent
-            if (Date.now() - lastDirectorOverrideTime < 4000 && appState.activeSession) {
-              updatedSession.affinity = appState.activeSession.affinity;
-              updatedSession.trust = appState.activeSession.trust;
-              updatedSession.strain = appState.activeSession.strain;
-              updatedSession.relationshipStage = appState.activeSession.relationshipStage;
-              updatedSession.relationshipMood = appState.activeSession.relationshipMood;
-            }
-            appState.activeSession = updatedSession;
-            renderChatStream(appState.activeCharacter, updatedSession);
-            renderRelationshipBar(updatedSession, appState.activeCharacter);
-            updateLocalSessionPreview(updatedSession.id, donePayload.response || accumulatedText);
-            refreshRightDrawer(appState.activeCharacter, updatedSession).catch(() => {});
-
-            const lastModelRow = streamInner?.querySelector('.msg-row.model:last-of-type');
-            const lastModelBubble = lastModelRow?.querySelector('.msg-bubble');
-            if (lastModelBubble) {
-              lastModelBubble.classList.add('take-reveal');
-            }
-
-            if (autoSpeakTTS && donePayload.response) {
-              const latestMsgs = updatedSession.messages || [];
-              const lastAiMsg = donePayload.aiMessage || latestMsgs[latestMsgs.length - 1];
-              speakText(donePayload.response, lastAiMsg?.id || null, lastAiMsg?.selectedVariantIndex ?? 0, updatedSession.id);
-            }
+            finalizeTurnSession(updatedSession);
           } else {
-            // Fallback to GET if payload is missing data
             const freshSession = await api.getChatSession(donePayload.sessionId || session.id);
-            if (Date.now() - lastDirectorOverrideTime < 4000 && appState.activeSession) {
-              freshSession.affinity = appState.activeSession.affinity;
-              freshSession.trust = appState.activeSession.trust;
-              freshSession.strain = appState.activeSession.strain;
-              freshSession.relationshipStage = appState.activeSession.relationshipStage;
-              freshSession.relationshipMood = appState.activeSession.relationshipMood;
-            }
-            appState.activeSession = freshSession;
-            renderChatStream(appState.activeCharacter, freshSession);
-            renderRelationshipBar(freshSession, appState.activeCharacter);
-            updateLocalSessionPreview(freshSession.id, donePayload.response || accumulatedText);
-            refreshRightDrawer(appState.activeCharacter, freshSession).catch(() => {});
-
-            const lastModelRow = streamInner?.querySelector('.msg-row.model:last-of-type');
-            const lastModelBubble = lastModelRow?.querySelector('.msg-bubble');
-            if (lastModelBubble) {
-              lastModelBubble.classList.add('take-reveal');
-            }
-
-            if (autoSpeakTTS && donePayload.response) {
-              const latestMsgs = freshSession.messages || [];
-              const lastAiMsg = donePayload.aiMessage || latestMsgs[latestMsgs.length - 1];
-              speakText(donePayload.response, lastAiMsg?.id || null, lastAiMsg?.selectedVariantIndex ?? 0, freshSession.id);
-            }
+            finalizeTurnSession(freshSession);
           }
         }
       );
@@ -1958,6 +1944,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
     let watchdogTimer = setTimeout(() => {
       isSending = false;
+      setComposerBusy(false);
       if (btnElement) {
         btnElement.classList.remove('is-spinning');
         btnElement.disabled = false;
@@ -2018,6 +2005,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
         btnElement.disabled = false;
       }
       isSending = false;
+      setComposerBusy(false);
     }
   }
 
@@ -2053,6 +2041,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
 
     let watchdogTimer = setTimeout(() => {
       isSending = false;
+      setComposerBusy(false);
       if (tempIndicator?.parentNode) tempIndicator.remove();
       showToast('Scene advance timed out. Please try again.');
     }, 45000);
@@ -2099,6 +2088,7 @@ export function initChatModule(appState, navigateTo, openStudioForEdit, showToas
     } finally {
       clearTimeout(watchdogTimer);
       isSending = false;
+      setComposerBusy(false);
     }
   }
 

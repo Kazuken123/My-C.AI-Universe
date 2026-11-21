@@ -182,7 +182,7 @@ export class GeminiProvider extends BaseAIProvider {
               systemInstruction: systemPrompt,
               ...(options.signal ? { abortSignal: options.signal } : {}),
               temperature: options.isRegenerate ? 0.95 : 0.85,
-              ...(options.timeout ? { httpOptions: { timeout: options.timeout } } : {}),
+              httpOptions: { timeout: options.timeout || config.AI_TIMEOUT || 30000 },
               ...(options.labAlternatives ? { responseMimeType: 'application/json', responseJsonSchema: responseAlternativesSchema(options) } : {}),
               safetySettings: PERMISSIVE_SAFETY_SETTINGS
             }
@@ -274,7 +274,7 @@ export class GeminiProvider extends BaseAIProvider {
   async *generateReplyStream(character, userMsg, memory = null, options = {}) {
     const ai = this.#getClient();
     const contents = this.#buildContents(memory, userMsg, options, character);
-    const modelsToTry = this.#getModelsToTry();
+    const modelsToTry = options.modelOverride ? [options.modelOverride] : this.#getModelsToTry();
     const promptFor = this.#systemPromptBuilder(character, { ...options, userMsg, memory });
     const streamTimeout = options.timeout || config.GEMINI_STREAM_TIMEOUT || 18000;
     let lastError = null;
@@ -317,6 +317,7 @@ export class GeminiProvider extends BaseAIProvider {
           if (options.requireComplete && !finished) throw new AIError('Stream ended without a completion marker',503);
           return;
         } catch (err) {
+          if (options.signal?.aborted) throw options.signal.reason || err;
           lastError = err;
 
           if (hasYielded) {

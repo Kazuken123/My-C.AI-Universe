@@ -497,6 +497,7 @@
 }
 
 .composer-send-btn {
+  position: relative;
   width: 36px;
   height: 36px;
   border-radius: var(--radius-md);

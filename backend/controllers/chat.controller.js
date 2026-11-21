@@ -394,6 +394,39 @@ export class ChatController extends BaseController {
       if (personaId && activePersona) session.personaId = activePersona.id;
       if (provider) session.provider = resolveProviderForCharacter(character, provider);
 
+      const isStreaming = req.query?.stream === 'true' || req.headers?.accept === 'text/event-stream';
+      const useEarlySse = isStreaming && !regenerate && !isContinue;
+
+      let keepaliveTimer = null;
+      const stopKeepalive = () => {
+        if (keepaliveTimer) {
+          clearInterval(keepaliveTimer);
+          keepaliveTimer = null;
+        }
+      };
+      const cleanup = () => {
+        stopKeepalive();
+        res.off?.('close', cleanup);
+        res.removeListener?.('close', cleanup);
+      };
+
+      if (useEarlySse) {
+        res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-transform');
+        res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no');
+        res.flushHeaders?.();
+        res.write(': connected\n\n');
+        res.on?.('close', cleanup);
+        keepaliveTimer = setInterval(() => {
+          if (!res.writableEnded && !res.destroyed && !res.ended) {
+            res.write(': keepalive\n\n');
+          }
+        }, 15000);
+        keepaliveTimer.unref?.();
+      }
+
+      try {
       const pinnedMessages = session.getPinnedMessages().map(m => m.toJSON());
       const effectiveHistory = isNewSession && Array.isArray(clientMemory) && clientMemory.length > 0
         ? clientMemory.slice(-config.MAX_MEMORY_MESSAGES)
@@ -611,8 +644,6 @@ Rules:
       }
 
       // Case 3: Standard User Chat Turn
-      const isStreaming = req.query?.stream === 'true' || req.headers?.accept === 'text/event-stream';
-
       const commitState = (userMsgObj, aiMsgObj) => {
         Object.assign(session, evaluatedState);
         session.narrativeState = prepareNarrativeState(session, appraisal, userMsgObj);
@@ -627,48 +658,15 @@ Rules:
       };
 
       if (isStreaming) {
-        // For standard streaming turns (not regenerate, not continue), flush proxy-safe SSE headers immediately
-        // before prepareResponseContext and chatStream to prevent buffering and allow instant connection acknowledgment.
-        if (!regenerate && !isContinue) {
+        if (!res.headersSent) {
           res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
           res.setHeader('Cache-Control', 'no-cache, no-transform');
           res.setHeader('Connection', 'keep-alive');
           res.setHeader('X-Accel-Buffering', 'no');
-          res.write(': connected\n\n');
-          res.flushHeaders?.();
-        } else {
-          res.setHeader('Content-Type', 'text/event-stream');
-          res.setHeader('Cache-Control', 'no-cache');
-          res.setHeader('Connection', 'keep-alive');
           res.flushHeaders?.();
         }
 
-        let keepaliveTimer = null;
-        const startKeepalive = () => {
-          keepaliveTimer = setInterval(() => {
-            if (!res.writableEnded) res.write(': keepalive\n\n');
-          }, 15000);
-        };
-        const stopKeepalive = () => {
-          if (keepaliveTimer) {
-            clearInterval(keepaliveTimer);
-            keepaliveTimer = null;
-          }
-        };
-
-        // Start keepalive for standard streaming turns
-        if (!regenerate && !isContinue) {
-          startKeepalive();
-        }
-
-        const cleanup = () => {
-          stopKeepalive();
-        };
-
-        res.on('close', cleanup);
-
-        try {
-          const userMsgObj = session.addMessage({
+        const userMsgObj = session.addMessage({
           role: 'user',
           content: message.trim()
         });
@@ -717,18 +715,15 @@ Rules:
 
         this.#schedulePostTurnTasks({ userText: message, aiText: cleanText, character, session });
 
-          res.write(`data: ${JSON.stringify({
-            done: true,
-            sessionId: session.id,
-            userMessage: userMsgObj.toJSON(),
-            aiMessage: aiMsgObj.toJSON(),
-            response: cleanText,
-            relationship: newRelState
-          })}\n\n`);
-          return res.end();
-        } finally {
-          cleanup();
-        }
+        res.write(`data: ${JSON.stringify({
+          done: true,
+          sessionId: session.id,
+          userMessage: userMsgObj.toJSON(),
+          aiMessage: aiMsgObj.toJSON(),
+          response: cleanText,
+          relationship: newRelState
+        })}\n\n`);
+        return res.end();
       }
 
       const userMsgObj = session.addMessage({
@@ -762,10 +757,16 @@ Rules:
         memoriesUsed: relevantMemories.length + context.memories.length,
         relationship: newRelState
       });
+      } finally {
+        cleanup();
+      }
     } catch (error) {
       if (res.headersSent) {
-        res.write(`data: ${JSON.stringify({error: 'Turn could not be saved. Reload the conversation before retrying.'})}\n\n`);
-        return res.end();
+        if (!res.writableEnded && !res.destroyed && !res.ended) {
+          res.write(`data: ${JSON.stringify({error: 'Turn could not be saved. Reload the conversation before retrying.'})}\n\n`);
+          return res.end();
+        }
+        return undefined;
       }
       return this.handleError(res, error, 'Chat service temporarily unavailable');
     }

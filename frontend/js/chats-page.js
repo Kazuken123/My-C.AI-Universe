@@ -72,9 +72,12 @@ class ChatsPageApp {
           this.rawSessions = this.rawSessions.filter(s => s.id !== sessionId);
           clearActiveSessionForCharacter(charId, sessionId);
           const entry = btn.closest('article');
-          const nextEntry = entry.nextElementSibling || entry.previousElementSibling;
+          const entries = Array.from(this.grid.querySelectorAll('article'));
+          const deletedIndex = Math.max(0, entries.indexOf(entry));
           this.renderSessions();
-          (nextEntry?.querySelector('a') || this.grid.querySelector('a'))?.focus();
+          const remaining = this.grid.querySelectorAll('article');
+          const focusTarget = remaining[Math.min(deletedIndex, remaining.length - 1)]?.querySelector('a') || this.grid.querySelector('a');
+          focusTarget?.focus();
           showToast('Chat deleted.');
           await initSidebar('chats');
         } catch (err) {
