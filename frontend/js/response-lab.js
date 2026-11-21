@@ -268,8 +268,15 @@ $('exportLab').addEventListener('click', () => action(async () => {
 $('deleteLab').addEventListener('click', () => action(async () => { await req(`/labs/${encodeURIComponent(lab.id)}`, 'DELETE'); lab = null; trial = null; trials = []; setUrl(); await refreshList(); renderLab(); notice('Lab deleted.', true); }));
 async function init() {
   if (!api.getToken()) { $('authNotice').hidden = false; $('setupForm').hidden = true; $('createLab').disabled = true; return; }
-  const me = await api.getMe();
-  if (!me || me.role !== 'admin') {
+  const authData = await api.getMe();
+  const me = authData?.user || null;
+  if (!me) {
+    $('authNotice').hidden = false;
+    $('setupForm').hidden = true;
+    $('createLab').disabled = true;
+    return;
+  }
+  if (me.role !== 'admin') {
     window.location.replace('/');
     return;
   }

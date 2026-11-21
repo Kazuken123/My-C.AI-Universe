@@ -1,5 +1,17 @@
 # 📈 Project Progress & Architecture Log — My C.AI Universe
 
+## 2026-11-21 - Response Lab Admin Access Fix & 14-Day Auth Cookie Sync
+
+- **Unwrapped `/api/auth/me` Payload in Response Lab (`frontend/js/response-lab.js`)**:
+  - `GET /api/auth/me` returns `{ user, authenticated }`; `init()` previously checked `me.role !== 'admin'` directly on the wrapper object, making `me.role` always `undefined` and redirecting every admin account to `/`.
+  - Unwrapped `const authData = await api.getMe(); const me = authData?.user || null;`, showing `#authNotice` cleanly when `!me`, redirecting non-admins to `/`, and letting admins load the Response Lab workspace.
+- **Aligned Cookie TTL & Re-Synced Missing Cookies (`frontend/js/api.js`)**:
+  - Updated `cai_auth_token` cookie `max-age` from `604800` (7 days) to `1209600` (14 days) to match backend `TOKEN_TTL_MS`.
+  - Added `syncAuthCookie(token)` called from `getCurrentUser()` when `data?.user` is authenticated and `cai_auth_token=` is missing from `document.cookie`, preventing `requireAdminWebAccess` (`302` redirect) from rejecting full-page `/response-lab` or `/admin` navigations while `localStorage` still holds a valid JWT.
+- **Verification**:
+  - Upgraded `tests/chat-feedback-and-access.test.js` (`6/6` passing) to run `response-lab.js` `init()` in `node:vm` across admin/user/guest payloads, test `ApiClient.getCurrentUser()` cookie re-sync, and verify `GET /response-lab` server RBAC (`200` for admin cookie, `302` to `/` for non-admin/unauthenticated).
+  - Full checks: `npm run check` (`191` JS files, `0` failed), `npm test` (`60/60` test files passed, `0` failed), and Next.js `test` (`18/18`), `typecheck`, and `lint` passed.
+
 ## 2026-11-21 - Per-Character Deduplication, SSE Keepalive, `<thought>` Collision Fix & Gemini Timeout Resilience
 
 - **Restored Per-Character Deduplication (`common.js`, `chat-utils.ts`, `chats-page.js`, `saved-chats-list.tsx`)**:

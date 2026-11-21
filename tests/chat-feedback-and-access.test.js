@@ -1,6 +1,8 @@
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
+import { once } from 'node:events';
+import vm from 'node:vm';
 import path from 'node:path';
 
 if (process.env.NODE_ENV !== 'test' || !process.env.SQLITE_PATH || process.env.TURSO_DATABASE_URL?.trim() || !process.env.DOTENV_CONFIG_PATH || path.dirname(process.env.SQLITE_PATH) !== process.env.DATA_DIR) {
@@ -72,17 +74,100 @@ test('1. Collapsed sidebar preserves the + button icon visibility across themes'
   assert.ok(orbitCss.includes('color: var(--text-on-accent) !important'));
 });
 
-test('2. Response Lab sidebar link is strictly scoped to admin accounts', () => {
+test('2. Response Lab sidebar link and page access handle admin /api/auth/me payload, cookie sync, and server RBAC', async () => {
   const commonJs = readFileSync('frontend/js/common.js', 'utf8');
-  const responseLabJs = readFileSync('frontend/js/response-lab.js', 'utf8');
-
-  // Verify common.js only appends Response Lab inside admin check
   assert.ok(commonJs.includes("currentUser.role === 'admin'"));
   assert.ok(commonJs.includes('sidebarResponseLabLink'));
 
-  // Verify response-lab.js redirects non-admin users to homepage
-  assert.ok(responseLabJs.includes("me.role !== 'admin'"));
-  assert.ok(responseLabJs.includes("window.location.replace('/')"));
+  const responseLabSource = readFileSync('frontend/js/response-lab.js', 'utf8')
+    .replace(/^import .*;\r?\n/gm, '')
+    .replace(/init\(\)\.catch\(error => .*\);\s*$/, '');
+
+  async function runResponseLabInit(mePayload) {
+    const controls = new Map();
+    const redirects = [];
+    const el = (id) => {
+      if (!controls.has(id)) {
+        controls.set(id, {
+          value: '', textContent: '', innerHTML: '', hidden: false, disabled: false, required: false, checked: false,
+          classList: { toggle() {} },
+          addEventListener() {},
+          dispatchEvent() {}
+        });
+      }
+      return controls.get(id);
+    };
+    const context = vm.createContext({
+      api: {
+        getToken: () => 'jwt_token_123',
+        getMe: async () => mePayload,
+        getCharacters: async () => [{ id: 'char_1', name: 'Kana Arima' }],
+        getPersonas: async () => [{ id: 'p_1', name: 'Traveler' }],
+        getChatSessions: async () => [{ id: 'sess_1', title: 'Opening', messageCount: 2 }],
+        request: async () => [{ id: 'lab_1', title: 'Test Lab' }]
+      },
+      RELATIONSHIP_PRESETS: [{ stage: 'Stranger / Neutral', label: 'Stranger' }],
+      AbortController,
+      URL,
+      URLSearchParams,
+      Event: class Event { constructor(type) { this.type = type; } },
+      location: { search: '', href: 'http://localhost/response-lab' },
+      history: { replaceState() {} },
+      window: { location: { replace: (url) => redirects.push(url) } },
+      document: { getElementById: el, querySelectorAll: () => [] },
+      sessionStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+      setTimeout,
+      clearTimeout
+    });
+    vm.runInContext(responseLabSource, context);
+    await vm.runInContext('init()', context);
+    return { controls, redirects };
+  }
+
+  // 2a. Admin user wrapped in { user: { role: 'admin' }, authenticated: true } stays on page & populates UI
+  const adminResult = await runResponseLabInit({ user: { id: 'admin_1', role: 'admin' }, authenticated: true });
+  assert.deepEqual(adminResult.redirects, [], 'Admin account must NOT be redirected away from /response-lab');
+  assert.equal(adminResult.controls.get('setupForm').hidden, false);
+  assert.match(adminResult.controls.get('character').innerHTML, /Kana Arima/);
+  assert.match(adminResult.controls.get('savedLab').innerHTML, /Test Lab/);
+
+  // 2b. Non-admin user redirects to /
+  const userResult = await runResponseLabInit({ user: { id: 'user_1', role: 'user' }, authenticated: true });
+  assert.deepEqual(userResult.redirects, ['/']);
+
+  // 2c. Unauthenticated { user: null } shows authNotice instead of redirecting
+  const guestResult = await runResponseLabInit({ user: null, authenticated: false });
+  assert.deepEqual(guestResult.redirects, []);
+  assert.equal(guestResult.controls.get('authNotice').hidden, false);
+  assert.equal(guestResult.controls.get('setupForm').hidden, true);
+  assert.equal(guestResult.controls.get('createLab').disabled, true);
+
+  // 2d. ApiClient.getCurrentUser() re-syncs missing cai_auth_token cookie with 14-day max-age
+  const { ApiClient } = await import('../frontend/js/api.js');
+  const prevStorage = globalThis.localStorage;
+  const prevDocument = globalThis.document;
+  const prevWindow = globalThis.window;
+  const cookieWrites = [];
+  globalThis.localStorage = { getItem: (k) => (k === 'cai_auth_token' ? 'admin_jwt_abc' : null), setItem() {}, removeItem() {} };
+  globalThis.window = { location: { protocol: 'http:' } };
+  globalThis.document = {
+    _cookie: '',
+    get cookie() { return this._cookie; },
+    set cookie(val) { cookieWrites.push(val); this._cookie = val; }
+  };
+  try {
+    const client = new ApiClient();
+    client.getMe = async () => ({ user: { id: 'admin_1', role: 'admin' }, authenticated: true });
+    const me = await client.getCurrentUser();
+    assert.equal(me?.role, 'admin');
+    assert.equal(cookieWrites.length, 1);
+    assert.match(cookieWrites[0], /^cai_auth_token=admin_jwt_abc;/);
+    assert.match(cookieWrites[0], /max-age=1209600/);
+  } finally {
+    if (prevStorage === undefined) delete globalThis.localStorage; else globalThis.localStorage = prevStorage;
+    if (prevDocument === undefined) delete globalThis.document; else globalThis.document = prevDocument;
+    if (prevWindow === undefined) delete globalThis.window; else globalThis.window = prevWindow;
+  }
 });
 
 test('3. ChatController updateChatMessage updates rating for Like (4), Dislike (1), and Reset (0)', async () => {
@@ -172,4 +257,46 @@ test('5. Auto-agree does NOT overwrite explicit dislike (rating 1) when user sen
   const finalSession = await repo.findById(f.session.id, f.user);
   const checkedMsg = finalSession.messages.find(m => m.id === msgId);
   assert.equal(checkedMsg.rating, 1, 'Explicit dislike must remain rating 1');
+});
+
+test('6. Server GET /response-lab allows admin cookie (200) and redirects non-admin/unauthenticated requests (302)', async () => {
+  const { authService } = await import('../backend/services/auth.service.js');
+  const { User } = await import('../backend/models/User.js');
+  const { serverInstance } = await import('../server.js');
+  if (!serverInstance.httpServer.listening) await once(serverInstance.httpServer, 'listening');
+
+  try {
+    const port = serverInstance.httpServer.address().port;
+    const baseUrl = `http://127.0.0.1:${port}`;
+
+    await db.prepare("INSERT INTO users (id,username,password_hash,display_name,role,created_at,updated_at) VALUES (?,?,?,?,?,'now','now')")
+      .run('rl_admin_1', 'rl_admin_1', 'hash_a', 'Admin RL', 'admin');
+    await db.prepare("INSERT INTO users (id,username,password_hash,display_name,role,created_at,updated_at) VALUES (?,?,?,?,?,'now','now')")
+      .run('rl_user_1', 'rl_user_1', 'hash_u', 'User RL', 'user');
+
+    const adminToken = authService.generateToken(new User({ id: 'rl_admin_1', username: 'rl_admin_1', displayName: 'Admin RL', role: 'admin', passwordHash: 'hash_a' }));
+    const userToken = authService.generateToken(new User({ id: 'rl_user_1', username: 'rl_user_1', displayName: 'User RL', role: 'user', passwordHash: 'hash_u' }));
+
+    const unauthRes = await fetch(`${baseUrl}/response-lab`, { redirect: 'manual', headers: { Accept: 'text/html' } });
+    assert.equal(unauthRes.status, 302);
+    assert.equal(unauthRes.headers.get('location'), '/');
+
+    const userRes = await fetch(`${baseUrl}/response-lab`, {
+      redirect: 'manual',
+      headers: { Accept: 'text/html', Cookie: `cai_auth_token=${encodeURIComponent(userToken)}` }
+    });
+    assert.equal(userRes.status, 302);
+    assert.equal(userRes.headers.get('location'), '/');
+
+    const adminRes = await fetch(`${baseUrl}/response-lab`, {
+      redirect: 'manual',
+      headers: { Accept: 'text/html', Cookie: `cai_auth_token=${encodeURIComponent(adminToken)}` }
+    });
+    assert.equal(adminRes.status, 200);
+    const html = await adminRes.text();
+    assert.match(html, /Response Lab/);
+  } finally {
+    serverInstance.httpServer?.closeAllConnections?.();
+    await serverInstance.stop();
+  }
 });
